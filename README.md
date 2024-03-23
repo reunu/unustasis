@@ -1,7 +1,7 @@
 # unustasis
 
 ```
-Anastasis - a recovery from a debilitating condition. Rebirth, resurrection.
+Anastasis, noun - a recovery from a debilitating condition. Rebirth, resurrection.
 ```
   
 This is an attempt at an inofficial, BLE-only app for the Unu Scooter Pro after the official app was shut down due to bancruptcy.
