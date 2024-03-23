@@ -1,16 +1,20 @@
 # unustasis
 
-A new Flutter project.
+```
+Anastasis - a recovery from a debilitating condition. Rebirth, resurrection.
+```
+  
+This is an attempt at an inofficial, BLE-only app for the Unu Scooter Pro after the official app was shut down due to bancruptcy.
+This app does NOT use any offical code by Unu, and is not endorsed by unu Motors GmbH in any way. Interested in contributing? Join the [Unu Community Discord](https://discord.gg/fa63HJYaP4)!
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+### Using this app
 
-A few resources to get you started if this is your first Flutter project:
+If you just want to use this app, go into the "Releases" section on this page and download the latest APK file. We also intend to publish this app to the Google Play and Apple App Stores once a base level of features and stability has been reached.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+### Building and contributing to this app
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+This app is made in Flutter for cross-platform functionality, UI performance, and rapid development. To build it on your system, [follow this getting-started guide](https://docs.flutter.dev/get-started/install) to install the Flutter SDK and required Android or iOS SDKs, then run  `flutter run` in the root of this project.
+
+
