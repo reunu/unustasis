@@ -3,6 +3,7 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unustasis/no_scooter.dart';
 
 void main() {
@@ -35,26 +36,46 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   bool linked = false, scanning = false;
   List<BluetoothDevice> foundScooters = [];
+  String? savedScooterId;
   BluetoothDevice? myScooter;
   String debugText = "";
 
   void _startScanning() async {
+    myScooter = null;
+    // keep track of scanning status
+    FlutterBluePlus.isScanning.listen((event) {
+      setState(() {
+        scanning = event;
+      });
+    });
+    // see if the app is connected to the scooter already
     for (var device in FlutterBluePlus.connectedDevices) {
-      if (device.advName == "unu Scooter" && !foundScooters.contains(device)) {
+      if (device.advName == "unu Scooter") {
         foundScooters.add(device);
       }
     }
-    myScooter = null;
-    // start scan
-    FlutterBluePlus.startScan();
-    setState(() {
-      scanning = true;
-    });
+    // see if the phone is connected to the scooter already
+    List<BluetoothDevice> systemDevices = await FlutterBluePlus.systemDevices;
+    for (var device in systemDevices) {
+      log("${device.advName} - ${device.remoteId}");
+      if (device.advName == "unu Scooter" ||
+          device.remoteId.toString() == await _getSavedScooter()) {
+        foundScooters.add(device);
+      }
+    }
+    // start scanning for scooters
+    FlutterBluePlus.startScan(
+      withKeywords: ["unu"],
+      timeout: const Duration(seconds: 30),
+    );
     var subscription = FlutterBluePlus.onScanResults.listen(
       (results) {
         if (results.isNotEmpty) {
           ScanResult r = results.last; // the most recently found device
-          log('${r.device.remoteId}: "${r.advertisementData.advName.isNotEmpty ? r.advertisementData.advName : "unnamed"}" found!');
+          setState(() {
+            debugText =
+                ('${r.device.remoteId}: "${r.advertisementData.advName.isNotEmpty ? r.advertisementData.advName : "unnamed"}" found!');
+          });
           if (r.advertisementData.advName == "unu Scooter" &&
               !foundScooters.contains(r.device)) {
             foundScooters.add(r.device);
@@ -62,14 +83,9 @@ class _MyHomePageState extends State<MyHomePage> {
         }
       },
       onError: (e) => log(e.toString()),
+      onDone: () => log("Scan complete!"),
     );
     FlutterBluePlus.cancelWhenScanComplete(subscription);
-    Future.delayed(const Duration(seconds: 10), () {
-      FlutterBluePlus.stopScan();
-      setState(() {
-        scanning = false;
-      });
-    });
   }
 
   void _connect(BluetoothDevice scooter) async {
@@ -87,6 +103,7 @@ class _MyHomePageState extends State<MyHomePage> {
       await scooter.connect(
         timeout: const Duration(seconds: 10),
       );
+      setSavedScooter(scooter.remoteId.toString());
       log("Linked to ${scooter.advName}!");
       await scooter.discoverServices();
       setState(() {
@@ -103,46 +120,54 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _unlock() async {
-    await myScooter?.discoverServices();
-    setState(() {
-      debugText = "Unlocking...";
-    });
-    myScooter?.servicesList.forEach((service) {
-      log("Service: ${service.uuid.toString()}");
-      service.characteristics.forEach((characteristic) {
-        log("Characteristic: ${characteristic.uuid.toString()}");
-        if (service.uuid.toString() == "9A590000-6E67-5D0D-AAB9-AD9126B66F91" &&
-            characteristic.uuid.toString() ==
-                "9A590001-6E67-500D-AAB9-AD9126866F91") {
-          setState(() {
-            debugText = "Found characteristic...";
-          });
-          characteristic.write(ascii.encode("scooter:state unlock"),
-              withoutResponse: true);
-        }
-      });
-    });
+    await myScooter?.discoverServices(); // this is so redundant
+    myScooter?.servicesList
+        .firstWhere((service) {
+          return service.serviceUuid.toString() ==
+              "9a590000-6e67-5d0d-aab9-ad9126b66f91";
+        })
+        .characteristics
+        .firstWhere((char) {
+          return char.characteristicUuid.toString() ==
+              "9a590001-6e67-5d0d-aab9-ad9126b66f91";
+        })
+        .write(ascii.encode("scooter:state unlock"));
   }
 
   void _lock() async {
     await myScooter?.discoverServices(); // this is so redundant
-    myScooter?.servicesList.forEach((service) {
-      log("Service: ${service.uuid.toString()}");
-      service.characteristics.forEach((characteristic) {
-        log("Characteristic: ${characteristic.uuid.toString()}");
-        if (service.uuid.toString() == "9A590000-6E67-5D0D-AAB9-AD9126B66F91" &&
-            characteristic.uuid.toString() ==
-                "9A590001-6E67-500D-AAB9-AD9126866F91") {
-          log("Unlocking...");
-          characteristic.write(ascii.encode("scooter:state lock"),
-              withoutResponse: true);
-        }
-      });
+    myScooter?.servicesList
+        .firstWhere((service) {
+          return service.serviceUuid.toString() ==
+              "9a590000-6e67-5d0d-aab9-ad9126b66f91";
+        })
+        .characteristics
+        .firstWhere((char) {
+          return char.characteristicUuid.toString() ==
+              "9a590001-6e67-5d0d-aab9-ad9126b66f91";
+        })
+        .write(ascii.encode("scooter:state lock"));
+  }
+
+  Future<String?> _getSavedScooter() async {
+    if (savedScooterId != null) {
+      return savedScooterId;
+    }
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getString("savedScooterId");
+  }
+
+  void setSavedScooter(String id) async {
+    setState(() {
+      savedScooterId = id;
     });
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setString("savedScooterId", id);
   }
 
   @override
   void initState() {
+    _getSavedScooter();
     _startScanning();
     super.initState();
   }
