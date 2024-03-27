@@ -18,8 +18,8 @@ class NoScooterMsg extends StatelessWidget {
                   size: 48,
                 )),
           const SizedBox(height: 32),
-          const Text(
-            'No Scooter Found',
+          Text(
+            scanning ? "Looking for scooters..." : "No Scooter Found",
             style: TextStyle(fontSize: 24),
           ),
           const Text(
