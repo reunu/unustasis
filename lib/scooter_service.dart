@@ -4,10 +4,15 @@ import 'dart:developer';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unustasis/scooter_state.dart';
 
 class ScooterService {
   String? savedScooterId;
   BluetoothDevice? myScooter; // reserved for a connected scooter!
+
+  // some useful characteristsics to save
+  BluetoothCharacteristic? _commandCharacteristic;
+  BluetoothCharacteristic? _stateCharacteristic;
 
   ScooterService() {
     start();
@@ -18,6 +23,10 @@ class ScooterService {
   final StreamController<bool> _connectedController =
       StreamController<bool>.broadcast();
   Stream<bool> get connected => _connectedController.stream;
+
+  final StreamController<ScooterState> _stateController =
+      StreamController<ScooterState>.broadcast();
+  Stream<ScooterState> get state => _stateController.stream;
 
   Stream<bool> get scanning => FlutterBluePlus.isScanning;
 
@@ -58,37 +67,30 @@ class ScooterService {
     }
   }
 
-  Future<void> connectScooter(BluetoothDevice scooter) async {
-    if (scooter.isConnected) {
-      log("Already connected!");
-      return;
-    }
-    await scooter.connect(
-      timeout: const Duration(seconds: 20),
-    );
-    log("Connected to ${scooter.advName}!");
-    return;
-  }
-
   void start() async {
     _connectedController.add(false);
+    _stateController.add(ScooterState.disconnected);
     // First, see if the phone is already connected to a scooter
     List<BluetoothDevice> systemScooters = await getSystemScooters();
     if (systemScooters.isNotEmpty) {
       // get the first one, hook into that and remember its ID
-      connectScooter(systemScooters.first);
+      await systemScooters.first.connect();
+      setSavedScooter(systemScooters.first.remoteId.toString());
+      myScooter = systemScooters.first;
+      await setUpCharacteristics(systemScooters.first);
+      _connectedController.add(true);
     } else {
       // If not, start scanning for nearby scooters
-      getNearbyScooters().listen((scooter) async {
+      getNearbyScooters().listen((foundScooter) async {
         // there's one! Attempt to connect to it
         try {
-          await connectScooter(scooter);
+          await foundScooter.connect();
           // We hava a scooter connected! Stop scanning.
           FlutterBluePlus.stopScan();
           // Set up this scooter as ours
-          myScooter = scooter;
-          setSavedScooter(scooter.remoteId.toString());
-          await scooter.discoverServices();
+          myScooter = foundScooter;
+          setSavedScooter(foundScooter.remoteId.toString());
+          await setUpCharacteristics(foundScooter);
           // Let everybody know
           _connectedController.add(true);
         } catch (e) {
@@ -97,6 +99,75 @@ class ScooterService {
           log(e.toString());
         }
       });
+    }
+  }
+
+  Future<void> setUpCharacteristics(BluetoothDevice scooter) async {
+    if (myScooter!.isDisconnected) {
+      throw "Scooter disconnected, can't set up characteristics!";
+    }
+    try {
+      await scooter.discoverServices();
+      _commandCharacteristic = scooter.servicesList
+          .firstWhere((service) {
+            return service.serviceUuid.toString() ==
+                "9a590000-6e67-5d0d-aab9-ad9126b66f91";
+          })
+          .characteristics
+          .firstWhere((char) {
+            return char.characteristicUuid.toString() ==
+                "9a590001-6e67-5d0d-aab9-ad9126b66f91";
+          });
+      _stateCharacteristic = myScooter!.servicesList
+          .firstWhere((service) {
+            return service.serviceUuid.toString() ==
+                "9a590020-6e67-5d0d-aab9-ad9126b66f91";
+          })
+          .characteristics
+          .firstWhere((char) {
+            return char.characteristicUuid.toString() ==
+                "9a590021-6e67-5d0d-aab9-ad9126b66f91";
+          });
+
+      // subscribe to a bunch of values
+      _stateCharacteristic!.setNotifyValue(true);
+      _stateCharacteristic!.lastValueStream.listen((value) {
+        log("State received: ${ascii.decode(value)}");
+        ScooterState newState = ScooterState.fromBytes(value);
+        _stateController.add(newState);
+      });
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // SCOOTER ACTIONS
+
+  void unlock() {
+    if (myScooter == null) {
+      throw "Scooter not found!";
+    }
+    if (myScooter!.isDisconnected) {
+      throw "Scooter disconnected!";
+    }
+    try {
+      _commandCharacteristic!.write(ascii.encode("scooter:state unlock"));
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  void lock() {
+    if (myScooter == null) {
+      throw "Scooter not found!";
+    }
+    if (myScooter!.isDisconnected) {
+      throw "Scooter disconnected!";
+    }
+    try {
+      _commandCharacteristic!.write(ascii.encode("scooter:state lock"));
+    } catch (e) {
+      rethrow;
     }
   }
 
@@ -116,31 +187,8 @@ class ScooterService {
     prefs.setString("savedScooterId", id);
   }
 
-  void unlock() {
-    myScooter?.servicesList
-        .firstWhere((service) {
-          return service.serviceUuid.toString() ==
-              "9a590000-6e67-5d0d-aab9-ad9126b66f91";
-        })
-        .characteristics
-        .firstWhere((char) {
-          return char.characteristicUuid.toString() ==
-              "9a590001-6e67-5d0d-aab9-ad9126b66f91";
-        })
-        .write(ascii.encode("scooter:state unlock"));
-  }
-
-  void lock() {
-    myScooter?.servicesList
-        .firstWhere((service) {
-          return service.serviceUuid.toString() ==
-              "9a590000-6e67-5d0d-aab9-ad9126b66f91";
-        })
-        .characteristics
-        .firstWhere((char) {
-          return char.characteristicUuid.toString() ==
-              "9a590001-6e67-5d0d-aab9-ad9126b66f91";
-        })
-        .write(ascii.encode("scooter:state lock"));
+  void dispose() {
+    _connectedController.close();
+    _stateController.close();
   }
 }
