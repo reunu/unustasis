@@ -1,4 +1,4 @@
-# unustasis
+<img src='images/logo.png' width='360'>
 
 ```
 Anastasis, noun - a recovery from a debilitating condition. Rebirth, resurrection.
