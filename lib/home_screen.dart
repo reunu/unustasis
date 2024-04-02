@@ -15,6 +15,8 @@ class _HomeScreenState extends State<HomeScreen> {
   ScooterState _scooterState = ScooterState.disconnected;
   bool _connected = false;
   bool _scanning = false;
+  bool _seatClosed = true;
+  bool _handlebarsLocked = true;
 
   @override
   void initState() {
@@ -32,6 +34,16 @@ class _HomeScreenState extends State<HomeScreen> {
     widget.scooterService.scanning.listen((isScanning) {
       setState(() {
         _scanning = isScanning;
+      });
+    });
+    widget.scooterService.seatClosed.listen((isClosed) {
+      setState(() {
+        _seatClosed = isClosed;
+      });
+    });
+    widget.scooterService.handlebarsLocked.listen((isLocked) {
+      setState(() {
+        _handlebarsLocked = isLocked;
       });
     });
   }
@@ -67,6 +79,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   _scanning ? "Scanning..." : _scooterState.name,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
+                Text(
+                  _connected ? (_handlebarsLocked ? "Locked" : "Unlocked") : "",
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 Expanded(
                     child: ScooterVisual(
                   state: _scooterState,
@@ -81,9 +97,33 @@ class _HomeScreenState extends State<HomeScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 32, vertical: 24),
                       ),
+                      onPressed: _connected && _seatClosed
+                          ? widget.scooterService.openSeat
+                          : null,
+                      icon: const Icon(Icons.work_outline),
+                      label: _seatClosed
+                          ? const Text("Open Seat")
+                          : Text(
+                              "Seat is open!",
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.error,
+                              ),
+                            ),
+                    ),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 32, vertical: 24),
+                      ),
                       onPressed: _connected
                           ? (_scooterState.isOn
-                              ? widget.scooterService.lock
+                              ? () {
+                                  if (!_seatClosed) {
+                                    showSeatWarning();
+                                  } else {
+                                    widget.scooterService.lock();
+                                  }
+                                }
                               : widget.scooterService.unlock)
                           : null,
                       icon: Icon(
@@ -106,6 +146,34 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  void showSeatWarning() {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Seat is open!'),
+          content: const SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text(
+                    "For safety reasons, the scooter can't be locked while the seat is open."),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 }

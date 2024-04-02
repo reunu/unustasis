@@ -13,6 +13,8 @@ class ScooterService {
   // some useful characteristsics to save
   BluetoothCharacteristic? _commandCharacteristic;
   BluetoothCharacteristic? _stateCharacteristic;
+  BluetoothCharacteristic? _seatCharacteristic;
+  BluetoothCharacteristic? _handlebarCharacteristic;
 
   ScooterService() {
     start();
@@ -27,6 +29,14 @@ class ScooterService {
   final StreamController<ScooterState> _stateController =
       StreamController<ScooterState>.broadcast();
   Stream<ScooterState> get state => _stateController.stream;
+
+  final StreamController<bool> _seatController =
+      StreamController<bool>.broadcast();
+  Stream<bool> get seatClosed => _seatController.stream;
+
+  final StreamController<bool> _handlebarController =
+      StreamController<bool>.broadcast();
+  Stream<bool> get handlebarsLocked => _handlebarController.stream;
 
   Stream<bool> get scanning => FlutterBluePlus.isScanning;
 
@@ -70,6 +80,7 @@ class ScooterService {
   void start() async {
     _connectedController.add(false);
     _stateController.add(ScooterState.disconnected);
+    _seatController.add(false);
     // First, see if the phone is already connected to a scooter
     List<BluetoothDevice> systemScooters = await getSystemScooters();
     if (systemScooters.isNotEmpty) {
@@ -128,13 +139,59 @@ class ScooterService {
             return char.characteristicUuid.toString() ==
                 "9a590021-6e67-5d0d-aab9-ad9126b66f91";
           });
-
+      _seatCharacteristic = myScooter!.servicesList
+          .firstWhere((service) {
+            return service.serviceUuid.toString() ==
+                "9a590020-6e67-5d0d-aab9-ad9126b66f91";
+          })
+          .characteristics
+          .firstWhere((char) {
+            return char.characteristicUuid.toString() ==
+                "9a590022-6e67-5d0d-aab9-ad9126b66f91";
+          });
+      _handlebarCharacteristic = myScooter!.servicesList
+          .firstWhere((service) {
+            return service.serviceUuid.toString() ==
+                "9a590020-6e67-5d0d-aab9-ad9126b66f91";
+          })
+          .characteristics
+          .firstWhere((char) {
+            return char.characteristicUuid.toString() ==
+                "9a590023-6e67-5d0d-aab9-ad9126b66f91";
+          });
       // subscribe to a bunch of values
+      // Subscribe to state
       _stateCharacteristic!.setNotifyValue(true);
-      _stateCharacteristic!.lastValueStream.listen((value) {
-        log("State received: ${ascii.decode(value)}");
-        ScooterState newState = ScooterState.fromBytes(value);
-        _stateController.add(newState);
+      _stateCharacteristic!.lastValueStream.listen(
+        (value) {
+          log("State received: ${ascii.decode(value)}");
+          ScooterState newState = ScooterState.fromBytes(value);
+          _stateController.add(newState);
+        },
+      );
+      // Subscribe to seat
+      _seatCharacteristic!.setNotifyValue(true);
+      _seatCharacteristic!.lastValueStream.listen((value) {
+        log("Seat received: ${ascii.decode(value)}");
+        value.removeWhere((element) => element == 0);
+        String seatState = ascii.decode(value).trim();
+        if (seatState == "open") {
+          _seatController.add(false);
+        } else {
+          _seatController.add(true);
+        }
+      });
+      // Subscribe to handlebars
+      _handlebarCharacteristic!.setNotifyValue(true);
+      _handlebarCharacteristic!.lastValueStream.listen((value) {
+        log("Handlebars received: ${ascii.decode(value)}");
+        value.removeWhere((element) => element == 0);
+        String handlebarState = ascii.decode(value).trim();
+        if (handlebarState == "unlocked") {
+          _handlebarController.add(false);
+        } else {
+          _handlebarController.add(true);
+        }
       });
     } catch (e) {
       rethrow;
@@ -157,7 +214,24 @@ class ScooterService {
     }
   }
 
-  void lock() {
+  void lock() async {
+    if (myScooter == null) {
+      throw "Scooter not found!";
+    }
+    if (myScooter!.isDisconnected) {
+      throw "Scooter disconnected!";
+    }
+    if (await seatClosed.last) {
+      throw "Seat is open!";
+    }
+    try {
+      _commandCharacteristic!.write(ascii.encode("scooter:state lock"));
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  void openSeat() {
     if (myScooter == null) {
       throw "Scooter not found!";
     }
@@ -165,7 +239,7 @@ class ScooterService {
       throw "Scooter disconnected!";
     }
     try {
-      _commandCharacteristic!.write(ascii.encode("scooter:state lock"));
+      _commandCharacteristic!.write(ascii.encode("scooter:seatbox open"));
     } catch (e) {
       rethrow;
     }
