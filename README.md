@@ -1,4 +1,4 @@
-<img src='images/logo.png' width='360'>
+<img src='images/readme_logo.png' width='360'>
 
 ```
 Anastasis, noun - a recovery from a debilitating condition. Rebirth, resurrection.
