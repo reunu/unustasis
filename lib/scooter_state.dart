@@ -29,6 +29,9 @@ enum ScooterState {
         return ScooterState.ready;
       case "hibernating":
         return ScooterState.hibernating;
+      case "":
+        // this is somethimes sent during standby, off or hibernating...
+        return ScooterState.unknown;
       default:
         log("Unknown state: $stateString");
         return ScooterState.unknown;
@@ -71,7 +74,7 @@ extension StateExtension on ScooterState {
       case ScooterState.hibernating:
         return "Hibernating";
       case ScooterState.unknown:
-        return "Unknown state";
+        return "Connected"; // we know the state
       case ScooterState.disconnected:
         return "Disconnected";
     }
@@ -92,9 +95,19 @@ extension StateExtension on ScooterState {
       case ScooterState.hibernating:
         return "Your scooter is in hibernation mode";
       case ScooterState.unknown:
-        return "Your scooter is currently in a state that this app can't handle";
+        return "Your scooter is connected";
       case ScooterState.disconnected:
         return "Your scooter is not connected";
+    }
+  }
+
+  bool get isOn {
+    switch (this) {
+      case ScooterState.parked:
+      case ScooterState.ready:
+        return true;
+      default:
+        return false;
     }
   }
 }

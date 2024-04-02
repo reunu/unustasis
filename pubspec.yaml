@@ -48,6 +48,19 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^3.0.0
+  flutter_launcher_icons:
+    git: https://github.com/fluttercommunity/flutter_launcher_icons
+
+flutter_launcher_icons:
+  android: true
+  image_path: "icon/icon.png"
+  adaptive_icon_background: "icon/icon_background.png"
+  adaptive_icon_foreground: "icon/icon_foreground.png"
+  adaptive_icon_monochrome: "icon/icon_monochrome.png"
+  min_sdk_android: 21 # android min sdk min:16, default 21
+  ios: true
+  remove_alpha_ios: true
+  
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -61,9 +74,13 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
+  assets:
+    - images/scooter/base.png
+    - images/scooter/disconnected.png
+    - images/scooter/light_beam.png
+    - images/scooter/light_ring.png
+    - images/scooter/blinker_l.png
+    - images/scooter/blinker_r.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware
