@@ -1,4 +1,2 @@
 - Initial GitHub release
-- Everything is broken
-- Nothing works
-- Sorry, working on it
+- Still very broken, working on it
