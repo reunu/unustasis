@@ -47,7 +47,7 @@ class ScooterService {
     List<BluetoothDevice> systemDevices = await FlutterBluePlus.systemDevices;
     List<BluetoothDevice> systemScooters = [];
     for (var device in systemDevices) {
-      if (device.advName == "unu Scooter" || device.platformName == "unu Scooter" ||
+      if (device.advName == "unu Scooter" ||
           device.remoteId.toString() == await _getSavedScooter()) {
         // That's a scooter!
         systemScooters.add(device);
