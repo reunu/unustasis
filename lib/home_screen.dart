@@ -95,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 32, vertical: 24),
+                            horizontal: 16, vertical: 12),
                       ),
                       onPressed: _connected && _seatClosed
                           ? widget.scooterService.openSeat
@@ -113,8 +113,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 32, vertical: 24),
-                      ),
+                            horizontal: 16, vertical: 12),
+                    ),
                       onPressed: _connected
                           ? (_scooterState.isOn
                               ? () {
@@ -133,8 +133,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 32, vertical: 24),
-                      ),
+                            horizontal: 16, vertical: 12),
+                    ),
                       onPressed: widget.scooterService.start,
                       icon: const Icon(Icons.refresh),
                       label: const Text("Reset"),
