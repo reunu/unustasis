@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:unustasis/home_screen.dart';
 import 'package:unustasis/scooter_service.dart';
 
@@ -16,6 +17,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Unustasis',
       darkTheme: ThemeData(
+        textTheme: GoogleFonts.nunitoTextTheme(
+            ThemeData(brightness: Brightness.dark).textTheme),
         brightness: Brightness.dark,
         useMaterial3: true,
         colorScheme: ColorScheme.dark(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:unustasis/control_screen.dart';
 import 'package:unustasis/scooter_service.dart';
 import 'package:unustasis/scooter_state.dart';
 import 'package:unustasis/scooter_visual.dart';
@@ -51,14 +52,19 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
+      body: AnimatedContainer(
+        duration: const Duration(milliseconds: 500),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+            begin: Alignment.bottomCenter,
+            end: Alignment.topCenter,
             colors: [
               Colors.black,
-              Theme.of(context).colorScheme.background,
+              _scooterState.isOn
+                  ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
+                  : _connected
+                      ? Theme.of(context).colorScheme.surface
+                      : Theme.of(context).colorScheme.background,
             ],
           ),
         ),
@@ -119,9 +125,15 @@ class _HomeScreenState extends State<HomeScreen> {
                             ? "Hold to lock"
                             : "Hold to unlock"),
                     ScooterActionButton(
-                        onPressed: widget.scooterService.start,
-                        icon: Icons.refresh,
-                        label: "Refresh")
+                        onPressed: () {
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => ControlScreen(
+                                      scooterService: widget.scooterService)));
+                        },
+                        icon: Icons.more_vert,
+                        label: "Controls"),
                   ],
                 )
               ],
@@ -155,6 +167,27 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
           ],
+        );
+      },
+    );
+  }
+
+  Route _createControlRoute() {
+    return PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => ControlScreen(
+        scooterService: widget.scooterService,
+      ),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        const begin = Offset(0.0, 1.0);
+        const end = Offset.zero;
+        const curve = Curves.easeInOut;
+
+        var tween =
+            Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+
+        return SlideTransition(
+          position: animation.drive(tween),
+          child: child,
         );
       },
     );
