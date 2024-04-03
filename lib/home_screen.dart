@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:unustasis/control_screen.dart';
 import 'package:unustasis/scooter_service.dart';
 import 'package:unustasis/scooter_state.dart';
 import 'package:unustasis/scooter_visual.dart';
@@ -51,14 +52,19 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
+      body: AnimatedContainer(
+        duration: const Duration(milliseconds: 500),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+            begin: Alignment.bottomCenter,
+            end: Alignment.topCenter,
             colors: [
               Colors.black,
-              Theme.of(context).colorScheme.background,
+              _scooterState.isOn
+                  ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
+                  : _connected
+                      ? Theme.of(context).colorScheme.surface
+                      : Theme.of(context).colorScheme.background,
             ],
           ),
         ),
@@ -72,7 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisSize: MainAxisSize.max,
               children: [
                 Text(
-                  "unu Scooter Pro",
+                  "Scooter Pro",
                   style: Theme.of(context).textTheme.headlineLarge,
                 ),
                 Text(
@@ -92,53 +98,44 @@ class _HomeScreenState extends State<HomeScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   mainAxisSize: MainAxisSize.max,
                   children: [
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 32, vertical: 24),
-                      ),
-                      onPressed: _connected && _seatClosed
+                    ScooterActionButton(
+                      onPressed: _connected && _scooterState.isOn && _seatClosed
                           ? widget.scooterService.openSeat
                           : null,
-                      icon: const Icon(Icons.work_outline),
-                      label: _seatClosed
-                          ? const Text("Open Seat")
-                          : Text(
-                              "Seat is open!",
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.error,
-                              ),
-                            ),
-                    ),
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 32, vertical: 24),
-                      ),
-                      onPressed: _connected
-                          ? (_scooterState.isOn
-                              ? () {
-                                  if (!_seatClosed) {
-                                    showSeatWarning();
-                                  } else {
-                                    widget.scooterService.lock();
-                                  }
-                                }
-                              : widget.scooterService.unlock)
+                      label: _seatClosed ? "Open seat" : "Seat is open!",
+                      icon: Icons.work_outline,
+                      iconColor: !_seatClosed
+                          ? Theme.of(context).colorScheme.error
                           : null,
-                      icon: Icon(
-                          _scooterState.isOn ? Icons.lock : Icons.lock_open),
-                      label: Text(_scooterState.isOn ? "Lock" : "Unlock"),
                     ),
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 32, vertical: 24),
-                      ),
-                      onPressed: widget.scooterService.start,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text("Reset"),
-                    ),
+                    ScooterPowerButton(
+                        action: _connected
+                            ? (_scooterState.isOn
+                                ? () {
+                                    if (!_seatClosed) {
+                                      showSeatWarning();
+                                    } else {
+                                      widget.scooterService.lock();
+                                    }
+                                  }
+                                : widget.scooterService.unlock)
+                            : null,
+                        icon: _scooterState.isOn
+                            ? Icons.lock_open
+                            : Icons.lock_outline,
+                        label: _scooterState.isOn
+                            ? "Hold to lock"
+                            : "Hold to unlock"),
+                    ScooterActionButton(
+                        onPressed: () {
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => ControlScreen(
+                                      scooterService: widget.scooterService)));
+                        },
+                        icon: Icons.more_vert,
+                        label: "Controls"),
                   ],
                 )
               ],
@@ -174,6 +171,149 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         );
       },
+    );
+  }
+
+  Route _createControlRoute() {
+    return PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => ControlScreen(
+        scooterService: widget.scooterService,
+      ),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        const begin = Offset(0.0, 1.0);
+        const end = Offset.zero;
+        const curve = Curves.easeInOut;
+
+        var tween =
+            Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+
+        return SlideTransition(
+          position: animation.drive(tween),
+          child: child,
+        );
+      },
+    );
+  }
+}
+
+class ScooterPowerButton extends StatefulWidget {
+  const ScooterPowerButton({
+    super.key,
+    required void Function()? action,
+    Widget? child,
+    required IconData icon,
+    required String label,
+  })  : _action = action,
+        _icon = icon,
+        _label = label;
+
+  final void Function()? _action;
+  final String _label;
+  final IconData _icon;
+
+  @override
+  State<ScooterPowerButton> createState() => _ScooterPowerButtonState();
+}
+
+class _ScooterPowerButtonState extends State<ScooterPowerButton> {
+  bool loading = false;
+
+  @override
+  Widget build(BuildContext context) {
+    Color mainColor = widget._action == null
+        ? Theme.of(context).colorScheme.onSurface.withOpacity(0.2)
+        : Theme.of(context).colorScheme.onSurface;
+    return Column(
+      children: [
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+            backgroundColor: mainColor,
+          ),
+          onPressed: () {
+            ScaffoldMessenger.of(context)
+                .showSnackBar(SnackBar(content: Text(widget._label)));
+          },
+          onLongPress: widget._action == null
+              ? null
+              : () {
+                  setState(() {
+                    loading = true;
+                  });
+                  widget._action!();
+                  Future.delayed(const Duration(seconds: 5), () {
+                    setState(() {
+                      loading = false;
+                    });
+                  });
+                },
+          child: loading
+              ? CircularProgressIndicator(
+                  color: Theme.of(context).colorScheme.background,
+                )
+              : Icon(
+                  widget._icon,
+                  color: Theme.of(context).colorScheme.background,
+                ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          widget._label,
+          style: TextStyle(
+            color: mainColor,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class ScooterActionButton extends StatelessWidget {
+  const ScooterActionButton({
+    super.key,
+    required void Function()? onPressed,
+    required IconData icon,
+    Color? iconColor,
+    required String label,
+  })  : _onPressed = onPressed,
+        _icon = icon,
+        _iconColor = iconColor,
+        _label = label;
+
+  final void Function()? _onPressed;
+  final IconData _icon;
+  final String _label;
+  final Color? _iconColor;
+
+  @override
+  Widget build(BuildContext context) {
+    Color mainColor = _iconColor ??
+        (_onPressed == null
+            ? Theme.of(context).colorScheme.onBackground.withOpacity(0.2)
+            : Theme.of(context).colorScheme.onBackground);
+    return Column(
+      children: [
+        OutlinedButton(
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.all(24),
+            side: BorderSide(
+              color: mainColor,
+            ),
+          ),
+          onPressed: _onPressed,
+          child: Icon(
+            _icon,
+            color: mainColor,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          _label,
+          style: TextStyle(
+            color: mainColor,
+          ),
+        ),
+      ],
     );
   }
 }

@@ -80,7 +80,8 @@ class ScooterService {
   void start() async {
     _connectedController.add(false);
     _stateController.add(ScooterState.disconnected);
-    _seatController.add(false);
+    _seatController.add(true);
+    _handlebarController.add(true);
     // First, see if the phone is already connected to a scooter
     List<BluetoothDevice> systemScooters = await getSystemScooters();
     if (systemScooters.isNotEmpty) {
@@ -201,6 +202,7 @@ class ScooterService {
   // SCOOTER ACTIONS
 
   void unlock() {
+    log("Sending unlock command");
     if (myScooter == null) {
       throw "Scooter not found!";
     }
@@ -215,6 +217,7 @@ class ScooterService {
   }
 
   void lock() async {
+    log("Sending lock command");
     if (myScooter == null) {
       throw "Scooter not found!";
     }
