@@ -99,7 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   mainAxisSize: MainAxisSize.max,
                   children: [
                     ScooterActionButton(
-                      onPressed: _connected && _seatClosed
+                      onPressed: _connected && _scooterState.isOn && _seatClosed
                           ? widget.scooterService.openSeat
                           : null,
                       label: _seatClosed ? "Open seat" : "Seat is open!",
@@ -120,7 +120,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                   }
                                 : widget.scooterService.unlock)
                             : null,
-                        icon: _scooterState.isOn ? Icons.lock : Icons.lock_open,
+                        icon: _scooterState.isOn
+                            ? Icons.lock_open
+                            : Icons.lock_outline,
                         label: _scooterState.isOn
                             ? "Hold to lock"
                             : "Hold to unlock"),
@@ -234,14 +236,15 @@ class _ScooterPowerButtonState extends State<ScooterPowerButton> {
           },
           onLongPress: widget._action == null
               ? null
-              : () async {
+              : () {
                   setState(() {
                     loading = true;
                   });
                   widget._action!();
-                  await Future.delayed(const Duration(seconds: 10));
-                  setState(() {
-                    loading = false;
+                  Future.delayed(const Duration(seconds: 5), () {
+                    setState(() {
+                      loading = false;
+                    });
                   });
                 },
           child: loading
