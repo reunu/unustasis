@@ -235,73 +235,46 @@ class ScooterService {
   // SCOOTER ACTIONS
 
   void unlock() {
-    log("Sending unlock command");
-    if (myScooter == null) {
-      throw "Scooter not found!";
-    }
-    if (myScooter!.isDisconnected) {
-      throw "Scooter disconnected!";
-    }
-    try {
-      _commandCharacteristic!.write(ascii.encode("scooter:state unlock"));
-    } catch (e) {
-      rethrow;
-    }
+    _sendCommand("scooter:state unlock");
   }
 
   void lock() {
-    log("Sending lock command");
-    if (myScooter == null) {
-      throw "Scooter not found!";
-    }
-    if (myScooter!.isDisconnected) {
-      throw "Scooter disconnected!";
-    }
     // double check for open seat, maybe?
-    try {
-      _commandCharacteristic!.write(ascii.encode("scooter:state lock"));
-    } catch (e) {
-      rethrow;
-    }
+    _sendCommand("scooter:state lock");
   }
 
   void openSeat() {
-    if (myScooter == null) {
-      throw "Scooter not found!";
-    }
-    if (myScooter!.isDisconnected) {
-      throw "Scooter disconnected!";
-    }
-    try {
-      _commandCharacteristic!.write(ascii.encode("scooter:seatbox open"));
-    } catch (e) {
-      rethrow;
-    }
+    _sendCommand("scooter:seatbox open");
   }
 
   void blink({required bool left, required bool right}) {
-    if (myScooter == null) {
-      throw "Scooter not found!";
-    }
-    if (myScooter!.isDisconnected) {
-      throw "Scooter disconnected!";
-    }
-    try {
-      if (left && !right) {
-        _commandCharacteristic!.write(ascii.encode("scooter:blinker left"));
-      } else if (!left && right) {
-        _commandCharacteristic!.write(ascii.encode("scooter:blinker right"));
-      } else if (left && right) {
-        _commandCharacteristic!.write(ascii.encode("scooter:blinker both"));
-      } else {
-        _commandCharacteristic!.write(ascii.encode("scooter:blinker off"));
-      }
-    } catch (e) {
-      rethrow;
+    if (left && !right) {
+      _sendCommand("scooter:blinker left");
+    } else if (!left && right) {
+      _sendCommand("scooter:blinker right");
+    } else if (left && right) {
+      _sendCommand("scooter:blinker both");
+    } else {
+      _sendCommand("scooter:blinker off");
     }
   }
 
   // HELPER FUNCTIONS
+
+  void _sendCommand(String command) {
+    log("Sending command: $command");
+    if (myScooter == null) {
+      throw "Scooter not found!";
+    }
+    if (myScooter!.isDisconnected) {
+      throw "Scooter disconnected!";
+    }
+    try {
+      _commandCharacteristic!.write(ascii.encode(command));
+    } catch (e) {
+      rethrow;
+    }
+  }
 
   Future<String?> _getSavedScooter() async {
     if (savedScooterId != null) {
