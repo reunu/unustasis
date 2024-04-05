@@ -214,14 +214,14 @@ class ScooterService {
       // Subscribe to primary SOC
       _primarySOCCharacteristic!.setNotifyValue(true);
       _primarySOCCharacteristic!.lastValueStream.listen((value) {
-        int soc = _convertUint32ToInt(value) ?? -1;
+        int soc = _convertUint32ToInt(value) ?? 100;
         log("Primary SOC received: $soc");
         _primarySOCController.add(soc);
       });
       // Subscribe to secondary SOC
       _secondarySOCCharacteristic!.setNotifyValue(true);
       _secondarySOCCharacteristic!.lastValueStream.listen((value) {
-        int soc = _convertUint32ToInt(value) ?? -1;
+        int soc = _convertUint32ToInt(value) ?? 100;
         log("Secondary SOC received: $soc");
         _secondarySOCController.add(soc);
       });
