@@ -149,6 +149,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: ScooterVisual(
                   state: _scooterState,
                   scanning: _scanning,
+                  blinkerLeft: false, // TODO: extract ScooterBlinkerState
+                  blinkerRight: false
                 )),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
