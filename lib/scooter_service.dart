@@ -195,11 +195,7 @@ class ScooterService {
         },
       );
       // Subscribe to seat
-      _seatCharacteristic!.setNotifyValue(true);
-      _seatCharacteristic!.lastValueStream.listen((value) {
-        log("Seat received: ${ascii.decode(value)}");
-        value.removeWhere((element) => element == 0);
-        String seatState = ascii.decode(value).trim();
+      _subscribeBoolean(_seatCharacteristic!, "Seat", (String seatState) {
         if (seatState == "open") {
           _seatController.add(false);
         } else {
@@ -207,11 +203,8 @@ class ScooterService {
         }
       });
       // Subscribe to handlebars
-      _handlebarCharacteristic!.setNotifyValue(true);
-      _handlebarCharacteristic!.lastValueStream.listen((value) {
-        log("Handlebars received: ${ascii.decode(value)}");
-        value.removeWhere((element) => element == 0);
-        String handlebarState = ascii.decode(value).trim();
+      _subscribeBoolean(_handlebarCharacteristic!, "Handlebars",
+          (String handlebarState) {
         if (handlebarState == "unlocked") {
           _handlebarController.add(false);
         } else {
@@ -280,6 +273,18 @@ class ScooterService {
   }
 
   // HELPER FUNCTIONS
+
+  void _subscribeBoolean(
+      BluetoothCharacteristic characteristic, String name, Function callback) {
+    // Subscribe to seat
+    characteristic.setNotifyValue(true);
+    characteristic.lastValueStream.listen((value) {
+      log("$name received: ${ascii.decode(value)}");
+      value.removeWhere((element) => element == 0);
+      String state = ascii.decode(value).trim();
+      callback(state);
+    });
+  }
 
   void _sendCommand(String command) {
     log("Sending command: $command");
