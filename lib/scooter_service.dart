@@ -203,14 +203,14 @@ class ScooterService {
       // Subscribe to primary SOC
       _primarySOCCharacteristic!.setNotifyValue(true);
       _primarySOCCharacteristic!.lastValueStream.listen((value) {
-        int soc = convertUint32ToInt(value) ?? 100;
+        int soc = _convertUint32ToInt(value) ?? -1;
         log("Primary SOC received: $soc");
         _primarySOCController.add(soc);
       });
       // Subscribe to secondary SOC
       _secondarySOCCharacteristic!.setNotifyValue(true);
       _secondarySOCCharacteristic!.lastValueStream.listen((value) {
-        int soc = convertUint32ToInt(value) ?? 100;
+        int soc = _convertUint32ToInt(value) ?? -1;
         log("Secondary SOC received: $soc");
         _secondarySOCController.add(soc);
       });
@@ -323,7 +323,7 @@ class ScooterService {
   }
 
   // thanks gemini advanced <3
-  int? convertUint32ToInt(List<int> uint32data) {
+  int? _convertUint32ToInt(List<int> uint32data) {
     log("Converting $uint32data to int.");
     if (uint32data.length != 4) {
       log("Received empty data for uint32 conversion. Ignoring.");
