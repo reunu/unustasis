@@ -14,8 +14,6 @@ class ScooterVisual extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var anyBlinker = blinkerLeft || blinkerRight;
-
     return SizedBox(
       width: MediaQuery.of(context).size.width * 0.6,
       child: Stack(
@@ -47,10 +45,10 @@ class ScooterVisual extends StatelessWidget {
               image: AssetImage("images/scooter/light_beam.png"),
             ),
           ),
-          anyBlinker ? BlinkerWidget(
+          BlinkerWidget(
             blinkerLeft: blinkerLeft,
             blinkerRight: blinkerRight
-          ) : SizedBox(),
+          ),
           // these can even be timed
           CircularProgressIndicator(
             value: scanning || state == ScooterState.shuttingDown ? null : 0.0,
@@ -108,9 +106,13 @@ class _BlinkerWidgetState extends State<BlinkerWidget> {
   void initState() {
     super.initState();
 
-    _timer = Timer.periodic(Duration(seconds: 1), (Timer t) {
-      setState(() => _showBlinker = !_showBlinker);
-    });
+    var anyBlinker = _blinkerLeft || _blinkerRight;
+
+    if (anyBlinker) {
+      _timer = Timer.periodic(Duration(seconds: 1), (Timer t) {
+        setState(() => _showBlinker = !_showBlinker);
+      });
+    }
   }
 
   @override
