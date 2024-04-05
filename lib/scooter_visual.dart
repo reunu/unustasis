@@ -97,13 +97,10 @@ class BlinkerWidget extends StatefulWidget {
 class _BlinkerWidgetState extends State<BlinkerWidget> {
   final bool _blinkerLeft;
   final bool _blinkerRight;
-
-  // Variable to track whether to show the image or not
   bool _showBlinker = true;
 
   // Timer to toggle the image every second
   late Timer _timer;
-
 
   _BlinkerWidgetState(this._blinkerLeft, this._blinkerRight);
 
@@ -111,12 +108,8 @@ class _BlinkerWidgetState extends State<BlinkerWidget> {
   void initState() {
     super.initState();
 
-    // Create a timer that toggles the image every second
     _timer = Timer.periodic(Duration(seconds: 1), (Timer t) {
-      // Update the state to toggle the image
-      setState(() {
-        _showBlinker = !_showBlinker;
-      });
+      setState(() => _showBlinker = !_showBlinker);
     });
   }
 
