@@ -38,6 +38,7 @@ class _ControlScreenState extends State<ControlScreen> {
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   ScooterActionButton(
                     onPressed: widget._scooterService.lock,
@@ -53,6 +54,46 @@ class _ControlScreenState extends State<ControlScreen> {
                     onPressed: widget._scooterService.start,
                     icon: Icons.refresh,
                     label: "Refresh",
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ScooterActionButton(
+                    onPressed: () =>
+                        widget._scooterService.blink(left: true, right: false),
+                    icon: Icons.arrow_back_ios_new_rounded,
+                    label: "Blink left",
+                  ),
+                  ScooterActionButton(
+                    onPressed: () =>
+                        widget._scooterService.blink(left: true, right: true),
+                    icon: Icons.code_rounded,
+                    label: "Blink both",
+                  ),
+                  ScooterActionButton(
+                    onPressed: () =>
+                        widget._scooterService.blink(left: false, right: true),
+                    icon: Icons.arrow_forward_ios_rounded,
+                    label: "Blink right",
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ScooterActionButton(
+                    onPressed: () =>
+                        widget._scooterService.blink(left: false, right: false),
+                    icon: Icons.code_off_rounded,
+                    label: "Blinkers off",
                   ),
                 ],
               ),

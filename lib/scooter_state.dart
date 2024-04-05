@@ -54,7 +54,7 @@ extension StateExtension on ScooterState {
       case ScooterState.unknown:
       case ScooterState.disconnected:
       default:
-        // scooter is disconnected or in a bad state
+        // scooter is disconnected or in a bad state (like Bavaria or sth)
         return Colors.grey.shade800;
     }
   }
@@ -74,7 +74,7 @@ extension StateExtension on ScooterState {
       case ScooterState.hibernating:
         return "Hibernating";
       case ScooterState.unknown:
-        return "Connected"; // we know the state
+        return "Connected"; // Unknown state, but at least we know A state
       case ScooterState.disconnected:
         return "Disconnected";
     }

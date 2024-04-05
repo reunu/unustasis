@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:unustasis/control_screen.dart';
 import 'package:unustasis/scooter_service.dart';
@@ -18,6 +20,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _scanning = false;
   bool _seatClosed = true;
   bool _handlebarsLocked = true;
+  int _primarySOC = 100;
+  int _secondarySOC = 100;
 
   @override
   void initState() {
@@ -36,6 +40,7 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _scanning = isScanning;
       });
+      log("Scanning: $isScanning");
     });
     widget.scooterService.seatClosed.listen((isClosed) {
       setState(() {
@@ -45,6 +50,16 @@ class _HomeScreenState extends State<HomeScreen> {
     widget.scooterService.handlebarsLocked.listen((isLocked) {
       setState(() {
         _handlebarsLocked = isLocked;
+      });
+    });
+    widget.scooterService.primarySOC.listen((soc) {
+      setState(() {
+        _primarySOC = soc;
+      });
+    });
+    widget.scooterService.secondarySOC.listen((soc) {
+      setState(() {
+        _secondarySOC = soc;
       });
     });
   }
@@ -82,12 +97,42 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: Theme.of(context).textTheme.headlineLarge,
                 ),
                 Text(
-                  _scanning ? "Scanning..." : _scooterState.name,
+                  _scanning
+                      ? "Scanning..."
+                      : (_scooterState.name +
+                          (_connected && !_handlebarsLocked
+                              ? " - Unlocked"
+                              : "")),
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
-                Text(
-                  _connected ? (_handlebarsLocked ? "Locked" : "Unlocked") : "",
-                  style: Theme.of(context).textTheme.titleMedium,
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                        width: MediaQuery.of(context).size.width / 6,
+                        child: LinearProgressIndicator(
+                          minHeight: 8,
+                          borderRadius: BorderRadius.circular(8),
+                          value: _primarySOC / 100.0,
+                          color: Theme.of(context).colorScheme.primary,
+                        )),
+                    const SizedBox(width: 8),
+                    Text("$_primarySOC%"),
+                    _secondarySOC > 0 ? const VerticalDivider() : Container(),
+                    _secondarySOC > 0
+                        ? SizedBox(
+                            width: MediaQuery.of(context).size.width / 6,
+                            child: LinearProgressIndicator(
+                              minHeight: 8,
+                              borderRadius: BorderRadius.circular(8),
+                              value: _secondarySOC / 100.0,
+                              color: Theme.of(context).colorScheme.primary,
+                            ))
+                        : Container(),
+                    _secondarySOC > 0 ? const SizedBox(width: 8) : Container(),
+                    _secondarySOC > 0 ? Text("$_secondarySOC%") : Container(),
+                  ],
                 ),
                 Expanded(
                     child: ScooterVisual(
