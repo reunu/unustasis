@@ -160,12 +160,30 @@ class ScooterService {
     }
     try {
       await scooter.discoverServices();
-      _commandCharacteristic = _findCharacteristic(myScooter!, "9a590000-6e67-5d0d-aab9-ad9126b66f91", "9a590001-6e67-5d0d-aab9-ad9126b66f91");
-      _stateCharacteristic = _findCharacteristic(myScooter!, "9a590020-6e67-5d0d-aab9-ad9126b66f91", "9a590021-6e67-5d0d-aab9-ad9126b66f91");
-      _seatCharacteristic = _findCharacteristic(myScooter!, "9a590020-6e67-5d0d-aab9-ad9126b66f91", "9a590022-6e67-5d0d-aab9-ad9126b66f91");
-      _handlebarCharacteristic = _findCharacteristic(myScooter!, "9a590020-6e67-5d0d-aab9-ad9126b66f91", "9a590023-6e67-5d0d-aab9-ad9126b66f91");
-      _primarySOCCharacteristic = _findCharacteristic(myScooter!, "9a5900e0-6e67-5d0d-aab9-ad9126b66f91", "9a5900e9-6e67-5d0d-aab9-ad9126b66f91");
-      _secondarySOCCharacteristic = _findCharacteristic(myScooter!, "9a590060-6e67-5d0d-aab9-ad9126b66f91", "9a590061-6e67-5d0d-aab9-ad9126b66f91");
+      _commandCharacteristic = _findCharacteristic(
+          myScooter!,
+          "9a590000-6e67-5d0d-aab9-ad9126b66f91",
+          "9a590001-6e67-5d0d-aab9-ad9126b66f91");
+      _stateCharacteristic = _findCharacteristic(
+          myScooter!,
+          "9a590020-6e67-5d0d-aab9-ad9126b66f91",
+          "9a590021-6e67-5d0d-aab9-ad9126b66f91");
+      _seatCharacteristic = _findCharacteristic(
+          myScooter!,
+          "9a590020-6e67-5d0d-aab9-ad9126b66f91",
+          "9a590022-6e67-5d0d-aab9-ad9126b66f91");
+      _handlebarCharacteristic = _findCharacteristic(
+          myScooter!,
+          "9a590020-6e67-5d0d-aab9-ad9126b66f91",
+          "9a590023-6e67-5d0d-aab9-ad9126b66f91");
+      _primarySOCCharacteristic = _findCharacteristic(
+          myScooter!,
+          "9a5900e0-6e67-5d0d-aab9-ad9126b66f91",
+          "9a5900e9-6e67-5d0d-aab9-ad9126b66f91");
+      _secondarySOCCharacteristic = _findCharacteristic(
+          myScooter!,
+          "9a590060-6e67-5d0d-aab9-ad9126b66f91",
+          "9a590061-6e67-5d0d-aab9-ad9126b66f91");
       // subscribe to a bunch of values
       // Subscribe to state
       _stateCharacteristic!.setNotifyValue(true);
@@ -225,11 +243,13 @@ class ScooterService {
     }
   }
 
-  BluetoothCharacteristic? _findCharacteristic(BluetoothDevice device, String serviceUuid, String characteristicUuid) {
+  BluetoothCharacteristic? _findCharacteristic(
+      BluetoothDevice device, String serviceUuid, String characteristicUuid) {
     return device.servicesList
         .firstWhere((service) => service.serviceUuid.toString() == serviceUuid)
         .characteristics
-        .firstWhere((char) => char.characteristicUuid.toString() == characteristicUuid);
+        .firstWhere(
+            (char) => char.characteristicUuid.toString() == characteristicUuid);
   }
 
   // SCOOTER ACTIONS
