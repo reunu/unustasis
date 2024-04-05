@@ -122,19 +122,24 @@ class _BlinkerWidgetState extends State<BlinkerWidget> {
 
   @override
   Widget build(BuildContext context) {
+    const blinkerDuration = Duration(milliseconds: 200);
+
+    var showBlinkerLeft = _showBlinker && _blinkerLeft;
+    var showBlinkerRight = _showBlinker && _blinkerRight;
+
     return Stack(
       alignment: Alignment.center,
       children: [
         AnimatedOpacity(
-          opacity: _showBlinker && _blinkerLeft ? 1.0 : 0.0,
-          duration: const Duration(milliseconds: 200),
+          opacity: showBlinkerLeft ? 1.0 : 0.0,
+          duration: blinkerDuration,
           child: const Image(
             image: AssetImage("images/scooter/blinker_l.png"),
           ),
         ),
         AnimatedOpacity(
-          opacity: _showBlinker && _blinkerRight ? 1.0 : 0.0,
-          duration: const Duration(milliseconds: 200),
+          opacity: showBlinkerRight ? 1.0 : 0.0,
+          duration: blinkerDuration,
           child: const Image(
             image: AssetImage("images/scooter/blinker_r.png"),
           ),
