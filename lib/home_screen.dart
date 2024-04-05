@@ -98,7 +98,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 Text(
                   _scanning
-                      ? "Scanning..."
+                      ? (widget.scooterService.savedScooterId != null
+                          ? "Searching for your scooter..."
+                          : "Scanning for scooters...")
                       : (_scooterState.name +
                           (_connected && !_handlebarsLocked
                               ? " - Unlocked"
