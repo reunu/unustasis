@@ -106,34 +106,43 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                        width: MediaQuery.of(context).size.width / 6,
-                        child: LinearProgressIndicator(
-                          minHeight: 8,
-                          borderRadius: BorderRadius.circular(8),
-                          value: _primarySOC / 100.0,
-                          color: Theme.of(context).colorScheme.primary,
-                        )),
-                    const SizedBox(width: 8),
-                    Text("$_primarySOC%"),
-                    _secondarySOC > 0 ? const VerticalDivider() : Container(),
-                    _secondarySOC > 0
-                        ? SizedBox(
-                            width: MediaQuery.of(context).size.width / 6,
-                            child: LinearProgressIndicator(
-                              minHeight: 8,
-                              borderRadius: BorderRadius.circular(8),
-                              value: _secondarySOC / 100.0,
-                              color: Theme.of(context).colorScheme.primary,
-                            ))
-                        : Container(),
-                    _secondarySOC > 0 ? const SizedBox(width: 8) : Container(),
-                    _secondarySOC > 0 ? Text("$_secondarySOC%") : Container(),
-                  ],
-                ),
+                _connected
+                    ? Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                              width: MediaQuery.of(context).size.width / 6,
+                              child: LinearProgressIndicator(
+                                minHeight: 8,
+                                borderRadius: BorderRadius.circular(8),
+                                value: _primarySOC / 100.0,
+                                color: Theme.of(context).colorScheme.primary,
+                              )),
+                          const SizedBox(width: 8),
+                          Text("$_primarySOC%"),
+                          _secondarySOC > 0
+                              ? const VerticalDivider()
+                              : Container(),
+                          _secondarySOC > 0
+                              ? SizedBox(
+                                  width: MediaQuery.of(context).size.width / 6,
+                                  child: LinearProgressIndicator(
+                                    minHeight: 8,
+                                    borderRadius: BorderRadius.circular(8),
+                                    value: _secondarySOC / 100.0,
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
+                                  ))
+                              : Container(),
+                          _secondarySOC > 0
+                              ? const SizedBox(width: 8)
+                              : Container(),
+                          _secondarySOC > 0
+                              ? Text("$_secondarySOC%")
+                              : Container(),
+                        ],
+                      )
+                    : Container(),
                 Expanded(
                     child: ScooterVisual(
                   state: _scooterState,
