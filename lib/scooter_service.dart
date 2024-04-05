@@ -183,7 +183,7 @@ class ScooterService {
       _seatCharacteristic = myScooter!.servicesList
           .firstWhere((service) {
             return service.serviceUuid.toString() ==
-                "9a590020-6e67-5d0d-aab9-ad9126b66f91";
+                "9a590022-6e67-5d0d-aab9-ad9126b66f91";
           })
           .characteristics
           .firstWhere((char) {
