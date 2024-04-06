@@ -182,8 +182,8 @@ class ScooterService {
           "9a5900e9-6e67-5d0d-aab9-ad9126b66f91");
       _secondarySOCCharacteristic = _findCharacteristic(
           myScooter!,
-          "9a590060-6e67-5d0d-aab9-ad9126b66f91",
-          "9a590061-6e67-5d0d-aab9-ad9126b66f91");
+          "9a5900e0-6e67-5d0d-aab9-ad9126b66f91",
+          "9a5900f2-6e67-5d0d-aab9-ad9126b66f91");
       // subscribe to a bunch of values
       // Subscribe to state
       _stateCharacteristic!.setNotifyValue(true);
