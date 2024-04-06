@@ -20,6 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _scanning = false;
   bool _seatClosed = true;
   bool _handlebarsLocked = true;
+  int _internalCbbSOC = 100;
   int _primarySOC = 100;
   int _secondarySOC = 100;
 
@@ -50,6 +51,11 @@ class _HomeScreenState extends State<HomeScreen> {
     widget.scooterService.handlebarsLocked.listen((isLocked) {
       setState(() {
         _handlebarsLocked = isLocked;
+      });
+    });
+    widget.scooterService.internalCbbSOC.listen((soc) {
+      setState(() {
+        _internalCbbSOC = soc;
       });
     });
     widget.scooterService.primarySOC.listen((soc) {
@@ -110,10 +116,37 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 16),
                 _connected
                     ? Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                              width: MediaQuery.of(context).size.width / 6,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: MediaQuery.of(context).size.width / 10,
+                      child: const Text("CBB", textAlign: TextAlign.right),
+                    ),
+                    const SizedBox(width: 8),
+                    SizedBox(
+                        width: MediaQuery.of(context).size.width / 6,
+                        child: LinearProgressIndicator(
+                          minHeight: 8,
+                          borderRadius: BorderRadius.circular(8),
+                          value: _internalCbbSOC / 100.0,
+                          color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.4),
+                        )),
+                    const SizedBox(width: 8),
+                    Text("$_internalCbbSOC%"),
+                  ],
+                ) : Container(),
+                const SizedBox(height: 16),
+                _connected
+                    ? Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: MediaQuery.of(context).size.width / 10,
+                      child: const Text("MAIN", textAlign: TextAlign.right),
+                    ),
+                    const SizedBox(width: 8),
+                    SizedBox(
+                        width: MediaQuery.of(context).size.width / 6,
                               child: LinearProgressIndicator(
                                 minHeight: 8,
                                 borderRadius: BorderRadius.circular(8),

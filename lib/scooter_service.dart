@@ -17,6 +17,7 @@ class ScooterService {
   BluetoothCharacteristic? _stateCharacteristic;
   BluetoothCharacteristic? _seatCharacteristic;
   BluetoothCharacteristic? _handlebarCharacteristic;
+  BluetoothCharacteristic? _internalCbbSOCCharacteristic;
   BluetoothCharacteristic? _primarySOCCharacteristic;
   BluetoothCharacteristic? _secondarySOCCharacteristic;
 
@@ -51,6 +52,10 @@ class ScooterService {
   final StreamController<bool> _handlebarController =
       StreamController<bool>.broadcast();
   Stream<bool> get handlebarsLocked => _handlebarController.stream;
+
+  final StreamController<int> _internalCbbSOCController =
+  StreamController<int>.broadcast();
+  Stream<int> get internalCbbSOC => _internalCbbSOCController.stream;
 
   final StreamController<int> _primarySOCController =
       StreamController<int>.broadcast();
@@ -176,14 +181,18 @@ class ScooterService {
           myScooter!,
           "9a590020-6e67-5d0d-aab9-ad9126b66f91",
           "9a590023-6e67-5d0d-aab9-ad9126b66f91");
+      _internalCbbSOCCharacteristic = _findCharacteristic(
+          myScooter!,
+          "9a590060-6e67-5d0d-aab9-ad9126b66f91",
+          "9a590061-6e67-5d0d-aab9-ad9126b66f91");
       _primarySOCCharacteristic = _findCharacteristic(
           myScooter!,
           "9a5900e0-6e67-5d0d-aab9-ad9126b66f91",
           "9a5900e9-6e67-5d0d-aab9-ad9126b66f91");
       _secondarySOCCharacteristic = _findCharacteristic(
           myScooter!,
-          "9a590060-6e67-5d0d-aab9-ad9126b66f91",
-          "9a590061-6e67-5d0d-aab9-ad9126b66f91");
+          "9a5900e0-6e67-5d0d-aab9-ad9126b66f91",
+          "9a5900f2-6e67-5d0d-aab9-ad9126b66f91");
       // subscribe to a bunch of values
       // Subscribe to state
       _stateCharacteristic!.setNotifyValue(true);
@@ -211,6 +220,12 @@ class ScooterService {
           _handlebarController.add(true);
         }
       });
+      // Subscribe to internal CBB SOC
+      _internalCbbSOCCharacteristic!.setNotifyValue(true);
+      _internalCbbSOCCharacteristic!.lastValueStream.listen((value) {
+        print("### Internal CBB received: $value");
+        _internalCbbSOCController.add(value.first);
+      });
       // Subscribe to primary SOC
       _primarySOCCharacteristic!.setNotifyValue(true);
       _primarySOCCharacteristic!.lastValueStream.listen((value) {
@@ -229,6 +244,7 @@ class ScooterService {
       _stateCharacteristic!.read();
       _seatCharacteristic!.read();
       _handlebarCharacteristic!.read();
+      _internalCbbSOCCharacteristic!.read();
       _primarySOCCharacteristic!.read();
       _secondarySOCCharacteristic!.read();
     } catch (e) {
