@@ -1,11 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:unustasis/scooter_state.dart';
 
 class ScooterVisual extends StatelessWidget {
   final ScooterState state;
   final bool scanning;
+  final bool blinkerLeft;
+  final bool blinkerRight;
 
-  const ScooterVisual({required this.state, required this.scanning, super.key});
+  const ScooterVisual(
+      {required this.state, required this.scanning, required this.blinkerLeft, required this.blinkerRight, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -40,8 +45,10 @@ class ScooterVisual extends StatelessWidget {
               image: AssetImage("images/scooter/light_beam.png"),
             ),
           ),
-          // TODO blinkers go here eventually
-          // TODO show progress indicators in each button
+          BlinkerWidget(
+            blinkerLeft: blinkerLeft,
+            blinkerRight: blinkerRight
+          ),
           // these can even be timed
           CircularProgressIndicator(
             value: scanning || state == ScooterState.shuttingDown ? null : 0.0,
@@ -72,5 +79,74 @@ class ScooterVisual extends StatelessWidget {
       default:
         return Icons.error;
     }
+  }
+}
+
+class BlinkerWidget extends StatefulWidget {
+  final bool blinkerLeft;
+  final bool blinkerRight;
+
+  const BlinkerWidget({required this.blinkerLeft, required this.blinkerRight, super.key});
+
+  @override
+  _BlinkerWidgetState createState() => _BlinkerWidgetState(blinkerLeft, blinkerRight);
+}
+
+class _BlinkerWidgetState extends State<BlinkerWidget> {
+  final bool _blinkerLeft;
+  final bool _blinkerRight;
+  bool _showBlinker = true;
+
+  // Timer to toggle the image every second
+  late Timer _timer;
+
+  _BlinkerWidgetState(this._blinkerLeft, this._blinkerRight);
+
+  @override
+  void initState() {
+    super.initState();
+
+    var anyBlinker = _blinkerLeft || _blinkerRight;
+
+    if (anyBlinker) {
+      _timer = Timer.periodic(Duration(seconds: 1), (Timer t) {
+        setState(() => _showBlinker = !_showBlinker);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    // Cancel the timer to avoid memory leaks
+    _timer.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const blinkerDuration = Duration(milliseconds: 200);
+
+    var showBlinkerLeft = _showBlinker && _blinkerLeft;
+    var showBlinkerRight = _showBlinker && _blinkerRight;
+
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        AnimatedOpacity(
+          opacity: showBlinkerLeft ? 1.0 : 0.0,
+          duration: blinkerDuration,
+          child: const Image(
+            image: AssetImage("images/scooter/blinker_l.png"),
+          ),
+        ),
+        AnimatedOpacity(
+          opacity: showBlinkerRight ? 1.0 : 0.0,
+          duration: blinkerDuration,
+          child: const Image(
+            image: AssetImage("images/scooter/blinker_r.png"),
+          ),
+        )
+      ]
+    );
   }
 }
