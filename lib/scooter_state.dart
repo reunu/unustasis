@@ -11,6 +11,7 @@ enum ScooterState {
   ready,
   hibernating,
   unknown,
+  linking,
   disconnected;
 
   static ScooterState fromBytes(List<int> bytes) {
@@ -25,7 +26,7 @@ enum ScooterState {
         return ScooterState.parked;
       case "shutting-down":
         return ScooterState.shuttingDown;
-      case "ready":
+      case "ready-to-drive":
         return ScooterState.ready;
       case "hibernating":
         return ScooterState.hibernating;
@@ -77,6 +78,8 @@ extension StateExtension on ScooterState {
         return "Connected"; // Unknown state, but at least we know A state
       case ScooterState.disconnected:
         return "Disconnected";
+      case ScooterState.linking:
+        return "Connecting...";
     }
   }
 
@@ -98,6 +101,8 @@ extension StateExtension on ScooterState {
         return "Your scooter is connected";
       case ScooterState.disconnected:
         return "Your scooter is not connected";
+      case ScooterState.linking:
+        return "Your scooter was found and is connecting to the app...";
     }
   }
 

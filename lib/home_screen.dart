@@ -16,14 +16,13 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  ScooterState _scooterState = ScooterState.disconnected;
+  ScooterState? _scooterState = ScooterState.disconnected;
   bool _connected = false;
   bool _scanning = false;
-  bool _seatClosed = true;
-  bool _handlebarsLocked = true;
-  int _internalCbbSOC = 100;
-  int _primarySOC = 100;
-  int _secondarySOC = 100;
+  bool? _seatClosed;
+  bool? _handlebarsLocked;
+  int? _primarySOC;
+  int? _secondarySOC;
 
   @override
   void initState() {
@@ -54,11 +53,6 @@ class _HomeScreenState extends State<HomeScreen> {
         _handlebarsLocked = isLocked;
       });
     });
-    widget.scooterService.internalCbbSOC.listen((soc) {
-      setState(() {
-        _internalCbbSOC = soc;
-      });
-    });
     widget.scooterService.primarySOC.listen((soc) {
       setState(() {
         _primarySOC = soc;
@@ -82,7 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
             end: Alignment.topCenter,
             colors: [
               Colors.black,
-              _scooterState.isOn
+              _scooterState?.isOn == true
                   ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
                   : _connected
                       ? Theme.of(context).colorScheme.surface
@@ -131,72 +125,47 @@ class _HomeScreenState extends State<HomeScreen> {
                       ? (widget.scooterService.savedScooterId != null
                           ? "Searching for your scooter..."
                           : "Scanning for scooters...")
-                      : (_scooterState.name +
-                          (_connected && !_handlebarsLocked
+                      : ((_scooterState != null
+                              ? _scooterState!.name
+                              : "Loading state") +
+                          (_connected && _handlebarsLocked == false
                               ? " - Unlocked"
                               : "")),
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 16),
-                _connected
+                _connected && _primarySOC != null
                     ? Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width / 10,
-                      child: const Text("CBB", textAlign: TextAlign.right),
-                    ),
-                    const SizedBox(width: 8),
-                    SizedBox(
-                        width: MediaQuery.of(context).size.width / 6,
-                        child: LinearProgressIndicator(
-                          minHeight: 8,
-                          borderRadius: BorderRadius.circular(8),
-                          value: _internalCbbSOC / 100.0,
-                          color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.4),
-                        )),
-                    const SizedBox(width: 8),
-                    Text("$_internalCbbSOC%"),
-                  ],
-                ) : Container(),
-                const SizedBox(height: 16),
-                _connected
-                    ? Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width / 10,
-                      child: const Text("MAIN", textAlign: TextAlign.right),
-                    ),
-                    const SizedBox(width: 8),
-                    SizedBox(
-                        width: MediaQuery.of(context).size.width / 6,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                              width: MediaQuery.of(context).size.width / 6,
                               child: LinearProgressIndicator(
                                 minHeight: 8,
                                 borderRadius: BorderRadius.circular(8),
-                                value: _primarySOC / 100.0,
+                                value: _primarySOC! / 100.0,
                                 color: Theme.of(context).colorScheme.primary,
                               )),
                           const SizedBox(width: 8),
                           Text("$_primarySOC%"),
-                          _secondarySOC > 0
+                          _secondarySOC != null && _secondarySOC! > 0
                               ? const VerticalDivider()
                               : Container(),
-                          _secondarySOC > 0
+                          _secondarySOC != null && _secondarySOC! > 0
                               ? SizedBox(
                                   width: MediaQuery.of(context).size.width / 6,
                                   child: LinearProgressIndicator(
                                     minHeight: 8,
                                     borderRadius: BorderRadius.circular(8),
-                                    value: _secondarySOC / 100.0,
+                                    value: _secondarySOC! / 100.0,
                                     color:
                                         Theme.of(context).colorScheme.primary,
                                   ))
                               : Container(),
-                          _secondarySOC > 0
+                          _secondarySOC != null && _secondarySOC! > 0
                               ? const SizedBox(width: 8)
                               : Container(),
-                          _secondarySOC > 0
+                          _secondarySOC != null && _secondarySOC! > 0
                               ? Text("$_secondarySOC%")
                               : Container(),
                         ],
@@ -213,20 +182,24 @@ class _HomeScreenState extends State<HomeScreen> {
                   mainAxisSize: MainAxisSize.max,
                   children: [
                     ScooterActionButton(
-                      onPressed: _connected && _scooterState.isOn && _seatClosed
+                      onPressed: _connected &&
+                              _scooterState != null &&
+                              _scooterState!.isOn &&
+                              _seatClosed == true
                           ? widget.scooterService.openSeat
                           : null,
-                      label: _seatClosed ? "Open seat" : "Seat is open!",
+                      label:
+                          _seatClosed == false ? "Seat is open!" : "Open seat",
                       icon: Icons.work_outline,
-                      iconColor: !_seatClosed
+                      iconColor: _seatClosed == false
                           ? Theme.of(context).colorScheme.error
                           : null,
                     ),
                     ScooterPowerButton(
                         action: _connected
-                            ? (_scooterState.isOn
+                            ? (_scooterState != null && _scooterState!.isOn
                                 ? () {
-                                    if (!_seatClosed) {
+                                    if (_seatClosed == false) {
                                       showSeatWarning();
                                     } else {
                                       widget.scooterService.lock();
@@ -234,10 +207,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                   }
                                 : widget.scooterService.unlock)
                             : null,
-                        icon: _scooterState.isOn
+                        icon: _scooterState != null && _scooterState!.isOn
                             ? Icons.lock_open
                             : Icons.lock_outline,
-                        label: _scooterState.isOn
+                        label: _scooterState != null && _scooterState!.isOn
                             ? "Hold to lock"
                             : "Hold to unlock"),
                     ScooterActionButton(

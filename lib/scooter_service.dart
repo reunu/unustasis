@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
-import 'dart:ffi';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unustasis/scooter_state.dart';
 
@@ -37,33 +37,34 @@ class ScooterService {
 
   // STATUS STREAMS
 
-  final StreamController<bool> _connectedController =
-      StreamController<bool>.broadcast();
+  final BehaviorSubject<bool> _connectedController =
+      BehaviorSubject<bool>.seeded(false);
   Stream<bool> get connected => _connectedController.stream;
 
-  final StreamController<ScooterState> _stateController =
-      StreamController<ScooterState>.broadcast();
-  Stream<ScooterState> get state => _stateController.stream;
+  final BehaviorSubject<ScooterState?> _stateController =
+      BehaviorSubject<ScooterState?>.seeded(ScooterState.disconnected);
+  Stream<ScooterState?> get state => _stateController.stream;
 
-  final StreamController<bool> _seatController =
-      StreamController<bool>.broadcast();
-  Stream<bool> get seatClosed => _seatController.stream;
+  // for debugging purposes
+  final BehaviorSubject<String?> _stateRawController =
+      BehaviorSubject<String?>();
+  Stream<String?> get stateRaw => _stateRawController.stream;
 
-  final StreamController<bool> _handlebarController =
-      StreamController<bool>.broadcast();
-  Stream<bool> get handlebarsLocked => _handlebarController.stream;
+  final BehaviorSubject<bool?> _seatController = BehaviorSubject<bool?>();
+  Stream<bool?> get seatClosed => _seatController.stream;
 
-  final StreamController<int> _internalCbbSOCController =
-  StreamController<int>.broadcast();
-  Stream<int> get internalCbbSOC => _internalCbbSOCController.stream;
+  final BehaviorSubject<bool?> _handlebarController = BehaviorSubject<bool?>();
+  Stream<bool?> get handlebarsLocked => _handlebarController.stream;
 
-  final StreamController<int> _primarySOCController =
-      StreamController<int>.broadcast();
-  Stream<int> get primarySOC => _primarySOCController.stream;
+  final BehaviorSubject<int?> _internalCbbSOCController =
+      BehaviorSubject<int?>();
+  Stream<int?> get internalCbbSOC => _internalCbbSOCController.stream;
 
-  final StreamController<int> _secondarySOCController =
-      StreamController<int>.broadcast();
-  Stream<int> get secondarySOC => _secondarySOCController.stream;
+  final BehaviorSubject<int?> _primarySOCController = BehaviorSubject<int?>();
+  Stream<int?> get primarySOC => _primarySOCController.stream;
+
+  final BehaviorSubject<int?> _secondarySOCController = BehaviorSubject<int?>();
+  Stream<int?> get secondarySOC => _secondarySOCController.stream;
 
   Stream<bool> get scanning => FlutterBluePlus.isScanning;
 
@@ -113,13 +114,6 @@ class ScooterService {
 
   void start() async {
     _foundSth = false;
-    // (re)set all streams to "safe" defaults to avoid null errors
-    _connectedController.add(false);
-    _stateController.add(ScooterState.disconnected);
-    _seatController.add(true);
-    _handlebarController.add(true);
-    _primarySOCController.add(100);
-    _secondarySOCController.add(100);
     // TODO: Turn on bluetooth if it's off, or prompt the user to do so on iOS
     // First, see if the phone is already actively connected to a scooter
     List<BluetoothDevice> systemScooters = await getSystemScooters();
@@ -136,6 +130,7 @@ class ScooterService {
       getNearbyScooters().listen((foundScooter) async {
         // there's one! Attempt to connect to it
         _foundSth = true;
+        _stateController.add(ScooterState.linking);
         try {
           // we could have some race conditions here if we find multiple scooters at once
           // so let's stop scanning immediately to avoid that
@@ -201,6 +196,7 @@ class ScooterService {
           log("State received: ${ascii.decode(value)}");
           ScooterState newState = ScooterState.fromBytes(value);
           _stateController.add(newState);
+          _stateRawController.add(ascii.decode(value));
         },
       );
       // Subscribe to seat
@@ -223,20 +219,21 @@ class ScooterService {
       // Subscribe to internal CBB SOC
       _internalCbbSOCCharacteristic!.setNotifyValue(true);
       _internalCbbSOCCharacteristic!.lastValueStream.listen((value) {
+        if (value.isEmpty) return;
         print("### Internal CBB received: $value");
         _internalCbbSOCController.add(value.first);
       });
       // Subscribe to primary SOC
       _primarySOCCharacteristic!.setNotifyValue(true);
       _primarySOCCharacteristic!.lastValueStream.listen((value) {
-        int soc = _convertUint32ToInt(value) ?? 100;
+        int? soc = _convertUint32ToInt(value);
         log("Primary SOC received: $soc");
         _primarySOCController.add(soc);
       });
       // Subscribe to secondary SOC
       _secondarySOCCharacteristic!.setNotifyValue(true);
       _secondarySOCCharacteristic!.lastValueStream.listen((value) {
-        int soc = _convertUint32ToInt(value) ?? 100;
+        int? soc = _convertUint32ToInt(value);
         log("Secondary SOC received: $soc");
         _secondarySOCController.add(soc);
       });

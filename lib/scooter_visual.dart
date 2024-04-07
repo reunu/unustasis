@@ -4,13 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:unustasis/scooter_state.dart';
 
 class ScooterVisual extends StatelessWidget {
-  final ScooterState state;
+  final ScooterState? state;
   final bool scanning;
   final bool blinkerLeft;
   final bool blinkerRight;
 
   const ScooterVisual(
-      {required this.state, required this.scanning, required this.blinkerLeft, required this.blinkerRight, super.key});
+      {required this.state,
+      required this.scanning,
+      required this.blinkerLeft,
+      required this.blinkerRight,
+      super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +36,7 @@ class ScooterVisual extends StatelessWidget {
                 : CrossFadeState.showSecond,
           ),
           AnimatedOpacity(
-            opacity: state.isOn ? 1.0 : 0.0,
+            opacity: state != null && state!.isOn ? 1.0 : 0.0,
             duration: const Duration(milliseconds: 1000),
             child: const Image(
               image: AssetImage("images/scooter/light_ring.png"),
@@ -45,10 +49,7 @@ class ScooterVisual extends StatelessWidget {
               image: AssetImage("images/scooter/light_beam.png"),
             ),
           ),
-          BlinkerWidget(
-            blinkerLeft: blinkerLeft,
-            blinkerRight: blinkerRight
-          ),
+          BlinkerWidget(blinkerLeft: blinkerLeft, blinkerRight: blinkerRight),
           // these can even be timed
           CircularProgressIndicator(
             value: scanning || state == ScooterState.shuttingDown ? null : 0.0,
@@ -86,10 +87,12 @@ class BlinkerWidget extends StatefulWidget {
   final bool blinkerLeft;
   final bool blinkerRight;
 
-  const BlinkerWidget({required this.blinkerLeft, required this.blinkerRight, super.key});
+  const BlinkerWidget(
+      {required this.blinkerLeft, required this.blinkerRight, super.key});
 
   @override
-  _BlinkerWidgetState createState() => _BlinkerWidgetState(blinkerLeft, blinkerRight);
+  _BlinkerWidgetState createState() =>
+      _BlinkerWidgetState(blinkerLeft, blinkerRight);
 }
 
 class _BlinkerWidgetState extends State<BlinkerWidget> {
@@ -129,24 +132,21 @@ class _BlinkerWidgetState extends State<BlinkerWidget> {
     var showBlinkerLeft = _showBlinker && _blinkerLeft;
     var showBlinkerRight = _showBlinker && _blinkerRight;
 
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        AnimatedOpacity(
-          opacity: showBlinkerLeft ? 1.0 : 0.0,
-          duration: blinkerDuration,
-          child: const Image(
-            image: AssetImage("images/scooter/blinker_l.png"),
-          ),
+    return Stack(alignment: Alignment.center, children: [
+      AnimatedOpacity(
+        opacity: showBlinkerLeft ? 1.0 : 0.0,
+        duration: blinkerDuration,
+        child: const Image(
+          image: AssetImage("images/scooter/blinker_l.png"),
         ),
-        AnimatedOpacity(
-          opacity: showBlinkerRight ? 1.0 : 0.0,
-          duration: blinkerDuration,
-          child: const Image(
-            image: AssetImage("images/scooter/blinker_r.png"),
-          ),
-        )
-      ]
-    );
+      ),
+      AnimatedOpacity(
+        opacity: showBlinkerRight ? 1.0 : 0.0,
+        duration: blinkerDuration,
+        child: const Image(
+          image: AssetImage("images/scooter/blinker_r.png"),
+        ),
+      )
+    ]);
   }
 }
