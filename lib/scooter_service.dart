@@ -17,6 +17,7 @@ class ScooterService {
   BluetoothCharacteristic? _stateCharacteristic;
   BluetoothCharacteristic? _seatCharacteristic;
   BluetoothCharacteristic? _handlebarCharacteristic;
+  BluetoothCharacteristic? _internalCbbSOCCharacteristic;
   BluetoothCharacteristic? _primarySOCCharacteristic;
   BluetoothCharacteristic? _secondarySOCCharacteristic;
 
@@ -51,6 +52,10 @@ class ScooterService {
   final StreamController<bool> _handlebarController =
       StreamController<bool>.broadcast();
   Stream<bool> get handlebarsLocked => _handlebarController.stream;
+
+  final StreamController<int> _internalCbbSOCController =
+  StreamController<int>.broadcast();
+  Stream<int> get internalCbbSOC => _internalCbbSOCController.stream;
 
   final StreamController<int> _primarySOCController =
       StreamController<int>.broadcast();
@@ -160,66 +165,34 @@ class ScooterService {
     }
     try {
       await scooter.discoverServices();
-      _commandCharacteristic = scooter.servicesList
-          .firstWhere((service) {
-            return service.serviceUuid.toString() ==
-                "9a590000-6e67-5d0d-aab9-ad9126b66f91";
-          })
-          .characteristics
-          .firstWhere((char) {
-            return char.characteristicUuid.toString() ==
-                "9a590001-6e67-5d0d-aab9-ad9126b66f91";
-          });
-      _stateCharacteristic = myScooter!.servicesList
-          .firstWhere((service) {
-            return service.serviceUuid.toString() ==
-                "9a590020-6e67-5d0d-aab9-ad9126b66f91";
-          })
-          .characteristics
-          .firstWhere((char) {
-            return char.characteristicUuid.toString() ==
-                "9a590021-6e67-5d0d-aab9-ad9126b66f91";
-          });
-      _seatCharacteristic = myScooter!.servicesList
-          .firstWhere((service) {
-            return service.serviceUuid.toString() ==
-                "9a590020-6e67-5d0d-aab9-ad9126b66f91";
-          })
-          .characteristics
-          .firstWhere((char) {
-            return char.characteristicUuid.toString() ==
-                "9a590022-6e67-5d0d-aab9-ad9126b66f91";
-          });
-      _handlebarCharacteristic = myScooter!.servicesList
-          .firstWhere((service) {
-            return service.serviceUuid.toString() ==
-                "9a590020-6e67-5d0d-aab9-ad9126b66f91";
-          })
-          .characteristics
-          .firstWhere((char) {
-            return char.characteristicUuid.toString() ==
-                "9a590023-6e67-5d0d-aab9-ad9126b66f91";
-          });
-      _primarySOCCharacteristic = myScooter!.servicesList
-          .firstWhere((service) {
-            return service.serviceUuid.toString() ==
-                "9a5900e0-6e67-5d0d-aab9-ad9126b66f91";
-          })
-          .characteristics
-          .firstWhere((char) {
-            return char.characteristicUuid.toString() ==
-                "9a5900e9-6e67-5d0d-aab9-ad9126b66f91";
-          });
-      _secondarySOCCharacteristic = myScooter!.servicesList
-          .firstWhere((service) {
-            return service.serviceUuid.toString() ==
-                "9a5900e0-6e67-5d0d-aab9-ad9126b66f91";
-          })
-          .characteristics
-          .firstWhere((char) {
-            return char.characteristicUuid.toString() ==
-                "9a5900f2-6e67-5d0d-aab9-ad9126b66f91";
-          });
+      _commandCharacteristic = _findCharacteristic(
+          myScooter!,
+          "9a590000-6e67-5d0d-aab9-ad9126b66f91",
+          "9a590001-6e67-5d0d-aab9-ad9126b66f91");
+      _stateCharacteristic = _findCharacteristic(
+          myScooter!,
+          "9a590020-6e67-5d0d-aab9-ad9126b66f91",
+          "9a590021-6e67-5d0d-aab9-ad9126b66f91");
+      _seatCharacteristic = _findCharacteristic(
+          myScooter!,
+          "9a590020-6e67-5d0d-aab9-ad9126b66f91",
+          "9a590022-6e67-5d0d-aab9-ad9126b66f91");
+      _handlebarCharacteristic = _findCharacteristic(
+          myScooter!,
+          "9a590020-6e67-5d0d-aab9-ad9126b66f91",
+          "9a590023-6e67-5d0d-aab9-ad9126b66f91");
+      _internalCbbSOCCharacteristic = _findCharacteristic(
+          myScooter!,
+          "9a590060-6e67-5d0d-aab9-ad9126b66f91",
+          "9a590061-6e67-5d0d-aab9-ad9126b66f91");
+      _primarySOCCharacteristic = _findCharacteristic(
+          myScooter!,
+          "9a5900e0-6e67-5d0d-aab9-ad9126b66f91",
+          "9a5900e9-6e67-5d0d-aab9-ad9126b66f91");
+      _secondarySOCCharacteristic = _findCharacteristic(
+          myScooter!,
+          "9a5900e0-6e67-5d0d-aab9-ad9126b66f91",
+          "9a5900f2-6e67-5d0d-aab9-ad9126b66f91");
       // subscribe to a bunch of values
       // Subscribe to state
       _stateCharacteristic!.setNotifyValue(true);
@@ -231,11 +204,7 @@ class ScooterService {
         },
       );
       // Subscribe to seat
-      _seatCharacteristic!.setNotifyValue(true);
-      _seatCharacteristic!.lastValueStream.listen((value) {
-        log("Seat received: ${ascii.decode(value)}");
-        value.removeWhere((element) => element == 0);
-        String seatState = ascii.decode(value).trim();
+      _subscribeBoolean(_seatCharacteristic!, "Seat", (String seatState) {
         if (seatState == "open") {
           _seatController.add(false);
         } else {
@@ -243,28 +212,31 @@ class ScooterService {
         }
       });
       // Subscribe to handlebars
-      _handlebarCharacteristic!.setNotifyValue(true);
-      _handlebarCharacteristic!.lastValueStream.listen((value) {
-        log("Handlebars received: ${ascii.decode(value)}");
-        value.removeWhere((element) => element == 0);
-        String handlebarState = ascii.decode(value).trim();
+      _subscribeBoolean(_handlebarCharacteristic!, "Handlebars",
+          (String handlebarState) {
         if (handlebarState == "unlocked") {
           _handlebarController.add(false);
         } else {
           _handlebarController.add(true);
         }
       });
+      // Subscribe to internal CBB SOC
+      _internalCbbSOCCharacteristic!.setNotifyValue(true);
+      _internalCbbSOCCharacteristic!.lastValueStream.listen((value) {
+        print("### Internal CBB received: $value");
+        _internalCbbSOCController.add(value.first);
+      });
       // Subscribe to primary SOC
       _primarySOCCharacteristic!.setNotifyValue(true);
       _primarySOCCharacteristic!.lastValueStream.listen((value) {
-        int soc = convertUint32ToInt(value) ?? 100;
+        int soc = _convertUint32ToInt(value) ?? 100;
         log("Primary SOC received: $soc");
         _primarySOCController.add(soc);
       });
       // Subscribe to secondary SOC
       _secondarySOCCharacteristic!.setNotifyValue(true);
       _secondarySOCCharacteristic!.lastValueStream.listen((value) {
-        int soc = convertUint32ToInt(value) ?? 100;
+        int soc = _convertUint32ToInt(value) ?? 100;
         log("Secondary SOC received: $soc");
         _secondarySOCController.add(soc);
       });
@@ -272,6 +244,7 @@ class ScooterService {
       _stateCharacteristic!.read();
       _seatCharacteristic!.read();
       _handlebarCharacteristic!.read();
+      _internalCbbSOCCharacteristic!.read();
       _primarySOCCharacteristic!.read();
       _secondarySOCCharacteristic!.read();
     } catch (e) {
@@ -279,76 +252,70 @@ class ScooterService {
     }
   }
 
+  BluetoothCharacteristic? _findCharacteristic(
+      BluetoothDevice device, String serviceUuid, String characteristicUuid) {
+    return device.servicesList
+        .firstWhere((service) => service.serviceUuid.toString() == serviceUuid)
+        .characteristics
+        .firstWhere(
+            (char) => char.characteristicUuid.toString() == characteristicUuid);
+  }
+
   // SCOOTER ACTIONS
 
   void unlock() {
-    log("Sending unlock command");
-    if (myScooter == null) {
-      throw "Scooter not found!";
-    }
-    if (myScooter!.isDisconnected) {
-      throw "Scooter disconnected!";
-    }
-    try {
-      _commandCharacteristic!.write(ascii.encode("scooter:state unlock"));
-    } catch (e) {
-      rethrow;
-    }
+    _sendCommand("scooter:state unlock");
   }
 
   void lock() {
-    log("Sending lock command");
-    if (myScooter == null) {
-      throw "Scooter not found!";
-    }
-    if (myScooter!.isDisconnected) {
-      throw "Scooter disconnected!";
-    }
     // double check for open seat, maybe?
-    try {
-      _commandCharacteristic!.write(ascii.encode("scooter:state lock"));
-    } catch (e) {
-      rethrow;
-    }
+    _sendCommand("scooter:state lock");
   }
 
   void openSeat() {
-    if (myScooter == null) {
-      throw "Scooter not found!";
-    }
-    if (myScooter!.isDisconnected) {
-      throw "Scooter disconnected!";
-    }
-    try {
-      _commandCharacteristic!.write(ascii.encode("scooter:seatbox open"));
-    } catch (e) {
-      rethrow;
-    }
+    _sendCommand("scooter:seatbox open");
   }
 
   void blink({required bool left, required bool right}) {
-    if (myScooter == null) {
-      throw "Scooter not found!";
-    }
-    if (myScooter!.isDisconnected) {
-      throw "Scooter disconnected!";
-    }
-    try {
-      if (left && !right) {
-        _commandCharacteristic!.write(ascii.encode("scooter:blinker left"));
-      } else if (!left && right) {
-        _commandCharacteristic!.write(ascii.encode("scooter:blinker right"));
-      } else if (left && right) {
-        _commandCharacteristic!.write(ascii.encode("scooter:blinker both"));
-      } else {
-        _commandCharacteristic!.write(ascii.encode("scooter:blinker off"));
-      }
-    } catch (e) {
-      rethrow;
+    if (left && !right) {
+      _sendCommand("scooter:blinker left");
+    } else if (!left && right) {
+      _sendCommand("scooter:blinker right");
+    } else if (left && right) {
+      _sendCommand("scooter:blinker both");
+    } else {
+      _sendCommand("scooter:blinker off");
     }
   }
 
   // HELPER FUNCTIONS
+
+  void _subscribeBoolean(
+      BluetoothCharacteristic characteristic, String name, Function callback) {
+    // Subscribe to seat
+    characteristic.setNotifyValue(true);
+    characteristic.lastValueStream.listen((value) {
+      log("$name received: ${ascii.decode(value)}");
+      value.removeWhere((element) => element == 0);
+      String state = ascii.decode(value).trim();
+      callback(state);
+    });
+  }
+
+  void _sendCommand(String command) {
+    log("Sending command: $command");
+    if (myScooter == null) {
+      throw "Scooter not found!";
+    }
+    if (myScooter!.isDisconnected) {
+      throw "Scooter disconnected!";
+    }
+    try {
+      _commandCharacteristic!.write(ascii.encode(command));
+    } catch (e) {
+      rethrow;
+    }
+  }
 
   Future<String?> _getSavedScooter() async {
     if (savedScooterId != null) {
@@ -370,7 +337,7 @@ class ScooterService {
   }
 
   // thanks gemini advanced <3
-  int? convertUint32ToInt(List<int> uint32data) {
+  int? _convertUint32ToInt(List<int> uint32data) {
     log("Converting $uint32data to int.");
     if (uint32data.length != 4) {
       log("Received empty data for uint32 conversion. Ignoring.");
