@@ -3,9 +3,9 @@ import 'package:unustasis/home_screen.dart';
 import 'package:unustasis/scooter_service.dart';
 
 class ControlScreen extends StatefulWidget {
-  const ControlScreen({required ScooterService scooterService, super.key})
-      : _scooterService = scooterService;
-  final ScooterService _scooterService;
+  const ControlScreen({required ScooterService service, super.key})
+      : _service = service;
+  final ScooterService _service;
 
   @override
   State<ControlScreen> createState() => _ControlScreenState();
@@ -41,17 +41,17 @@ class _ControlScreenState extends State<ControlScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   ScooterActionButton(
-                    onPressed: widget._scooterService.lock,
+                    onPressed: widget._service.lock,
                     icon: Icons.lock_outline,
                     label: "Lock",
                   ),
                   ScooterActionButton(
-                    onPressed: widget._scooterService.unlock,
+                    onPressed: widget._service.unlock,
                     icon: Icons.lock_open_outlined,
                     label: "Unlock",
                   ),
                   ScooterActionButton(
-                    onPressed: widget._scooterService.start,
+                    onPressed: widget._service.start,
                     icon: Icons.refresh,
                     label: "Refresh",
                   ),
@@ -65,19 +65,19 @@ class _ControlScreenState extends State<ControlScreen> {
                 children: [
                   ScooterActionButton(
                     onPressed: () =>
-                        widget._scooterService.blink(left: true, right: false),
+                        widget._service.blink(left: true, right: false),
                     icon: Icons.arrow_back_ios_new_rounded,
                     label: "Blink left",
                   ),
                   ScooterActionButton(
                     onPressed: () =>
-                        widget._scooterService.blink(left: true, right: true),
+                        widget._service.blink(left: true, right: true),
                     icon: Icons.code_rounded,
                     label: "Blink both",
                   ),
                   ScooterActionButton(
                     onPressed: () =>
-                        widget._scooterService.blink(left: false, right: true),
+                        widget._service.blink(left: false, right: true),
                     icon: Icons.arrow_forward_ios_rounded,
                     label: "Blink right",
                   ),
@@ -91,7 +91,7 @@ class _ControlScreenState extends State<ControlScreen> {
                 children: [
                   ScooterActionButton(
                     onPressed: () =>
-                        widget._scooterService.blink(left: false, right: false),
+                        widget._service.blink(left: false, right: false),
                     icon: Icons.code_off_rounded,
                     label: "Blinkers off",
                   ),

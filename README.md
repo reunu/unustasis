@@ -21,14 +21,5 @@ This app is made in Flutter for cross-platform functionality, UI performance, an
 
 Pull requests are very welcome, as I can only test on the few (Android) devices I own and therefore depend on any help I can get.
 
-If you want to donate to the effort, you can also do that via PayPal. Any donations will be shared equally between the two maintainers of this GitHub organization (Zanooda for hardware engineering, and TheFreal for various licenses, especially for iOS development). No pressure though, please only give what you can; this project is after all entirely voluntary, open-source and community driven.
-
-<form action="https://www.paypal.com/donate" method="post" target="_top">
-<input type="hidden" name="hosted_button_id" value="2CYHG2B3BD6WW" />
-<input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" border="0" name="submit" title="PayPal - The safer, easier way to pay online!" alt="Donate with PayPal button" />
-<img alt="" border="0" src="https://www.paypal.com/en_DE/i/scr/pixel.gif" width="1" height="1" />
-</form>
-
-
 
 

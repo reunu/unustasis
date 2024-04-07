@@ -5,6 +5,7 @@ import 'package:unustasis/control_screen.dart';
 import 'package:unustasis/scooter_service.dart';
 import 'package:unustasis/scooter_state.dart';
 import 'package:unustasis/scooter_visual.dart';
+import 'package:unustasis/stats_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final ScooterService scooterService;
@@ -92,9 +93,32 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.max,
               children: [
-                Text(
-                  "Scooter Pro",
-                  style: Theme.of(context).textTheme.headlineLarge,
+                InkWell(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => StatsScreen(
+                        service: widget.scooterService,
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(width: _connected ? 32 : 0),
+                      Text(
+                        "Scooter Pro",
+                        style: Theme.of(context).textTheme.headlineLarge,
+                      ),
+                      SizedBox(width: _connected ? 16 : 0),
+                      _connected
+                          ? const Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              size: 16,
+                            )
+                          : Container(),
+                    ],
+                  ),
                 ),
                 Text(
                   _scanning
@@ -147,11 +171,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     : Container(),
                 Expanded(
                     child: ScooterVisual(
-                  state: _scooterState,
-                  scanning: _scanning,
-                  blinkerLeft: false, // TODO: extract ScooterBlinkerState
-                  blinkerRight: false
-                )),
+                        state: _scooterState,
+                        scanning: _scanning,
+                        blinkerLeft: false, // TODO: extract ScooterBlinkerState
+                        blinkerRight: false)),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   mainAxisSize: MainAxisSize.max,
@@ -190,7 +213,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               context,
                               MaterialPageRoute(
                                   builder: (context) => ControlScreen(
-                                      scooterService: widget.scooterService)));
+                                      service: widget.scooterService)));
                         },
                         icon: Icons.more_vert,
                         label: "Controls"),
@@ -227,27 +250,6 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
           ],
-        );
-      },
-    );
-  }
-
-  Route _createControlRoute() {
-    return PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) => ControlScreen(
-        scooterService: widget.scooterService,
-      ),
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        const begin = Offset(0.0, 1.0);
-        const end = Offset.zero;
-        const curve = Curves.easeInOut;
-
-        var tween =
-            Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-
-        return SlideTransition(
-          position: animation.drive(tween),
-          child: child,
         );
       },
     );

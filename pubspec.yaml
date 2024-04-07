@@ -38,6 +38,8 @@ dependencies:
   flutter_blue_plus: ^1.31.17
   shared_preferences: ^2.2.2
   google_fonts: ^6.2.1
+  sticky_headers: ^0.3.0+2
+  rxdart: ^0.27.7
 
 dev_dependencies:
   flutter_test:
