@@ -1,8 +1,8 @@
 ### Changes:
-- Adding control buttons for the blinkers
-- Bluetooth stability fixes (some, at least)
-- Battery level display
+- Adding a simple stats screen (will become way prettier and more elaborate in the future)
+- Adding CBB battery level (thanks DSIW)
+- More transparency during connection
+- Fixing "ready to drive" state
 
 ### Known issues:
-- A lot of scooter states are not being recognized
-- Random disconnects or refusals to connect
+- Secondary battery level is still wrong
