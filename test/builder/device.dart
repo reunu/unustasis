@@ -29,8 +29,6 @@ class DeviceBuilder {
 
     when(flutterBluePlus.systemDevices)
         .thenAnswer((_) => Future.value([bluetoothDevice]));
-    when(flutterBluePlus.systemDevices)
-        .thenAnswer((_) => Future.value([bluetoothDevice]));
 
     AdvertisementData advertisementDataMock = MockAdvertisementData();
     when(flutterBluePlus.onScanResults).thenAnswer((_) {
