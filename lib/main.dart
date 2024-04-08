@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:unustasis/home_screen.dart';
 import 'package:unustasis/scooter_service.dart';
 
+import 'flutter/blue_plus_mockable.dart';
+
 void main() {
   runApp(MyApp());
 }
@@ -10,7 +12,7 @@ void main() {
 class MyApp extends StatelessWidget {
   MyApp({super.key});
 
-  final ScooterService service = ScooterService();
+  final ScooterService service = ScooterService(FlutterBluePlusMockable());
 
   @override
   Widget build(BuildContext context) {

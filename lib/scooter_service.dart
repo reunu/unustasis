@@ -7,6 +7,8 @@ import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unustasis/scooter_state.dart';
 
+import 'flutter/blue_plus_mockable.dart';
+
 class ScooterService {
   String? savedScooterId;
   BluetoothDevice? myScooter; // reserved for a connected scooter!
@@ -21,9 +23,11 @@ class ScooterService {
   BluetoothCharacteristic? _primarySOCCharacteristic;
   BluetoothCharacteristic? _secondarySOCCharacteristic;
 
-  ScooterService() {
+  final FlutterBluePlusMockable bluePlus;
+
+  ScooterService(this.bluePlus) {
     start();
-    FlutterBluePlus.isScanning.listen((scanning) async {
+    bluePlus.isScanning.listen((scanning) async {
       // retry if we stop scanning without having found anything
       if (!scanning && !_foundSth) {
         await Future.delayed(const Duration(seconds: 5));
@@ -66,13 +70,13 @@ class ScooterService {
   final BehaviorSubject<int?> _secondarySOCController = BehaviorSubject<int?>();
   Stream<int?> get secondarySOC => _secondarySOCController.stream;
 
-  Stream<bool> get scanning => FlutterBluePlus.isScanning;
+  Stream<bool> get scanning => bluePlus.isScanning;
 
   // MAIN FUNCTIONS
 
   Future<List<BluetoothDevice>> getSystemScooters() async {
     // See if the phone is already connected to a scooter. If so, hook into that.
-    List<BluetoothDevice> systemDevices = await FlutterBluePlus.systemDevices;
+    List<BluetoothDevice> systemDevices = await bluePlus.systemDevices;
     List<BluetoothDevice> systemScooters = [];
     for (var device in systemDevices) {
       // criteria: it's named "unu Scooter" or it's the one we saved
@@ -89,19 +93,19 @@ class ScooterService {
     List<BluetoothDevice> foundScooterCache = [];
     String? savedScooterId = await _getSavedScooter();
     if (savedScooterId != null) {
-      FlutterBluePlus.startScan(
+      bluePlus.startScan(
         withRemoteIds: [savedScooterId], // look for OUR scooter
         timeout: const Duration(seconds: 30),
       );
     } else {
-      FlutterBluePlus.startScan(
+      bluePlus.startScan(
         withNames: [
           "unu Scooter"
         ], // if we don't have a saved scooter, look for A scooter
         timeout: const Duration(seconds: 30),
       );
     }
-    await for (var scanResult in FlutterBluePlus.onScanResults) {
+    await for (var scanResult in bluePlus.onScanResults) {
       if (scanResult.isNotEmpty) {
         ScanResult r = scanResult.last; // the most recently found device
         if (!foundScooterCache.contains(r.device)) {
@@ -134,7 +138,7 @@ class ScooterService {
         try {
           // we could have some race conditions here if we find multiple scooters at once
           // so let's stop scanning immediately to avoid that
-          FlutterBluePlus.stopScan();
+          bluePlus.stopScan();
           // attempt to connect to what we found
           await foundScooter.connect(
               //autoConnect: true, // significantly slows down the connection process
