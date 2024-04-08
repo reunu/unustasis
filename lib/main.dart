@@ -5,7 +5,7 @@ import 'package:unustasis/home_screen.dart';
 import 'package:unustasis/scooter_service.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatefulWidget {
