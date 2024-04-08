@@ -29,8 +29,31 @@ jobs:
           channel: stable
           flutter-version-file: pubspec.yaml # path to pubspec.yaml
           cache: true
-      - run: flutter pub get
+      - name: Get Flutter dependencies
+        run: flutter pub get
+
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
       - run: dart run build_runner build
       - run: flutter test
-      - run: flutter build apk
-      - run: flutter build appbundle
+
+  package:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Build APK
+        run: flutter build apk
+      - name: Archive APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: unustasis-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+      - name: Build AppBundle
+        run: flutter build appbundle
+      - name: Archive AppBundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: unustasis-apk
+          path: build/app/outputs/bundle/release/app-release.aab
