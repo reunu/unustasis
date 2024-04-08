@@ -52,7 +52,7 @@ class _ControlScreenState extends State<ControlScreen> {
                     label: "Unlock",
                   ),
                   ScooterActionButton(
-                    onPressed: widget._service.start,
+                    onPressed: () { widget._service.start; Navigator.pop(context); },
                     icon: Icons.refresh,
                     label: "Refresh",
                   ),
