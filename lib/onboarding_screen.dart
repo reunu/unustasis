@@ -1,7 +1,6 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
-import 'package:unustasis/home_screen.dart';
 import 'package:unustasis/scooter_service.dart';
 import 'package:unustasis/scooter_state.dart';
 import 'package:unustasis/scooter_visual.dart';
