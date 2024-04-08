@@ -30,6 +30,7 @@ jobs:
           flutter-version-file: pubspec.yaml # path to pubspec.yaml
           cache: true
       - run: flutter pub get
+      - run: dart run build_runner build
       - run: flutter test
       - run: flutter build apk
       - run: flutter build appbundle
