@@ -13,11 +13,14 @@ class ScooterService {
   BluetoothDevice? myScooter; // reserved for a connected scooter!
   bool _foundSth = false; // whether we've found a scooter yet
   int? cbbRemainingCap, cbbFullCap;
+  String? _state, _internalState;
   bool restarting = false;
 
   // some useful characteristsics to save
   BluetoothCharacteristic? _commandCharacteristic;
   BluetoothCharacteristic? _stateCharacteristic;
+  // TODO: define proper name. Eventually MDB state?
+  BluetoothCharacteristic? _internalStateCharacteristic;
   BluetoothCharacteristic? _seatCharacteristic;
   BluetoothCharacteristic? _handlebarCharacteristic;
   BluetoothCharacteristic? _auxSOCCharacteristic;
@@ -199,6 +202,10 @@ class ScooterService {
           myScooter!,
           "9a590020-6e67-5d0d-aab9-ad9126b66f91",
           "9a590021-6e67-5d0d-aab9-ad9126b66f91");
+      _internalStateCharacteristic = _findCharacteristic(
+          myScooter!,
+          "9a5900a0-6e67-5d0d-aab9-ad9126b66f91",
+          "9a5900a1-6e67-5d0d-aab9-ad9126b66f91");
       _seatCharacteristic = _findCharacteristic(
           myScooter!,
           "9a590020-6e67-5d0d-aab9-ad9126b66f91",
@@ -243,8 +250,14 @@ class ScooterService {
       // Subscribe to state
       _stateCharacteristic!.setNotifyValue(true);
       _subscribeString(_stateCharacteristic!, "State", (String value) {
-        ScooterState newState = ScooterState.fromString(value);
-        _stateController.add(newState);
+        _state = value;
+        _updateScooterState();
+      });
+      // Subscribe to internal state for correct hibernation
+      _subscribeString(_internalStateCharacteristic!, "Internal State",
+          (String value) {
+        _internalState = value;
+        _updateScooterState();
       });
       // Subscribe to seat
       _subscribeString(_seatCharacteristic!, "Seat", (String seatState) {
@@ -335,6 +348,17 @@ class ScooterService {
       _secondarySOCCharacteristic!.read();
     } catch (e) {
       rethrow;
+    }
+  }
+
+  void _updateScooterState() {
+    log("### Internal state: '${_state}' | '${_internalState}'");
+    if (_state != null && _internalState == "hibernating") {
+      _stateController.add(ScooterState.hibernating);
+    }
+    if (_state != null) {
+      ScooterState newState = ScooterState.fromString(_state!);
+      _stateController.add(newState);
     }
   }
 
