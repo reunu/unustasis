@@ -1,11 +1,7 @@
-import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:unustasis/flutter/blue_plus_mockable.dart';
 import 'package:unustasis/scooter_service.dart';
 import 'builder/bluetooth.dart';
 
