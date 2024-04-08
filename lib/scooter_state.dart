@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
@@ -14,9 +13,7 @@ enum ScooterState {
   linking,
   disconnected;
 
-  static ScooterState fromBytes(List<int> bytes) {
-    bytes.removeWhere((element) => element == 0);
-    String stateString = ascii.decode(bytes).trim();
+  static ScooterState fromString(String stateString) {
     switch (stateString) {
       case "stand-by":
         return ScooterState.standby;

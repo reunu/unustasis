@@ -242,15 +242,12 @@ class ScooterService {
       // subscribe to a bunch of values
       // Subscribe to state
       _stateCharacteristic!.setNotifyValue(true);
-      _stateCharacteristic!.lastValueStream.listen(
-        (value) {
-          log("State received: ${ascii.decode(value)}");
-          ScooterState newState = ScooterState.fromBytes(value);
-          _stateController.add(newState);
-        },
-      );
+      _subscribeString(_stateCharacteristic!, "State", (String value) {
+        ScooterState newState = ScooterState.fromString(value);
+        _stateController.add(newState);
+      });
       // Subscribe to seat
-      _subscribeBoolean(_seatCharacteristic!, "Seat", (String seatState) {
+      _subscribeString(_seatCharacteristic!, "Seat", (String seatState) {
         if (seatState == "open") {
           _seatController.add(false);
         } else {
@@ -258,7 +255,7 @@ class ScooterService {
         }
       });
       // Subscribe to handlebars
-      _subscribeBoolean(_handlebarCharacteristic!, "Handlebars",
+      _subscribeString(_handlebarCharacteristic!, "Handlebars",
           (String handlebarState) {
         if (handlebarState == "unlocked") {
           _handlebarController.add(false);
@@ -379,16 +376,23 @@ class ScooterService {
 
   // HELPER FUNCTIONS
 
-  void _subscribeBoolean(
+  void _subscribeString(
       BluetoothCharacteristic characteristic, String name, Function callback) {
-    // Subscribe to seat
     characteristic.setNotifyValue(true);
     characteristic.lastValueStream.listen((value) {
       log("$name received: ${ascii.decode(value)}");
-      value.removeWhere((element) => element == 0);
-      String state = ascii.decode(value).trim();
-      callback(state);
+      callback(_convertBytesToString(value));
     });
+  }
+
+  String? _convertBytesToString(List<int>? value) {
+    if (value == null) {
+      return null;
+    }
+
+    value.removeWhere((element) => element == 0);
+    String state = ascii.decode(value).trim();
+    return state;
   }
 
   void _sendCommand(String command) {
