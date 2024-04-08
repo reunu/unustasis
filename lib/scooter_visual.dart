@@ -49,8 +49,7 @@ class ScooterVisual extends StatelessWidget {
               image: AssetImage("images/scooter/light_beam.png"),
             ),
           ),
-          BlinkerWidget(blinkerLeft: blinkerLeft, blinkerRight: blinkerRight),
-          // these can even be timed
+          //BlinkerWidget(blinkerLeft: blinkerLeft, blinkerRight: blinkerRight),
           CircularProgressIndicator(
             value: scanning || state == ScooterState.shuttingDown ? null : 0.0,
             color: Colors.white,
@@ -91,28 +90,23 @@ class BlinkerWidget extends StatefulWidget {
       {required this.blinkerLeft, required this.blinkerRight, super.key});
 
   @override
-  _BlinkerWidgetState createState() =>
-      _BlinkerWidgetState(blinkerLeft, blinkerRight);
+  _BlinkerWidgetState createState() => _BlinkerWidgetState();
 }
 
 class _BlinkerWidgetState extends State<BlinkerWidget> {
-  final bool _blinkerLeft;
-  final bool _blinkerRight;
   bool _showBlinker = true;
 
   // Timer to toggle the image every second
   late Timer _timer;
 
-  _BlinkerWidgetState(this._blinkerLeft, this._blinkerRight);
-
   @override
   void initState() {
     super.initState();
 
-    var anyBlinker = _blinkerLeft || _blinkerRight;
+    var anyBlinker = widget.blinkerLeft || widget.blinkerRight;
 
     if (anyBlinker) {
-      _timer = Timer.periodic(Duration(seconds: 1), (Timer t) {
+      _timer = Timer.periodic(const Duration(seconds: 1), (Timer t) {
         setState(() => _showBlinker = !_showBlinker);
       });
     }
@@ -129,8 +123,8 @@ class _BlinkerWidgetState extends State<BlinkerWidget> {
   Widget build(BuildContext context) {
     const blinkerDuration = Duration(milliseconds: 200);
 
-    var showBlinkerLeft = _showBlinker && _blinkerLeft;
-    var showBlinkerRight = _showBlinker && _blinkerRight;
+    var showBlinkerLeft = _showBlinker && widget.blinkerLeft;
+    var showBlinkerRight = _showBlinker && widget.blinkerRight;
 
     return Stack(alignment: Alignment.center, children: [
       AnimatedOpacity(

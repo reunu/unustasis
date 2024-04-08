@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:unustasis/home_screen.dart';
+import 'package:unustasis/onboarding_screen.dart';
 import 'package:unustasis/scooter_service.dart';
 
 class ControlScreen extends StatefulWidget {
@@ -94,6 +95,48 @@ class _ControlScreenState extends State<ControlScreen> {
                         widget._service.blink(left: false, right: false),
                     icon: Icons.code_off_rounded,
                     label: "Blinkers off",
+                  ),
+                  ScooterActionButton(
+                    onPressed: () async {
+                      showDialog(
+                          context: context,
+                          barrierDismissible: true,
+                          builder: (context) {
+                            return AlertDialog(
+                              title: const Text("Forget scooter?"),
+                              content: const Text(
+                                  "To reconnect, you'll need to go though the setup process again."),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop(false);
+                                  },
+                                  child: const Text("Cancel"),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop(true);
+                                  },
+                                  child: const Text("Reset"),
+                                ),
+                              ],
+                            );
+                          }).then((reset) {
+                        if (reset == true) {
+                          widget._service.forgetSavedScooter();
+                          Navigator.of(context).pop();
+                          Navigator.of(context).pushReplacement(
+                            MaterialPageRoute(
+                              builder: (context) => OnboardingScreen(
+                                service: widget._service,
+                              ),
+                            ),
+                          );
+                        }
+                      });
+                    },
+                    icon: Icons.refresh_rounded,
+                    label: "Forget scooter",
                   ),
                 ],
               ),

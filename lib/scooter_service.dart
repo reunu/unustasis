@@ -1,58 +1,49 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unustasis/flutter/blue_plus_mockable.dart';
 import 'package:unustasis/scooter_state.dart';
-
-import 'flutter/blue_plus_mockable.dart';
 
 class ScooterService {
   String? savedScooterId;
   BluetoothDevice? myScooter; // reserved for a connected scooter!
   bool _foundSth = false; // whether we've found a scooter yet
+  int? cbbRemainingCap, cbbFullCap;
+  bool restarting = false;
 
   // some useful characteristsics to save
   BluetoothCharacteristic? _commandCharacteristic;
   BluetoothCharacteristic? _stateCharacteristic;
   BluetoothCharacteristic? _seatCharacteristic;
   BluetoothCharacteristic? _handlebarCharacteristic;
-  BluetoothCharacteristic? _internalCbbSOCCharacteristic;
+  BluetoothCharacteristic? _auxSOCCharacteristic;
+  BluetoothCharacteristic? _cbbRemainingCapCharacteristic;
+  BluetoothCharacteristic? _cbbFullCapCharacteristic;
+  BluetoothCharacteristic? _cbbSOCCharacteristic;
+  BluetoothCharacteristic? _primaryCyclesCharacteristic;
   BluetoothCharacteristic? _primarySOCCharacteristic;
+  BluetoothCharacteristic? _secondaryCyclesCharacteristic;
   BluetoothCharacteristic? _secondarySOCCharacteristic;
+  
+  final FlutterBluePlusMockable flutterBluePlus;
 
-  final FlutterBluePlusMockable bluePlus;
-
-  ScooterService(this.bluePlus) {
-    start();
-    bluePlus.isScanning.listen((scanning) async {
-      // retry if we stop scanning without having found anything
-      if (!scanning && !_foundSth) {
-        await Future.delayed(const Duration(seconds: 5));
-        if (!_foundSth && !scanning) {
-          // make sure nothing happened in these few seconds
-          start();
-        }
-      }
-    });
-  }
+  ScooterService(this.flutterBluePlus);
 
   // STATUS STREAMS
 
   final BehaviorSubject<bool> _connectedController =
       BehaviorSubject<bool>.seeded(false);
+
   Stream<bool> get connected => _connectedController.stream;
 
   final BehaviorSubject<ScooterState?> _stateController =
       BehaviorSubject<ScooterState?>.seeded(ScooterState.disconnected);
   Stream<ScooterState?> get state => _stateController.stream;
-
-  // for debugging purposes
-  final BehaviorSubject<String?> _stateRawController =
-      BehaviorSubject<String?>();
-  Stream<String?> get stateRaw => _stateRawController.stream;
 
   final BehaviorSubject<bool?> _seatController = BehaviorSubject<bool?>();
   Stream<bool?> get seatClosed => _seatController.stream;
@@ -60,28 +51,42 @@ class ScooterService {
   final BehaviorSubject<bool?> _handlebarController = BehaviorSubject<bool?>();
   Stream<bool?> get handlebarsLocked => _handlebarController.stream;
 
-  final BehaviorSubject<int?> _internalCbbSOCController =
+  final BehaviorSubject<int?> _auxSOCController = BehaviorSubject<int?>();
+  Stream<int?> get auxSOC => _auxSOCController.stream;
+
+  final BehaviorSubject<double?> _cbbHealthController =
+      BehaviorSubject<double?>();
+  Stream<double?> get cbbHealth => _cbbHealthController.stream;
+
+  final BehaviorSubject<int?> _cbbSOCController = BehaviorSubject<int?>();
+  Stream<int?> get cbbSOC => _cbbSOCController.stream;
+
+  final BehaviorSubject<int?> _primaryCyclesController =
       BehaviorSubject<int?>();
-  Stream<int?> get internalCbbSOC => _internalCbbSOCController.stream;
+  Stream<int?> get primaryCycles => _primaryCyclesController.stream;
 
   final BehaviorSubject<int?> _primarySOCController = BehaviorSubject<int?>();
   Stream<int?> get primarySOC => _primarySOCController.stream;
 
+  final BehaviorSubject<int?> _secondaryCyclesController =
+      BehaviorSubject<int?>();
+  Stream<int?> get secondaryCycles => _secondaryCyclesController.stream;
+
   final BehaviorSubject<int?> _secondarySOCController = BehaviorSubject<int?>();
   Stream<int?> get secondarySOC => _secondarySOCController.stream;
 
-  Stream<bool> get scanning => bluePlus.isScanning;
+  Stream<bool> get scanning => flutterBluePlus.isScanning;
 
   // MAIN FUNCTIONS
 
   Future<List<BluetoothDevice>> getSystemScooters() async {
     // See if the phone is already connected to a scooter. If so, hook into that.
-    List<BluetoothDevice> systemDevices = await bluePlus.systemDevices;
+    List<BluetoothDevice> systemDevices = await flutterBluePlus.systemDevices;
     List<BluetoothDevice> systemScooters = [];
     for (var device in systemDevices) {
       // criteria: it's named "unu Scooter" or it's the one we saved
       if (device.advName == "unu Scooter" ||
-          device.remoteId.toString() == await _getSavedScooter()) {
+          device.remoteId.toString() == await getSavedScooter()) {
         // That's a scooter!
         systemScooters.add(device);
       }
@@ -91,21 +96,21 @@ class ScooterService {
 
   Stream<BluetoothDevice> getNearbyScooters() async* {
     List<BluetoothDevice> foundScooterCache = [];
-    String? savedScooterId = await _getSavedScooter();
+    String? savedScooterId = await getSavedScooter();
     if (savedScooterId != null) {
-      bluePlus.startScan(
+      flutterBluePlus.startScan(
         withRemoteIds: [savedScooterId], // look for OUR scooter
         timeout: const Duration(seconds: 30),
       );
     } else {
-      bluePlus.startScan(
+      flutterBluePlus.startScan(
         withNames: [
           "unu Scooter"
         ], // if we don't have a saved scooter, look for A scooter
         timeout: const Duration(seconds: 30),
       );
     }
-    await for (var scanResult in bluePlus.onScanResults) {
+    await for (var scanResult in flutterBluePlus.onScanResults) {
       if (scanResult.isNotEmpty) {
         ScanResult r = scanResult.last; // the most recently found device
         if (!foundScooterCache.contains(r.device)) {
@@ -116,7 +121,7 @@ class ScooterService {
     }
   }
 
-  void start() async {
+  void start({bool restart = true}) async {
     _foundSth = false;
     // TODO: Turn on bluetooth if it's off, or prompt the user to do so on iOS
     // First, see if the phone is already actively connected to a scooter
@@ -138,7 +143,7 @@ class ScooterService {
         try {
           // we could have some race conditions here if we find multiple scooters at once
           // so let's stop scanning immediately to avoid that
-          bluePlus.stopScan();
+          flutterBluePlus.stopScan();
           // attempt to connect to what we found
           await foundScooter.connect(
               //autoConnect: true, // significantly slows down the connection process
@@ -156,6 +161,34 @@ class ScooterService {
         }
       });
     }
+    if (restart) {
+      startAutoRestart();
+    }
+  }
+
+  late StreamSubscription<bool> _autoRestartSubscription;
+  void startAutoRestart() async {
+    if (!restarting) {
+      restarting = true;
+      _autoRestartSubscription =
+          flutterBluePlus.isScanning.listen((scanning) async {
+        // retry if we stop scanning without having found anything
+        if (!scanning && !_foundSth) {
+          await Future.delayed(const Duration(seconds: 3));
+          if (!_foundSth && !scanning) {
+            // make sure nothing happened in these few seconds
+            start();
+          }
+        }
+      });
+    } else {
+      //Auto-restart already on, ignoring to avoid duplicates
+    }
+  }
+
+  void stopAutoRestart() {
+    restarting = false;
+    _autoRestartSubscription.cancel();
   }
 
   Future<void> setUpCharacteristics(BluetoothDevice scooter) async {
@@ -180,18 +213,38 @@ class ScooterService {
           myScooter!,
           "9a590020-6e67-5d0d-aab9-ad9126b66f91",
           "9a590023-6e67-5d0d-aab9-ad9126b66f91");
-      _internalCbbSOCCharacteristic = _findCharacteristic(
+      _auxSOCCharacteristic = _findCharacteristic(
+          myScooter!,
+          "9a590040-6e67-5d0d-aab9-ad9126b66f91",
+          "9a590044-6e67-5d0d-aab9-ad9126b66f91");
+      _cbbRemainingCapCharacteristic = _findCharacteristic(
+          myScooter!,
+          "9a590060-6e67-5d0d-aab9-ad9126b66f91",
+          "9a590063-6e67-5d0d-aab9-ad9126b66f91");
+      _cbbFullCapCharacteristic = _findCharacteristic(
+          myScooter!,
+          "9a590060-6e67-5d0d-aab9-ad9126b66f91",
+          "9a590064-6e67-5d0d-aab9-ad9126b66f91");
+      _cbbSOCCharacteristic = _findCharacteristic(
           myScooter!,
           "9a590060-6e67-5d0d-aab9-ad9126b66f91",
           "9a590061-6e67-5d0d-aab9-ad9126b66f91");
+      _primaryCyclesCharacteristic = _findCharacteristic(
+          myScooter!,
+          "9a5900e0-6e67-5d0d-aab9-ad9126b66f91",
+          "9a5900e6-6e67-5d0d-aab9-ad9126b66f91");
       _primarySOCCharacteristic = _findCharacteristic(
           myScooter!,
           "9a5900e0-6e67-5d0d-aab9-ad9126b66f91",
           "9a5900e9-6e67-5d0d-aab9-ad9126b66f91");
-      _secondarySOCCharacteristic = _findCharacteristic(
+      _secondaryCyclesCharacteristic = _findCharacteristic(
           myScooter!,
           "9a5900e0-6e67-5d0d-aab9-ad9126b66f91",
           "9a5900f2-6e67-5d0d-aab9-ad9126b66f91");
+      _secondarySOCCharacteristic = _findCharacteristic(
+          myScooter!,
+          "9a5900e0-6e67-5d0d-aab9-ad9126b66f91",
+          "9a5900f5-6e67-5d0d-aab9-ad9126b66f91");
       // subscribe to a bunch of values
       // Subscribe to state
       _stateCharacteristic!.setNotifyValue(true);
@@ -200,7 +253,6 @@ class ScooterService {
           log("State received: ${ascii.decode(value)}");
           ScooterState newState = ScooterState.fromBytes(value);
           _stateController.add(newState);
-          _stateRawController.add(ascii.decode(value));
         },
       );
       // Subscribe to seat
@@ -220,12 +272,44 @@ class ScooterService {
           _handlebarController.add(true);
         }
       });
+      // Subscribe to aux battery SOC
+      _auxSOCCharacteristic!.setNotifyValue(true);
+      _auxSOCCharacteristic!.lastValueStream.listen((value) {
+        int? soc = _convertUint32ToInt(value);
+        log("Aux SOC received: $soc");
+        _auxSOCController.add(soc);
+      });
+      // subscribe to CBB remaining capacity
+      _cbbRemainingCapCharacteristic!.setNotifyValue(true);
+      _cbbRemainingCapCharacteristic!.lastValueStream.listen((value) {
+        int? remainingCap = _convertUint32ToInt(value);
+        log("CBB remaining capacity received: $remainingCap");
+        cbbRemainingCap = remainingCap;
+        if (cbbRemainingCap != null && cbbFullCap != null) {
+          _cbbHealthController.add(cbbRemainingCap! / cbbFullCap!);
+        }
+      });
+      // subscribe to CBB full capacity
+      _cbbFullCapCharacteristic!.setNotifyValue(true);
+      _cbbFullCapCharacteristic!.lastValueStream.listen((value) {
+        int? fullCap = _convertUint32ToInt(value);
+        log("CBB full capacity received: $fullCap");
+        cbbFullCap = fullCap;
+        if (cbbRemainingCap != null && cbbFullCap != null) {
+          _cbbHealthController.add(cbbRemainingCap! / cbbFullCap!);
+        }
+      });
       // Subscribe to internal CBB SOC
-      _internalCbbSOCCharacteristic!.setNotifyValue(true);
-      _internalCbbSOCCharacteristic!.lastValueStream.listen((value) {
-        if (value.isEmpty) return;
-        print("### Internal CBB received: $value");
-        _internalCbbSOCController.add(value.first);
+      _cbbSOCCharacteristic!.setNotifyValue(true);
+      _cbbSOCCharacteristic!.lastValueStream.listen((value) {
+        _cbbSOCController.add(value.firstOrNull);
+      });
+      // Subscribe to primary battery charge cycles
+      _primaryCyclesCharacteristic!.setNotifyValue(true);
+      _primaryCyclesCharacteristic!.lastValueStream.listen((value) {
+        int? cycles = _convertUint32ToInt(value);
+        log("Primary battery cycles received: $cycles");
+        _primaryCyclesController.add(cycles);
       });
       // Subscribe to primary SOC
       _primarySOCCharacteristic!.setNotifyValue(true);
@@ -233,6 +317,13 @@ class ScooterService {
         int? soc = _convertUint32ToInt(value);
         log("Primary SOC received: $soc");
         _primarySOCController.add(soc);
+      });
+      // Subscribe to secondary battery charge cycles
+      _secondaryCyclesCharacteristic!.setNotifyValue(true);
+      _secondaryCyclesCharacteristic!.lastValueStream.listen((value) {
+        int? cycles = _convertUint32ToInt(value);
+        log("Secondary battery cycles received: $cycles");
+        _secondaryCyclesController.add(cycles);
       });
       // Subscribe to secondary SOC
       _secondarySOCCharacteristic!.setNotifyValue(true);
@@ -245,8 +336,11 @@ class ScooterService {
       _stateCharacteristic!.read();
       _seatCharacteristic!.read();
       _handlebarCharacteristic!.read();
-      _internalCbbSOCCharacteristic!.read();
+      _auxSOCCharacteristic!.read();
+      _cbbSOCCharacteristic!.read();
+      _primaryCyclesCharacteristic!.read();
       _primarySOCCharacteristic!.read();
+      _secondaryCyclesCharacteristic!.read();
       _secondarySOCCharacteristic!.read();
     } catch (e) {
       rethrow;
@@ -318,12 +412,22 @@ class ScooterService {
     }
   }
 
-  Future<String?> _getSavedScooter() async {
+  Future<String?> getSavedScooter() async {
     if (savedScooterId != null) {
       return savedScooterId;
     }
     SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.getString("savedScooterId");
+  }
+
+  void forgetSavedScooter() async {
+    stopAutoRestart();
+    savedScooterId = null;
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.remove("savedScooterId");
+    // if (Platform.isAndroid) {
+    //   myScooter?.removeBond();
+    // }
   }
 
   void setSavedScooter(String id) async {
@@ -335,6 +439,13 @@ class ScooterService {
   void dispose() {
     _connectedController.close();
     _stateController.close();
+    _seatController.close();
+    _handlebarController.close();
+    _auxSOCController.close();
+    _cbbSOCController.close();
+    _primaryCyclesController.close();
+    _primarySOCController.close();
+    _secondarySOCController.close();
   }
 
   // thanks gemini advanced <3

@@ -25,37 +25,69 @@ class _StatsScreenState extends State<StatsScreen> {
           StickyHeader(
             header: _header("Battery"),
             content: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              padding: const EdgeInsets.all(8.0),
               child: Column(
                 children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    mainAxisSize: MainAxisSize.max,
+                    children: [
+                      StreamBuilder<int?>(
+                        stream: widget.service.primarySOC,
+                        builder: (context, socSnap) {
+                          return StreamBuilder<int?>(
+                              stream: widget.service.primaryCycles,
+                              builder: (context, cycleSnap) {
+                                return Expanded(
+                                  child: _batteryCard(
+                                      "Primary Battery", socSnap.data ?? 0, [
+                                    "Used for driving",
+                                    "Cycles: ${cycleSnap.data ?? "Unknown"}",
+                                  ]),
+                                );
+                              });
+                        },
+                      ),
+                      StreamBuilder<int?>(
+                        stream: widget.service.secondarySOC,
+                        builder: (context, socSnap) {
+                          if (!socSnap.hasData || socSnap.data == 0) {
+                            return Container();
+                          }
+                          return StreamBuilder<int?>(
+                              stream: widget.service.secondaryCycles,
+                              builder: (context, cycleSnap) {
+                                return Expanded(
+                                  child: _batteryCard(
+                                      "Secondary Battery", socSnap.data ?? 0, [
+                                    "Backup battery",
+                                    "Cycles: ${cycleSnap.data ?? "Unknown"}",
+                                  ]),
+                                );
+                              });
+                        },
+                      ),
+                    ],
+                  ),
                   StreamBuilder<int?>(
-                    stream: widget.service.primarySOC,
+                    stream: widget.service.cbbSOC,
                     builder: (context, snapshot) {
-                      return ListTile(
-                          title: const Text("Primary Battery"),
-                          subtitle: Text(snapshot.hasData
-                              ? "${snapshot.data}%"
-                              : "Unknown"));
+                      return StreamBuilder<double?>(
+                          stream: widget.service.cbbHealth,
+                          builder: (context, cbbHealth) {
+                            return _batteryCard(
+                                "Connectivity Battery", snapshot.data ?? 0, [
+                              'Used for smart features.',
+                              "Health: ${(cbbHealth.hasData ? cbbHealth.data! * 100 : 0)}%"
+                            ]);
+                          });
                     },
                   ),
                   StreamBuilder<int?>(
-                    stream: widget.service.secondarySOC,
+                    stream: widget.service.auxSOC,
                     builder: (context, snapshot) {
-                      return ListTile(
-                          title: const Text("Secondary Battery"),
-                          subtitle: Text(snapshot.hasData
-                              ? "${snapshot.data}%"
-                              : "Unknown"));
-                    },
-                  ),
-                  StreamBuilder<int?>(
-                    stream: widget.service.internalCbbSOC,
-                    builder: (context, snapshot) {
-                      return ListTile(
-                          title: const Text("Connectivity Battery"),
-                          subtitle: Text(snapshot.hasData
-                              ? "${snapshot.data}%"
-                              : "Unknown"));
+                      return _batteryCard("AUX Battery", snapshot.data ?? 0,
+                          ['Used to keep scooter alive']);
                     },
                   ),
                 ],
@@ -90,24 +122,6 @@ class _StatsScreenState extends State<StatsScreen> {
               ],
             ),
           ),
-          StickyHeader(
-            header: _header("Debug"),
-            content: Column(
-              children: [
-                StreamBuilder<String?>(
-                  stream: widget.service.stateRaw,
-                  builder: (context, snapshot) {
-                    return ListTile(
-                      title: const Text("State string"),
-                      subtitle: Text(snapshot.hasData
-                          ? snapshot.data!.replaceAll(" ", "#")
-                          : "Unknown"),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
@@ -124,6 +138,43 @@ class _StatsScreenState extends State<StatsScreen> {
             child: Text(title),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _batteryCard(String name, int soc, List<String> infos) {
+    return Padding(
+      padding: const EdgeInsets.all(12.0),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16.0, 12.0, 16.0, 16.0),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.white),
+          borderRadius: BorderRadius.circular(16.0),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              name.toUpperCase(),
+              style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 12,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onBackground
+                      .withOpacity(0.5)),
+            ),
+            const SizedBox(height: 4.0),
+            Text("$soc%", style: Theme.of(context).textTheme.headlineLarge),
+            const SizedBox(height: 4.0),
+            LinearProgressIndicator(
+              value: soc / 100,
+              borderRadius: BorderRadius.circular(16.0),
+            ),
+            const SizedBox(height: 4.0),
+            ...infos.map((info) => Text(info)),
+          ],
+        ),
       ),
     );
   }
