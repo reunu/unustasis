@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:unustasis/control_screen.dart';
+import 'package:unustasis/onboarding_screen.dart';
 import 'package:unustasis/scooter_service.dart';
 import 'package:unustasis/scooter_state.dart';
 import 'package:unustasis/scooter_visual.dart';
@@ -27,6 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    redirectOrStart();
     widget.scooterService.state.listen((state) {
       setState(() {
         _scooterState = state;
@@ -110,13 +112,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         "Scooter Pro",
                         style: Theme.of(context).textTheme.headlineLarge,
                       ),
-                      SizedBox(width: _connected ? 16 : 0),
-                      _connected
-                          ? const Icon(
-                              Icons.arrow_forward_ios_rounded,
-                              size: 16,
-                            )
-                          : Container(),
+                      const SizedBox(width: 16),
+                      const Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 16,
+                      ),
                     ],
                   ),
                 ),
@@ -184,7 +184,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ScooterActionButton(
                       onPressed: _connected &&
                               _scooterState != null &&
-                              _scooterState!.isOn &&
                               _seatClosed == true
                           ? widget.scooterService.openSeat
                           : null,
@@ -259,6 +258,24 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
     );
+  }
+
+  void redirectOrStart() async {
+    if (await widget.scooterService.getSavedScooter() == null && mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => OnboardingScreen(
+            service: widget.scooterService,
+          ),
+        ),
+      );
+    } else {
+      // check if we're not coming from onboarding
+      if (widget.scooterService.myScooter == null) {
+        widget.scooterService.start();
+      }
+    }
   }
 }
 

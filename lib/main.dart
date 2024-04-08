@@ -7,9 +7,14 @@ void main() {
   runApp(MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   MyApp({super.key});
 
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
   final ScooterService service = ScooterService();
 
   @override
@@ -40,5 +45,11 @@ class MyApp extends StatelessWidget {
         scooterService: service,
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    service.dispose();
+    super.dispose();
   }
 }
