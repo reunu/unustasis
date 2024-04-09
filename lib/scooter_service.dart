@@ -24,6 +24,7 @@ class ScooterService {
   BluetoothCharacteristic? _cbbRemainingCapCharacteristic;
   BluetoothCharacteristic? _cbbFullCapCharacteristic;
   BluetoothCharacteristic? _cbbSOCCharacteristic;
+  BluetoothCharacteristic? _cbbChargingCharacteristic;
   BluetoothCharacteristic? _primaryCyclesCharacteristic;
   BluetoothCharacteristic? _primarySOCCharacteristic;
   BluetoothCharacteristic? _secondaryCyclesCharacteristic;
@@ -54,6 +55,10 @@ class ScooterService {
 
   final BehaviorSubject<int?> _cbbSOCController = BehaviorSubject<int?>();
   Stream<int?> get cbbSOC => _cbbSOCController.stream;
+
+  final BehaviorSubject<bool?> _cbbChargingController =
+      BehaviorSubject<bool?>();
+  Stream<bool?> get cbbCharging => _cbbChargingController.stream;
 
   final BehaviorSubject<int?> _primaryCyclesController =
       BehaviorSubject<int?>();
@@ -223,6 +228,10 @@ class ScooterService {
           myScooter!,
           "9a590060-6e67-5d0d-aab9-ad9126b66f91",
           "9a590061-6e67-5d0d-aab9-ad9126b66f91");
+      _cbbChargingCharacteristic = _findCharacteristic(
+          myScooter!,
+          "9a590070-6e67-5d0d-aab9-ad9126b66f91",
+          "9a590072-6e67-5d0d-aab9-ad9126b66f91");
       _primaryCyclesCharacteristic = _findCharacteristic(
           myScooter!,
           "9a5900e0-6e67-5d0d-aab9-ad9126b66f91",
@@ -298,6 +307,15 @@ class ScooterService {
       _cbbSOCCharacteristic!.lastValueStream.listen((value) {
         _cbbSOCController.add(value.firstOrNull);
       });
+      // subscribe to CBB charging status
+      _subscribeBoolean(_cbbChargingCharacteristic!, "CBB charging",
+          (String chargingState) {
+        if (chargingState == "charging") {
+          _handlebarController.add(true);
+        } else if (chargingState == "not-charging") {
+          _handlebarController.add(false);
+        }
+      });
       // Subscribe to primary battery charge cycles
       _primaryCyclesCharacteristic!.setNotifyValue(true);
       _primaryCyclesCharacteristic!.lastValueStream.listen((value) {
@@ -332,6 +350,7 @@ class ScooterService {
       _handlebarCharacteristic!.read();
       _auxSOCCharacteristic!.read();
       _cbbSOCCharacteristic!.read();
+      _cbbChargingCharacteristic!.read();
       _primaryCyclesCharacteristic!.read();
       _primarySOCCharacteristic!.read();
       _secondaryCyclesCharacteristic!.read();
@@ -419,9 +438,9 @@ class ScooterService {
     savedScooterId = null;
     SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.remove("savedScooterId");
-    // if (Platform.isAndroid) {
-    //   myScooter?.removeBond();
-    // }
+    if (Platform.isAndroid) {
+      myScooter?.removeBond();
+    }
   }
 
   void setSavedScooter(String id) async {

@@ -1,7 +1,6 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
-import 'package:unustasis/home_screen.dart';
 import 'package:unustasis/scooter_service.dart';
 import 'package:unustasis/scooter_state.dart';
 import 'package:unustasis/scooter_visual.dart';
@@ -23,12 +22,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   void initState() {
-    super.initState();
     widget.service.scanning.listen((scanning) {
       setState(() {
         _scanning = scanning;
       });
     });
+    widget.service.connected.listen((connected) {
+      if (connected) {
+        setState(() {
+          _step = 3;
+        });
+      }
+    });
+    super.initState();
   }
 
   List<Widget> getWidgets(int step) {
