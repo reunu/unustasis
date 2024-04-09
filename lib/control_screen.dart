@@ -150,13 +150,13 @@ class _ControlScreenState extends State<ControlScreen> {
                     onPressed: () =>
                         widget._service.wakeUp(),
                     icon: Icons.sunny,
-                    label: "Wake up (beta)",
+                    label: "Wake up",
                   ),
                   ScooterActionButton(
                     onPressed: () =>
                         widget._service.hibernate(),
                     icon: Icons.nightlight,
-                    label: "Hibernate (beta)",
+                    label: "Hibernate",
                   ),
                 ],
               ),

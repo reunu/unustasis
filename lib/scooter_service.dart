@@ -18,6 +18,7 @@ class ScooterService {
 
   // some useful characteristsics to save
   BluetoothCharacteristic? _commandCharacteristic;
+  BluetoothCharacteristic? _hibernationCommandCharacteristic;
   BluetoothCharacteristic? _stateCharacteristic;
   BluetoothCharacteristic? _seatCharacteristic;
   BluetoothCharacteristic? _handlebarCharacteristic;
@@ -196,6 +197,10 @@ class ScooterService {
           myScooter!,
           "9a590000-6e67-5d0d-aab9-ad9126b66f91",
           "9a590001-6e67-5d0d-aab9-ad9126b66f91");
+      _hibernationCommandCharacteristic = _findCharacteristic(
+          myScooter!,
+          "9a590000-6e67-5d0d-aab9-ad9126b66f91",
+          "9a590002-6e67-5d0d-aab9-ad9126b66f91");
       _stateCharacteristic = _findCharacteristic(
           myScooter!,
           "9a590020-6e67-5d0d-aab9-ad9126b66f91",
@@ -379,86 +384,29 @@ class ScooterService {
   }
 
   Future<void> wakeUp() async {
-    List<String> commands = [
-      "scooter:state wakeup",
-      "scooter:state wake-up",
-      "scooter:state resume",
-      "scooter:state start",
-      "scooter:state stop-hibernate",
-      "scooter:state cancel-hibernate",
-      "scooter:state end-hibernate",
-      "scooter:state disable-hibernate",
-      "scooter:state exit-hibernate",
-      "scooter:state terminate-hibernate",
-      "scooter:state stop-hibernating",
-      "scooter:state stop-hibernation",
-      "scooter:state cancel-hibernating",
-      "scooter:state cancel-hibernation",
-      "scooter:state end-hibernating",
-      "scooter:state end-hibernation",
-      "scooter:state exit-hibernating",
-      "scooter:state exit-hibernation",
-      "scooter:state disable-hibernating",
-      "scooter:state disable-hibernation",
-      "scooter:state terminate-hibernating",
-      "scooter:state terminate-hibernation",
-      "scooter:state off",
-      "scooter:state leave-hibernation",
-      "scooter:state release-hibernate",
-      "scooter:state exit-power-saving",
-      "scooter:state awaken-from-hibernate",
-      "scooter:state out-of-hibernation",
-      "scooter:state turn-off-hibernate-mode",
-      "scooter:hibernate off",
-    ];
+    String command = "wakeup";
 
-
-    for (var command in commands) {
-      // _sendCommand(command);
-      Fluttertoast.showToast(
-        msg: "Send command: $command",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
-        backgroundColor: Colors.black,
-        textColor: Colors.white,
-      );
-      await Future.delayed(const Duration(seconds: 2));
-    }
+    Fluttertoast.showToast(
+      msg: "Send command: $command",
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: Colors.black,
+      textColor: Colors.white,
+    );
+    _sendCommand(command, characteristic: _hibernationCommandCharacteristic);
   }
 
   Future<void> hibernate() async {
-    List<String> commands = [
-      "scooter:state start-hibernate",
-      "scooter:state begin-hibernate",
-      "scooter:state activate-hibernate",
-      "scooter:state enable-hibernate",
-      "scooter:state enter-hibernate",
-      "scooter:state start-hibernating",
-      "scooter:state start-hibernation",
-      "scooter:state begin-hibernating",
-      "scooter:state begin-hibernation",
-      "scooter:state activate-hibernating",
-      "scooter:state activate-hibernation",
-      "scooter:state enable-hibernating",
-      "scooter:state enable-hibernation",
-      "scooter:state enter-hibernating",
-      "scooter:state enter-hibernation",
-      "scooter:state on",
-      "scooter:hibernate on",
-    ];
+    String command = "hibernate";
 
-
-    for (var command in commands) {
-      Fluttertoast.showToast(
-        msg: "Send command: $command",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
-        backgroundColor: Colors.black,
-        textColor: Colors.white,
-      );
-      // _sendCommand(command);
-      await Future.delayed(const Duration(seconds: 2));
-    }
+    Fluttertoast.showToast(
+      msg: "Send command: $command",
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: Colors.black,
+      textColor: Colors.white,
+    );
+    _sendCommand(command, characteristic: _hibernationCommandCharacteristic);
   }
 
   // HELPER FUNCTIONS
@@ -475,7 +423,7 @@ class ScooterService {
     });
   }
 
-  void _sendCommand(String command) {
+  void _sendCommand(String command, {BluetoothCharacteristic? characteristic}) {
     log("Sending command: $command");
     if (myScooter == null) {
       throw "Scooter not found!";
@@ -483,8 +431,14 @@ class ScooterService {
     if (myScooter!.isDisconnected) {
       throw "Scooter disconnected!";
     }
+
+    var characteristicToSend = _commandCharacteristic;
+    if (characteristic != null) {
+      characteristicToSend = characteristic;
+    }
+
     try {
-      _commandCharacteristic!.write(ascii.encode(command));
+      characteristicToSend!.write(ascii.encode(command));
     } catch (e) {
       rethrow;
     }
