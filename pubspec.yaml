@@ -79,7 +79,13 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - images/scooter/base.png
+    - images/scooter/base_0.png
+    - images/scooter/base_1.png
+    - images/scooter/base_2.png
+    - images/scooter/base_3.png
+    - images/scooter/base_4.png
+    - images/scooter/base_5.png
+    - images/scooter/base_6.png
     - images/scooter/disconnected.png
     - images/scooter/light_beam.png
     - images/scooter/light_ring.png

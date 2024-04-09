@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sticky_headers/sticky_headers/widget.dart';
 import 'package:unustasis/scooter_service.dart';
 import 'package:unustasis/scooter_state.dart';
@@ -13,6 +14,29 @@ class StatsScreen extends StatefulWidget {
 }
 
 class _StatsScreenState extends State<StatsScreen> {
+  int color = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    getColor();
+  }
+
+  void getColor() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      color = prefs.getInt("color") ?? 0;
+    });
+  }
+
+  void setColor(int newColor) async {
+    setState(() {
+      color = newColor;
+    });
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setInt("color", color);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -54,7 +78,7 @@ class _StatsScreenState extends State<StatsScreen> {
           shrinkWrap: true,
           children: [
             StickyHeader(
-              header: _header("Battery"),
+              header: const Header("Battery"),
               content: Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Column(
@@ -130,7 +154,7 @@ class _StatsScreenState extends State<StatsScreen> {
               ),
             ),
             StickyHeader(
-              header: _header("Scooter"),
+              header: const Header("Scooter"),
               content: Column(
                 children: [
                   StreamBuilder<ScooterState?>(
@@ -167,27 +191,62 @@ class _StatsScreenState extends State<StatsScreen> {
                 ],
               ),
             ),
+            StickyHeader(
+              header: Header("Settings"),
+              content: Column(
+                children: [
+                  // TODO: Move "Forget scooter" here
+                  ListTile(
+                    title: const Text("Scooter color (will update on restart)"),
+                    subtitle: DropdownButtonFormField(
+                      padding: const EdgeInsets.only(top: 4),
+                      value: color,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        contentPadding: EdgeInsets.all(16),
+                      ),
+                      dropdownColor: Theme.of(context).colorScheme.background,
+                      items: const [
+                        DropdownMenuItem(
+                          value: 0,
+                          child: Text("Black"),
+                        ),
+                        DropdownMenuItem(
+                          value: 1,
+                          child: Text("White"),
+                        ),
+                        DropdownMenuItem(
+                          value: 2,
+                          child: Text("Pine"),
+                        ),
+                        DropdownMenuItem(
+                          value: 3,
+                          child: Text("Stone"),
+                        ),
+                        DropdownMenuItem(
+                          value: 4,
+                          child: Text("Coral"),
+                        ),
+                        DropdownMenuItem(
+                          value: 5,
+                          child: Text("Red"),
+                        ),
+                        DropdownMenuItem(
+                          value: 6,
+                          child: Text("Blue"),
+                        ),
+                      ],
+                      onChanged: (newColor) {
+                        setColor(newColor!);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 40),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _header(String title) {
-    return Container(
-      //color: Theme.of(context).colorScheme.background,
-      child: Row(
-        children: [
-          Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-            child: Text(title,
-                style: Theme.of(context)
-                    .textTheme
-                    .headlineSmall!
-                    .copyWith(color: Colors.white70)),
-          ),
-        ],
       ),
     );
   }
@@ -221,11 +280,39 @@ class _StatsScreenState extends State<StatsScreen> {
               value: soc / 100,
               borderRadius: BorderRadius.circular(16.0),
               minHeight: 16,
+              color:
+                  soc < 15 ? Colors.red : Theme.of(context).colorScheme.primary,
             ),
             const SizedBox(height: 12.0),
             ...infos.map((info) => Text(info)),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class Header extends StatelessWidget {
+  const Header(this.title, {super.key});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      //color: Theme.of(context).colorScheme.background,
+      child: Row(
+        children: [
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+            child: Text(title,
+                style: Theme.of(context)
+                    .textTheme
+                    .headlineSmall!
+                    .copyWith(color: Colors.white70)),
+          ),
+        ],
       ),
     );
   }

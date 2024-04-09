@@ -123,9 +123,15 @@ class ScooterService {
     }
   }
 
+  // spins up the whole connection process, and connects/bonds with the nearest scooter
   void start({bool restart = true}) async {
     _foundSth = false;
     // TODO: Turn on bluetooth if it's off, or prompt the user to do so on iOS
+    // Cleanup in case this is a restart
+    _connectedController.add(false);
+    if (myScooter != null) {
+      myScooter!.disconnect();
+    }
     // First, see if the phone is already actively connected to a scooter
     List<BluetoothDevice> systemScooters = await getSystemScooters();
     if (systemScooters.isNotEmpty) {
@@ -159,6 +165,7 @@ class ScooterService {
         } catch (e) {
           // Guess this one is not happy with us
           // TODO: we'll probably need some error handling here
+          log("Error during connect!");
           log(e.toString());
         }
       });
@@ -237,7 +244,7 @@ class ScooterService {
           "9a590061-6e67-5d0d-aab9-ad9126b66f91");
       _cbbChargingCharacteristic = _findCharacteristic(
           myScooter!,
-          "9a590070-6e67-5d0d-aab9-ad9126b66f91",
+          "9a590060-6e67-5d0d-aab9-ad9126b66f91",
           "9a590072-6e67-5d0d-aab9-ad9126b66f91");
       _primaryCyclesCharacteristic = _findCharacteristic(
           myScooter!,
@@ -289,26 +296,26 @@ class ScooterService {
         log("Aux SOC received: $soc");
         _auxSOCController.add(soc);
       });
-      // subscribe to CBB remaining capacity
-      _cbbRemainingCapCharacteristic!.setNotifyValue(true);
-      _cbbRemainingCapCharacteristic!.lastValueStream.listen((value) {
-        int? remainingCap = _convertUint32ToInt(value);
-        log("CBB remaining capacity received: $remainingCap");
-        cbbRemainingCap = remainingCap;
-        if (cbbRemainingCap != null && cbbFullCap != null) {
-          _cbbHealthController.add(cbbRemainingCap! / cbbFullCap!);
-        }
-      });
-      // subscribe to CBB full capacity
-      _cbbFullCapCharacteristic!.setNotifyValue(true);
-      _cbbFullCapCharacteristic!.lastValueStream.listen((value) {
-        int? fullCap = _convertUint32ToInt(value);
-        log("CBB full capacity received: $fullCap");
-        cbbFullCap = fullCap;
-        if (cbbRemainingCap != null && cbbFullCap != null) {
-          _cbbHealthController.add(cbbRemainingCap! / cbbFullCap!);
-        }
-      });
+      // // subscribe to CBB remaining capacity
+      // _cbbRemainingCapCharacteristic!.setNotifyValue(true);
+      // _cbbRemainingCapCharacteristic!.lastValueStream.listen((value) {
+      //   int? remainingCap = _convertUint32ToInt(value);
+      //   log("CBB remaining capacity received: $remainingCap");
+      //   cbbRemainingCap = remainingCap;
+      //   if (cbbRemainingCap != null && cbbFullCap != null) {
+      //     _cbbHealthController.add(cbbRemainingCap! / cbbFullCap!);
+      //   }
+      // });
+      // // subscribe to CBB full capacity
+      // _cbbFullCapCharacteristic!.setNotifyValue(true);
+      // _cbbFullCapCharacteristic!.lastValueStream.listen((value) {
+      //   int? fullCap = _convertUint32ToInt(value);
+      //   log("CBB full capacity received: $fullCap");
+      //   cbbFullCap = fullCap;
+      //   if (cbbRemainingCap != null && cbbFullCap != null) {
+      //     _cbbHealthController.add(cbbRemainingCap! / cbbFullCap!);
+      //   }
+      // });
       // Subscribe to internal CBB SOC
       _cbbSOCCharacteristic!.setNotifyValue(true);
       _cbbSOCCharacteristic!.lastValueStream.listen((value) {
@@ -318,9 +325,9 @@ class ScooterService {
       _subscribeBoolean(_cbbChargingCharacteristic!, "CBB charging",
           (String chargingState) {
         if (chargingState == "charging") {
-          _handlebarController.add(true);
+          _cbbChargingController.add(true);
         } else if (chargingState == "not-charging") {
-          _handlebarController.add(false);
+          _cbbChargingController.add(false);
         }
       });
       // Subscribe to primary battery charge cycles
@@ -369,6 +376,7 @@ class ScooterService {
 
   BluetoothCharacteristic? _findCharacteristic(
       BluetoothDevice device, String serviceUuid, String characteristicUuid) {
+    log("Finding characteristic $characteristicUuid in service $serviceUuid...");
     return device.servicesList
         .firstWhere((service) => service.serviceUuid.toString() == serviceUuid)
         .characteristics
@@ -474,6 +482,7 @@ class ScooterService {
 
   void forgetSavedScooter() async {
     stopAutoRestart();
+    _connectedController.add(false);
     savedScooterId = null;
     SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.remove("savedScooterId");

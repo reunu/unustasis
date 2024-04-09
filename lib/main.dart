@@ -22,6 +22,9 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       title: 'Unustasis',
       darkTheme: ThemeData(
+        appBarTheme: const AppBarTheme(
+          centerTitle: true,
+        ),
         textTheme: GoogleFonts.nunitoTextTheme(
             ThemeData(brightness: Brightness.dark).textTheme),
         brightness: Brightness.dark,

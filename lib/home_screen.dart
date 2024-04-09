@@ -1,6 +1,7 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unustasis/control_screen.dart';
 import 'package:unustasis/onboarding_screen.dart';
 import 'package:unustasis/scooter_service.dart';
@@ -24,10 +25,12 @@ class _HomeScreenState extends State<HomeScreen> {
   bool? _handlebarsLocked;
   int? _primarySOC;
   int? _secondarySOC;
+  int? color;
 
   @override
   void initState() {
     super.initState();
+    setupColor();
     redirectOrStart();
     widget.scooterService.state.listen((state) {
       setState(() {
@@ -144,7 +147,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 minHeight: 8,
                                 borderRadius: BorderRadius.circular(8),
                                 value: _primarySOC! / 100.0,
-                                color: Theme.of(context).colorScheme.primary,
+                                color: _primarySOC! < 15
+                                    ? Colors.red
+                                    : Theme.of(context).colorScheme.primary,
                               )),
                           const SizedBox(width: 8),
                           Text("$_primarySOC%"),
@@ -158,8 +163,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                     minHeight: 8,
                                     borderRadius: BorderRadius.circular(8),
                                     value: _secondarySOC! / 100.0,
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
+                                    color: _secondarySOC! < 15
+                                        ? Colors.red
+                                        : Theme.of(context).colorScheme.primary,
                                   ))
                               : Container(),
                           _secondarySOC != null && _secondarySOC! > 0
@@ -173,6 +179,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     : Container(),
                 Expanded(
                     child: ScooterVisual(
+                        color: color,
                         state: _scooterState,
                         scanning: _scanning,
                         blinkerLeft: false, // TODO: extract ScooterBlinkerState
@@ -230,6 +237,14 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  void setupColor() {
+    SharedPreferences.getInstance().then((prefs) {
+      setState(() {
+        color = prefs.getInt("color");
+      });
+    });
   }
 
   void showSeatWarning() {

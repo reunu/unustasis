@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:sticky_headers/sticky_headers/widget.dart';
 import 'package:unustasis/home_screen.dart';
 import 'package:unustasis/onboarding_screen.dart';
 import 'package:unustasis/scooter_service.dart';
+import 'package:unustasis/stats_screen.dart';
 
 class ControlScreen extends StatefulWidget {
   const ControlScreen({required ScooterService service, super.key})
@@ -35,6 +37,7 @@ class _ControlScreenState extends State<ControlScreen> {
         ),
         child: ListView(
           children: [
+            const Header("State"),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: Row(
@@ -51,14 +54,28 @@ class _ControlScreenState extends State<ControlScreen> {
                     icon: Icons.lock_open_outlined,
                     label: "Unlock",
                   ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
                   ScooterActionButton(
-                    onPressed: () { widget._service.start; Navigator.pop(context); },
-                    icon: Icons.refresh,
-                    label: "Refresh",
+                    onPressed: () => widget._service.wakeUp(),
+                    icon: Icons.sunny,
+                    label: "Wake up",
+                  ),
+                  ScooterActionButton(
+                    onPressed: () => widget._service.hibernate(),
+                    icon: Icons.nightlight,
+                    label: "Hibernate",
                   ),
                 ],
               ),
             ),
+            const Header("Blinkers"),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: Row(
@@ -72,12 +89,6 @@ class _ControlScreenState extends State<ControlScreen> {
                   ),
                   ScooterActionButton(
                     onPressed: () =>
-                        widget._service.blink(left: true, right: true),
-                    icon: Icons.code_rounded,
-                    label: "Blink both",
-                  ),
-                  ScooterActionButton(
-                    onPressed: () =>
                         widget._service.blink(left: false, right: true),
                     icon: Icons.arrow_forward_ios_rounded,
                     label: "Blink right",
@@ -88,13 +99,35 @@ class _ControlScreenState extends State<ControlScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ScooterActionButton(
+                      onPressed: () =>
+                          widget._service.blink(left: true, right: true),
+                      icon: Icons.code_rounded,
+                      label: "Blink both",
+                    ),
+                    ScooterActionButton(
+                      onPressed: () =>
+                          widget._service.blink(left: false, right: false),
+                      icon: Icons.code_off_rounded,
+                      label: "Blinkers off",
+                    ),
+                  ]),
+            ),
+            Header("Danger zone"),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   ScooterActionButton(
-                    onPressed: () =>
-                        widget._service.blink(left: false, right: false),
-                    icon: Icons.code_off_rounded,
-                    label: "Blinkers off",
+                    onPressed: () {
+                      widget._service.start;
+                      Navigator.pop(context);
+                    },
+                    icon: Icons.refresh,
+                    label: "Refresh",
                   ),
                   ScooterActionButton(
                     onPressed: () async {
@@ -137,26 +170,6 @@ class _ControlScreenState extends State<ControlScreen> {
                     },
                     icon: Icons.remove_circle_outline,
                     label: "Forget scooter",
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ScooterActionButton(
-                    onPressed: () =>
-                        widget._service.wakeUp(),
-                    icon: Icons.sunny,
-                    label: "Wake up",
-                  ),
-                  ScooterActionButton(
-                    onPressed: () =>
-                        widget._service.hibernate(),
-                    icon: Icons.nightlight,
-                    label: "Hibernate",
                   ),
                 ],
               ),

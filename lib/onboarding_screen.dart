@@ -132,15 +132,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            "Your scooter is now connected and ready to use. Press the button below to finish onboarding.",
+            "If your phone asks you to pair, please accept and enter the code on your scooter's display. Press the button below to finish onboarding.",
             style: Theme.of(context).textTheme.titleMedium,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 40),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              minimumSize: const Size.fromHeight(
-                  60), // fromHeight use double.infinity as width and 40 is the height
+              minimumSize: const Size.fromHeight(60),
             ),
             onPressed: () {
               log("Next");
