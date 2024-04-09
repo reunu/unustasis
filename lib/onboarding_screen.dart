@@ -22,12 +22,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   void initState() {
-    super.initState();
     widget.service.scanning.listen((scanning) {
       setState(() {
         _scanning = scanning;
       });
     });
+    widget.service.connected.listen((connected) {
+      if (connected) {
+        setState(() {
+          _step = 3;
+        });
+      }
+    });
+    super.initState();
   }
 
   List<Widget> getWidgets(int step) {

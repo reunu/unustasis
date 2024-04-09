@@ -2,11 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unustasis/flutter/blue_plus_mockable.dart';
 import 'package:unustasis/scooter_state.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class ScooterService {
   String? savedScooterId;
@@ -17,6 +19,7 @@ class ScooterService {
 
   // some useful characteristsics to save
   BluetoothCharacteristic? _commandCharacteristic;
+  BluetoothCharacteristic? _hibernationCommandCharacteristic;
   BluetoothCharacteristic? _stateCharacteristic;
   BluetoothCharacteristic? _seatCharacteristic;
   BluetoothCharacteristic? _handlebarCharacteristic;
@@ -24,6 +27,7 @@ class ScooterService {
   BluetoothCharacteristic? _cbbRemainingCapCharacteristic;
   BluetoothCharacteristic? _cbbFullCapCharacteristic;
   BluetoothCharacteristic? _cbbSOCCharacteristic;
+  BluetoothCharacteristic? _cbbChargingCharacteristic;
   BluetoothCharacteristic? _primaryCyclesCharacteristic;
   BluetoothCharacteristic? _primarySOCCharacteristic;
   BluetoothCharacteristic? _secondaryCyclesCharacteristic;
@@ -59,6 +63,10 @@ class ScooterService {
 
   final BehaviorSubject<int?> _cbbSOCController = BehaviorSubject<int?>();
   Stream<int?> get cbbSOC => _cbbSOCController.stream;
+
+  final BehaviorSubject<bool?> _cbbChargingController =
+      BehaviorSubject<bool?>();
+  Stream<bool?> get cbbCharging => _cbbChargingController.stream;
 
   final BehaviorSubject<int?> _primaryCyclesController =
       BehaviorSubject<int?>();
@@ -200,6 +208,10 @@ class ScooterService {
           myScooter!,
           "9a590000-6e67-5d0d-aab9-ad9126b66f91",
           "9a590001-6e67-5d0d-aab9-ad9126b66f91");
+      _hibernationCommandCharacteristic = _findCharacteristic(
+          myScooter!,
+          "9a590000-6e67-5d0d-aab9-ad9126b66f91",
+          "9a590002-6e67-5d0d-aab9-ad9126b66f91");
       _stateCharacteristic = _findCharacteristic(
           myScooter!,
           "9a590020-6e67-5d0d-aab9-ad9126b66f91",
@@ -228,6 +240,10 @@ class ScooterService {
           myScooter!,
           "9a590060-6e67-5d0d-aab9-ad9126b66f91",
           "9a590061-6e67-5d0d-aab9-ad9126b66f91");
+      _cbbChargingCharacteristic = _findCharacteristic(
+          myScooter!,
+          "9a590070-6e67-5d0d-aab9-ad9126b66f91",
+          "9a590072-6e67-5d0d-aab9-ad9126b66f91");
       _primaryCyclesCharacteristic = _findCharacteristic(
           myScooter!,
           "9a5900e0-6e67-5d0d-aab9-ad9126b66f91",
@@ -303,6 +319,15 @@ class ScooterService {
       _cbbSOCCharacteristic!.lastValueStream.listen((value) {
         _cbbSOCController.add(value.firstOrNull);
       });
+      // subscribe to CBB charging status
+      _subscribeBoolean(_cbbChargingCharacteristic!, "CBB charging",
+          (String chargingState) {
+        if (chargingState == "charging") {
+          _handlebarController.add(true);
+        } else if (chargingState == "not-charging") {
+          _handlebarController.add(false);
+        }
+      });
       // Subscribe to primary battery charge cycles
       _primaryCyclesCharacteristic!.setNotifyValue(true);
       _primaryCyclesCharacteristic!.lastValueStream.listen((value) {
@@ -337,6 +362,7 @@ class ScooterService {
       _handlebarCharacteristic!.read();
       _auxSOCCharacteristic!.read();
       _cbbSOCCharacteristic!.read();
+      _cbbChargingCharacteristic!.read();
       _primaryCyclesCharacteristic!.read();
       _primarySOCCharacteristic!.read();
       _secondaryCyclesCharacteristic!.read();
@@ -382,6 +408,32 @@ class ScooterService {
     }
   }
 
+  Future<void> wakeUp() async {
+    String command = "wakeup";
+
+    Fluttertoast.showToast(
+      msg: "Send command: $command",
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: Colors.black,
+      textColor: Colors.white,
+    );
+    _sendCommand(command, characteristic: _hibernationCommandCharacteristic);
+  }
+
+  Future<void> hibernate() async {
+    String command = "hibernate";
+
+    Fluttertoast.showToast(
+      msg: "Send command: $command",
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: Colors.black,
+      textColor: Colors.white,
+    );
+    _sendCommand(command, characteristic: _hibernationCommandCharacteristic);
+  }
+
   // HELPER FUNCTIONS
 
   void _subscribeBoolean(
@@ -396,7 +448,7 @@ class ScooterService {
     });
   }
 
-  void _sendCommand(String command) {
+  void _sendCommand(String command, {BluetoothCharacteristic? characteristic}) {
     log("Sending command: $command");
     if (myScooter == null) {
       throw "Scooter not found!";
@@ -404,8 +456,14 @@ class ScooterService {
     if (myScooter!.isDisconnected) {
       throw "Scooter disconnected!";
     }
+
+    var characteristicToSend = _commandCharacteristic;
+    if (characteristic != null) {
+      characteristicToSend = characteristic;
+    }
+
     try {
-      _commandCharacteristic!.write(ascii.encode(command));
+      characteristicToSend!.write(ascii.encode(command));
     } catch (e) {
       rethrow;
     }
@@ -424,9 +482,9 @@ class ScooterService {
     savedScooterId = null;
     SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.remove("savedScooterId");
-    // if (Platform.isAndroid) {
-    //   myScooter?.removeBond();
-    // }
+    if (Platform.isAndroid) {
+      myScooter?.removeBond();
+    }
   }
 
   void setSavedScooter(String id) async {
