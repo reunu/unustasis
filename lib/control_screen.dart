@@ -135,12 +135,32 @@ class _ControlScreenState extends State<ControlScreen> {
                         }
                       });
                     },
-                    icon: Icons.refresh_rounded,
+                    icon: Icons.remove_circle_outline,
                     label: "Forget scooter",
                   ),
                 ],
               ),
-            )
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ScooterActionButton(
+                    onPressed: () =>
+                        widget._service.wakeUp(),
+                    icon: Icons.sunny,
+                    label: "Wake up (beta)",
+                  ),
+                  ScooterActionButton(
+                    onPressed: () =>
+                        widget._service.hibernate(),
+                    icon: Icons.nightlight,
+                    label: "Hibernate (beta)",
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),

@@ -1,12 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
-import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unustasis/scooter_state.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class ScooterService {
   String? savedScooterId;
@@ -374,6 +375,89 @@ class ScooterService {
       _sendCommand("scooter:blinker both");
     } else {
       _sendCommand("scooter:blinker off");
+    }
+  }
+
+  Future<void> wakeUp() async {
+    List<String> commands = [
+      "scooter:state wakeup",
+      "scooter:state wake-up",
+      "scooter:state resume",
+      "scooter:state start",
+      "scooter:state stop-hibernate",
+      "scooter:state cancel-hibernate",
+      "scooter:state end-hibernate",
+      "scooter:state disable-hibernate",
+      "scooter:state exit-hibernate",
+      "scooter:state terminate-hibernate",
+      "scooter:state stop-hibernating",
+      "scooter:state stop-hibernation",
+      "scooter:state cancel-hibernating",
+      "scooter:state cancel-hibernation",
+      "scooter:state end-hibernating",
+      "scooter:state end-hibernation",
+      "scooter:state exit-hibernating",
+      "scooter:state exit-hibernation",
+      "scooter:state disable-hibernating",
+      "scooter:state disable-hibernation",
+      "scooter:state terminate-hibernating",
+      "scooter:state terminate-hibernation",
+      "scooter:state off",
+      "scooter:state leave-hibernation",
+      "scooter:state release-hibernate",
+      "scooter:state exit-power-saving",
+      "scooter:state awaken-from-hibernate",
+      "scooter:state out-of-hibernation",
+      "scooter:state turn-off-hibernate-mode",
+      "scooter:hibernate off",
+    ];
+
+
+    for (var command in commands) {
+      // _sendCommand(command);
+      Fluttertoast.showToast(
+        msg: "Send command: $command",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.black,
+        textColor: Colors.white,
+      );
+      await Future.delayed(const Duration(seconds: 2));
+    }
+  }
+
+  Future<void> hibernate() async {
+    List<String> commands = [
+      "scooter:state start-hibernate",
+      "scooter:state begin-hibernate",
+      "scooter:state activate-hibernate",
+      "scooter:state enable-hibernate",
+      "scooter:state enter-hibernate",
+      "scooter:state start-hibernating",
+      "scooter:state start-hibernation",
+      "scooter:state begin-hibernating",
+      "scooter:state begin-hibernation",
+      "scooter:state activate-hibernating",
+      "scooter:state activate-hibernation",
+      "scooter:state enable-hibernating",
+      "scooter:state enable-hibernation",
+      "scooter:state enter-hibernating",
+      "scooter:state enter-hibernation",
+      "scooter:state on",
+      "scooter:hibernate on",
+    ];
+
+
+    for (var command in commands) {
+      Fluttertoast.showToast(
+        msg: "Send command: $command",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.black,
+        textColor: Colors.white,
+      );
+      // _sendCommand(command);
+      await Future.delayed(const Duration(seconds: 2));
     }
   }
 
