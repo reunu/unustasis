@@ -1,12 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
-import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unustasis/scooter_state.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class ScooterService {
   String? savedScooterId;
@@ -17,6 +18,7 @@ class ScooterService {
 
   // some useful characteristsics to save
   BluetoothCharacteristic? _commandCharacteristic;
+  BluetoothCharacteristic? _hibernationCommandCharacteristic;
   BluetoothCharacteristic? _stateCharacteristic;
   BluetoothCharacteristic? _seatCharacteristic;
   BluetoothCharacteristic? _handlebarCharacteristic;
@@ -195,6 +197,10 @@ class ScooterService {
           myScooter!,
           "9a590000-6e67-5d0d-aab9-ad9126b66f91",
           "9a590001-6e67-5d0d-aab9-ad9126b66f91");
+      _hibernationCommandCharacteristic = _findCharacteristic(
+          myScooter!,
+          "9a590000-6e67-5d0d-aab9-ad9126b66f91",
+          "9a590002-6e67-5d0d-aab9-ad9126b66f91");
       _stateCharacteristic = _findCharacteristic(
           myScooter!,
           "9a590020-6e67-5d0d-aab9-ad9126b66f91",
@@ -377,6 +383,32 @@ class ScooterService {
     }
   }
 
+  Future<void> wakeUp() async {
+    String command = "wakeup";
+
+    Fluttertoast.showToast(
+      msg: "Send command: $command",
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: Colors.black,
+      textColor: Colors.white,
+    );
+    _sendCommand(command, characteristic: _hibernationCommandCharacteristic);
+  }
+
+  Future<void> hibernate() async {
+    String command = "hibernate";
+
+    Fluttertoast.showToast(
+      msg: "Send command: $command",
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: Colors.black,
+      textColor: Colors.white,
+    );
+    _sendCommand(command, characteristic: _hibernationCommandCharacteristic);
+  }
+
   // HELPER FUNCTIONS
 
   void _subscribeBoolean(
@@ -391,7 +423,7 @@ class ScooterService {
     });
   }
 
-  void _sendCommand(String command) {
+  void _sendCommand(String command, {BluetoothCharacteristic? characteristic}) {
     log("Sending command: $command");
     if (myScooter == null) {
       throw "Scooter not found!";
@@ -399,8 +431,14 @@ class ScooterService {
     if (myScooter!.isDisconnected) {
       throw "Scooter disconnected!";
     }
+
+    var characteristicToSend = _commandCharacteristic;
+    if (characteristic != null) {
+      characteristicToSend = characteristic;
+    }
+
     try {
-      _commandCharacteristic!.write(ascii.encode(command));
+      characteristicToSend!.write(ascii.encode(command));
     } catch (e) {
       rethrow;
     }
