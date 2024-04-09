@@ -1,8 +1,7 @@
 ### Changes:
-- Adding a simple stats screen (will become way prettier and more elaborate in the future)
-- Adding CBB battery level (thanks DSIW)
-- More transparency during connection
-- Fixing "ready to drive" state
+- Layout improvements to stats and control screen
+- Proper onboarding flow on first launch
+- Select your scooter color!
 
 ### Known issues:
-- Secondary battery level is still wrong
+- Onboarding switches to "Success" before bonding is actually done
