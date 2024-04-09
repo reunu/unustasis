@@ -13,14 +13,13 @@ class ScooterService {
   BluetoothDevice? myScooter; // reserved for a connected scooter!
   bool _foundSth = false; // whether we've found a scooter yet
   int? cbbRemainingCap, cbbFullCap;
-  String? _state, _internalState;
+  String? _state, _powerState;
   bool restarting = false;
 
   // some useful characteristsics to save
   BluetoothCharacteristic? _commandCharacteristic;
   BluetoothCharacteristic? _stateCharacteristic;
-  // TODO: define proper name. Eventually MDB state?
-  BluetoothCharacteristic? _internalStateCharacteristic;
+  BluetoothCharacteristic? _powerStateCharacteristic;
   BluetoothCharacteristic? _seatCharacteristic;
   BluetoothCharacteristic? _handlebarCharacteristic;
   BluetoothCharacteristic? _auxSOCCharacteristic;
@@ -202,7 +201,7 @@ class ScooterService {
           myScooter!,
           "9a590020-6e67-5d0d-aab9-ad9126b66f91",
           "9a590021-6e67-5d0d-aab9-ad9126b66f91");
-      _internalStateCharacteristic = _findCharacteristic(
+      _powerStateCharacteristic = _findCharacteristic(
           myScooter!,
           "9a5900a0-6e67-5d0d-aab9-ad9126b66f91",
           "9a5900a1-6e67-5d0d-aab9-ad9126b66f91");
@@ -253,10 +252,10 @@ class ScooterService {
         _state = value;
         _updateScooterState();
       });
-      // Subscribe to internal state for correct hibernation
-      _subscribeString(_internalStateCharacteristic!, "Internal State",
+      // Subscribe to power state for correct hibernation
+      _subscribeString(_powerStateCharacteristic!, "Power State",
           (String value) {
-        _internalState = value;
+        _powerState = value;
         _updateScooterState();
       });
       // Subscribe to seat
@@ -352,8 +351,8 @@ class ScooterService {
   }
 
   void _updateScooterState() {
-    log("### Internal state: '${_state}' | '${_internalState}'");
-    if (_state != null && _internalState == "hibernating") {
+    log("Power state: '${_state}' | '${_powerState}'");
+    if (_state != null && _powerState == "hibernating") {
       _stateController.add(ScooterState.hibernating);
     }
     if (_state != null) {
