@@ -373,15 +373,18 @@ class ScooterActionButton extends StatelessWidget {
     required IconData icon,
     Color? iconColor,
     required String label,
+    double? size,
   })  : _onPressed = onPressed,
         _icon = icon,
         _iconColor = iconColor,
-        _label = label;
+        _label = label,
+        _size = size;
 
   final void Function()? _onPressed;
   final IconData _icon;
   final String _label;
   final Color? _iconColor;
+  final double? _size;
 
   @override
   Widget build(BuildContext context) {
@@ -393,7 +396,7 @@ class ScooterActionButton extends StatelessWidget {
       children: [
         OutlinedButton(
           style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(_size ?? 24),
             side: BorderSide(
               color: mainColor,
             ),
@@ -401,6 +404,7 @@ class ScooterActionButton extends StatelessWidget {
           onPressed: _onPressed,
           child: Icon(
             _icon,
+            size: _size,
             color: mainColor,
           ),
         ),
