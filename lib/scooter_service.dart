@@ -46,6 +46,10 @@ class ScooterService {
         if (lastPing != null) {
           _lastPingController
               .add(DateTime.fromMicrosecondsSinceEpoch(lastPing));
+          _primarySOCController.add(prefs.getInt("primarySOC"));
+          _secondarySOCController.add(prefs.getInt("secondarySOC"));
+          _cbbSOCController.add(prefs.getInt("cbbSOC"));
+          _auxSOCController.add(prefs.getInt("auxSOC"));
         }
       }
     });
@@ -359,8 +363,15 @@ class ScooterService {
       // });
       // Subscribe to internal CBB SOC
       _cbbSOCCharacteristic!.setNotifyValue(true);
-      _cbbSOCCharacteristic!.lastValueStream.listen((value) {
-        _cbbSOCController.add(value.firstOrNull);
+      _cbbSOCCharacteristic!.lastValueStream.listen((value) async {
+        int? soc = _convertUint32ToInt(value);
+        log("cbb SOC received: $soc");
+        _cbbSOCController.add(soc);
+        if (soc != null) {
+          ping();
+          prefs ??= await SharedPreferences.getInstance();
+          prefs!.setInt("sbbSOC", soc);
+        }
       });
       // subscribe to CBB charging status
       _subscribeBoolean(_cbbChargingCharacteristic!, "CBB charging",
@@ -387,7 +398,7 @@ class ScooterService {
         if (soc != null) {
           ping();
           prefs ??= await SharedPreferences.getInstance();
-          prefs!.setInt("auxSOC", soc);
+          prefs!.setInt("primarySOC", soc);
         }
       });
       // Subscribe to secondary battery charge cycles
@@ -406,7 +417,7 @@ class ScooterService {
         if (soc != null) {
           ping();
           prefs ??= await SharedPreferences.getInstance();
-          prefs!.setInt("auxSOC", soc);
+          prefs!.setInt("secondarySOC", soc);
         }
       });
       // Read each value once to get the ball rolling
