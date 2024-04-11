@@ -1,0 +1,13 @@
+{
+    "onboarding_step0_heading": "Welcome!",
+    "onboarding_step0_body": "Unustasis is a third party app for the unu Scooter Pro. Connect your scooter to get started.",
+    "onboarding_step0_button": "LET'S GO",
+    "onboarding_step1_heading": "Connect your scooter",
+    "onboarding_step1_body": "Make sure your scooter is turned on and in range. Once you're ready, press the button below to start.",
+    "onboarding_step1_button": "CONNECT",
+    "onboarding_step2_heading": "Scanning...",
+    "onboarding_step2_body": "This may take a few seconds. If your phone asks you to pair, please accept and enter the code on your scooter's display.",
+    "onboarding_step3_heading": "Success!",
+    "onboarding_step3_body": "If your phone asks you to pair, please accept and enter the code on your scooter's display. Press the button below to finish onboarding.",
+    "onboarding_step3_button": "CONTINUE TO APP"
+}

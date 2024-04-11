@@ -238,6 +238,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.32.1"
+  flutter_i18n:
+    dependency: "direct main"
+    description:
+      name: flutter_i18n
+      sha256: c823a9c9e32d2166d0ce8fa60b63459648a55f29a17c0d5dbf66fe4c9e05f1c2
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.35.1"
   flutter_launcher_icons:
     dependency: "direct dev"
     description:
@@ -255,6 +263,19 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.2"
+  flutter_localizations:
+    dependency: transitive
+    description: flutter
+    source: sdk
+    version: "0.0.0"
+  flutter_string_extractor:
+    dependency: "direct dev"
+    description:
+      name: flutter_string_extractor
+      sha256: "2ec3e2cd04837b6c9924755a4b30ad949f92818f7f37c903c0a34a08b8f9602c"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.1"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -265,6 +286,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  fluttertoast:
+    dependency: "direct main"
+    description:
+      name: fluttertoast
+      sha256: dfdde255317af381bfc1c486ed968d5a43a2ded9c931e87cbecd88767d6a71c1
+      url: "https://pub.dev"
+    source: hosted
+    version: "8.2.4"
   frontend_server_client:
     dependency: transitive
     description:
@@ -281,14 +310,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.2"
-  fluttertoast:
-    dependency: "direct main"
-    description:
-      name: fluttertoast
-      sha256: dfdde255317af381bfc1c486ed968d5a43a2ded9c931e87cbecd88767d6a71c1
-      url: "https://pub.dev"
-    source: hosted
-    version: "8.2.4"
   google_fonts:
     dependency: "direct main"
     description:
@@ -337,6 +358,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.7"
+  intl:
+    dependency: transitive
+    description:
+      name: intl
+      sha256: "3bc132a9dbce73a7e4a21a17d06e1878839ffbf975568bc875c60537824b0c4d"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.18.1"
   io:
     dependency: transitive
     description:
@@ -726,6 +755,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.1"
+  toml:
+    dependency: transitive
+    description:
+      name: toml
+      sha256: "9968de24e45b632bf1a654fe1ac7b6fe5261c349243df83fd262397799c45a2d"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.15.0"
   typed_data:
     dependency: transitive
     description:
@@ -798,6 +835,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.5.0"
+  xml2json:
+    dependency: transitive
+    description:
+      name: xml2json
+      sha256: "52b7c8d350fdce09545b058982c26689ee89f1eb188cc9910d585665bfe27bc0"
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.2.3"
   yaml:
     dependency: transitive
     description:

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:sticky_headers/sticky_headers/widget.dart';
 import 'package:unustasis/home_screen.dart';
 import 'package:unustasis/onboarding_screen.dart';
 import 'package:unustasis/scooter_service.dart';
@@ -115,7 +114,7 @@ class _ControlScreenState extends State<ControlScreen> {
                     ),
                   ]),
             ),
-            Header("Danger zone"),
+            const Header("Danger zone"),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: Row(

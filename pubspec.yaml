@@ -42,12 +42,14 @@ dependencies:
   sticky_headers: ^0.3.0+2
   rxdart: ^0.27.7
   fluttertoast: ^8.0.8
+  flutter_i18n: ^0.35.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   mockito: ^5.4.4
   build_runner: ^2.4.9
+  flutter_string_extractor: ^0.1.1
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -94,6 +96,8 @@ flutter:
     - images/scooter/light_ring.png
     - images/scooter/blinker_l.png
     - images/scooter/blinker_r.png
+    - assets/i18n/en.json
+    - assets/i18n/de.json
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware

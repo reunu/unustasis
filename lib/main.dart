@@ -1,4 +1,7 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:unustasis/flutter/blue_plus_mockable.dart';
 import 'package:unustasis/home_screen.dart';
@@ -45,6 +48,19 @@ class _MyAppState extends State<MyApp> {
         /* dark theme settings */
       ),
       themeMode: ThemeMode.dark,
+      localizationsDelegates: [
+        FlutterI18nDelegate(
+          translationLoader: FileTranslationLoader(
+            useCountryCode: false,
+            // forcedLocale: const Locale('de'),
+            fallbackFile: 'de',
+            basePath: 'assets/i18n',
+          ),
+          missingTranslationHandler: (key, locale) {
+            log("--- Missing Key: $key, languageCode: ${locale?.languageCode}");
+          },
+        ),
+      ],
       home: HomeScreen(
         scooterService: service,
       ),
