@@ -1,6 +1,7 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:unustasis/flutter/blue_plus_mockable.dart';
@@ -8,6 +9,10 @@ import 'package:unustasis/home_screen.dart';
 import 'package:unustasis/scooter_service.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+  ]);
   runApp(const MyApp());
 }
 
@@ -53,7 +58,7 @@ class _MyAppState extends State<MyApp> {
           translationLoader: FileTranslationLoader(
             useCountryCode: false,
             // forcedLocale: const Locale('de'),
-            fallbackFile: 'de',
+            fallbackFile: 'en',
             basePath: 'assets/i18n',
           ),
           missingTranslationHandler: (key, locale) {

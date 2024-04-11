@@ -16,7 +16,8 @@ class ScooterService {
   BluetoothDevice? myScooter; // reserved for a connected scooter!
   bool _foundSth = false; // whether we've found a scooter yet
   int? cbbRemainingCap, cbbFullCap;
-  bool restarting = false;
+  bool _autoRestarting = false;
+  bool _scanning = false;
   SharedPreferences? prefs;
 
   // some useful characteristsics to save
@@ -155,6 +156,7 @@ class ScooterService {
 
   // spins up the whole connection process, and connects/bonds with the nearest scooter
   void start({bool restart = true}) async {
+    log("Starting connection process...");
     _foundSth = false;
     // TODO: Turn on bluetooth if it's off, or prompt the user to do so on iOS
     // Cleanup in case this is a restart
@@ -173,12 +175,13 @@ class ScooterService {
       await setUpCharacteristics(systemScooters.first);
       _connectedController.add(true);
     } else {
-      // If not, start scanning for nearby scooters
-      getNearbyScooters().listen((foundScooter) async {
-        // there's one! Attempt to connect to it
-        _foundSth = true;
-        _stateController.add(ScooterState.linking);
-        try {
+      try {
+        // If not, start scanning for nearby scooters
+        getNearbyScooters().listen((foundScooter) async {
+          // there's one! Attempt to connect to it
+          _foundSth = true;
+          _stateController.add(ScooterState.linking);
+
           // we could have some race conditions here if we find multiple scooters at once
           // so let's stop scanning immediately to avoid that
           flutterBluePlus.stopScan();
@@ -197,18 +200,19 @@ class ScooterService {
               .listen((BluetoothConnectionState state) async {
             if (state == BluetoothConnectionState.disconnected) {
               _connectedController.add(false);
-              log("Disconnected from scooter! :(");
+              _stateController.add(ScooterState.disconnected);
+              log("Lost connection to scooter! :(");
               // Restart the process if we're not already doing so
               start();
             }
           });
-        } catch (e) {
-          // Guess this one is not happy with us
-          // TODO: we'll probably need some error handling here
-          log("Error during connect!");
-          log(e.toString());
-        }
-      });
+        });
+      } catch (e) {
+        // Guess this one is not happy with us
+        // TODO: we'll probably need some error handling here
+        log("Error during search or connect!");
+        log(e.toString());
+      }
     }
     if (restart) {
       startAutoRestart();
@@ -217,15 +221,17 @@ class ScooterService {
 
   late StreamSubscription<bool> _autoRestartSubscription;
   void startAutoRestart() async {
-    if (!restarting) {
-      restarting = true;
+    if (!_autoRestarting) {
+      _autoRestarting = true;
       _autoRestartSubscription =
-          flutterBluePlus.isScanning.listen((scanning) async {
+          flutterBluePlus.isScanning.listen((scanState) async {
+        _scanning = scanState;
         // retry if we stop scanning without having found anything
-        if (!scanning && !_foundSth) {
+        if (_scanning == false && !_foundSth) {
           await Future.delayed(const Duration(seconds: 3));
-          if (!_foundSth && !scanning) {
+          if (!_foundSth && !_scanning) {
             // make sure nothing happened in these few seconds
+            log("Auto-restarting...");
             start();
           }
         }
@@ -236,7 +242,7 @@ class ScooterService {
   }
 
   void stopAutoRestart() {
-    restarting = false;
+    _autoRestarting = false;
     _autoRestartSubscription.cancel();
   }
 
@@ -364,13 +370,13 @@ class ScooterService {
       // Subscribe to internal CBB SOC
       _cbbSOCCharacteristic!.setNotifyValue(true);
       _cbbSOCCharacteristic!.lastValueStream.listen((value) async {
-        int? soc = _convertUint32ToInt(value);
-        log("cbb SOC received: $soc");
+        int? soc = value.firstOrNull;
+        log("cbb SOC received: ${value.toString()}");
         _cbbSOCController.add(soc);
         if (soc != null) {
           ping();
           prefs ??= await SharedPreferences.getInstance();
-          prefs!.setInt("sbbSOC", soc);
+          prefs!.setInt("cbbSOC", soc);
         }
       });
       // subscribe to CBB charging status

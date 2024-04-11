@@ -1,6 +1,7 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unustasis/control_screen.dart';
 import 'package:unustasis/onboarding_screen.dart';
@@ -126,18 +127,20 @@ class _HomeScreenState extends State<HomeScreen> {
                 Text(
                   _scanning
                       ? (widget.scooterService.savedScooterId != null
-                          ? "Searching for your scooter..."
-                          : "Scanning for scooters...")
+                          ? FlutterI18n.translate(
+                              context, "home_scanning_known")
+                          : FlutterI18n.translate(context, "home_scanning"))
                       : ((_scooterState != null
-                              ? _scooterState!.name
-                              : "Loading state") +
+                              ? _scooterState!.name(context)
+                              : FlutterI18n.translate(
+                                  context, "home_loading_state")) +
                           (_connected && _handlebarsLocked == false
-                              ? " - Unlocked"
+                              ? FlutterI18n.translate(context, "home_unlocked")
                               : "")),
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 16),
-                _connected && _primarySOC != null
+                _primarySOC != null
                     ? StreamBuilder<DateTime?>(
                         stream: widget.scooterService.lastPing,
                         builder: (context, lastPing) {
@@ -145,7 +148,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               lastPing.hasData &&
                                   lastPing.data!
                                           .difference(DateTime.now())
-                                          .inMinutes >
+                                          .inMinutes
+                                          .abs() >
                                       5;
                           return Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -157,7 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     borderRadius: BorderRadius.circular(8),
                                     value: _primarySOC! / 100.0,
                                     color: dataIsOld
-                                        ? Theme.of(context).colorScheme.surface
+                                        ? Colors.grey
                                         : _primarySOC! < 15
                                             ? Colors.red
                                             : Theme.of(context)
@@ -215,8 +219,11 @@ class _HomeScreenState extends State<HomeScreen> {
                               _seatClosed == true
                           ? widget.scooterService.openSeat
                           : null,
-                      label:
-                          _seatClosed == false ? "Seat is open!" : "Open seat",
+                      label: _seatClosed == false
+                          ? FlutterI18n.translate(
+                              context, "home_seat_button_open")
+                          : FlutterI18n.translate(
+                              context, "home_seat_button_closed"),
                       icon: Icons.work_outline,
                       iconColor: _seatClosed == false
                           ? Theme.of(context).colorScheme.error
@@ -238,8 +245,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             ? Icons.lock_open
                             : Icons.lock_outline,
                         label: _scooterState != null && _scooterState!.isOn
-                            ? "Hold to lock"
-                            : "Hold to unlock"),
+                            ? FlutterI18n.translate(context, "home_lock_button")
+                            : FlutterI18n.translate(
+                                context, "home_unlock_button")),
                     ScooterActionButton(
                         onPressed: () {
                           Navigator.push(
@@ -249,7 +257,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                       service: widget.scooterService)));
                         },
                         icon: Icons.more_vert,
-                        label: "Controls"),
+                        label: FlutterI18n.translate(
+                            context, "home_controls_button")),
                   ],
                 )
               ],
@@ -274,12 +283,11 @@ class _HomeScreenState extends State<HomeScreen> {
       barrierDismissible: false, // user must tap button!
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Seat is open!'),
-          content: const SingleChildScrollView(
+          title: Text(FlutterI18n.translate(context, "seat_alert_title")),
+          content: SingleChildScrollView(
             child: ListBody(
               children: <Widget>[
-                Text(
-                    "For safety reasons, the scooter can't be locked while the seat is open."),
+                Text(FlutterI18n.translate(context, "seat_alert_body")),
               ],
             ),
           ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sticky_headers/sticky_headers/widget.dart';
 import 'package:unustasis/scooter_service.dart';
@@ -41,7 +42,7 @@ class _StatsScreenState extends State<StatsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Info'),
+        title: Text(FlutterI18n.translate(context, 'stats_title')),
         backgroundColor: Colors.black,
         actions: [
           StreamBuilder<DateTime?>(
@@ -92,12 +93,17 @@ class _StatsScreenState extends State<StatsScreen> {
             builder: (context, lastPing) {
               bool dataIsOld = !lastPing.hasData ||
                   lastPing.hasData &&
-                      lastPing.data!.difference(DateTime.now()).inMinutes > 5;
+                      lastPing.data!
+                              .difference(DateTime.now())
+                              .inMinutes
+                              .abs() >
+                          5;
               return ListView(
                 shrinkWrap: true,
                 children: [
                   StickyHeader(
-                    header: const Header("Battery"),
+                    header: Header(
+                        FlutterI18n.translate(context, 'stats_title_battery')),
                     content: Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Column(
@@ -114,11 +120,22 @@ class _StatsScreenState extends State<StatsScreen> {
                                       builder: (context, cycleSnap) {
                                         return Expanded(
                                           child: _batteryCard(
-                                            name: "Primary Battery",
+                                            name: FlutterI18n.translate(
+                                                context, 'stats_primary_name'),
                                             soc: socSnap.data ?? 0,
                                             infos: [
-                                              "Used for driving",
-                                              "Cycles: ${cycleSnap.data ?? "Unknown"}",
+                                              FlutterI18n.translate(context,
+                                                  'stats_primary_desc'),
+                                              FlutterI18n.translate(context,
+                                                  "stats_primary_cycles",
+                                                  translationParams: {
+                                                    "cycles": cycleSnap.hasData
+                                                        ? cycleSnap.data
+                                                            .toString()
+                                                        : FlutterI18n.translate(
+                                                            context,
+                                                            "stats_unknown")
+                                                  }),
                                             ],
                                             old: dataIsOld,
                                           ),
@@ -129,19 +146,27 @@ class _StatsScreenState extends State<StatsScreen> {
                               StreamBuilder<int?>(
                                 stream: widget.service.secondarySOC,
                                 builder: (context, socSnap) {
-                                  if (!socSnap.hasData || socSnap.data == 0) {
-                                    return Container();
-                                  }
                                   return StreamBuilder<int?>(
                                       stream: widget.service.secondaryCycles,
                                       builder: (context, cycleSnap) {
                                         return Expanded(
                                           child: _batteryCard(
-                                            name: "Secondary Battery",
+                                            name: FlutterI18n.translate(context,
+                                                'stats_secondary_name'),
                                             soc: socSnap.data ?? 0,
                                             infos: [
-                                              "Backup battery",
-                                              "Cycles: ${cycleSnap.data ?? "Unknown"}",
+                                              FlutterI18n.translate(context,
+                                                  'stats_secondary_desc'),
+                                              FlutterI18n.translate(context,
+                                                  "stats_secondary_cycles",
+                                                  translationParams: {
+                                                    "cycles": cycleSnap.hasData
+                                                        ? cycleSnap.data
+                                                            .toString()
+                                                        : FlutterI18n.translate(
+                                                            context,
+                                                            "stats_unknown")
+                                                  }),
                                             ],
                                             old: dataIsOld,
                                           ),
@@ -158,15 +183,20 @@ class _StatsScreenState extends State<StatsScreen> {
                                   stream: widget.service.cbbCharging,
                                   builder: (context, cbbCharging) {
                                     return _batteryCard(
-                                      name: "Connectivity Battery",
+                                      name: FlutterI18n.translate(
+                                          context, "stats_cbb_name"),
                                       soc: snapshot.data ?? 0,
                                       infos: [
-                                        'Used for smart features',
+                                        FlutterI18n.translate(
+                                            context, "stats_cbb_desc"),
                                         cbbCharging.hasData
                                             ? cbbCharging.data == true
-                                                ? "Charging"
-                                                : "Not charging"
-                                            : "Unknown state",
+                                                ? FlutterI18n.translate(context,
+                                                    "stats_cbb_charging")
+                                                : FlutterI18n.translate(context,
+                                                    "stats_cbb_not_charging")
+                                            : FlutterI18n.translate(context,
+                                                "stats_cbb_unknown_state"),
                                       ],
                                       old: dataIsOld,
                                     );
@@ -177,15 +207,53 @@ class _StatsScreenState extends State<StatsScreen> {
                             stream: widget.service.auxSOC,
                             builder: (context, snapshot) {
                               return _batteryCard(
-                                name: "AUX Battery",
+                                name: FlutterI18n.translate(
+                                    context, "stats_aux_name"),
                                 soc: snapshot.data ?? 0,
-                                infos: ['Used to keep scooter alive'],
+                                infos: [
+                                  FlutterI18n.translate(
+                                      context, "stats_aux_desc"),
+                                ],
                                 old: dataIsOld,
                               );
                             },
                           ),
                         ],
                       ),
+                    ),
+                  ),
+                  StickyHeader(
+                    header: Header(
+                        FlutterI18n.translate(context, 'stats_title_range')),
+                    content: Column(
+                      children: [
+                        StreamBuilder<int?>(
+                          stream: widget.service.primarySOC,
+                          builder: (context, primarySOC) {
+                            return StreamBuilder<int?>(
+                                stream: widget.service.secondarySOC,
+                                builder: (context, secondarySOC) {
+                                  // estimating 45km of range per battery
+                                  int rangePrimary = primarySOC.hasData
+                                      ? (primarySOC.data! / 100 * 45).round()
+                                      : 0;
+                                  int rangeSecondary = secondarySOC.hasData
+                                      ? (secondarySOC.data! / 100 * 45).round()
+                                      : 0;
+                                  int rangeTotal =
+                                      rangePrimary + rangeSecondary;
+                                  return ListTile(
+                                    title: Text(FlutterI18n.translate(
+                                        context, "stats_estimated_range")),
+                                    subtitle: Text(primarySOC.hasData
+                                        ? "~ $rangeTotal km"
+                                        : FlutterI18n.translate(
+                                            context, "stats_unknown")),
+                                  );
+                                });
+                          },
+                        ),
+                      ],
                     ),
                   ),
                   StickyHeader(
@@ -198,7 +266,7 @@ class _StatsScreenState extends State<StatsScreen> {
                             return ListTile(
                               title: const Text("State"),
                               subtitle: Text(snapshot.hasData
-                                  ? snapshot.data!.name
+                                  ? snapshot.data!.name(context)
                                   : "Unknown"),
                             );
                           },
@@ -209,7 +277,7 @@ class _StatsScreenState extends State<StatsScreen> {
                             return ListTile(
                               title: const Text("State description"),
                               subtitle: Text(snapshot.hasData
-                                  ? snapshot.data!.description
+                                  ? snapshot.data!.description(context)
                                   : "Unknown"),
                             );
                           },
@@ -279,6 +347,33 @@ class _StatsScreenState extends State<StatsScreen> {
                             },
                           ),
                         ),
+                        ListTile(
+                          title: const Text("App language"),
+                          subtitle: DropdownButtonFormField(
+                            padding: const EdgeInsets.only(top: 4),
+                            value: Locale(FlutterI18n.currentLocale(context)!
+                                .languageCode),
+                            isExpanded: true,
+                            decoration: const InputDecoration(
+                              contentPadding: EdgeInsets.all(16),
+                            ),
+                            dropdownColor:
+                                Theme.of(context).colorScheme.background,
+                            items: const [
+                              DropdownMenuItem<Locale>(
+                                value: Locale("en"),
+                                child: Text("English"),
+                              ),
+                              DropdownMenuItem<Locale>(
+                                value: Locale("de"),
+                                child: Text("German"),
+                              ),
+                            ],
+                            onChanged: (newLanguage) async {
+                              await FlutterI18n.refresh(context, newLanguage);
+                            },
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -323,9 +418,10 @@ class _StatsScreenState extends State<StatsScreen> {
               value: soc / 100,
               borderRadius: BorderRadius.circular(16.0),
               minHeight: 16,
+              backgroundColor: Theme.of(context).colorScheme.background,
               color: old
                   ? Theme.of(context).colorScheme.surface
-                  : soc < 15
+                  : soc <= 15
                       ? Colors.red
                       : Theme.of(context).colorScheme.primary,
             ),
