@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sticky_headers/sticky_headers/widget.dart';
 import 'package:unustasis/onboarding_screen.dart';
@@ -52,28 +53,42 @@ class _StatsScreenState extends State<StatsScreen> {
                 if (!snapshot.hasData) {
                   return Container();
                 }
-                return Row(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      snapshot.data!.calculateTimeDifferenceInShort(),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white70,
+                return InkWell(
+                  onTap: () {
+                    Fluttertoast.showToast(
+                      msg: FlutterI18n.translate(
+                          context, "stats_last_ping_toast", translationParams: {
+                        "time": snapshot.data!
+                            .calculateTimeDifferenceInShort()
+                            .toLowerCase()
+                      }),
+                    );
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        snapshot.data!.calculateTimeDifferenceInShort(),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 12,
+                          color: Colors.white70,
+                        ),
                       ),
-                    ),
-                    const SizedBox(
-                      width: 4,
-                    ),
-                    const Icon(
-                      Icons.schedule_rounded,
-                      color: Colors.white70,
-                    ),
-                    const SizedBox(
-                      width: 32,
-                    ),
-                  ],
+                      const SizedBox(
+                        width: 4,
+                      ),
+                      const Icon(
+                        Icons.schedule_rounded,
+                        color: Colors.white70,
+                        size: 24,
+                      ),
+                      const SizedBox(
+                        width: 32,
+                      ),
+                    ],
+                  ),
                 );
               }),
         ],
@@ -147,6 +162,9 @@ class _StatsScreenState extends State<StatsScreen> {
                               StreamBuilder<int?>(
                                 stream: widget.service.secondarySOC,
                                 builder: (context, socSnap) {
+                                  if (!socSnap.hasData || socSnap.data == 0) {
+                                    return Container();
+                                  }
                                   return StreamBuilder<int?>(
                                       stream: widget.service.secondaryCycles,
                                       builder: (context, cycleSnap) {
@@ -396,57 +414,65 @@ class _StatsScreenState extends State<StatsScreen> {
                       ],
                     ),
                   ),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(60),
-                    ),
-                    onPressed: () async {
-                      showDialog(
-                          context: context,
-                          barrierDismissible: true,
-                          builder: (context) {
-                            return AlertDialog(
-                              title: Text(FlutterI18n.translate(
-                                  context, "forget_alert_title")),
-                              content: Text(FlutterI18n.translate(
-                                  context, "forget_alert_body")),
-                              actions: [
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.of(context).pop(false);
-                                  },
-                                  child: Text(FlutterI18n.translate(
-                                      context, "forget_alert_cancel")),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 32),
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(60),
+                        backgroundColor: Colors.red.withOpacity(0.1),
+                        side: const BorderSide(
+                          color: Colors.red,
+                        ),
+                      ),
+                      onPressed: () async {
+                        showDialog(
+                            context: context,
+                            barrierDismissible: true,
+                            builder: (context) {
+                              return AlertDialog(
+                                title: Text(FlutterI18n.translate(
+                                    context, "forget_alert_title")),
+                                content: Text(FlutterI18n.translate(
+                                    context, "forget_alert_body")),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.of(context).pop(false);
+                                    },
+                                    child: Text(FlutterI18n.translate(
+                                        context, "forget_alert_cancel")),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.of(context).pop(true);
+                                    },
+                                    child: Text(FlutterI18n.translate(
+                                        context, "forget_alert_confirm")),
+                                  ),
+                                ],
+                              );
+                            }).then((reset) {
+                          if (reset == true) {
+                            widget.service.forgetSavedScooter();
+                            Navigator.of(context).pop();
+                            Navigator.of(context).pushReplacement(
+                              MaterialPageRoute(
+                                builder: (context) => OnboardingScreen(
+                                  service: widget.service,
                                 ),
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.of(context).pop(true);
-                                  },
-                                  child: Text(FlutterI18n.translate(
-                                      context, "forget_alert_confirm")),
-                                ),
-                              ],
-                            );
-                          }).then((reset) {
-                        if (reset == true) {
-                          widget.service.forgetSavedScooter();
-                          Navigator.of(context).pop();
-                          Navigator.of(context).pushReplacement(
-                            MaterialPageRoute(
-                              builder: (context) => OnboardingScreen(
-                                service: widget.service,
                               ),
-                            ),
-                          );
-                        }
-                      });
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Text(
-                        FlutterI18n.translate(context, "settings_forget"),
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onBackground,
+                            );
+                          }
+                        });
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(
+                          FlutterI18n.translate(context, "settings_forget"),
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onBackground,
+                          ),
                         ),
                       ),
                     ),

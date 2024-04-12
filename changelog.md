@@ -1,7 +1,4 @@
 ### Changes:
-- Layout improvements to stats and control screen
-- Proper onboarding flow on first launch
-- Select your scooter color!
-
-### Known issues:
-- Onboarding switches to "Success" before bonding is actually done
+- Translated the entire app to German
+- Caching last known battery level
+- Displaying estimated range (based on an average of 45km per battery)

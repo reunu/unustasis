@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unustasis/control_screen.dart';
 import 'package:unustasis/onboarding_screen.dart';
@@ -358,8 +359,7 @@ class _ScooterPowerButtonState extends State<ScooterPowerButton> {
             backgroundColor: mainColor,
           ),
           onPressed: () {
-            ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text(widget._label)));
+            Fluttertoast.showToast(msg: widget._label);
           },
           onLongPress: widget._action == null
               ? null

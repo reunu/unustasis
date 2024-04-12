@@ -45,14 +45,14 @@ class _ControlScreenState extends State<ControlScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   ScooterActionButton(
-                    onPressed: widget._service.lock,
-                    icon: Icons.lock_outlined,
-                    label: FlutterI18n.translate(context, "controls_lock"),
-                  ),
-                  ScooterActionButton(
                     onPressed: widget._service.unlock,
                     icon: Icons.lock_open_outlined,
                     label: FlutterI18n.translate(context, "controls_unlock"),
+                  ),
+                  ScooterActionButton(
+                    onPressed: widget._service.lock,
+                    icon: Icons.lock_outlined,
+                    label: FlutterI18n.translate(context, "controls_lock"),
                   ),
                 ],
               ),
