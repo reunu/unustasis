@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sticky_headers/sticky_headers/widget.dart';
+import 'package:unustasis/onboarding_screen.dart';
 import 'package:unustasis/scooter_service.dart';
 import 'package:unustasis/scooter_state.dart';
 
@@ -257,17 +258,20 @@ class _StatsScreenState extends State<StatsScreen> {
                     ),
                   ),
                   StickyHeader(
-                    header: const Header("Scooter"),
+                    header: Header(
+                        FlutterI18n.translate(context, 'stats_title_scooter')),
                     content: Column(
                       children: [
                         StreamBuilder<ScooterState?>(
                           stream: widget.service.state,
                           builder: (context, snapshot) {
                             return ListTile(
-                              title: const Text("State"),
+                              title: Text(FlutterI18n.translate(
+                                  context, "stats_state")),
                               subtitle: Text(snapshot.hasData
                                   ? snapshot.data!.name(context)
-                                  : "Unknown"),
+                                  : FlutterI18n.translate(
+                                      context, "stats_unknown")),
                             );
                           },
                         ),
@@ -275,10 +279,12 @@ class _StatsScreenState extends State<StatsScreen> {
                           stream: widget.service.state,
                           builder: (context, snapshot) {
                             return ListTile(
-                              title: const Text("State description"),
+                              title: Text(FlutterI18n.translate(
+                                  context, "stats_state_description")),
                               subtitle: Text(snapshot.hasData
                                   ? snapshot.data!.description(context)
-                                  : "Unknown"),
+                                  : FlutterI18n.translate(
+                                      context, "stats_unknown")),
                             );
                           },
                         ),
@@ -286,23 +292,26 @@ class _StatsScreenState extends State<StatsScreen> {
                             future: widget.service.getSavedScooter(),
                             builder: (context, snapshot) {
                               return ListTile(
-                                title: const Text("Scooter ID"),
+                                title: Text(FlutterI18n.translate(
+                                    context, "stats_scooter_id")),
                                 subtitle: Text(snapshot.hasData
                                     ? snapshot.data!.toString()
-                                    : "Unknown"),
+                                    : FlutterI18n.translate(
+                                        context, "stats_unknown")),
                               );
                             }),
                       ],
                     ),
                   ),
                   StickyHeader(
-                    header: const Header("Settings"),
+                    header: Header(
+                        FlutterI18n.translate(context, 'stats_title_settings')),
                     content: Column(
                       children: [
                         // TODO: Move "Forget scooter" here
                         ListTile(
-                          title: const Text(
-                              "Scooter color (will update on restart)"),
+                          title: Text(
+                              FlutterI18n.translate(context, "settings_color")),
                           subtitle: DropdownButtonFormField(
                             padding: const EdgeInsets.only(top: 4),
                             value: color,
@@ -312,34 +321,41 @@ class _StatsScreenState extends State<StatsScreen> {
                             ),
                             dropdownColor:
                                 Theme.of(context).colorScheme.background,
-                            items: const [
+                            items: [
                               DropdownMenuItem(
                                 value: 0,
-                                child: Text("Black"),
+                                child: Text(FlutterI18n.translate(
+                                    context, "color_black")),
                               ),
                               DropdownMenuItem(
                                 value: 1,
-                                child: Text("White"),
+                                child: Text(FlutterI18n.translate(
+                                    context, "color_white")),
                               ),
                               DropdownMenuItem(
                                 value: 2,
-                                child: Text("Pine"),
+                                child: Text(FlutterI18n.translate(
+                                    context, "color_green")),
                               ),
                               DropdownMenuItem(
                                 value: 3,
-                                child: Text("Stone"),
+                                child: Text(FlutterI18n.translate(
+                                    context, "color_gray")),
                               ),
                               DropdownMenuItem(
                                 value: 4,
-                                child: Text("Coral"),
+                                child: Text(FlutterI18n.translate(
+                                    context, "color_orange")),
                               ),
                               DropdownMenuItem(
                                 value: 5,
-                                child: Text("Red"),
+                                child: Text(FlutterI18n.translate(
+                                    context, "color_red")),
                               ),
                               DropdownMenuItem(
                                 value: 6,
-                                child: Text("Blue"),
+                                child: Text(FlutterI18n.translate(
+                                    context, "color_blue")),
                               ),
                             ],
                             onChanged: (newColor) {
@@ -348,7 +364,8 @@ class _StatsScreenState extends State<StatsScreen> {
                           ),
                         ),
                         ListTile(
-                          title: const Text("App language"),
+                          title: Text(FlutterI18n.translate(
+                              context, "settings_language")),
                           subtitle: DropdownButtonFormField(
                             padding: const EdgeInsets.only(top: 4),
                             value: Locale(FlutterI18n.currentLocale(context)!
@@ -359,14 +376,16 @@ class _StatsScreenState extends State<StatsScreen> {
                             ),
                             dropdownColor:
                                 Theme.of(context).colorScheme.background,
-                            items: const [
+                            items: [
                               DropdownMenuItem<Locale>(
-                                value: Locale("en"),
-                                child: Text("English"),
+                                value: const Locale("en"),
+                                child: Text(FlutterI18n.translate(
+                                    context, "language_english")),
                               ),
                               DropdownMenuItem<Locale>(
-                                value: Locale("de"),
-                                child: Text("German"),
+                                value: const Locale("de"),
+                                child: Text(FlutterI18n.translate(
+                                    context, "language_german")),
                               ),
                             ],
                             onChanged: (newLanguage) async {
@@ -375,6 +394,61 @@ class _StatsScreenState extends State<StatsScreen> {
                           ),
                         ),
                       ],
+                    ),
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(60),
+                    ),
+                    onPressed: () async {
+                      showDialog(
+                          context: context,
+                          barrierDismissible: true,
+                          builder: (context) {
+                            return AlertDialog(
+                              title: Text(FlutterI18n.translate(
+                                  context, "forget_alert_title")),
+                              content: Text(FlutterI18n.translate(
+                                  context, "forget_alert_body")),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop(false);
+                                  },
+                                  child: Text(FlutterI18n.translate(
+                                      context, "forget_alert_cancel")),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop(true);
+                                  },
+                                  child: Text(FlutterI18n.translate(
+                                      context, "forget_alert_confirm")),
+                                ),
+                              ],
+                            );
+                          }).then((reset) {
+                        if (reset == true) {
+                          widget.service.forgetSavedScooter();
+                          Navigator.of(context).pop();
+                          Navigator.of(context).pushReplacement(
+                            MaterialPageRoute(
+                              builder: (context) => OnboardingScreen(
+                                service: widget.service,
+                              ),
+                            ),
+                          );
+                        }
+                      });
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(
+                        FlutterI18n.translate(context, "settings_forget"),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onBackground,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 40),
