@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:unustasis/home_screen.dart';
-import 'package:unustasis/onboarding_screen.dart';
 import 'package:unustasis/scooter_service.dart';
 import 'package:unustasis/stats_screen.dart';
 
