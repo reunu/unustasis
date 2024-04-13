@@ -310,16 +310,13 @@ class ScooterService {
           "9a5900f5-6e67-5d0d-aab9-ad9126b66f91");
       // subscribe to a bunch of values
       // Subscribe to state
-      _stateCharacteristic!.setNotifyValue(true);
-      _stateCharacteristic!.lastValueStream.listen(
-        (value) {
-          log("State received: ${ascii.decode(value)}");
-          ScooterState newState = ScooterState.fromBytes(value);
+      _subscribeString(_stateCharacteristic!, "State", (String value) {
+          ScooterState newState = ScooterState.fromString(value);
           _stateController.add(newState);
         },
       );
       // Subscribe to seat
-      _subscribeBoolean(_seatCharacteristic!, "Seat", (String seatState) {
+      _subscribeString(_seatCharacteristic!, "Seat", (String seatState) {
         if (seatState == "open") {
           _seatController.add(false);
         } else {
@@ -327,7 +324,7 @@ class ScooterService {
         }
       });
       // Subscribe to handlebars
-      _subscribeBoolean(_handlebarCharacteristic!, "Handlebars",
+      _subscribeString(_handlebarCharacteristic!, "Handlebars",
           (String handlebarState) {
         if (handlebarState == "unlocked") {
           _handlebarController.add(false);
@@ -380,7 +377,7 @@ class ScooterService {
         }
       });
       // subscribe to CBB charging status
-      _subscribeBoolean(_cbbChargingCharacteristic!, "CBB charging",
+      _subscribeString(_cbbChargingCharacteristic!, "CBB charging",
           (String chargingState) {
         if (chargingState == "charging") {
           _cbbChargingController.add(true);
@@ -513,7 +510,7 @@ class ScooterService {
 
   // HELPER FUNCTIONS
 
-  void _subscribeBoolean(
+  void _subscribeString(
       BluetoothCharacteristic characteristic, String name, Function callback) {
     // Subscribe to seat
     characteristic.setNotifyValue(true);
