@@ -512,7 +512,6 @@ class ScooterService {
 
   void _subscribeString(
       BluetoothCharacteristic characteristic, String name, Function callback) {
-    // Subscribe to seat
     characteristic.setNotifyValue(true);
     characteristic.lastValueStream.listen((value) {
       log("$name received: ${ascii.decode(value)}");
