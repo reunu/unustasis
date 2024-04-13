@@ -516,10 +516,15 @@ class ScooterService {
     characteristic.setNotifyValue(true);
     characteristic.lastValueStream.listen((value) {
       log("$name received: ${ascii.decode(value)}");
-      value.removeWhere((element) => element == 0);
-      String state = ascii.decode(value).trim();
+      String state = _convertBytesToString(value);
       callback(state);
     });
+  }
+
+  String _convertBytesToString(List<int> value) {
+    value.removeWhere((element) => element == 0);
+    String state = ascii.decode(value).trim();
+    return state;
   }
 
   void _sendCommand(String command, {BluetoothCharacteristic? characteristic}) {
