@@ -122,21 +122,21 @@ class _ControlScreenState extends State<ControlScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     ScooterActionButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => DriveScreen(
-                            service: widget._service)));
-                      },
-                      icon: Icons.car_crash,
-                      label: "Drive mode",
-                    ),
-                    ScooterActionButton(
                       onPressed: () =>
                           widget._service.blink(left: false, right: false),
                       icon: Icons.code_off_rounded,
                       label: "Blinkers off",
+                    ),
+                    ScooterActionButton(
+                      onPressed: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => DriveScreen(
+                                    service: widget._service)));
+                      },
+                      icon: Icons.directions_car_filled,
+                      label: "Drive mode",
                     ),
                   ]),
             ),
