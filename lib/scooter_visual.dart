@@ -8,53 +8,62 @@ class ScooterVisual extends StatelessWidget {
   final bool scanning;
   final bool blinkerLeft;
   final bool blinkerRight;
+  final int? color;
 
   const ScooterVisual(
       {required this.state,
       required this.scanning,
       required this.blinkerLeft,
       required this.blinkerRight,
+      this.color,
       super.key});
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: MediaQuery.of(context).size.width * 0.6,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          AnimatedCrossFade(
-            duration: const Duration(milliseconds: 500),
-            firstChild: const Image(
-              image: AssetImage("images/scooter/disconnected.png"),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            AnimatedCrossFade(
+              duration: const Duration(milliseconds: 500),
+              firstChild: const Image(
+                image: AssetImage("images/scooter/disconnected.png"),
+              ),
+              secondChild: Opacity(
+                opacity: 0.7,
+                child: Image(
+                  image: AssetImage("images/scooter/base_${color ?? 0}.png"),
+                ),
+              ),
+              crossFadeState: state == ScooterState.disconnected
+                  ? CrossFadeState.showFirst
+                  : CrossFadeState.showSecond,
             ),
-            secondChild: const Image(
-              image: AssetImage("images/scooter/base.png"),
+            AnimatedOpacity(
+              opacity: state != null && state!.isOn ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 1000),
+              child: const Image(
+                image: AssetImage("images/scooter/light_ring.png"),
+              ),
             ),
-            crossFadeState: state == ScooterState.disconnected
-                ? CrossFadeState.showFirst
-                : CrossFadeState.showSecond,
-          ),
-          AnimatedOpacity(
-            opacity: state != null && state!.isOn ? 1.0 : 0.0,
-            duration: const Duration(milliseconds: 1000),
-            child: const Image(
-              image: AssetImage("images/scooter/light_ring.png"),
+            AnimatedOpacity(
+              opacity: state == ScooterState.ready ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 1000),
+              child: const Image(
+                image: AssetImage("images/scooter/light_beam.png"),
+              ),
             ),
-          ),
-          AnimatedOpacity(
-            opacity: state == ScooterState.ready ? 1.0 : 0.0,
-            duration: const Duration(milliseconds: 1000),
-            child: const Image(
-              image: AssetImage("images/scooter/light_beam.png"),
+            //BlinkerWidget(blinkerLeft: blinkerLeft, blinkerRight: blinkerRight),
+            CircularProgressIndicator(
+              value:
+                  scanning || state == ScooterState.shuttingDown ? null : 0.0,
+              color: Colors.white,
             ),
-          ),
-          //BlinkerWidget(blinkerLeft: blinkerLeft, blinkerRight: blinkerRight),
-          CircularProgressIndicator(
-            value: scanning || state == ScooterState.shuttingDown ? null : 0.0,
-            color: Colors.white,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -1,7 +1,7 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
-import 'package:unustasis/home_screen.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:unustasis/scooter_service.dart';
 import 'package:unustasis/scooter_state.dart';
 import 'package:unustasis/scooter_visual.dart';
@@ -23,12 +23,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   void initState() {
-    super.initState();
     widget.service.scanning.listen((scanning) {
       setState(() {
         _scanning = scanning;
       });
     });
+    widget.service.connected.listen((connected) {
+      if (connected) {
+        setState(() {
+          _step = 3;
+        });
+      }
+    });
+    super.initState();
   }
 
   List<Widget> getWidgets(int step) {
@@ -36,12 +43,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       case 0:
         return [
           Text(
-            "Welcome!",
+            FlutterI18n.translate(context, "onboarding_step0_heading"),
             style: Theme.of(context).textTheme.headlineLarge,
           ),
           const SizedBox(height: 16),
           Text(
-            "Unustasis is a third party app for the unu Scooter Pro. Connect your scooter to get started.",
+            FlutterI18n.translate(context, "onboarding_step0_body"),
             style: Theme.of(context).textTheme.titleMedium,
             textAlign: TextAlign.center,
           ),
@@ -60,7 +67,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             child: Padding(
               padding: const EdgeInsets.all(8.0),
               child: Text(
-                "LET'S GO",
+                FlutterI18n.translate(context, "onboarding_step0_button"),
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onBackground,
                 ),
@@ -71,12 +78,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       case 1:
         return [
           Text(
-            "Connect your scooter",
+            FlutterI18n.translate(context, "onboarding_step1_heading"),
             style: Theme.of(context).textTheme.headlineLarge,
           ),
           const SizedBox(height: 16),
           Text(
-            "Make sure your scooter is turned on and in range. Once you're ready, press the button below to start.",
+            FlutterI18n.translate(context, "onboarding_step1_body"),
             style: Theme.of(context).textTheme.titleMedium,
             textAlign: TextAlign.center,
           ),
@@ -96,7 +103,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             child: Padding(
               padding: const EdgeInsets.all(8.0),
               child: Text(
-                "CONNECT",
+                FlutterI18n.translate(context, "onboarding_step1_button"),
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onBackground,
                 ),
@@ -107,12 +114,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       case 2:
         return [
           Text(
-            "Scanning...",
+            FlutterI18n.translate(context, "onboarding_step2_heading"),
             style: Theme.of(context).textTheme.headlineLarge,
           ),
           const SizedBox(height: 16),
           Text(
-            "This may take a few seconds. If your phone asks you to pair, please accept and enter the code on your scooter's display.",
+            FlutterI18n.translate(context, "onboarding_step2_body"),
             style: Theme.of(context).textTheme.titleMedium,
             textAlign: TextAlign.center,
           ),
@@ -121,20 +128,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       case 3:
         return [
           Text(
-            "Success!",
+            FlutterI18n.translate(context, "onboarding_step3_heading"),
             style: Theme.of(context).textTheme.headlineLarge,
           ),
           const SizedBox(height: 16),
           Text(
-            "Your scooter is now connected and ready to use. Press the button below to finish onboarding.",
+            FlutterI18n.translate(context, "onboarding_step3_body"),
             style: Theme.of(context).textTheme.titleMedium,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 40),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              minimumSize: const Size.fromHeight(
-                  60), // fromHeight use double.infinity as width and 40 is the height
+              minimumSize: const Size.fromHeight(60),
             ),
             onPressed: () {
               log("Next");
@@ -143,7 +149,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             child: Padding(
               padding: const EdgeInsets.all(8.0),
               child: Text(
-                "CONTINUE TO APP",
+                FlutterI18n.translate(context, "onboarding_step3_button"),
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onBackground,
                 ),

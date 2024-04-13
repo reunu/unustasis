@@ -3,38 +3,64 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unustasis/flutter/blue_plus_mockable.dart';
 import 'package:unustasis/scooter_state.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class ScooterService {
   String? savedScooterId;
   BluetoothDevice? myScooter; // reserved for a connected scooter!
   bool _foundSth = false; // whether we've found a scooter yet
   int? cbbRemainingCap, cbbFullCap;
-  String? _state, _powerState;
-  bool restarting = false;
+  bool _autoRestarting = false;
+  bool _scanning = false;
+  SharedPreferences? prefs;
 
   // some useful characteristsics to save
   BluetoothCharacteristic? _commandCharacteristic;
+  BluetoothCharacteristic? _hibernationCommandCharacteristic;
   BluetoothCharacteristic? _stateCharacteristic;
-  BluetoothCharacteristic? _powerStateCharacteristic;
   BluetoothCharacteristic? _seatCharacteristic;
   BluetoothCharacteristic? _handlebarCharacteristic;
   BluetoothCharacteristic? _auxSOCCharacteristic;
-  BluetoothCharacteristic? _cbbRemainingCapCharacteristic;
-  BluetoothCharacteristic? _cbbFullCapCharacteristic;
+  // BluetoothCharacteristic? _cbbRemainingCapCharacteristic;
+  // BluetoothCharacteristic? _cbbFullCapCharacteristic;
   BluetoothCharacteristic? _cbbSOCCharacteristic;
+  BluetoothCharacteristic? _cbbChargingCharacteristic;
   BluetoothCharacteristic? _primaryCyclesCharacteristic;
   BluetoothCharacteristic? _primarySOCCharacteristic;
   BluetoothCharacteristic? _secondaryCyclesCharacteristic;
   BluetoothCharacteristic? _secondarySOCCharacteristic;
 
+  final FlutterBluePlusMockable flutterBluePlus;
+
+  ScooterService(this.flutterBluePlus) {
+    SharedPreferences.getInstance().then((prefs) {
+      this.prefs = prefs;
+      if (prefs.containsKey("savedScooterId")) {
+        savedScooterId = prefs.getString("savedScooterId");
+        int? lastPing = prefs.getInt("lastPing");
+        if (lastPing != null) {
+          _lastPingController
+              .add(DateTime.fromMicrosecondsSinceEpoch(lastPing));
+          _primarySOCController.add(prefs.getInt("primarySOC"));
+          _secondarySOCController.add(prefs.getInt("secondarySOC"));
+          _cbbSOCController.add(prefs.getInt("cbbSOC"));
+          _auxSOCController.add(prefs.getInt("auxSOC"));
+        }
+      }
+    });
+  }
+
   // STATUS STREAMS
 
   final BehaviorSubject<bool> _connectedController =
       BehaviorSubject<bool>.seeded(false);
+
   Stream<bool> get connected => _connectedController.stream;
 
   final BehaviorSubject<ScooterState?> _stateController =
@@ -57,6 +83,10 @@ class ScooterService {
   final BehaviorSubject<int?> _cbbSOCController = BehaviorSubject<int?>();
   Stream<int?> get cbbSOC => _cbbSOCController.stream;
 
+  final BehaviorSubject<bool?> _cbbChargingController =
+      BehaviorSubject<bool?>();
+  Stream<bool?> get cbbCharging => _cbbChargingController.stream;
+
   final BehaviorSubject<int?> _primaryCyclesController =
       BehaviorSubject<int?>();
   Stream<int?> get primaryCycles => _primaryCyclesController.stream;
@@ -71,13 +101,20 @@ class ScooterService {
   final BehaviorSubject<int?> _secondarySOCController = BehaviorSubject<int?>();
   Stream<int?> get secondarySOC => _secondarySOCController.stream;
 
-  Stream<bool> get scanning => FlutterBluePlus.isScanning;
+  // PINGING
+  // We store the most recent SOC values (and, in the future, location) to SharedPrefs so that we can see the last known state even when disconnected
+  //
+  final BehaviorSubject<DateTime?> _lastPingController =
+      BehaviorSubject<DateTime?>();
+  Stream<DateTime?> get lastPing => _lastPingController.stream;
+
+  Stream<bool> get scanning => flutterBluePlus.isScanning;
 
   // MAIN FUNCTIONS
 
   Future<List<BluetoothDevice>> getSystemScooters() async {
     // See if the phone is already connected to a scooter. If so, hook into that.
-    List<BluetoothDevice> systemDevices = await FlutterBluePlus.systemDevices;
+    List<BluetoothDevice> systemDevices = await flutterBluePlus.systemDevices;
     List<BluetoothDevice> systemScooters = [];
     for (var device in systemDevices) {
       // criteria: it's named "unu Scooter" or it's the one we saved
@@ -94,19 +131,19 @@ class ScooterService {
     List<BluetoothDevice> foundScooterCache = [];
     String? savedScooterId = await getSavedScooter();
     if (savedScooterId != null) {
-      FlutterBluePlus.startScan(
+      flutterBluePlus.startScan(
         withRemoteIds: [savedScooterId], // look for OUR scooter
         timeout: const Duration(seconds: 30),
       );
     } else {
-      FlutterBluePlus.startScan(
+      flutterBluePlus.startScan(
         withNames: [
           "unu Scooter"
         ], // if we don't have a saved scooter, look for A scooter
         timeout: const Duration(seconds: 30),
       );
     }
-    await for (var scanResult in FlutterBluePlus.onScanResults) {
+    await for (var scanResult in flutterBluePlus.onScanResults) {
       if (scanResult.isNotEmpty) {
         ScanResult r = scanResult.last; // the most recently found device
         if (!foundScooterCache.contains(r.device)) {
@@ -117,9 +154,16 @@ class ScooterService {
     }
   }
 
+  // spins up the whole connection process, and connects/bonds with the nearest scooter
   void start({bool restart = true}) async {
+    log("Starting connection process...");
     _foundSth = false;
     // TODO: Turn on bluetooth if it's off, or prompt the user to do so on iOS
+    // Cleanup in case this is a restart
+    _connectedController.add(false);
+    if (myScooter != null) {
+      myScooter!.disconnect();
+    }
     // First, see if the phone is already actively connected to a scooter
     List<BluetoothDevice> systemScooters = await getSystemScooters();
     if (systemScooters.isNotEmpty) {
@@ -131,15 +175,16 @@ class ScooterService {
       await setUpCharacteristics(systemScooters.first);
       _connectedController.add(true);
     } else {
-      // If not, start scanning for nearby scooters
-      getNearbyScooters().listen((foundScooter) async {
-        // there's one! Attempt to connect to it
-        _foundSth = true;
-        _stateController.add(ScooterState.linking);
-        try {
+      try {
+        // If not, start scanning for nearby scooters
+        getNearbyScooters().listen((foundScooter) async {
+          // there's one! Attempt to connect to it
+          _foundSth = true;
+          _stateController.add(ScooterState.linking);
+
           // we could have some race conditions here if we find multiple scooters at once
           // so let's stop scanning immediately to avoid that
-          FlutterBluePlus.stopScan();
+          flutterBluePlus.stopScan();
           // attempt to connect to what we found
           await foundScooter.connect(
               //autoConnect: true, // significantly slows down the connection process
@@ -150,12 +195,24 @@ class ScooterService {
           await setUpCharacteristics(foundScooter);
           // Let everybody know
           _connectedController.add(true);
-        } catch (e) {
-          // Guess this one is not happy with us
-          // TODO: we'll probably need some error handling here
-          log(e.toString());
-        }
-      });
+          // listen for disconnects
+          foundScooter.connectionState
+              .listen((BluetoothConnectionState state) async {
+            if (state == BluetoothConnectionState.disconnected) {
+              _connectedController.add(false);
+              _stateController.add(ScooterState.disconnected);
+              log("Lost connection to scooter! :(");
+              // Restart the process if we're not already doing so
+              start();
+            }
+          });
+        });
+      } catch (e) {
+        // Guess this one is not happy with us
+        // TODO: we'll probably need some error handling here
+        log("Error during search or connect!");
+        log(e.toString());
+      }
     }
     if (restart) {
       startAutoRestart();
@@ -164,15 +221,17 @@ class ScooterService {
 
   late StreamSubscription<bool> _autoRestartSubscription;
   void startAutoRestart() async {
-    if (!restarting) {
-      restarting = true;
+    if (!_autoRestarting) {
+      _autoRestarting = true;
       _autoRestartSubscription =
-          FlutterBluePlus.isScanning.listen((scanning) async {
+          flutterBluePlus.isScanning.listen((scanState) async {
+        _scanning = scanState;
         // retry if we stop scanning without having found anything
-        if (!scanning && !_foundSth) {
+        if (_scanning == false && !_foundSth) {
           await Future.delayed(const Duration(seconds: 3));
-          if (!_foundSth && !scanning) {
+          if (!_foundSth && !_scanning) {
             // make sure nothing happened in these few seconds
+            log("Auto-restarting...");
             start();
           }
         }
@@ -183,7 +242,7 @@ class ScooterService {
   }
 
   void stopAutoRestart() {
-    restarting = false;
+    _autoRestarting = false;
     _autoRestartSubscription.cancel();
   }
 
@@ -197,14 +256,14 @@ class ScooterService {
           myScooter!,
           "9a590000-6e67-5d0d-aab9-ad9126b66f91",
           "9a590001-6e67-5d0d-aab9-ad9126b66f91");
+      _hibernationCommandCharacteristic = _findCharacteristic(
+          myScooter!,
+          "9a590000-6e67-5d0d-aab9-ad9126b66f91",
+          "9a590002-6e67-5d0d-aab9-ad9126b66f91");
       _stateCharacteristic = _findCharacteristic(
           myScooter!,
           "9a590020-6e67-5d0d-aab9-ad9126b66f91",
           "9a590021-6e67-5d0d-aab9-ad9126b66f91");
-      _powerStateCharacteristic = _findCharacteristic(
-          myScooter!,
-          "9a5900a0-6e67-5d0d-aab9-ad9126b66f91",
-          "9a5900a1-6e67-5d0d-aab9-ad9126b66f91");
       _seatCharacteristic = _findCharacteristic(
           myScooter!,
           "9a590020-6e67-5d0d-aab9-ad9126b66f91",
@@ -217,18 +276,22 @@ class ScooterService {
           myScooter!,
           "9a590040-6e67-5d0d-aab9-ad9126b66f91",
           "9a590044-6e67-5d0d-aab9-ad9126b66f91");
-      _cbbRemainingCapCharacteristic = _findCharacteristic(
-          myScooter!,
-          "9a590060-6e67-5d0d-aab9-ad9126b66f91",
-          "9a590063-6e67-5d0d-aab9-ad9126b66f91");
-      _cbbFullCapCharacteristic = _findCharacteristic(
-          myScooter!,
-          "9a590060-6e67-5d0d-aab9-ad9126b66f91",
-          "9a590064-6e67-5d0d-aab9-ad9126b66f91");
+      //_cbbRemainingCapCharacteristic = _findCharacteristic(
+      //     myScooter!,
+      //     "9a590060-6e67-5d0d-aab9-ad9126b66f91",
+      //     "9a590063-6e67-5d0d-aab9-ad9126b66f91");
+      // _cbbFullCapCharacteristic = _findCharacteristic(
+      //     myScooter!,
+      //     "9a590060-6e67-5d0d-aab9-ad9126b66f91",
+      //     "9a590064-6e67-5d0d-aab9-ad9126b66f91");
       _cbbSOCCharacteristic = _findCharacteristic(
           myScooter!,
           "9a590060-6e67-5d0d-aab9-ad9126b66f91",
           "9a590061-6e67-5d0d-aab9-ad9126b66f91");
+      _cbbChargingCharacteristic = _findCharacteristic(
+          myScooter!,
+          "9a590060-6e67-5d0d-aab9-ad9126b66f91",
+          "9a590072-6e67-5d0d-aab9-ad9126b66f91");
       _primaryCyclesCharacteristic = _findCharacteristic(
           myScooter!,
           "9a5900e0-6e67-5d0d-aab9-ad9126b66f91",
@@ -248,18 +311,15 @@ class ScooterService {
       // subscribe to a bunch of values
       // Subscribe to state
       _stateCharacteristic!.setNotifyValue(true);
-      _subscribeString(_stateCharacteristic!, "State", (String value) {
-        _state = value;
-        _updateScooterState();
-      });
-      // Subscribe to power state for correct hibernation
-      _subscribeString(_powerStateCharacteristic!, "Power State",
-          (String value) {
-        _powerState = value;
-        _updateScooterState();
-      });
+      _stateCharacteristic!.lastValueStream.listen(
+        (value) {
+          log("State received: ${ascii.decode(value)}");
+          ScooterState newState = ScooterState.fromBytes(value);
+          _stateController.add(newState);
+        },
+      );
       // Subscribe to seat
-      _subscribeString(_seatCharacteristic!, "Seat", (String seatState) {
+      _subscribeBoolean(_seatCharacteristic!, "Seat", (String seatState) {
         if (seatState == "open") {
           _seatController.add(false);
         } else {
@@ -267,7 +327,7 @@ class ScooterService {
         }
       });
       // Subscribe to handlebars
-      _subscribeString(_handlebarCharacteristic!, "Handlebars",
+      _subscribeBoolean(_handlebarCharacteristic!, "Handlebars",
           (String handlebarState) {
         if (handlebarState == "unlocked") {
           _handlebarController.add(false);
@@ -277,35 +337,56 @@ class ScooterService {
       });
       // Subscribe to aux battery SOC
       _auxSOCCharacteristic!.setNotifyValue(true);
-      _auxSOCCharacteristic!.lastValueStream.listen((value) {
+      _auxSOCCharacteristic!.lastValueStream.listen((value) async {
         int? soc = _convertUint32ToInt(value);
         log("Aux SOC received: $soc");
         _auxSOCController.add(soc);
-      });
-      // subscribe to CBB remaining capacity
-      _cbbRemainingCapCharacteristic!.setNotifyValue(true);
-      _cbbRemainingCapCharacteristic!.lastValueStream.listen((value) {
-        int? remainingCap = _convertUint32ToInt(value);
-        log("CBB remaining capacity received: $remainingCap");
-        cbbRemainingCap = remainingCap;
-        if (cbbRemainingCap != null && cbbFullCap != null) {
-          _cbbHealthController.add(cbbRemainingCap! / cbbFullCap!);
+        if (soc != null) {
+          ping();
+          prefs ??= await SharedPreferences.getInstance();
+          prefs!.setInt("auxSOC", soc);
         }
       });
-      // subscribe to CBB full capacity
-      _cbbFullCapCharacteristic!.setNotifyValue(true);
-      _cbbFullCapCharacteristic!.lastValueStream.listen((value) {
-        int? fullCap = _convertUint32ToInt(value);
-        log("CBB full capacity received: $fullCap");
-        cbbFullCap = fullCap;
-        if (cbbRemainingCap != null && cbbFullCap != null) {
-          _cbbHealthController.add(cbbRemainingCap! / cbbFullCap!);
-        }
-      });
+      // // subscribe to CBB remaining capacity
+      // _cbbRemainingCapCharacteristic!.setNotifyValue(true);
+      // _cbbRemainingCapCharacteristic!.lastValueStream.listen((value) {
+      //   int? remainingCap = _convertUint32ToInt(value);
+      //   log("CBB remaining capacity received: $remainingCap");
+      //   cbbRemainingCap = remainingCap;
+      //   if (cbbRemainingCap != null && cbbFullCap != null) {
+      //     _cbbHealthController.add(cbbRemainingCap! / cbbFullCap!);
+      //   }
+      // });
+      // // subscribe to CBB full capacity
+      // _cbbFullCapCharacteristic!.setNotifyValue(true);
+      // _cbbFullCapCharacteristic!.lastValueStream.listen((value) {
+      //   int? fullCap = _convertUint32ToInt(value);
+      //   log("CBB full capacity received: $fullCap");
+      //   cbbFullCap = fullCap;
+      //   if (cbbRemainingCap != null && cbbFullCap != null) {
+      //     _cbbHealthController.add(cbbRemainingCap! / cbbFullCap!);
+      //   }
+      // });
       // Subscribe to internal CBB SOC
       _cbbSOCCharacteristic!.setNotifyValue(true);
-      _cbbSOCCharacteristic!.lastValueStream.listen((value) {
-        _cbbSOCController.add(value.firstOrNull);
+      _cbbSOCCharacteristic!.lastValueStream.listen((value) async {
+        int? soc = value.firstOrNull;
+        log("cbb SOC received: ${value.toString()}");
+        _cbbSOCController.add(soc);
+        if (soc != null) {
+          ping();
+          prefs ??= await SharedPreferences.getInstance();
+          prefs!.setInt("cbbSOC", soc);
+        }
+      });
+      // subscribe to CBB charging status
+      _subscribeBoolean(_cbbChargingCharacteristic!, "CBB charging",
+          (String chargingState) {
+        if (chargingState == "charging") {
+          _cbbChargingController.add(true);
+        } else if (chargingState == "not-charging") {
+          _cbbChargingController.add(false);
+        }
       });
       // Subscribe to primary battery charge cycles
       _primaryCyclesCharacteristic!.setNotifyValue(true);
@@ -316,10 +397,15 @@ class ScooterService {
       });
       // Subscribe to primary SOC
       _primarySOCCharacteristic!.setNotifyValue(true);
-      _primarySOCCharacteristic!.lastValueStream.listen((value) {
+      _primarySOCCharacteristic!.lastValueStream.listen((value) async {
         int? soc = _convertUint32ToInt(value);
         log("Primary SOC received: $soc");
         _primarySOCController.add(soc);
+        if (soc != null) {
+          ping();
+          prefs ??= await SharedPreferences.getInstance();
+          prefs!.setInt("primarySOC", soc);
+        }
       });
       // Subscribe to secondary battery charge cycles
       _secondaryCyclesCharacteristic!.setNotifyValue(true);
@@ -330,10 +416,15 @@ class ScooterService {
       });
       // Subscribe to secondary SOC
       _secondarySOCCharacteristic!.setNotifyValue(true);
-      _secondarySOCCharacteristic!.lastValueStream.listen((value) {
+      _secondarySOCCharacteristic!.lastValueStream.listen((value) async {
         int? soc = _convertUint32ToInt(value);
         log("Secondary SOC received: $soc");
         _secondarySOCController.add(soc);
+        if (soc != null) {
+          ping();
+          prefs ??= await SharedPreferences.getInstance();
+          prefs!.setInt("secondarySOC", soc);
+        }
       });
       // Read each value once to get the ball rolling
       _stateCharacteristic!.read();
@@ -341,6 +432,7 @@ class ScooterService {
       _handlebarCharacteristic!.read();
       _auxSOCCharacteristic!.read();
       _cbbSOCCharacteristic!.read();
+      _cbbChargingCharacteristic!.read();
       _primaryCyclesCharacteristic!.read();
       _primarySOCCharacteristic!.read();
       _secondaryCyclesCharacteristic!.read();
@@ -350,19 +442,9 @@ class ScooterService {
     }
   }
 
-  void _updateScooterState() {
-    log("Power state: '${_state}' | '${_powerState}'");
-    if (_state != null && _powerState == "hibernating") {
-      _stateController.add(ScooterState.hibernating);
-    }
-    if (_state != null) {
-      ScooterState newState = ScooterState.fromString(_state!);
-      _stateController.add(newState);
-    }
-  }
-
   BluetoothCharacteristic? _findCharacteristic(
       BluetoothDevice device, String serviceUuid, String characteristicUuid) {
+    log("Finding characteristic $characteristicUuid in service $serviceUuid...");
     return device.servicesList
         .firstWhere((service) => service.serviceUuid.toString() == serviceUuid)
         .characteristics
@@ -397,28 +479,53 @@ class ScooterService {
     }
   }
 
+  Future<void> wakeUp() async {
+    String command = "wakeup";
+
+    Fluttertoast.showToast(
+      msg: "Send command: $command",
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: Colors.black,
+      textColor: Colors.white,
+    );
+    _sendCommand(command, characteristic: _hibernationCommandCharacteristic);
+  }
+
+  Future<void> hibernate() async {
+    String command = "hibernate";
+
+    Fluttertoast.showToast(
+      msg: "Send command: $command",
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: Colors.black,
+      textColor: Colors.white,
+    );
+    _sendCommand(command, characteristic: _hibernationCommandCharacteristic);
+  }
+
+  void ping() async {
+    _lastPingController.add(DateTime.now());
+    prefs ??= await SharedPreferences.getInstance();
+    prefs!.setInt("lastPing", DateTime.now().microsecondsSinceEpoch);
+  }
+
   // HELPER FUNCTIONS
 
-  void _subscribeString(
+  void _subscribeBoolean(
       BluetoothCharacteristic characteristic, String name, Function callback) {
+    // Subscribe to seat
     characteristic.setNotifyValue(true);
     characteristic.lastValueStream.listen((value) {
       log("$name received: ${ascii.decode(value)}");
-      callback(_convertBytesToString(value));
+      value.removeWhere((element) => element == 0);
+      String state = ascii.decode(value).trim();
+      callback(state);
     });
   }
 
-  String? _convertBytesToString(List<int>? value) {
-    if (value == null) {
-      return null;
-    }
-
-    value.removeWhere((element) => element == 0);
-    String state = ascii.decode(value).trim();
-    return state;
-  }
-
-  void _sendCommand(String command) {
+  void _sendCommand(String command, {BluetoothCharacteristic? characteristic}) {
     log("Sending command: $command");
     if (myScooter == null) {
       throw "Scooter not found!";
@@ -426,8 +533,14 @@ class ScooterService {
     if (myScooter!.isDisconnected) {
       throw "Scooter disconnected!";
     }
+
+    var characteristicToSend = _commandCharacteristic;
+    if (characteristic != null) {
+      characteristicToSend = characteristic;
+    }
+
     try {
-      _commandCharacteristic!.write(ascii.encode(command));
+      characteristicToSend!.write(ascii.encode(command));
     } catch (e) {
       rethrow;
     }
@@ -443,18 +556,19 @@ class ScooterService {
 
   void forgetSavedScooter() async {
     stopAutoRestart();
+    _connectedController.add(false);
     savedScooterId = null;
     SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.remove("savedScooterId");
-    // if (Platform.isAndroid) {
-    //   myScooter?.removeBond();
-    // }
+    if (Platform.isAndroid) {
+      myScooter?.removeBond();
+    }
   }
 
   void setSavedScooter(String id) async {
     savedScooterId = id;
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setString("savedScooterId", id);
+    prefs ??= await SharedPreferences.getInstance();
+    prefs!.setString("savedScooterId", id);
   }
 
   void dispose() {

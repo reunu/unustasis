@@ -1,8 +1,4 @@
 ### Changes:
-- Adding a simple stats screen (will become way prettier and more elaborate in the future)
-- Adding CBB battery level (thanks DSIW)
-- More transparency during connection
-- Fixing "ready to drive" state
-
-### Known issues:
-- Secondary battery level is still wrong
+- Translated the entire app to German
+- Caching last known battery level
+- Displaying estimated range (based on an average of 45km per battery)

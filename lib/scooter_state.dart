@@ -1,6 +1,7 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 
 enum ScooterState {
   standby,
@@ -57,49 +58,49 @@ extension StateExtension on ScooterState {
     }
   }
 
-  String get name {
+  String name(BuildContext context) {
     switch (this) {
       case ScooterState.standby:
-        return "Standby";
+        return FlutterI18n.translate(context, "state_name_standby");
       case ScooterState.off:
-        return "Powered off";
+        return FlutterI18n.translate(context, "state_name_off");
       case ScooterState.parked:
-        return "Parked";
+        return FlutterI18n.translate(context, "state_name_parked");
       case ScooterState.shuttingDown:
-        return "Shutting down";
+        return FlutterI18n.translate(context, "state_name_shutting_down");
       case ScooterState.ready:
-        return "Ready";
+        return FlutterI18n.translate(context, "state_name_ready");
       case ScooterState.hibernating:
-        return "Hibernating";
+        return FlutterI18n.translate(context, "state_name_hibernating");
       case ScooterState.unknown:
-        return "Connected"; // Unknown state, but at least we know A state
+        return FlutterI18n.translate(context, "state_name_unknown");
       case ScooterState.disconnected:
-        return "Disconnected";
+        return FlutterI18n.translate(context, "state_name_disconnected");
       case ScooterState.linking:
-        return "Connecting...";
+        return FlutterI18n.translate(context, "state_name_linking");
     }
   }
 
-  String get description {
+  String description(BuildContext context) {
     switch (this) {
       case ScooterState.standby:
-        return "Shhh! Your scooter is asleep :)";
+        return FlutterI18n.translate(context, "state_desc_standby");
       case ScooterState.off:
-        return "Your scooter is fully powered down";
+        return FlutterI18n.translate(context, "state_desc_off");
       case ScooterState.parked:
-        return "Your scooter is powered on";
+        return FlutterI18n.translate(context, "state_desc_parked");
       case ScooterState.shuttingDown:
-        return "Your scooter is shutting down...";
+        return FlutterI18n.translate(context, "state_desc_shutting_down");
       case ScooterState.ready:
-        return "Your scooter is driving right now";
+        return FlutterI18n.translate(context, "state_desc_ready");
       case ScooterState.hibernating:
-        return "Your scooter is in hibernation mode";
+        return FlutterI18n.translate(context, "state_desc_hibernating");
       case ScooterState.unknown:
-        return "Your scooter is connected";
+        return FlutterI18n.translate(context, "state_desc_unknown");
       case ScooterState.disconnected:
-        return "Your scooter is not connected";
+        return FlutterI18n.translate(context, "state_desc_disconnected");
       case ScooterState.linking:
-        return "Your scooter was found and is connecting to the app...";
+        return FlutterI18n.translate(context, "state_desc_linking");
     }
   }
 

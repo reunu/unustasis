@@ -1,6 +1,9 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unustasis/control_screen.dart';
 import 'package:unustasis/onboarding_screen.dart';
 import 'package:unustasis/scooter_service.dart';
@@ -24,10 +27,12 @@ class _HomeScreenState extends State<HomeScreen> {
   bool? _handlebarsLocked;
   int? _primarySOC;
   int? _secondarySOC;
+  int? color;
 
   @override
   void initState() {
     super.initState();
+    setupColor();
     redirectOrStart();
     widget.scooterService.state.listen((state) {
       setState(() {
@@ -123,56 +128,84 @@ class _HomeScreenState extends State<HomeScreen> {
                 Text(
                   _scanning
                       ? (widget.scooterService.savedScooterId != null
-                          ? "Searching for your scooter..."
-                          : "Scanning for scooters...")
+                          ? FlutterI18n.translate(
+                              context, "home_scanning_known")
+                          : FlutterI18n.translate(context, "home_scanning"))
                       : ((_scooterState != null
-                              ? _scooterState!.name
-                              : "Loading state") +
+                              ? _scooterState!.name(context)
+                              : FlutterI18n.translate(
+                                  context, "home_loading_state")) +
                           (_connected && _handlebarsLocked == false
-                              ? " - Unlocked"
+                              ? FlutterI18n.translate(context, "home_unlocked")
                               : "")),
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 16),
-                _connected && _primarySOC != null
-                    ? Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                              width: MediaQuery.of(context).size.width / 6,
-                              child: LinearProgressIndicator(
-                                minHeight: 8,
-                                borderRadius: BorderRadius.circular(8),
-                                value: _primarySOC! / 100.0,
-                                color: Theme.of(context).colorScheme.primary,
-                              )),
-                          const SizedBox(width: 8),
-                          Text("$_primarySOC%"),
-                          _secondarySOC != null && _secondarySOC! > 0
-                              ? const VerticalDivider()
-                              : Container(),
-                          _secondarySOC != null && _secondarySOC! > 0
-                              ? SizedBox(
+                _primarySOC != null
+                    ? StreamBuilder<DateTime?>(
+                        stream: widget.scooterService.lastPing,
+                        builder: (context, lastPing) {
+                          bool dataIsOld = !lastPing.hasData ||
+                              lastPing.hasData &&
+                                  lastPing.data!
+                                          .difference(DateTime.now())
+                                          .inMinutes
+                                          .abs() >
+                                      5;
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              SizedBox(
                                   width: MediaQuery.of(context).size.width / 6,
                                   child: LinearProgressIndicator(
                                     minHeight: 8,
                                     borderRadius: BorderRadius.circular(8),
-                                    value: _secondarySOC! / 100.0,
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
-                                  ))
-                              : Container(),
-                          _secondarySOC != null && _secondarySOC! > 0
-                              ? const SizedBox(width: 8)
-                              : Container(),
-                          _secondarySOC != null && _secondarySOC! > 0
-                              ? Text("$_secondarySOC%")
-                              : Container(),
-                        ],
-                      )
+                                    value: _primarySOC! / 100.0,
+                                    color: dataIsOld
+                                        ? Colors.grey
+                                        : _primarySOC! < 15
+                                            ? Colors.red
+                                            : Theme.of(context)
+                                                .colorScheme
+                                                .primary,
+                                  )),
+                              const SizedBox(width: 8),
+                              Text("$_primarySOC%"),
+                              _secondarySOC != null && _secondarySOC! > 0
+                                  ? const VerticalDivider()
+                                  : Container(),
+                              _secondarySOC != null && _secondarySOC! > 0
+                                  ? SizedBox(
+                                      width:
+                                          MediaQuery.of(context).size.width / 6,
+                                      child: LinearProgressIndicator(
+                                        minHeight: 8,
+                                        borderRadius: BorderRadius.circular(8),
+                                        value: _secondarySOC! / 100.0,
+                                        color: dataIsOld
+                                            ? Theme.of(context)
+                                                .colorScheme
+                                                .surface
+                                            : _secondarySOC! < 15
+                                                ? Colors.red
+                                                : Theme.of(context)
+                                                    .colorScheme
+                                                    .primary,
+                                      ))
+                                  : Container(),
+                              _secondarySOC != null && _secondarySOC! > 0
+                                  ? const SizedBox(width: 8)
+                                  : Container(),
+                              _secondarySOC != null && _secondarySOC! > 0
+                                  ? Text("$_secondarySOC%")
+                                  : Container(),
+                            ],
+                          );
+                        })
                     : Container(),
                 Expanded(
                     child: ScooterVisual(
+                        color: color,
                         state: _scooterState,
                         scanning: _scanning,
                         blinkerLeft: false, // TODO: extract ScooterBlinkerState
@@ -187,8 +220,11 @@ class _HomeScreenState extends State<HomeScreen> {
                               _seatClosed == true
                           ? widget.scooterService.openSeat
                           : null,
-                      label:
-                          _seatClosed == false ? "Seat is open!" : "Open seat",
+                      label: _seatClosed == false
+                          ? FlutterI18n.translate(
+                              context, "home_seat_button_open")
+                          : FlutterI18n.translate(
+                              context, "home_seat_button_closed"),
                       icon: Icons.work_outline,
                       iconColor: _seatClosed == false
                           ? Theme.of(context).colorScheme.error
@@ -210,8 +246,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             ? Icons.lock_open
                             : Icons.lock_outline,
                         label: _scooterState != null && _scooterState!.isOn
-                            ? "Hold to lock"
-                            : "Hold to unlock"),
+                            ? FlutterI18n.translate(context, "home_lock_button")
+                            : FlutterI18n.translate(
+                                context, "home_unlock_button")),
                     ScooterActionButton(
                         onPressed: () {
                           Navigator.push(
@@ -221,7 +258,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                       service: widget.scooterService)));
                         },
                         icon: Icons.more_vert,
-                        label: "Controls"),
+                        label: FlutterI18n.translate(
+                            context, "home_controls_button")),
                   ],
                 )
               ],
@@ -232,18 +270,25 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void setupColor() {
+    SharedPreferences.getInstance().then((prefs) {
+      setState(() {
+        color = prefs.getInt("color");
+      });
+    });
+  }
+
   void showSeatWarning() {
     showDialog<void>(
       context: context,
       barrierDismissible: false, // user must tap button!
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Seat is open!'),
-          content: const SingleChildScrollView(
+          title: Text(FlutterI18n.translate(context, "seat_alert_title")),
+          content: SingleChildScrollView(
             child: ListBody(
               children: <Widget>[
-                Text(
-                    "For safety reasons, the scooter can't be locked while the seat is open."),
+                Text(FlutterI18n.translate(context, "seat_alert_body")),
               ],
             ),
           ),
@@ -314,8 +359,7 @@ class _ScooterPowerButtonState extends State<ScooterPowerButton> {
             backgroundColor: mainColor,
           ),
           onPressed: () {
-            ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text(widget._label)));
+            Fluttertoast.showToast(msg: widget._label);
           },
           onLongPress: widget._action == null
               ? null
