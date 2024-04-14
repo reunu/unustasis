@@ -16,6 +16,7 @@ class ScooterService {
   BluetoothDevice? myScooter; // reserved for a connected scooter!
   bool _foundSth = false; // whether we've found a scooter yet
   int? cbbRemainingCap, cbbFullCap;
+  String? _state, _powerState;
   bool _autoRestarting = false;
   bool _scanning = false;
   SharedPreferences? prefs;
@@ -24,6 +25,7 @@ class ScooterService {
   BluetoothCharacteristic? _commandCharacteristic;
   BluetoothCharacteristic? _hibernationCommandCharacteristic;
   BluetoothCharacteristic? _stateCharacteristic;
+  BluetoothCharacteristic? _powerStateCharacteristic;
   BluetoothCharacteristic? _seatCharacteristic;
   BluetoothCharacteristic? _handlebarCharacteristic;
   BluetoothCharacteristic? _auxSOCCharacteristic;
@@ -264,6 +266,10 @@ class ScooterService {
           myScooter!,
           "9a590020-6e67-5d0d-aab9-ad9126b66f91",
           "9a590021-6e67-5d0d-aab9-ad9126b66f91");
+      _powerStateCharacteristic = _findCharacteristic(
+          myScooter!,
+          "9a5900a0-6e67-5d0d-aab9-ad9126b66f91",
+          "9a5900a1-6e67-5d0d-aab9-ad9126b66f91");
       _seatCharacteristic = _findCharacteristic(
           myScooter!,
           "9a590020-6e67-5d0d-aab9-ad9126b66f91",
@@ -311,10 +317,14 @@ class ScooterService {
       // subscribe to a bunch of values
       // Subscribe to state
       _subscribeString(_stateCharacteristic!, "State", (String value) {
-          ScooterState newState = ScooterState.fromString(value);
-          _stateController.add(newState);
-        },
-      );
+        _state = value;
+        _updateScooterState();
+      });
+      // Subscribe to power state for correct hibernation
+      _subscribeString(_powerStateCharacteristic!, "Power State", (String value) {
+        _setPowerState(value);
+        _updateScooterState();
+      });
       // Subscribe to seat
       _subscribeString(_seatCharacteristic!, "Seat", (String seatState) {
         if (seatState == "open") {
@@ -436,6 +446,23 @@ class ScooterService {
       _secondarySOCCharacteristic!.read();
     } catch (e) {
       rethrow;
+    }
+  }
+
+  Future<void> _updateScooterState() async {
+    var powerState = await _getPowerState();
+    log("Update scooter state from state: '$_state' and power state: '$powerState'");
+    if (_state != null && powerState == "hibernating") {
+      _stateController.add(ScooterState.hibernating);
+      return;
+    }
+    if (_state != null && powerState == "hibernating-imminent") {
+      _stateController.add(ScooterState.hibernating);
+      return;
+    }
+    if (_state != null) {
+      ScooterState newState = ScooterState.fromString(_state!);
+      _stateController.add(newState);
     }
   }
 
@@ -570,6 +597,26 @@ class ScooterService {
     savedScooterId = id;
     prefs ??= await SharedPreferences.getInstance();
     prefs!.setString("savedScooterId", id);
+  }
+
+  void _setPowerState(String powerState) async {
+    _powerState = powerState;
+    prefs ??= await SharedPreferences.getInstance();
+    if (powerState != "") {
+      log("Write power state to cache: $_powerState");
+      prefs!.setString("powerState", powerState);
+    }
+  }
+
+  Future<String?> _getPowerState() async {
+    if (_powerState != null) {
+      return _powerState;
+    }
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    var powerState = prefs.getString("powerState");
+    log("Read power state from cache: $powerState");
+    _powerState = powerState;
+    return _powerState;
   }
 
   void dispose() {
