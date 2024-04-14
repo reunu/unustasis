@@ -126,7 +126,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 Text(
-                  _scanning
+                  _scanning &&
+                          (_scooterState == null ||
+                              _scooterState! == ScooterState.disconnected)
                       ? (widget.scooterService.savedScooterId != null
                           ? FlutterI18n.translate(
                               context, "home_scanning_known")
@@ -231,8 +233,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           : null,
                     ),
                     ScooterPowerButton(
-                        action: _connected
-                            ? (_scooterState != null && _scooterState!.isOn
+                        action: _scooterState != null && _scooterState!.isReady
+                            ? (_scooterState!.isOn
                                 ? () {
                                     if (_seatClosed == false) {
                                       showSeatWarning();

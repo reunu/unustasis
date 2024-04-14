@@ -79,6 +79,7 @@
     "forget_alert_cancel": "Cancel",
     "forget_alert_confirm": "Reset now",
     "stats_last_ping_toast": "Last updated {time} ago",
+    "stats_no_location": "Scooter location unknown",
     "controls_title": "Controls",
     "controls_state_title": "State",
     "controls_lock": "Lock",
