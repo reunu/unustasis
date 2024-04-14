@@ -460,6 +460,10 @@ class ScooterService {
       _stateController.add(ScooterState.hibernating);
       return;
     }
+    if (_state != null && powerState == "booting") {
+      _stateController.add(ScooterState.booting);
+      return;
+    }
     if (_state != null) {
       ScooterState newState = ScooterState.fromString(_state!);
       _stateController.add(newState);

@@ -10,6 +10,7 @@ enum ScooterState {
   shuttingDown,
   ready,
   hibernating,
+  booting,
   unknown,
   linking,
   disconnected;
@@ -28,6 +29,8 @@ enum ScooterState {
         return ScooterState.ready;
       case "hibernating":
         return ScooterState.hibernating;
+      case "booting":
+        return ScooterState.booting;
       case "":
         // this is somethimes sent during standby, off or hibernating...
         return ScooterState.unknown;
@@ -43,6 +46,7 @@ extension StateExtension on ScooterState {
     switch (this) {
       case ScooterState.off:
       case ScooterState.hibernating:
+      case ScooterState.booting:
       case ScooterState.shuttingDown:
         // scooter is connected and actionable, but asleep
         return Colors.grey.shade200;
@@ -72,6 +76,8 @@ extension StateExtension on ScooterState {
         return FlutterI18n.translate(context, "state_name_ready");
       case ScooterState.hibernating:
         return FlutterI18n.translate(context, "state_name_hibernating");
+      case ScooterState.booting:
+        return FlutterI18n.translate(context, "state_name_booting");
       case ScooterState.unknown:
         return FlutterI18n.translate(context, "state_name_unknown");
       case ScooterState.disconnected:
@@ -95,6 +101,8 @@ extension StateExtension on ScooterState {
         return FlutterI18n.translate(context, "state_desc_ready");
       case ScooterState.hibernating:
         return FlutterI18n.translate(context, "state_desc_hibernating");
+      case ScooterState.booting:
+        return FlutterI18n.translate(context, "state_desc_booting");
       case ScooterState.unknown:
         return FlutterI18n.translate(context, "state_desc_unknown");
       case ScooterState.disconnected:
