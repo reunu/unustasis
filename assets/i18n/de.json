@@ -84,11 +84,11 @@
     "controls_state_title": "Zustand",
     "controls_lock": "Abschließen",
     "controls_unlock": "Entriegeln",
-    "controls_wake_up": "Aus dem Tiefschlaf wecken",
+    "controls_wake_up": "Aufwecken",
     "controls_hibernate": "Tiefschlaf",
     "controls_blinkers_title": "Blinker",
     "controls_blink_left": "Links blinken",
     "controls_blink_right": "Rechts blinken",
     "controls_blink_hazard": "Warnblinker",
-    "controls_blink_off": "Alle aus"
+    "controls_blink_off": "Blinker aus"
 }
