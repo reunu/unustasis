@@ -603,6 +603,8 @@ class ScooterService {
     _powerState = powerState;
     prefs ??= await SharedPreferences.getInstance();
     if (powerState != "") {
+      // We're caching the power state, because it's updated less frequent to
+      // reflect the correct state after reopening the app
       log("Write power state to cache: $_powerState");
       prefs!.setString("powerState", powerState);
     }
