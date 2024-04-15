@@ -52,6 +52,7 @@ dev_dependencies:
   mockito: ^5.4.4
   build_runner: ^2.4.9
   flutter_string_extractor: ^0.1.1
+  change_app_package_name: ^1.1.0
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
