@@ -26,6 +26,8 @@
 		<string>$(FLUTTER_BUILD_NUMBER)</string>
 		<key>LSRequiresIPhoneOS</key>
 		<true />
+		<key>NSBluetoothPeripheralUsageDescription</key>
+		<string>Bluetooth is required to connect to your unu scooter wirelessly</string>
 		<key>NSBluetoothAlwaysUsageDescription</key>
 		<string>Bluetooth is required to connect to your unu scooter wirelessly</string>
 		<key>NSLocationWhenInUseUsageDescription</key>
