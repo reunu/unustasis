@@ -4,20 +4,32 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unustasis/flutter/blue_plus_mockable.dart';
 import 'package:unustasis/home_screen.dart';
 import 'package:unustasis/scooter_service.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
   ]);
-  runApp(const MyApp());
+  Locale? savedLocale;
+
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  final String? localeString = prefs.getString('savedLocale');
+  if (localeString != null) {
+    log("Saved locale: $localeString");
+    savedLocale = Locale(localeString);
+  }
+  runApp(MyApp(
+    savedLocale: savedLocale,
+  ));
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+  final Locale? savedLocale;
+  const MyApp({this.savedLocale, super.key});
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -57,9 +69,9 @@ class _MyAppState extends State<MyApp> {
         FlutterI18nDelegate(
           translationLoader: FileTranslationLoader(
             useCountryCode: false,
-            // forcedLocale: const Locale('de'),
             fallbackFile: 'en',
             basePath: 'assets/i18n',
+            forcedLocale: widget.savedLocale,
           ),
           missingTranslationHandler: (key, locale) {
             log("--- Missing Key: $key, languageCode: ${locale?.languageCode}");

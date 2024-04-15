@@ -80,6 +80,7 @@
     "forget_alert_confirm": "Entfernen",
     "stats_last_ping_toast": "Zuletzt aktualisiert vor {time}",
     "stats_no_location": "Rollerstandort unbekannt",
+    "stats_no_range": "Setze eine Batterie ein um die Reichweite zu sehen",
     "controls_title": "Steuerung",
     "controls_state_title": "Zustand",
     "controls_lock": "Abschließen",

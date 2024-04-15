@@ -80,6 +80,7 @@
     "forget_alert_confirm": "Reset now",
     "stats_last_ping_toast": "Last updated {time} ago",
     "stats_no_location": "Scooter location unknown",
+    "stats_no_range": "Insert a battery to get an estimated range",
     "controls_title": "Controls",
     "controls_state_title": "State",
     "controls_lock": "Lock",

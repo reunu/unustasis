@@ -1,11 +1,11 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sticky_headers/sticky_headers/widget.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:unustasis/onboarding_screen.dart';
 import 'package:unustasis/scooter_service.dart';
@@ -46,250 +46,247 @@ class _StatsScreenState extends State<StatsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(FlutterI18n.translate(context, 'stats_title')),
-        backgroundColor: Colors.black,
-        actions: [
-          StreamBuilder<DateTime?>(
-              stream: widget.service.lastPing,
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return Container();
-                }
-                return InkWell(
-                  onTap: () {
-                    Fluttertoast.showToast(
-                      msg: FlutterI18n.translate(
-                          context, "stats_last_ping_toast", translationParams: {
-                        "time": snapshot.data!
-                            .calculateTimeDifferenceInShort()
-                            .toLowerCase()
-                      }),
-                    );
-                  },
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Text(
-                        snapshot.data!.calculateTimeDifferenceInShort(),
+    return DefaultTabController(
+      length: 4,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(FlutterI18n.translate(context, 'stats_title')),
+          backgroundColor: Colors.black,
+          bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(50.0),
+              child: TabBar(
+                  isScrollable: true,
+                  tabAlignment: TabAlignment.center,
+                  labelColor: Colors.white,
+                  unselectedLabelColor: Colors.white.withOpacity(0.3),
+                  indicatorColor: Colors.white,
+                  tabs: [
+                    Tab(
+                      child: Text(
+                        FlutterI18n.translate(context, 'stats_title_battery'),
                         style: const TextStyle(
-                          fontWeight: FontWeight.w900,
-                          fontSize: 12,
-                          color: Colors.white70,
+                          fontSize: 16,
                         ),
                       ),
-                      const SizedBox(
-                        width: 4,
-                      ),
-                      const Icon(
-                        Icons.schedule_rounded,
-                        color: Colors.white70,
-                        size: 24,
-                      ),
-                      const SizedBox(
-                        width: 32,
-                      ),
-                    ],
-                  ),
-                );
-              }),
-        ],
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.black,
-              Theme.of(context).colorScheme.background,
-            ],
-          ),
-        ),
-        child: StreamBuilder<DateTime?>(
-            stream: widget.service.lastPing,
-            builder: (context, lastPing) {
-              bool dataIsOld = !lastPing.hasData ||
-                  lastPing.hasData &&
-                      lastPing.data!
-                              .difference(DateTime.now())
-                              .inMinutes
-                              .abs() >
-                          5;
-              return ListView(
-                shrinkWrap: true,
-                children: [
-                  StickyHeader(
-                    header: Header(
-                        FlutterI18n.translate(context, 'stats_title_battery')),
-                    content: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            mainAxisSize: MainAxisSize.max,
-                            children: [
-                              StreamBuilder<int?>(
-                                stream: widget.service.primarySOC,
-                                builder: (context, socSnap) {
-                                  return StreamBuilder<int?>(
-                                      stream: widget.service.primaryCycles,
-                                      builder: (context, cycleSnap) {
-                                        return Expanded(
-                                          child: _batteryCard(
-                                            name: FlutterI18n.translate(
-                                                context, 'stats_primary_name'),
-                                            soc: socSnap.data ?? 0,
-                                            infos: [
-                                              FlutterI18n.translate(context,
-                                                  'stats_primary_desc'),
-                                              FlutterI18n.translate(context,
-                                                  "stats_primary_cycles",
-                                                  translationParams: {
-                                                    "cycles": cycleSnap.hasData
-                                                        ? cycleSnap.data
-                                                            .toString()
-                                                        : FlutterI18n.translate(
-                                                            context,
-                                                            "stats_unknown")
-                                                  }),
-                                            ],
-                                            old: dataIsOld,
-                                          ),
-                                        );
-                                      });
-                                },
-                              ),
-                              StreamBuilder<int?>(
-                                stream: widget.service.secondarySOC,
-                                builder: (context, socSnap) {
-                                  if (!socSnap.hasData || socSnap.data == 0) {
-                                    return Container();
-                                  }
-                                  return StreamBuilder<int?>(
-                                      stream: widget.service.secondaryCycles,
-                                      builder: (context, cycleSnap) {
-                                        return Expanded(
-                                          child: _batteryCard(
-                                            name: FlutterI18n.translate(context,
-                                                'stats_secondary_name'),
-                                            soc: socSnap.data ?? 0,
-                                            infos: [
-                                              FlutterI18n.translate(context,
-                                                  'stats_secondary_desc'),
-                                              FlutterI18n.translate(context,
-                                                  "stats_secondary_cycles",
-                                                  translationParams: {
-                                                    "cycles": cycleSnap.hasData
-                                                        ? cycleSnap.data
-                                                            .toString()
-                                                        : FlutterI18n.translate(
-                                                            context,
-                                                            "stats_unknown")
-                                                  }),
-                                            ],
-                                            old: dataIsOld,
-                                          ),
-                                        );
-                                      });
-                                },
-                              ),
-                            ],
-                          ),
-                          StreamBuilder<int?>(
-                            stream: widget.service.cbbSOC,
-                            builder: (context, snapshot) {
-                              return StreamBuilder<bool?>(
-                                  stream: widget.service.cbbCharging,
-                                  builder: (context, cbbCharging) {
-                                    return _batteryCard(
-                                      name: FlutterI18n.translate(
-                                          context, "stats_cbb_name"),
-                                      soc: snapshot.data ?? 0,
-                                      infos: [
-                                        FlutterI18n.translate(
-                                            context, "stats_cbb_desc"),
-                                        cbbCharging.hasData
-                                            ? cbbCharging.data == true
-                                                ? FlutterI18n.translate(context,
-                                                    "stats_cbb_charging")
-                                                : FlutterI18n.translate(context,
-                                                    "stats_cbb_not_charging")
-                                            : FlutterI18n.translate(context,
-                                                "stats_cbb_unknown_state"),
-                                      ],
-                                      old: dataIsOld,
-                                    );
-                                  });
-                            },
-                          ),
-                          StreamBuilder<int?>(
-                            stream: widget.service.auxSOC,
-                            builder: (context, snapshot) {
-                              return _batteryCard(
-                                name: FlutterI18n.translate(
-                                    context, "stats_aux_name"),
-                                soc: snapshot.data ?? 0,
-                                infos: [
-                                  FlutterI18n.translate(
-                                      context, "stats_aux_desc"),
-                                ],
-                                old: dataIsOld,
-                              );
-                            },
-                          ),
-                        ],
+                    ),
+                    Tab(
+                      child: Text(
+                        FlutterI18n.translate(context, 'stats_title_range'),
+                        style: const TextStyle(
+                          fontSize: 16,
+                        ),
                       ),
                     ),
-                  ),
-                  StreamBuilder<int?>(
-                    stream: widget.service.primarySOC,
-                    builder: (context, primarySOC) {
-                      if (!primarySOC.hasData || primarySOC.data == 0) {
-                        return Container();
-                      }
-                      return StickyHeader(
-                        header: Header(FlutterI18n.translate(
-                            context, 'stats_title_range')),
-                        content: StreamBuilder<int?>(
-                          stream: widget.service.secondarySOC,
-                          builder: (context, secondarySOC) {
-                            // estimating 45km of range per battery
-                            double rangePrimary = primarySOC.hasData
-                                ? (primarySOC.data! / 100 * 42)
-                                : 0;
-                            double rangeSecondary = secondarySOC.hasData
-                                ? (secondarySOC.data! / 100 * 42)
-                                : 0;
-                            double rangeTotal = rangePrimary + rangeSecondary;
-                            return Column(
-                              children: [
-                                ListTile(
-                                  title: Text(FlutterI18n.translate(
-                                      context, "stats_estimated_range")),
-                                  subtitle: Text(primarySOC.hasData
-                                      ? "~ ${rangeTotal.round()} km"
-                                      : FlutterI18n.translate(
-                                          context, "stats_unknown")),
-                                ),
-                                _rangeMapCard(
-                                  rangeInMeters: (rangeTotal * 1000).round(),
-                                  old: dataIsOld,
-                                ),
+                    Tab(
+                      child: Text(
+                        FlutterI18n.translate(context, 'stats_title_scooter'),
+                        style: const TextStyle(
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    Tab(
+                      child: Text(
+                        FlutterI18n.translate(context, 'stats_title_settings'),
+                        style: const TextStyle(
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ])),
+          actions: [
+            _lastPingInfo(stream: widget.service.lastPing),
+          ],
+        ),
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.black,
+                Theme.of(context).colorScheme.background,
+              ],
+            ),
+          ),
+          child: StreamBuilder<DateTime?>(
+              stream: widget.service.lastPing,
+              builder: (context, lastPing) {
+                bool dataIsOld = !lastPing.hasData ||
+                    lastPing.hasData &&
+                        lastPing.data!
+                                .difference(DateTime.now())
+                                .inMinutes
+                                .abs() >
+                            5;
+                return TabBarView(
+                  children: [
+                    // BATTERY TAB
+                    ListView(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shrinkWrap: true,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          mainAxisSize: MainAxisSize.max,
+                          children: [
+                            StreamBuilder<int?>(
+                              stream: widget.service.primarySOC,
+                              builder: (context, socSnap) {
+                                return StreamBuilder<int?>(
+                                    stream: widget.service.primaryCycles,
+                                    builder: (context, cycleSnap) {
+                                      return Expanded(
+                                        child: _batteryCard(
+                                          name: FlutterI18n.translate(
+                                              context, 'stats_primary_name'),
+                                          soc: socSnap.data ?? 0,
+                                          infos: [
+                                            FlutterI18n.translate(
+                                                context, 'stats_primary_desc'),
+                                            FlutterI18n.translate(
+                                                context, "stats_primary_cycles",
+                                                translationParams: {
+                                                  "cycles": cycleSnap.hasData
+                                                      ? cycleSnap.data
+                                                          .toString()
+                                                      : FlutterI18n.translate(
+                                                          context,
+                                                          "stats_unknown")
+                                                }),
+                                          ],
+                                          old: dataIsOld,
+                                        ),
+                                      );
+                                    });
+                              },
+                            ),
+                            StreamBuilder<int?>(
+                              stream: widget.service.secondarySOC,
+                              builder: (context, socSnap) {
+                                if (!socSnap.hasData || socSnap.data == 0) {
+                                  return Container();
+                                }
+                                return StreamBuilder<int?>(
+                                    stream: widget.service.secondaryCycles,
+                                    builder: (context, cycleSnap) {
+                                      return Expanded(
+                                        child: _batteryCard(
+                                          name: FlutterI18n.translate(
+                                              context, 'stats_secondary_name'),
+                                          soc: socSnap.data ?? 0,
+                                          infos: [
+                                            FlutterI18n.translate(context,
+                                                'stats_secondary_desc'),
+                                            FlutterI18n.translate(context,
+                                                "stats_secondary_cycles",
+                                                translationParams: {
+                                                  "cycles": cycleSnap.hasData
+                                                      ? cycleSnap.data
+                                                          .toString()
+                                                      : FlutterI18n.translate(
+                                                          context,
+                                                          "stats_unknown")
+                                                }),
+                                          ],
+                                          old: dataIsOld,
+                                        ),
+                                      );
+                                    });
+                              },
+                            ),
+                          ],
+                        ),
+                        StreamBuilder<int?>(
+                          stream: widget.service.cbbSOC,
+                          builder: (context, snapshot) {
+                            return StreamBuilder<bool?>(
+                                stream: widget.service.cbbCharging,
+                                builder: (context, cbbCharging) {
+                                  return _batteryCard(
+                                    name: FlutterI18n.translate(
+                                        context, "stats_cbb_name"),
+                                    soc: snapshot.data ?? 0,
+                                    infos: [
+                                      FlutterI18n.translate(
+                                          context, "stats_cbb_desc"),
+                                      cbbCharging.hasData
+                                          ? cbbCharging.data == true
+                                              ? FlutterI18n.translate(
+                                                  context, "stats_cbb_charging")
+                                              : FlutterI18n.translate(context,
+                                                  "stats_cbb_not_charging")
+                                          : FlutterI18n.translate(context,
+                                              "stats_cbb_unknown_state"),
+                                    ],
+                                    old: dataIsOld,
+                                  );
+                                });
+                          },
+                        ),
+                        StreamBuilder<int?>(
+                          stream: widget.service.auxSOC,
+                          builder: (context, snapshot) {
+                            return _batteryCard(
+                              name: FlutterI18n.translate(
+                                  context, "stats_aux_name"),
+                              soc: snapshot.data ?? 0,
+                              infos: [
+                                FlutterI18n.translate(
+                                    context, "stats_aux_desc"),
                               ],
+                              old: dataIsOld,
                             );
                           },
                         ),
-                      );
-                    },
-                  ),
-                  StickyHeader(
-                    header: Header(
-                        FlutterI18n.translate(context, 'stats_title_scooter')),
-                    content: Column(
+                      ],
+                    ),
+                    // RANGE TAB
+                    ListView(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shrinkWrap: true,
+                      children: [
+                        StreamBuilder<int?>(
+                            stream: widget.service.primarySOC,
+                            builder: (context, primarySOC) {
+                              return StreamBuilder<int?>(
+                                stream: widget.service.secondarySOC,
+                                builder: (context, secondarySOC) {
+                                  // estimating 45km of range per battery
+                                  double rangePrimary = primarySOC.hasData
+                                      ? (primarySOC.data! / 100 * 42)
+                                      : 0;
+                                  double rangeSecondary = secondarySOC.hasData
+                                      ? (secondarySOC.data! / 100 * 42)
+                                      : 0;
+                                  double rangeTotal =
+                                      rangePrimary + rangeSecondary;
+                                  return Column(
+                                    children: [
+                                      ListTile(
+                                        title: Text(FlutterI18n.translate(
+                                            context, "stats_estimated_range")),
+                                        subtitle: Text(primarySOC.hasData
+                                            ? "~ ${rangeTotal.round()} km"
+                                            : FlutterI18n.translate(
+                                                context, "stats_unknown")),
+                                      ),
+                                      _rangeMapCard(
+                                        rangeInMeters:
+                                            (rangeTotal * 1000).round(),
+                                        old: dataIsOld,
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+                            }),
+                      ],
+                    ),
+                    // SCOOTER TAB
+                    ListView(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shrinkWrap: true,
                       children: [
                         StreamBuilder<ScooterState?>(
                           stream: widget.service.state,
@@ -331,11 +328,10 @@ class _StatsScreenState extends State<StatsScreen> {
                             }),
                       ],
                     ),
-                  ),
-                  StickyHeader(
-                    header: Header(
-                        FlutterI18n.translate(context, 'stats_title_settings')),
-                    content: Column(
+                    // SETTINGS TAB
+                    ListView(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shrinkWrap: true,
                       children: [
                         ListTile(
                           title: Text(
@@ -418,79 +414,86 @@ class _StatsScreenState extends State<StatsScreen> {
                             ],
                             onChanged: (newLanguage) async {
                               await FlutterI18n.refresh(context, newLanguage);
+                              SharedPreferences prefs =
+                                  await SharedPreferences.getInstance();
+                              prefs.setString(
+                                  "savedLocale", newLanguage!.languageCode);
+                              setState(() {});
                             },
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 32),
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(60),
-                        backgroundColor: Colors.red.withOpacity(0.1),
-                        side: const BorderSide(
-                          color: Colors.red,
-                        ),
-                      ),
-                      onPressed: () async {
-                        showDialog(
-                            context: context,
-                            barrierDismissible: true,
-                            builder: (context) {
-                              return AlertDialog(
-                                title: Text(FlutterI18n.translate(
-                                    context, "forget_alert_title")),
-                                content: Text(FlutterI18n.translate(
-                                    context, "forget_alert_body")),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.of(context).pop(false);
-                                    },
-                                    child: Text(FlutterI18n.translate(
-                                        context, "forget_alert_cancel")),
-                                  ),
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.of(context).pop(true);
-                                    },
-                                    child: Text(FlutterI18n.translate(
-                                        context, "forget_alert_confirm")),
-                                  ),
-                                ],
-                              );
-                            }).then((reset) {
-                          if (reset == true) {
-                            widget.service.forgetSavedScooter();
-                            Navigator.of(context).pop();
-                            Navigator.of(context).pushReplacement(
-                              MaterialPageRoute(
-                                builder: (context) => OnboardingScreen(
-                                  service: widget.service,
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 32),
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size.fromHeight(60),
+                              backgroundColor: Colors.red.withOpacity(0.1),
+                              side: const BorderSide(
+                                color: Colors.red,
+                              ),
+                            ),
+                            onPressed: () async {
+                              showDialog(
+                                  context: context,
+                                  barrierDismissible: true,
+                                  builder: (context) {
+                                    return AlertDialog(
+                                      title: Text(FlutterI18n.translate(
+                                          context, "forget_alert_title")),
+                                      content: Text(FlutterI18n.translate(
+                                          context, "forget_alert_body")),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () {
+                                            Navigator.of(context).pop(false);
+                                          },
+                                          child: Text(FlutterI18n.translate(
+                                              context, "forget_alert_cancel")),
+                                        ),
+                                        TextButton(
+                                          onPressed: () {
+                                            Navigator.of(context).pop(true);
+                                          },
+                                          child: Text(FlutterI18n.translate(
+                                              context, "forget_alert_confirm")),
+                                        ),
+                                      ],
+                                    );
+                                  }).then((reset) {
+                                if (reset == true) {
+                                  widget.service.forgetSavedScooter();
+                                  Navigator.of(context).pop();
+                                  Navigator.of(context).pushReplacement(
+                                    MaterialPageRoute(
+                                      builder: (context) => OnboardingScreen(
+                                        service: widget.service,
+                                      ),
+                                    ),
+                                  );
+                                }
+                              });
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Text(
+                                FlutterI18n.translate(
+                                    context, "settings_forget"),
+                                style: TextStyle(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onBackground,
                                 ),
                               ),
-                            );
-                          }
-                        });
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Text(
-                          FlutterI18n.translate(context, "settings_forget"),
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onBackground,
+                            ),
                           ),
                         ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-                ],
-              );
-            }),
+                      ],
+                    )
+                  ],
+                );
+              }),
+        ),
       ),
     );
   }
@@ -550,7 +553,7 @@ class _StatsScreenState extends State<StatsScreen> {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16.0),
         child: Container(
-          height: 200,
+          height: 400,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16.0),
             color: Theme.of(context).colorScheme.background,
@@ -563,7 +566,7 @@ class _StatsScreenState extends State<StatsScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.location_disabled, size: 24),
+                        const Icon(Icons.location_disabled, size: 32),
                         const SizedBox(height: 8),
                         Text(
                           FlutterI18n.translate(context, "stats_no_location"),
@@ -572,11 +575,24 @@ class _StatsScreenState extends State<StatsScreen> {
                     ),
                   );
                 }
+                if (rangeInMeters == 0) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.battery_unknown, size: 32),
+                        const SizedBox(height: 8),
+                        Text(
+                          FlutterI18n.translate(context, "stats_no_range"),
+                        ),
+                      ],
+                    ),
+                  );
+                }
                 return FlutterMap(
                   options: MapOptions(
                     interactionOptions: const InteractionOptions(
-                      flags: InteractiveFlag.pinchZoom |
-                          InteractiveFlag.doubleTapZoom,
+                      flags: InteractiveFlag.none,
                     ),
                     initialCameraFit: CameraFit.bounds(
                         bounds: calculateBounds(
@@ -654,6 +670,63 @@ class _StatsScreenState extends State<StatsScreen> {
         LatLng(center.latitude - latOffset, center.longitude - lonOffset);
 
     return LatLngBounds(point1, point2);
+  }
+}
+
+class _lastPingInfo extends StatelessWidget {
+  const _lastPingInfo({
+    super.key,
+    required this.stream,
+  });
+
+  final Stream<DateTime?> stream;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<DateTime?>(
+        stream: stream,
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return Container();
+          }
+          return InkWell(
+            onTap: () {
+              Fluttertoast.showToast(
+                msg: FlutterI18n.translate(context, "stats_last_ping_toast",
+                    translationParams: {
+                      "time": snapshot.data!
+                          .calculateTimeDifferenceInShort()
+                          .toLowerCase()
+                    }),
+              );
+            },
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  snapshot.data!.calculateTimeDifferenceInShort(),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 12,
+                    color: Colors.white70,
+                  ),
+                ),
+                const SizedBox(
+                  width: 4,
+                ),
+                const Icon(
+                  Icons.schedule_rounded,
+                  color: Colors.white70,
+                  size: 24,
+                ),
+                const SizedBox(
+                  width: 32,
+                ),
+              ],
+            ),
+          );
+        });
   }
 }
 
