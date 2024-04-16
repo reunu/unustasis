@@ -1,6 +1,7 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:unustasis/scooter_service.dart';
 import 'package:unustasis/scooter_state.dart';
@@ -118,10 +119,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             style: Theme.of(context).textTheme.headlineLarge,
           ),
           const SizedBox(height: 16),
-          Text(
-            FlutterI18n.translate(context, "onboarding_step2_body"),
-            style: Theme.of(context).textTheme.titleMedium,
-            textAlign: TextAlign.center,
+          GestureDetector(
+            child: Text(
+              FlutterI18n.translate(context, "onboarding_step2_body"),
+              style: Theme.of(context).textTheme.titleMedium,
+              textAlign: TextAlign.center,
+            ),
+            onLongPress: () => setState(() {
+              _step = 3;
+            }),
           ),
           const SizedBox(height: 40),
         ];

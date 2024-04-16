@@ -1,10 +1,14 @@
+import 'dart:developer';
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:nfc_manager/nfc_manager.dart';
+import 'package:nfc_manager/platform_tags.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:unustasis/onboarding_screen.dart';
@@ -22,6 +26,9 @@ class StatsScreen extends StatefulWidget {
 
 class _StatsScreenState extends State<StatsScreen> {
   int color = 0;
+  bool nfcScanning = false;
+  int? nfcBattery;
+  int? nfcCycles;
 
   @override
   void initState() {
@@ -239,6 +246,126 @@ class _StatsScreenState extends State<StatsScreen> {
                             );
                           },
                         ),
+                        const Divider(
+                          height: 40,
+                          indent: 12,
+                          endIndent: 12,
+                          color: Colors.white24,
+                        ),
+                        nfcBattery != 0 && nfcBattery != null && !nfcScanning
+                            ? _batteryCard(
+                                name: FlutterI18n.translate(
+                                    context, "stats_nfc_name"),
+                                soc: nfcBattery ?? 0,
+                                infos: [
+                                  FlutterI18n.translate(
+                                      context, "stats_secondary_cycles",
+                                      translationParams: {
+                                        "cycles": nfcCycles != null
+                                            ? nfcCycles.toString()
+                                            : FlutterI18n.translate(
+                                                context, "stats_unknown")
+                                      }),
+                                ],
+                                old: false,
+                              )
+                            : Container(),
+                        nfcScanning
+                            ? Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    const CircularProgressIndicator(),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      FlutterI18n.translate(
+                                          context, "stats_nfc_instructions"),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+                                ))
+                            : Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 16),
+                                child: OutlinedButton(
+                                  style: OutlinedButton.styleFrom(
+                                    minimumSize: const Size.fromHeight(60),
+                                    side: const BorderSide(
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  onPressed: () async {
+                                    // Check availability
+                                    if (await NfcManager.instance
+                                            .isAvailable() ==
+                                        false) {
+                                      Fluttertoast.showToast(
+                                        msg: "NFC not available",
+                                      );
+                                      return;
+                                    }
+                                    setState(() {
+                                      nfcScanning = true;
+                                    });
+                                    // Start Session
+                                    NfcManager.instance.startSession(
+                                      onDiscovered: (NfcTag tag) async {
+                                        setState(() {
+                                          nfcScanning = false;
+                                          nfcBattery = null;
+                                          nfcCycles = null;
+                                        });
+                                        try {
+                                          // Read from battery
+                                          MifareUltralight? mifare =
+                                              MifareUltralight.from(tag);
+                                          if (mifare == null) {
+                                            Fluttertoast.showToast(
+                                              msg: "Tag not readable",
+                                            );
+                                            return;
+                                          }
+                                          Uint8List socData = await mifare
+                                              .readPages(pageOffset: 23);
+                                          Uint8List cycleData = await mifare
+                                              .readPages(pageOffset: 20);
+
+                                          // Parse data
+                                          int remainingCap =
+                                              (socData[3] << 8) + socData[2];
+                                          // this is depending on conditions!
+                                          int fullCap =
+                                              (socData[5] << 8) + socData[4];
+                                          int cycles = cycleData[0];
+                                          log("Full: $fullCap, Remaining: $remainingCap");
+                                          log("Cycles: $cycles");
+                                          setState(() {
+                                            nfcBattery =
+                                                (remainingCap / 33000 * 100)
+                                                    .round();
+                                            nfcCycles = cycles;
+                                          });
+                                        } catch (e) {
+                                          log("Error reading NFC: $e");
+                                          Fluttertoast.showToast(
+                                            msg: "Error reading NFC",
+                                          );
+                                        }
+                                        // We have our data, stop session
+                                        NfcManager.instance.stopSession();
+                                      },
+                                    );
+                                  },
+                                  child: const Text(
+                                    "Read NFC data",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
                       ],
                     ),
                     // RANGE TAB
@@ -270,11 +397,6 @@ class _StatsScreenState extends State<StatsScreen> {
                                             ? "~ ${rangeTotal.round()} km"
                                             : FlutterI18n.translate(
                                                 context, "stats_unknown")),
-                                      ),
-                                      _rangeMapCard(
-                                        rangeInMeters:
-                                            (rangeTotal * 1000).round(),
-                                        old: dataIsOld,
                                       ),
                                     ],
                                   );
@@ -422,6 +544,17 @@ class _StatsScreenState extends State<StatsScreen> {
                             },
                           ),
                         ),
+                        FutureBuilder(
+                            future: PackageInfo.fromPlatform(),
+                            builder: (context, packageInfo) {
+                              return ListTile(
+                                title: Text(FlutterI18n.translate(
+                                    context, "settings_app_version")),
+                                subtitle: Text(packageInfo.hasData
+                                    ? "${packageInfo.data!.version} (${packageInfo.data!.buildNumber})"
+                                    : "..."),
+                              );
+                            }),
                         Padding(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 32),

@@ -479,8 +479,14 @@ class ScooterService {
     _sendCommand("scooter:state unlock");
   }
 
-  void lock() {
-    // double check for open seat, maybe?
+  void lock() async {
+    if (_seatController.value == true) {
+      // make really sure nothing has changed
+      await _seatCharacteristic!.read();
+      if (_seatController.value == true) {
+        throw "SEAT_OPEN";
+      }
+    }
     _sendCommand("scooter:state lock");
   }
 
@@ -569,7 +575,7 @@ class ScooterService {
 
   void _subscribeBoolean(
       BluetoothCharacteristic characteristic, String name, Function callback) {
-    // Subscribe to seat
+    // Subscribe to value
     characteristic.setNotifyValue(true);
     characteristic.lastValueStream.listen((value) {
       log("$name received: ${ascii.decode(value)}");

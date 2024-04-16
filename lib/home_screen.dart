@@ -236,10 +236,15 @@ class _HomeScreenState extends State<HomeScreen> {
                         action: _scooterState != null && _scooterState!.isReady
                             ? (_scooterState!.isOn
                                 ? () {
-                                    if (_seatClosed == false) {
-                                      showSeatWarning();
-                                    } else {
+                                    try {
                                       widget.scooterService.lock();
+                                    } catch (e) {
+                                      if (e.toString().contains("SEAT_OPEN")) {
+                                        showSeatWarning();
+                                      } else {
+                                        Fluttertoast.showToast(
+                                            msg: e.toString());
+                                      }
                                     }
                                   }
                                 : widget.scooterService.unlock)
