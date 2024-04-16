@@ -44,12 +44,18 @@ class _ControlScreenState extends State<ControlScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   ScooterActionButton(
-                    onPressed: widget._service.unlock,
+                    onPressed: () {
+                      widget._service.unlock();
+                      Navigator.of(context).pop();
+                    },
                     icon: Icons.lock_open_outlined,
                     label: FlutterI18n.translate(context, "controls_unlock"),
                   ),
                   ScooterActionButton(
-                    onPressed: widget._service.lock,
+                    onPressed: () {
+                      widget._service.lock();
+                      Navigator.of(context).pop();
+                    },
                     icon: Icons.lock_outlined,
                     label: FlutterI18n.translate(context, "controls_lock"),
                   ),
@@ -62,12 +68,18 @@ class _ControlScreenState extends State<ControlScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   ScooterActionButton(
-                    onPressed: () => widget._service.wakeUp(),
+                    onPressed: () {
+                      widget._service.wakeUp();
+                      Navigator.of(context).pop();
+                    },
                     icon: Icons.wb_sunny_outlined,
                     label: FlutterI18n.translate(context, "controls_wake_up"),
                   ),
                   ScooterActionButton(
-                    onPressed: () => widget._service.hibernate(),
+                    onPressed: () {
+                      widget._service.hibernate();
+                      Navigator.of(context).pop();
+                    },
                     icon: Icons.nightlight_outlined,
                     label: FlutterI18n.translate(context, "controls_hibernate"),
                   ),
