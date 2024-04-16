@@ -1,4 +1,5 @@
 ### Changes:
-- Translated the entire app to German
-- Caching last known battery level
-- Displaying estimated range (based on an average of 45km per battery)
+- Reorganized the info screen since it was getting crowded
+- Now storing where the scooter was last seen
+- Displaying range estimte on a map
+- Fixed some language-related bugs

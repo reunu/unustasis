@@ -5,6 +5,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unustasis/flutter/blue_plus_mockable.dart';
@@ -20,6 +22,7 @@ class ScooterService {
   bool _autoRestarting = false;
   bool _scanning = false;
   SharedPreferences? prefs;
+  late Timer _locationTimer;
 
   // some useful characteristsics to save
   BluetoothCharacteristic? _commandCharacteristic;
@@ -53,7 +56,17 @@ class ScooterService {
           _secondarySOCController.add(prefs.getInt("secondarySOC"));
           _cbbSOCController.add(prefs.getInt("cbbSOC"));
           _auxSOCController.add(prefs.getInt("auxSOC"));
+          double? lastLat = prefs.getDouble("lastLat");
+          double? lastLon = prefs.getDouble("lastLon");
+          if (lastLat != null && lastLon != null) {
+            _lastLocationController.add(LatLng(lastLat, lastLon));
+          }
         }
+      }
+    });
+    _locationTimer = Timer.periodic(const Duration(seconds: 20), (timer) {
+      if (myScooter != null && myScooter!.isConnected) {
+        _pollLocation();
       }
     });
   }
@@ -102,6 +115,10 @@ class ScooterService {
 
   final BehaviorSubject<int?> _secondarySOCController = BehaviorSubject<int?>();
   Stream<int?> get secondarySOC => _secondarySOCController.stream;
+
+  final BehaviorSubject<LatLng?> _lastLocationController =
+      BehaviorSubject<LatLng?>();
+  Stream<LatLng?> get lastLocation => _lastLocationController.stream;
 
   // PINGING
   // We store the most recent SOC values (and, in the future, location) to SharedPrefs so that we can see the last known state even when disconnected
@@ -175,6 +192,8 @@ class ScooterService {
       myScooter = systemScooters.first;
       setSavedScooter(systemScooters.first.remoteId.toString());
       await setUpCharacteristics(systemScooters.first);
+      // save this as the last known location
+      _pollLocation();
       _connectedController.add(true);
     } else {
       try {
@@ -195,6 +214,8 @@ class ScooterService {
           myScooter = foundScooter;
           setSavedScooter(foundScooter.remoteId.toString());
           await setUpCharacteristics(foundScooter);
+          // save this as the last known location
+          _pollLocation();
           // Let everybody know
           _connectedController.add(true);
           // listen for disconnects
@@ -205,7 +226,7 @@ class ScooterService {
               _stateController.add(ScooterState.disconnected);
               log("Lost connection to scooter! :(");
               // Restart the process if we're not already doing so
-              start();
+              // start(); // this leads to some conflicts right now if the phone auto-connects, so we're not doing it
             }
           });
         });
@@ -539,6 +560,39 @@ class ScooterService {
     prefs!.setInt("lastPing", DateTime.now().microsecondsSinceEpoch);
   }
 
+  void _pollLocation() async {
+    // Test if location services are enabled.
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      // Location services are not enabled don't continue
+      // accessing the position and request users of the
+      // App to enable the location services.
+      throw "Location services are not enabled";
+    }
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        throw "Location permissions are/were denied";
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      // Permissions are denied forever, handle appropriately.
+      throw "Location permissions are denied forever";
+    }
+
+    // When we reach here, permissions are granted and we can
+    // continue accessing the position of the device.
+    Position position = await Geolocator.getCurrentPosition();
+    _lastLocationController.add(LatLng(position.latitude, position.longitude));
+    if (prefs != null) {
+      prefs!.setDouble("lastLat", position.latitude);
+      prefs!.setDouble("lastLon", position.longitude);
+    }
+  }
+
   // HELPER FUNCTIONS
 
   void _subscribeString(
@@ -582,16 +636,16 @@ class ScooterService {
     if (savedScooterId != null) {
       return savedScooterId;
     }
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getString("savedScooterId");
+    prefs ??= await SharedPreferences.getInstance();
+    return prefs!.getString("savedScooterId");
   }
 
   void forgetSavedScooter() async {
     stopAutoRestart();
     _connectedController.add(false);
     savedScooterId = null;
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.remove("savedScooterId");
+    prefs ??= await SharedPreferences.getInstance();
+    prefs!.remove("savedScooterId");
     if (Platform.isAndroid) {
       myScooter?.removeBond();
     }
@@ -635,6 +689,9 @@ class ScooterService {
     _primaryCyclesController.close();
     _primarySOCController.close();
     _secondarySOCController.close();
+    _secondaryCyclesController.close();
+    _lastPingController.close();
+    _locationTimer.cancel();
   }
 
   // thanks gemini advanced <3

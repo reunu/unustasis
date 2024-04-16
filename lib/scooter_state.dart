@@ -121,4 +121,15 @@ extension StateExtension on ScooterState {
         return false;
     }
   }
+
+  bool get isReady {
+    switch (this) {
+      case ScooterState.standby:
+      case ScooterState.parked:
+      case ScooterState.ready:
+        return true;
+      default:
+        return false;
+    }
+  }
 }

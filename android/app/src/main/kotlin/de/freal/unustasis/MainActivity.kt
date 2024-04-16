@@ -1,4 +1,4 @@
-package com.example.unustasis
+package de.freal.unustasis
 
 import io.flutter.embedding.android.FlutterActivity
 
