@@ -18,6 +18,7 @@ class ScooterService {
   BluetoothDevice? myScooter; // reserved for a connected scooter!
   bool _foundSth = false; // whether we've found a scooter yet
   int? cbbRemainingCap, cbbFullCap;
+  String? _state, _powerState;
   bool _autoRestarting = false;
   bool _scanning = false;
   SharedPreferences? prefs;
@@ -27,6 +28,7 @@ class ScooterService {
   BluetoothCharacteristic? _commandCharacteristic;
   BluetoothCharacteristic? _hibernationCommandCharacteristic;
   BluetoothCharacteristic? _stateCharacteristic;
+  BluetoothCharacteristic? _powerStateCharacteristic;
   BluetoothCharacteristic? _seatCharacteristic;
   BluetoothCharacteristic? _handlebarCharacteristic;
   BluetoothCharacteristic? _auxSOCCharacteristic;
@@ -285,6 +287,10 @@ class ScooterService {
           myScooter!,
           "9a590020-6e67-5d0d-aab9-ad9126b66f91",
           "9a590021-6e67-5d0d-aab9-ad9126b66f91");
+      _powerStateCharacteristic = _findCharacteristic(
+          myScooter!,
+          "9a5900a0-6e67-5d0d-aab9-ad9126b66f91",
+          "9a5900a1-6e67-5d0d-aab9-ad9126b66f91");
       _seatCharacteristic = _findCharacteristic(
           myScooter!,
           "9a590020-6e67-5d0d-aab9-ad9126b66f91",
@@ -331,16 +337,17 @@ class ScooterService {
           "9a5900f5-6e67-5d0d-aab9-ad9126b66f91");
       // subscribe to a bunch of values
       // Subscribe to state
-      _stateCharacteristic!.setNotifyValue(true);
-      _stateCharacteristic!.lastValueStream.listen(
-        (value) {
-          log("State received: ${ascii.decode(value)}");
-          ScooterState newState = ScooterState.fromBytes(value);
-          _stateController.add(newState);
-        },
-      );
+      _subscribeString(_stateCharacteristic!, "State", (String value) {
+        _state = value;
+        _updateScooterState();
+      });
+      // Subscribe to power state for correct hibernation
+      _subscribeString(_powerStateCharacteristic!, "Power State", (String value) {
+        _setPowerState(value);
+        _updateScooterState();
+      });
       // Subscribe to seat
-      _subscribeBoolean(_seatCharacteristic!, "Seat", (String seatState) {
+      _subscribeString(_seatCharacteristic!, "Seat", (String seatState) {
         if (seatState == "open") {
           _seatController.add(false);
         } else {
@@ -348,7 +355,7 @@ class ScooterService {
         }
       });
       // Subscribe to handlebars
-      _subscribeBoolean(_handlebarCharacteristic!, "Handlebars",
+      _subscribeString(_handlebarCharacteristic!, "Handlebars",
           (String handlebarState) {
         if (handlebarState == "unlocked") {
           _handlebarController.add(false);
@@ -401,7 +408,7 @@ class ScooterService {
         }
       });
       // subscribe to CBB charging status
-      _subscribeBoolean(_cbbChargingCharacteristic!, "CBB charging",
+      _subscribeString(_cbbChargingCharacteristic!, "CBB charging",
           (String chargingState) {
         if (chargingState == "charging") {
           _cbbChargingController.add(true);
@@ -460,6 +467,27 @@ class ScooterService {
       _secondarySOCCharacteristic!.read();
     } catch (e) {
       rethrow;
+    }
+  }
+
+  Future<void> _updateScooterState() async {
+    var powerState = await _getPowerState();
+    log("Update scooter state from state: '$_state' and power state: '$powerState'");
+    if (_state != null && powerState == "hibernating") {
+      _stateController.add(ScooterState.hibernating);
+      return;
+    }
+    if (_state != null && powerState == "hibernating-imminent") {
+      _stateController.add(ScooterState.hibernating);
+      return;
+    }
+    if (_state != null && powerState == "booting") {
+      _stateController.add(ScooterState.booting);
+      return;
+    }
+    if (_state != null) {
+      ScooterState newState = ScooterState.fromString(_state!);
+      _stateController.add(newState);
     }
   }
 
@@ -567,16 +595,20 @@ class ScooterService {
 
   // HELPER FUNCTIONS
 
-  void _subscribeBoolean(
+  void _subscribeString(
       BluetoothCharacteristic characteristic, String name, Function callback) {
-    // Subscribe to seat
     characteristic.setNotifyValue(true);
     characteristic.lastValueStream.listen((value) {
       log("$name received: ${ascii.decode(value)}");
-      value.removeWhere((element) => element == 0);
-      String state = ascii.decode(value).trim();
+      String state = _convertBytesToString(value);
       callback(state);
     });
+  }
+
+  String _convertBytesToString(List<int> value) {
+    value.removeWhere((element) => element == 0);
+    String state = ascii.decode(value).trim();
+    return state;
   }
 
   void _sendCommand(String command, {BluetoothCharacteristic? characteristic}) {
@@ -623,6 +655,28 @@ class ScooterService {
     savedScooterId = id;
     prefs ??= await SharedPreferences.getInstance();
     prefs!.setString("savedScooterId", id);
+  }
+
+  void _setPowerState(String powerState) async {
+    _powerState = powerState;
+    prefs ??= await SharedPreferences.getInstance();
+    if (powerState != "") {
+      // We're caching the power state, because it's updated less frequent to
+      // reflect the correct state after reopening the app
+      log("Write power state to cache: $_powerState");
+      prefs!.setString("powerState", powerState);
+    }
+  }
+
+  Future<String?> _getPowerState() async {
+    if (_powerState != null) {
+      return _powerState;
+    }
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    var powerState = prefs.getString("powerState");
+    log("Read power state from cache: $powerState");
+    _powerState = powerState;
+    return _powerState;
   }
 
   void dispose() {
