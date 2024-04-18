@@ -1,8 +1,10 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unustasis/control_screen.dart';
 import 'package:unustasis/driving_screen.dart';
@@ -222,60 +224,83 @@ class _HomeScreenState extends State<HomeScreen> {
                         blinkerLeft: false, // TODO: extract ScooterBlinkerState
                         blinkerRight: false)),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   mainAxisSize: MainAxisSize.max,
                   children: [
-                    ScooterActionButton(
-                      onPressed: _connected &&
-                              _scooterState != null &&
-                              _seatClosed == true
-                          ? widget.scooterService.openSeat
-                          : null,
-                      label: _seatClosed == false
-                          ? FlutterI18n.translate(
-                              context, "home_seat_button_open")
-                          : FlutterI18n.translate(
-                              context, "home_seat_button_closed"),
-                      icon: Icons.work_outline,
-                      iconColor: _seatClosed == false
-                          ? Theme.of(context).colorScheme.error
-                          : null,
-                    ),
-                    ScooterPowerButton(
-                        action: _scooterState != null && _scooterState!.isReady
-                            ? (_scooterState!.isOn
-                                ? () {
-                                    try {
-                                      widget.scooterService.lock();
-                                    } catch (e) {
-                                      if (e.toString().contains("SEAT_OPEN")) {
-                                        showSeatWarning();
-                                      } else {
-                                        Fluttertoast.showToast(
-                                            msg: e.toString());
-                                      }
-                                    }
-                                  }
-                                : widget.scooterService.unlock)
+                    Expanded(
+                      child: ScooterActionButton(
+                        onPressed: _connected &&
+                                _scooterState != null &&
+                                _seatClosed == true
+                            ? widget.scooterService.openSeat
                             : null,
-                        icon: _scooterState != null && _scooterState!.isOn
-                            ? Icons.lock_open
-                            : Icons.lock_outline,
-                        label: _scooterState != null && _scooterState!.isOn
-                            ? FlutterI18n.translate(context, "home_lock_button")
+                        label: _seatClosed == false
+                            ? FlutterI18n.translate(
+                                context, "home_seat_button_open")
                             : FlutterI18n.translate(
-                                context, "home_unlock_button")),
-                    ScooterActionButton(
-                        onPressed: () {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => ControlScreen(
-                                      service: widget.scooterService)));
-                        },
-                        icon: Icons.more_vert,
-                        label: FlutterI18n.translate(
-                            context, "home_controls_button")),
+                                context, "home_seat_button_closed"),
+                        icon: Icons.work_outline,
+                        iconColor: _seatClosed == false
+                            ? Theme.of(context).colorScheme.error
+                            : null,
+                      ),
+                    ),
+                    Expanded(
+                      child: ScooterPowerButton(
+                          action:
+                              _scooterState != null && _scooterState!.isReady
+                                  ? (_scooterState!.isOn
+                                      ? () {
+                                          try {
+                                            widget.scooterService.lock();
+                                          } catch (e) {
+                                            if (e
+                                                .toString()
+                                                .contains("SEAT_OPEN")) {
+                                              showSeatWarning();
+                                            } else {
+                                              Fluttertoast.showToast(
+                                                  msg: e.toString());
+                                            }
+                                          }
+                                        }
+                                      : widget.scooterService.unlock)
+                                  : null,
+                          icon: _scooterState != null && _scooterState!.isOn
+                              ? Icons.lock_open
+                              : Icons.lock_outline,
+                          label: _scooterState != null && _scooterState!.isOn
+                              ? FlutterI18n.translate(
+                                  context, "home_lock_button")
+                              : FlutterI18n.translate(
+                                  context, "home_unlock_button")),
+                    ),
+                    Expanded(
+                      child: ScooterActionButton(
+                          onPressed: !_scanning
+                              ? () {
+                                  if (!_connected) {
+                                    widget.scooterService.start();
+                                  } else {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => ControlScreen(
+                                            service: widget.scooterService),
+                                      ),
+                                    );
+                                  }
+                                }
+                              : null,
+                          icon: (!_connected && !_scanning)
+                              ? Icons.refresh_rounded
+                              : Icons.more_vert_rounded,
+                          label: (!_connected && !_scanning)
+                              ? FlutterI18n.translate(
+                                  context, "home_reconnect_button")
+                              : FlutterI18n.translate(
+                                  context, "home_controls_button")),
+                    ),
                   ],
                 )
               ],
@@ -335,6 +360,24 @@ class _HomeScreenState extends State<HomeScreen> {
       // check if we're not coming from onboarding
       if (widget.scooterService.myScooter == null) {
         widget.scooterService.start();
+      }
+    }
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool("biometrics") ?? false) {
+      final LocalAuthentication auth = LocalAuthentication();
+      try {
+        final bool didAuthenticate = await auth.authenticate(
+          localizedReason: FlutterI18n.translate(context, "biometrics_message"),
+        );
+        if (!didAuthenticate) {
+          Fluttertoast.showToast(
+              msg: FlutterI18n.translate(context, "biometrics_failed"));
+          SystemNavigator.pop();
+        }
+      } catch (e) {
+        Fluttertoast.showToast(
+            msg: FlutterI18n.translate(context, "biometrics_failed"));
+        SystemNavigator.pop();
       }
     }
   }

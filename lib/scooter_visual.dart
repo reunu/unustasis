@@ -30,12 +30,12 @@ class ScooterVisual extends StatelessWidget {
             AnimatedCrossFade(
               duration: const Duration(milliseconds: 500),
               firstChild: const Image(
-                image: AssetImage("images/scooter/disconnected.png"),
+                image: AssetImage("images/scooter/disconnected.webp"),
               ),
               secondChild: Opacity(
                 opacity: 0.7,
                 child: Image(
-                  image: AssetImage("images/scooter/base_${color ?? 0}.png"),
+                  image: AssetImage("images/scooter/base_${color ?? 0}.webp"),
                 ),
               ),
               crossFadeState: state == ScooterState.disconnected
@@ -46,14 +46,14 @@ class ScooterVisual extends StatelessWidget {
               opacity: state != null && state!.isOn ? 1.0 : 0.0,
               duration: const Duration(milliseconds: 1000),
               child: const Image(
-                image: AssetImage("images/scooter/light_ring.png"),
+                image: AssetImage("images/scooter/light_ring.webp"),
               ),
             ),
             AnimatedOpacity(
               opacity: state == ScooterState.ready ? 1.0 : 0.0,
               duration: const Duration(milliseconds: 1000),
               child: const Image(
-                image: AssetImage("images/scooter/light_beam.png"),
+                image: AssetImage("images/scooter/light_beam.webp"),
               ),
             ),
             //BlinkerWidget(blinkerLeft: blinkerLeft, blinkerRight: blinkerRight),
@@ -140,14 +140,14 @@ class _BlinkerWidgetState extends State<BlinkerWidget> {
         opacity: showBlinkerLeft ? 1.0 : 0.0,
         duration: blinkerDuration,
         child: const Image(
-          image: AssetImage("images/scooter/blinker_l.png"),
+          image: AssetImage("images/scooter/blinker_l.webp"),
         ),
       ),
       AnimatedOpacity(
         opacity: showBlinkerRight ? 1.0 : 0.0,
         duration: blinkerDuration,
         child: const Image(
-          image: AssetImage("images/scooter/blinker_r.png"),
+          image: AssetImage("images/scooter/blinker_r.webp"),
         ),
       )
     ]);

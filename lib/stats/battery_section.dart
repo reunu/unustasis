@@ -288,18 +288,21 @@ class _BatterySectionState extends State<BatterySection> {
                           ],
                         )
                       : Container(),
-                  charging != null
-                      ? Text(FlutterI18n.translate(
-                          context,
-                          charging
-                              ? "stats_cbb_charging"
-                              : "stats_cbb_not_charging"))
+                  type == BatteryType.cbb
+                      ? charging != null
+                          ? Text(FlutterI18n.translate(
+                              context,
+                              charging
+                                  ? "stats_cbb_charging"
+                                  : "stats_cbb_not_charging"))
+                          : const Text("   ")
                       : Container(),
+                  type == BatteryType.aux ? const Text("    ") : Container(),
                   SizedBox(
                       height:
                           (type == BatteryType.aux || type == BatteryType.cbb)
-                              ? 64
-                              : 32),
+                              ? 48
+                              : 16),
                   Expanded(
                     child: Image.asset(
                       type.imagePath(soc),
@@ -391,20 +394,20 @@ extension BatteryExtension on BatteryType {
       case BatteryType.secondary:
       case BatteryType.nfc:
         if (soc > 85) {
-          return "images/battery/batt_full.png";
+          return "images/battery/batt_full.webp";
         } else if (soc > 60) {
-          return "images/battery/batt_75.png";
+          return "images/battery/batt_75.webp";
         } else if (soc > 35) {
-          return "images/battery/batt_50.png";
+          return "images/battery/batt_50.webp";
         } else if (soc > 10) {
-          return "images/battery/batt_25.png";
+          return "images/battery/batt_25.webp";
         } else {
-          return "images/battery/batt_empty.png";
+          return "images/battery/batt_empty.webp";
         }
       case BatteryType.cbb:
-        return "images/battery/batt_cbb.png";
+        return "images/battery/batt_cbb.webp";
       case BatteryType.aux:
-        return 'images/battery/batt_aux.png';
+        return 'images/battery/batt_aux.webp';
     }
   }
 }

@@ -5,9 +5,11 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:local_auth/local_auth.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:nfc_manager/platform_tags.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -31,17 +33,19 @@ class StatsScreen extends StatefulWidget {
 
 class _StatsScreenState extends State<StatsScreen> {
   int color = 0;
+  bool biometrics = false;
 
   @override
   void initState() {
     super.initState();
-    getColor();
+    getInitialSettings();
   }
 
-  void getColor() async {
+  void getInitialSettings() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
       color = prefs.getInt("color") ?? 0;
+      biometrics = prefs.getBool("biometrics") ?? false;
     });
   }
 
@@ -373,6 +377,52 @@ class _StatsScreenState extends State<StatsScreen> {
                             },
                           ),
                         ),
+                        FutureBuilder<List<BiometricType>>(
+                            future:
+                                LocalAuthentication().getAvailableBiometrics(),
+                            builder: (context, biometricsOptionsSnap) {
+                              if (biometricsOptionsSnap.hasData &&
+                                  biometricsOptionsSnap.data!.isNotEmpty) {
+                                return SwitchListTile(
+                                  title: Text(FlutterI18n.translate(
+                                      context, "settings_biometrics")),
+                                  value: biometrics,
+                                  onChanged: (value) async {
+                                    final LocalAuthentication auth =
+                                        LocalAuthentication();
+                                    try {
+                                      final bool didAuthenticate =
+                                          await auth.authenticate(
+                                              localizedReason:
+                                                  FlutterI18n.translate(context,
+                                                      "biometrics_message"));
+                                      if (didAuthenticate) {
+                                        SharedPreferences prefs =
+                                            await SharedPreferences
+                                                .getInstance();
+                                        prefs.setBool("biometrics", value);
+                                        setState(() {
+                                          biometrics = value;
+                                        });
+                                      } else {
+                                        Fluttertoast.showToast(
+                                          msg: FlutterI18n.translate(
+                                              context, "biometrics_failed"),
+                                        );
+                                      }
+                                    } catch (e) {
+                                      Fluttertoast.showToast(
+                                        msg: FlutterI18n.translate(
+                                            context, "biometrics_failed"),
+                                      );
+                                      log(e.toString());
+                                    }
+                                  },
+                                );
+                              } else {
+                                return Container();
+                              }
+                            }),
                         FutureBuilder(
                             future: PackageInfo.fromPlatform(),
                             builder: (context, packageInfo) {
@@ -458,227 +508,6 @@ class _StatsScreenState extends State<StatsScreen> {
         ),
       ),
     );
-  }
-
-  Widget _rangeMapCard({required int rangeInMeters, bool old = false}) {
-    // calculate bounds based on range and location
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16.0),
-        child: Container(
-          height: 400,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16.0),
-            color: Theme.of(context).colorScheme.background,
-          ),
-          child: StreamBuilder<LatLng?>(
-              stream: widget.service.lastLocation,
-              builder: (context, lastLocationSnap) {
-                if (!lastLocationSnap.hasData) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.location_disabled, size: 32),
-                        const SizedBox(height: 8),
-                        Text(
-                          FlutterI18n.translate(context, "stats_no_location"),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-                if (rangeInMeters == 0) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.battery_unknown, size: 32),
-                        const SizedBox(height: 8),
-                        Text(
-                          FlutterI18n.translate(context, "stats_no_range"),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-                return FlutterMap(
-                  options: MapOptions(
-                    interactionOptions: const InteractionOptions(
-                      flags: InteractiveFlag.none,
-                    ),
-                    initialCameraFit: CameraFit.bounds(
-                        bounds: calculateBounds(
-                            lastLocationSnap.data!, rangeInMeters)),
-                  ),
-                  children: [
-                    TileLayer(
-                      retinaMode: true,
-                      urlTemplate:
-                          'https://tiles-eu.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png?api_key=${const String.fromEnvironment("STADIA_TOKEN")}',
-                      userAgentPackageName: 'de.freal.unustasis',
-                    ),
-                    CircleLayer(
-                      circles: [
-                        CircleMarker(
-                          point: lastLocationSnap.data!,
-                          // 1.5 is a very rough estimate for road distance per air distance
-                          radius: rangeInMeters.toDouble() / 1.5,
-                          useRadiusInMeter: true,
-                          color: old
-                              ? Colors.white.withOpacity(0.2)
-                              : Colors.blue.withOpacity(0.3),
-                        ),
-                      ],
-                    ),
-                    MarkerLayer(
-                      markers: [
-                        Marker(
-                          point: lastLocationSnap.data!,
-                          width: 16,
-                          height: 16,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: old ? Colors.white : Colors.lightBlue,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const RichAttributionWidget(attributions: [
-                      TextSourceAttribution(
-                        "Very rough estimate based on averages",
-                        prependCopyright: false,
-                      ),
-                      TextSourceAttribution("Stadia Maps"),
-                      TextSourceAttribution("OpenStreetMaps contributors"),
-                    ])
-                  ],
-                );
-              }),
-        ),
-      ),
-    );
-  }
-
-  Widget _rangeVisual(int rangePrimary, int rangeSecondary) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 40),
-      child: Column(
-        mainAxisSize: MainAxisSize.max,
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Icon(Icons.moped_outlined, size: 32),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(32, 16, 0, 0),
-              child: Container(
-                width: 2,
-                color: Colors.white.withOpacity(0.2),
-              ),
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.blue.withOpacity(0.1),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Icon(Icons.sync_rounded, size: 32),
-                SizedBox(width: 16),
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("31km", style: TextStyle(fontSize: 24)),
-                    Text("Swap batteries at 15%"),
-                  ],
-                )
-              ],
-            ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(32, 0, 0, 0),
-              child: Container(
-                width: 2,
-                color: Colors.white.withOpacity(0.1),
-              ),
-            ),
-          ),
-          Container(
-            height: 120,
-            padding: const EdgeInsets.all(16),
-            color: Colors.red.withOpacity(0.1),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Icon(Icons.warning_amber_rounded, size: 32),
-                SizedBox(width: 16),
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("72km", style: TextStyle(fontSize: 24)),
-                    Text("Power reduced"),
-                  ],
-                )
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Icon(Icons.flag_rounded, size: 40),
-                SizedBox(width: 16),
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("31km", style: TextStyle(fontSize: 32)),
-                    Text("Estimated range"),
-                  ],
-                )
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  LatLngBounds calculateBounds(LatLng center, int rangeInMeters) {
-    // Earth's radius for rough distance calculations (use a more accurate value
-    // for precision if needed)
-    const earthRadius = 6371000; // meters
-
-    // Calculate bearing (direction) for one point at 45 degrees
-    double bearing = 45 * (pi / 180); // Convert 45 degrees to radians
-
-    // Calculate offset from center in meters
-    double latOffset = rangeInMeters * 50 * math.cos(bearing) / earthRadius;
-    double lonOffset = rangeInMeters * 50 * math.sin(bearing) / earthRadius;
-
-    // Adjust center coordinates based on offset
-    LatLng point1 =
-        LatLng(center.latitude + latOffset, center.longitude + lonOffset);
-
-    // Calculate the second point (opposite direction)
-    LatLng point2 =
-        LatLng(center.latitude - latOffset, center.longitude - lonOffset);
-
-    return LatLngBounds(point1, point2);
   }
 }
 

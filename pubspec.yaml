@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 0.7.0+3
+version: 0.8.0+4
 
 environment:
   sdk: '>=3.3.2 <4.0.0'
@@ -48,6 +48,7 @@ dependencies:
   nfc_manager: ^3.4.0
   package_info_plus: ^7.0.0
   http: ^1.2.1
+  local_auth: ^2.2.0
 
 dev_dependencies:
   flutter_test:
@@ -90,25 +91,25 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - images/scooter/base_0.png
-    - images/scooter/base_1.png
-    - images/scooter/base_2.png
-    - images/scooter/base_3.png
-    - images/scooter/base_4.png
-    - images/scooter/base_5.png
-    - images/scooter/base_6.png
-    - images/scooter/disconnected.png
-    - images/scooter/light_beam.png
-    - images/scooter/light_ring.png
-    - images/scooter/blinker_l.png
-    - images/scooter/blinker_r.png
-    - images/battery/batt_full.png
-    - images/battery/batt_75.png
-    - images/battery/batt_50.png
-    - images/battery/batt_25.png
-    - images/battery/batt_empty.png
-    - images/battery/batt_cbb.png
-    - images/battery/batt_aux.png
+    - images/scooter/base_0.webp
+    - images/scooter/base_1.webp
+    - images/scooter/base_2.webp
+    - images/scooter/base_3.webp
+    - images/scooter/base_4.webp
+    - images/scooter/base_5.webp
+    - images/scooter/base_6.webp
+    - images/scooter/disconnected.webp
+    - images/scooter/light_beam.webp
+    - images/scooter/light_ring.webp
+    - images/scooter/blinker_l.webp
+    - images/scooter/blinker_r.webp
+    - images/battery/batt_full.webp
+    - images/battery/batt_75.webp
+    - images/battery/batt_50.webp
+    - images/battery/batt_25.webp
+    - images/battery/batt_empty.webp
+    - images/battery/batt_cbb.webp
+    - images/battery/batt_aux.webp
     - assets/i18n/en.json
     - assets/i18n/de.json
 
