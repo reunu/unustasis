@@ -67,7 +67,7 @@
     "stats_estimated_range": "Estimated range",
     "stats_location": "Location",
     "stats_location_disclaimer": "Map shows the last location where the Scooter was connected to the app. This is not real-time tracking, and not suitable as an anti-theft feature.",
-    "stats_last_seen_near": "Last seen near",
+    "stats_last_seen_near": "Last connected near",
     "stats_title_scooter": "Scooter",
     "stats_state": "State",
     "stats_state_description": "State description",

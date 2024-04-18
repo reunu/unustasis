@@ -1,5 +1,8 @@
 ### Changes:
-- Reorganized the info screen since it was getting crowded
-- Now storing where the scooter was last seen
-- Displaying range estimte on a map
-- Fixed some language-related bugs
+- Removed the range map (let's be honest, it was rubbish anyways)
+- Added "last connected" location of scooter
+- Added reading batteries via NFC
+- Redesigned battery and range sections
+- Added build version and number to settings page
+- Layout fix for the control section
+- Some hidden features...
