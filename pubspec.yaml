@@ -47,6 +47,7 @@ dependencies:
   latlong2: ^0.9.1
   nfc_manager: ^3.4.0
   package_info_plus: ^7.0.0
+  http: ^1.2.1
 
 dev_dependencies:
   flutter_test:
@@ -101,6 +102,13 @@ flutter:
     - images/scooter/light_ring.png
     - images/scooter/blinker_l.png
     - images/scooter/blinker_r.png
+    - images/battery/batt_full.png
+    - images/battery/batt_75.png
+    - images/battery/batt_50.png
+    - images/battery/batt_25.png
+    - images/battery/batt_empty.png
+    - images/battery/batt_cbb.png
+    - images/battery/batt_aux.png
     - assets/i18n/en.json
     - assets/i18n/de.json
 

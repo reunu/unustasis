@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:unustasis/home_screen.dart';
 import 'package:unustasis/scooter_service.dart';
-import 'package:unustasis/stats_screen.dart';
+import 'package:unustasis/stats/stats_screen.dart';
 
 class ControlScreen extends StatefulWidget {
   const ControlScreen({required ScooterService service, super.key})
@@ -40,24 +40,28 @@ class _ControlScreenState extends State<ControlScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  ScooterActionButton(
-                    onPressed: () {
-                      widget._service.unlock();
-                      Navigator.of(context).pop();
-                    },
-                    icon: Icons.lock_open_outlined,
-                    label: FlutterI18n.translate(context, "controls_unlock"),
+                  // TODO CHECK IF THIS WORKS!!!!
+                  Expanded(
+                    child: ScooterActionButton(
+                      onPressed: () {
+                        widget._service.unlock();
+                        Navigator.of(context).pop();
+                      },
+                      icon: Icons.lock_open_outlined,
+                      label: FlutterI18n.translate(context, "controls_unlock"),
+                    ),
                   ),
-                  ScooterActionButton(
-                    onPressed: () {
-                      widget._service.lock();
-                      Navigator.of(context).pop();
-                    },
-                    icon: Icons.lock_outlined,
-                    label: FlutterI18n.translate(context, "controls_lock"),
+                  Expanded(
+                    child: ScooterActionButton(
+                      onPressed: () {
+                        widget._service.lock();
+                        Navigator.of(context).pop();
+                      },
+                      icon: Icons.lock_outlined,
+                      label: FlutterI18n.translate(context, "controls_lock"),
+                    ),
                   ),
                 ],
               ),
@@ -65,23 +69,28 @@ class _ControlScreenState extends State<ControlScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  ScooterActionButton(
-                    onPressed: () {
-                      widget._service.wakeUp();
-                      Navigator.of(context).pop();
-                    },
-                    icon: Icons.wb_sunny_outlined,
-                    label: FlutterI18n.translate(context, "controls_wake_up"),
+                  Expanded(
+                    child: ScooterActionButton(
+                      onPressed: () {
+                        widget._service.wakeUp();
+                        Navigator.of(context).pop();
+                      },
+                      icon: Icons.wb_sunny_outlined,
+                      label: FlutterI18n.translate(context, "controls_wake_up"),
+                    ),
                   ),
-                  ScooterActionButton(
-                    onPressed: () {
-                      widget._service.hibernate();
-                      Navigator.of(context).pop();
-                    },
-                    icon: Icons.nightlight_outlined,
-                    label: FlutterI18n.translate(context, "controls_hibernate"),
+                  Expanded(
+                    child: ScooterActionButton(
+                      onPressed: () {
+                        widget._service.hibernate();
+                        Navigator.of(context).pop();
+                      },
+                      icon: Icons.nightlight_outlined,
+                      label:
+                          FlutterI18n.translate(context, "controls_hibernate"),
+                    ),
                   ),
                 ],
               ),
@@ -92,19 +101,23 @@ class _ControlScreenState extends State<ControlScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  ScooterActionButton(
-                    onPressed: () =>
-                        widget._service.blink(left: true, right: false),
-                    icon: Icons.arrow_back_ios_new_rounded,
-                    label:
-                        FlutterI18n.translate(context, "controls_blink_left"),
+                  Expanded(
+                    child: ScooterActionButton(
+                      onPressed: () =>
+                          widget._service.blink(left: true, right: false),
+                      icon: Icons.arrow_back_ios_new_rounded,
+                      label:
+                          FlutterI18n.translate(context, "controls_blink_left"),
+                    ),
                   ),
-                  ScooterActionButton(
-                    onPressed: () =>
-                        widget._service.blink(left: false, right: true),
-                    icon: Icons.arrow_forward_ios_rounded,
-                    label:
-                        FlutterI18n.translate(context, "controls_blink_right"),
+                  Expanded(
+                    child: ScooterActionButton(
+                      onPressed: () =>
+                          widget._service.blink(left: false, right: true),
+                      icon: Icons.arrow_forward_ios_rounded,
+                      label: FlutterI18n.translate(
+                          context, "controls_blink_right"),
+                    ),
                   ),
                 ],
               ),
@@ -114,19 +127,23 @@ class _ControlScreenState extends State<ControlScreen> {
               child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    ScooterActionButton(
-                      onPressed: () =>
-                          widget._service.blink(left: true, right: true),
-                      icon: Icons.code_rounded,
-                      label: FlutterI18n.translate(
-                          context, "controls_blink_hazard"),
+                    Expanded(
+                      child: ScooterActionButton(
+                        onPressed: () =>
+                            widget._service.blink(left: true, right: true),
+                        icon: Icons.code_rounded,
+                        label: FlutterI18n.translate(
+                            context, "controls_blink_hazard"),
+                      ),
                     ),
-                    ScooterActionButton(
-                      onPressed: () =>
-                          widget._service.blink(left: false, right: false),
-                      icon: Icons.code_off_rounded,
-                      label:
-                          FlutterI18n.translate(context, "controls_blink_off"),
+                    Expanded(
+                      child: ScooterActionButton(
+                        onPressed: () =>
+                            widget._service.blink(left: false, right: false),
+                        icon: Icons.code_off_rounded,
+                        label: FlutterI18n.translate(
+                            context, "controls_blink_off"),
+                      ),
                     ),
                   ]),
             ),

@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:developer';
+import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
@@ -11,9 +13,12 @@ import 'package:nfc_manager/platform_tags.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:unustasis/geo_helper.dart';
 import 'package:unustasis/onboarding_screen.dart';
 import 'package:unustasis/scooter_service.dart';
 import 'package:unustasis/scooter_state.dart';
+import 'package:unustasis/stats/battery_section.dart';
+import 'package:unustasis/stats/range_section.dart';
 
 class StatsScreen extends StatefulWidget {
   const StatsScreen({required this.service, super.key});
@@ -26,9 +31,6 @@ class StatsScreen extends StatefulWidget {
 
 class _StatsScreenState extends State<StatsScreen> {
   int color = 0;
-  bool nfcScanning = false;
-  int? nfcBattery;
-  int? nfcCycles;
 
   @override
   void initState() {
@@ -64,8 +66,9 @@ class _StatsScreenState extends State<StatsScreen> {
               child: TabBar(
                   isScrollable: true,
                   tabAlignment: TabAlignment.center,
-                  labelColor: Colors.white,
+                  labelPadding: const EdgeInsets.symmetric(horizontal: 24),
                   unselectedLabelColor: Colors.white.withOpacity(0.3),
+                  labelColor: Colors.white,
                   indicatorColor: Colors.white,
                   tabs: [
                     Tab(
@@ -129,282 +132,10 @@ class _StatsScreenState extends State<StatsScreen> {
                 return TabBarView(
                   children: [
                     // BATTERY TAB
-                    ListView(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shrinkWrap: true,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          mainAxisSize: MainAxisSize.max,
-                          children: [
-                            StreamBuilder<int?>(
-                              stream: widget.service.primarySOC,
-                              builder: (context, socSnap) {
-                                return StreamBuilder<int?>(
-                                    stream: widget.service.primaryCycles,
-                                    builder: (context, cycleSnap) {
-                                      return Expanded(
-                                        child: _batteryCard(
-                                          name: FlutterI18n.translate(
-                                              context, 'stats_primary_name'),
-                                          soc: socSnap.data ?? 0,
-                                          infos: [
-                                            FlutterI18n.translate(
-                                                context, 'stats_primary_desc'),
-                                            FlutterI18n.translate(
-                                                context, "stats_primary_cycles",
-                                                translationParams: {
-                                                  "cycles": cycleSnap.hasData
-                                                      ? cycleSnap.data
-                                                          .toString()
-                                                      : FlutterI18n.translate(
-                                                          context,
-                                                          "stats_unknown")
-                                                }),
-                                          ],
-                                          old: dataIsOld,
-                                        ),
-                                      );
-                                    });
-                              },
-                            ),
-                            StreamBuilder<int?>(
-                              stream: widget.service.secondarySOC,
-                              builder: (context, socSnap) {
-                                if (!socSnap.hasData || socSnap.data == 0) {
-                                  return Container();
-                                }
-                                return StreamBuilder<int?>(
-                                    stream: widget.service.secondaryCycles,
-                                    builder: (context, cycleSnap) {
-                                      return Expanded(
-                                        child: _batteryCard(
-                                          name: FlutterI18n.translate(
-                                              context, 'stats_secondary_name'),
-                                          soc: socSnap.data ?? 0,
-                                          infos: [
-                                            FlutterI18n.translate(context,
-                                                'stats_secondary_desc'),
-                                            FlutterI18n.translate(context,
-                                                "stats_secondary_cycles",
-                                                translationParams: {
-                                                  "cycles": cycleSnap.hasData
-                                                      ? cycleSnap.data
-                                                          .toString()
-                                                      : FlutterI18n.translate(
-                                                          context,
-                                                          "stats_unknown")
-                                                }),
-                                          ],
-                                          old: dataIsOld,
-                                        ),
-                                      );
-                                    });
-                              },
-                            ),
-                          ],
-                        ),
-                        StreamBuilder<int?>(
-                          stream: widget.service.cbbSOC,
-                          builder: (context, snapshot) {
-                            return StreamBuilder<bool?>(
-                                stream: widget.service.cbbCharging,
-                                builder: (context, cbbCharging) {
-                                  return _batteryCard(
-                                    name: FlutterI18n.translate(
-                                        context, "stats_cbb_name"),
-                                    soc: snapshot.data ?? 0,
-                                    infos: [
-                                      FlutterI18n.translate(
-                                          context, "stats_cbb_desc"),
-                                      cbbCharging.hasData
-                                          ? cbbCharging.data == true
-                                              ? FlutterI18n.translate(
-                                                  context, "stats_cbb_charging")
-                                              : FlutterI18n.translate(context,
-                                                  "stats_cbb_not_charging")
-                                          : FlutterI18n.translate(context,
-                                              "stats_cbb_unknown_state"),
-                                    ],
-                                    old: dataIsOld,
-                                  );
-                                });
-                          },
-                        ),
-                        StreamBuilder<int?>(
-                          stream: widget.service.auxSOC,
-                          builder: (context, snapshot) {
-                            return _batteryCard(
-                              name: FlutterI18n.translate(
-                                  context, "stats_aux_name"),
-                              soc: snapshot.data ?? 0,
-                              infos: [
-                                FlutterI18n.translate(
-                                    context, "stats_aux_desc"),
-                              ],
-                              old: dataIsOld,
-                            );
-                          },
-                        ),
-                        const Divider(
-                          height: 40,
-                          indent: 12,
-                          endIndent: 12,
-                          color: Colors.white24,
-                        ),
-                        nfcBattery != 0 && nfcBattery != null && !nfcScanning
-                            ? _batteryCard(
-                                name: FlutterI18n.translate(
-                                    context, "stats_nfc_name"),
-                                soc: nfcBattery ?? 0,
-                                infos: [
-                                  FlutterI18n.translate(
-                                      context, "stats_secondary_cycles",
-                                      translationParams: {
-                                        "cycles": nfcCycles != null
-                                            ? nfcCycles.toString()
-                                            : FlutterI18n.translate(
-                                                context, "stats_unknown")
-                                      }),
-                                ],
-                                old: false,
-                              )
-                            : Container(),
-                        nfcScanning
-                            ? Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    const CircularProgressIndicator(),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      FlutterI18n.translate(
-                                          context, "stats_nfc_instructions"),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ],
-                                ))
-                            : Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 16),
-                                child: OutlinedButton(
-                                  style: OutlinedButton.styleFrom(
-                                    minimumSize: const Size.fromHeight(60),
-                                    side: const BorderSide(
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  onPressed: () async {
-                                    // Check availability
-                                    if (await NfcManager.instance
-                                            .isAvailable() ==
-                                        false) {
-                                      Fluttertoast.showToast(
-                                        msg: "NFC not available",
-                                      );
-                                      return;
-                                    }
-                                    setState(() {
-                                      nfcScanning = true;
-                                    });
-                                    // Start Session
-                                    NfcManager.instance.startSession(
-                                      onDiscovered: (NfcTag tag) async {
-                                        setState(() {
-                                          nfcScanning = false;
-                                          nfcBattery = null;
-                                          nfcCycles = null;
-                                        });
-                                        try {
-                                          // Read from battery
-                                          MifareUltralight? mifare =
-                                              MifareUltralight.from(tag);
-                                          if (mifare == null) {
-                                            Fluttertoast.showToast(
-                                              msg: "Tag not readable",
-                                            );
-                                            return;
-                                          }
-                                          Uint8List socData = await mifare
-                                              .readPages(pageOffset: 23);
-                                          Uint8List cycleData = await mifare
-                                              .readPages(pageOffset: 20);
-
-                                          // Parse data
-                                          int remainingCap =
-                                              (socData[3] << 8) + socData[2];
-                                          // this is depending on conditions!
-                                          int fullCap =
-                                              (socData[5] << 8) + socData[4];
-                                          int cycles = cycleData[0];
-                                          log("Full: $fullCap, Remaining: $remainingCap");
-                                          log("Cycles: $cycles");
-                                          setState(() {
-                                            nfcBattery =
-                                                (remainingCap / 33000 * 100)
-                                                    .round();
-                                            nfcCycles = cycles;
-                                          });
-                                        } catch (e) {
-                                          log("Error reading NFC: $e");
-                                          Fluttertoast.showToast(
-                                            msg: "Error reading NFC",
-                                          );
-                                        }
-                                        // We have our data, stop session
-                                        NfcManager.instance.stopSession();
-                                      },
-                                    );
-                                  },
-                                  child: const Text(
-                                    "Read NFC data",
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                      ],
-                    ),
+                    BatterySection(
+                        service: widget.service, dataIsOld: dataIsOld),
                     // RANGE TAB
-                    ListView(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shrinkWrap: true,
-                      children: [
-                        StreamBuilder<int?>(
-                            stream: widget.service.primarySOC,
-                            builder: (context, primarySOC) {
-                              return StreamBuilder<int?>(
-                                stream: widget.service.secondarySOC,
-                                builder: (context, secondarySOC) {
-                                  // estimating 45km of range per battery
-                                  double rangePrimary = primarySOC.hasData
-                                      ? (primarySOC.data! / 100 * 42)
-                                      : 0;
-                                  double rangeSecondary = secondarySOC.hasData
-                                      ? (secondarySOC.data! / 100 * 42)
-                                      : 0;
-                                  double rangeTotal =
-                                      rangePrimary + rangeSecondary;
-                                  return Column(
-                                    children: [
-                                      ListTile(
-                                        title: Text(FlutterI18n.translate(
-                                            context, "stats_estimated_range")),
-                                        subtitle: Text(primarySOC.hasData
-                                            ? "~ ${rangeTotal.round()} km"
-                                            : FlutterI18n.translate(
-                                                context, "stats_unknown")),
-                                      ),
-                                    ],
-                                  );
-                                },
-                              );
-                            }),
-                      ],
-                    ),
+                    RangeSection(service: widget.service, dataIsOld: dataIsOld),
                     // SCOOTER TAB
                     ListView(
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -437,17 +168,115 @@ class _StatsScreenState extends State<StatsScreen> {
                           },
                         ),
                         FutureBuilder(
-                            future: widget.service.getSavedScooter(),
-                            builder: (context, snapshot) {
-                              return ListTile(
-                                title: Text(FlutterI18n.translate(
-                                    context, "stats_scooter_id")),
-                                subtitle: Text(snapshot.hasData
-                                    ? snapshot.data!.toString()
-                                    : FlutterI18n.translate(
-                                        context, "stats_unknown")),
-                              );
+                          future: widget.service.getSavedScooter(),
+                          builder: (context, snapshot) {
+                            return ListTile(
+                              title: Text(FlutterI18n.translate(
+                                  context, "stats_scooter_id")),
+                              subtitle: Text(snapshot.hasData
+                                  ? snapshot.data!.toString()
+                                  : FlutterI18n.translate(
+                                      context, "stats_unknown")),
+                            );
+                          },
+                        ),
+                        StreamBuilder<LatLng?>(
+                            stream: widget.service.lastLocation,
+                            builder: (context, position) {
+                              return FutureBuilder<String?>(
+                                  future: GeoHelper.getAddress(position.data),
+                                  builder: (context, address) {
+                                    return ListTile(
+                                      title: Text(FlutterI18n.translate(
+                                          context, "stats_last_seen_near")),
+                                      subtitle: Text(address.hasData
+                                          ? address.data!
+                                          : FlutterI18n.translate(
+                                              context, "stats_unknown")),
+                                    );
+                                  });
                             }),
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Container(
+                            height: 300,
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                              borderRadius: BorderRadius.circular(16.0),
+                            ),
+                            child: StreamBuilder<LatLng?>(
+                                stream: widget.service.lastLocation,
+                                builder: (context, lastLocationSnap) {
+                                  if (!lastLocationSnap.hasData) {
+                                    return Center(
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          const Icon(Icons.location_disabled,
+                                              size: 32),
+                                          const SizedBox(height: 16),
+                                          Text(
+                                            FlutterI18n.translate(
+                                                context, "stats_no_location"),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }
+                                  log("Location: ${lastLocationSnap.data.toString()}");
+                                  return ClipRRect(
+                                    borderRadius: BorderRadius.circular(16.0),
+                                    child: FlutterMap(
+                                      options: MapOptions(
+                                        interactionOptions:
+                                            const InteractionOptions(
+                                          flags: InteractiveFlag.pinchZoom,
+                                        ),
+                                        initialZoom: 16,
+                                        initialCenter: lastLocationSnap.data!,
+                                      ),
+                                      children: [
+                                        TileLayer(
+                                          retinaMode: true,
+                                          urlTemplate:
+                                              'https://tiles-eu.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png?api_key=${const String.fromEnvironment("STADIA_TOKEN")}',
+                                          userAgentPackageName:
+                                              'de.freal.unustasis',
+                                        ),
+                                        MarkerLayer(
+                                          markers: [
+                                            Marker(
+                                              point: lastLocationSnap.data!,
+                                              width: 40,
+                                              height: 40,
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  color: dataIsOld
+                                                      ? Colors.grey
+                                                      : Colors.lightBlue,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: const Icon(
+                                                  Icons.moped_rounded,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const RichAttributionWidget(
+                                            attributions: [
+                                              TextSourceAttribution(
+                                                  "Stadia Maps"),
+                                              TextSourceAttribution(
+                                                  "OpenStreetMaps contributors"),
+                                            ])
+                                      ],
+                                    ),
+                                  );
+                                }),
+                          ),
+                        ),
                       ],
                     ),
                     // SETTINGS TAB
@@ -631,54 +460,6 @@ class _StatsScreenState extends State<StatsScreen> {
     );
   }
 
-  Widget _batteryCard(
-      {required String name,
-      required int soc,
-      required List<String> infos,
-      bool old = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(16.0, 12.0, 16.0, 16.0),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.white.withOpacity(0.2)),
-          borderRadius: BorderRadius.circular(16.0),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              name.toUpperCase(),
-              style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 12,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onBackground
-                      .withOpacity(0.5)),
-            ),
-            const SizedBox(height: 8.0),
-            Text("$soc%", style: Theme.of(context).textTheme.headlineLarge),
-            const SizedBox(height: 4.0),
-            LinearProgressIndicator(
-              value: soc / 100,
-              borderRadius: BorderRadius.circular(16.0),
-              minHeight: 16,
-              backgroundColor: Theme.of(context).colorScheme.background,
-              color: old
-                  ? Theme.of(context).colorScheme.surface
-                  : soc <= 15
-                      ? Colors.red
-                      : Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(height: 12.0),
-            ...infos.map((info) => Text(info)),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _rangeMapCard({required int rangeInMeters, bool old = false}) {
     // calculate bounds based on range and location
     return Padding(
@@ -778,6 +559,101 @@ class _StatsScreenState extends State<StatsScreen> {
                 );
               }),
         ),
+      ),
+    );
+  }
+
+  Widget _rangeVisual(int rangePrimary, int rangeSecondary) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 40),
+      child: Column(
+        mainAxisSize: MainAxisSize.max,
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Icon(Icons.moped_outlined, size: 32),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(32, 16, 0, 0),
+              child: Container(
+                width: 2,
+                color: Colors.white.withOpacity(0.2),
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: Colors.blue.withOpacity(0.1),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(Icons.sync_rounded, size: 32),
+                SizedBox(width: 16),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("31km", style: TextStyle(fontSize: 24)),
+                    Text("Swap batteries at 15%"),
+                  ],
+                )
+              ],
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(32, 0, 0, 0),
+              child: Container(
+                width: 2,
+                color: Colors.white.withOpacity(0.1),
+              ),
+            ),
+          ),
+          Container(
+            height: 120,
+            padding: const EdgeInsets.all(16),
+            color: Colors.red.withOpacity(0.1),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(Icons.warning_amber_rounded, size: 32),
+                SizedBox(width: 16),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("72km", style: TextStyle(fontSize: 24)),
+                    Text("Power reduced"),
+                  ],
+                )
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(Icons.flag_rounded, size: 40),
+                SizedBox(width: 16),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("31km", style: TextStyle(fontSize: 32)),
+                    Text("Estimated range"),
+                  ],
+                )
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

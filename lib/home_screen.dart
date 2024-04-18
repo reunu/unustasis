@@ -5,11 +5,12 @@ import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unustasis/control_screen.dart';
+import 'package:unustasis/driving_screen.dart';
 import 'package:unustasis/onboarding_screen.dart';
 import 'package:unustasis/scooter_service.dart';
 import 'package:unustasis/scooter_state.dart';
 import 'package:unustasis/scooter_visual.dart';
-import 'package:unustasis/stats_screen.dart';
+import 'package:unustasis/stats/stats_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final ScooterService scooterService;
@@ -105,6 +106,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (context) => StatsScreen(
+                        service: widget.scooterService,
+                      ),
+                    ),
+                  ),
+                  onLongPress: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DrivingScreen(
                         service: widget.scooterService,
                       ),
                     ),
