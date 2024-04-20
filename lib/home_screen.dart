@@ -196,9 +196,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         borderRadius: BorderRadius.circular(8),
                                         value: _secondarySOC! / 100.0,
                                         color: dataIsOld
-                                            ? Theme.of(context)
-                                                .colorScheme
-                                                .surface
+                                            ? Colors.grey
                                             : _secondarySOC! < 15
                                                 ? Colors.red
                                                 : Theme.of(context)
