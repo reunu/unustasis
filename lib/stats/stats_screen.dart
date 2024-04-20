@@ -184,6 +184,16 @@ class _StatsScreenState extends State<StatsScreen> {
                             );
                           },
                         ),
+                        // StreamBuilder<int?>(
+                        //   stream: widget.service.rssi,
+                        //   builder: (context, snapshot) {
+                        //     return ListTile(
+                        //       title:
+                        //           Text(FlutterI18n.translate(context, "RSSI")),
+                        //       subtitle: Text(snapshot.data.toString()),
+                        //     );
+                        //   },
+                        // ),
                         StreamBuilder<LatLng?>(
                             stream: widget.service.lastLocation,
                             builder: (context, position) {

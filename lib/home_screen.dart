@@ -372,11 +372,13 @@ class _HomeScreenState extends State<HomeScreen> {
         if (!didAuthenticate) {
           Fluttertoast.showToast(
               msg: FlutterI18n.translate(context, "biometrics_failed"));
+          Navigator.of(context).pop();
           SystemNavigator.pop();
         }
       } catch (e) {
         Fluttertoast.showToast(
             msg: FlutterI18n.translate(context, "biometrics_failed"));
+        Navigator.of(context).pop();
         SystemNavigator.pop();
       }
     }
@@ -448,6 +450,7 @@ class _ScooterPowerButtonState extends State<ScooterPowerButton> {
           style: TextStyle(
             color: mainColor,
           ),
+          textAlign: TextAlign.center,
         ),
       ],
     );

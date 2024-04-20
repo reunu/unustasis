@@ -7,6 +7,7 @@
     "onboarding_step1_button": "CONNECT",
     "onboarding_step2_heading": "Scanning...",
     "onboarding_step2_body": "This may take a few seconds. If your phone asks you to pair, please accept and enter the code on your scooter's display.",
+    "onboarding_step2_button": "RETRY",
     "onboarding_step3_heading": "Success!",
     "onboarding_step3_body": "If your phone asks you to pair, please accept and enter the code on your scooter's display. Press the button below to finish onboarding.",
     "onboarding_step3_button": "CONTINUE TO APP",

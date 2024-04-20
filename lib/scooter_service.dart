@@ -82,8 +82,8 @@ class ScooterService {
       BehaviorSubject<ScooterState?>.seeded(ScooterState.disconnected);
   Stream<ScooterState?> get state => _stateController.stream;
 
-  final BehaviorSubject<bool?> _seatController = BehaviorSubject<bool?>();
-  Stream<bool?> get seatClosed => _seatController.stream;
+  final BehaviorSubject<bool?> _seatClosedController = BehaviorSubject<bool?>();
+  Stream<bool?> get seatClosed => _seatClosedController.stream;
 
   final BehaviorSubject<bool?> _handlebarController = BehaviorSubject<bool?>();
   Stream<bool?> get handlebarsLocked => _handlebarController.stream;
@@ -128,6 +128,14 @@ class ScooterService {
   Stream<DateTime?> get lastPing => _lastPingController.stream;
 
   Stream<bool> get scanning => flutterBluePlus.isScanning;
+
+  Stream<int?> get rssi => flutterBluePlus.events.onReadRssi.asyncMap((event) {
+        log("RSSI: ${event.rssi}, device: ${event.device.remoteId}");
+        if (event.device.remoteId == myScooter?.remoteId) {
+          return event.rssi;
+        }
+        return null;
+      });
 
   // MAIN FUNCTIONS
 
@@ -350,9 +358,9 @@ class ScooterService {
       // Subscribe to seat
       _subscribeString(_seatCharacteristic!, "Seat", (String seatState) {
         if (seatState == "open") {
-          _seatController.add(false);
+          _seatClosedController.add(false);
         } else {
-          _seatController.add(true);
+          _seatClosedController.add(true);
         }
       });
       // Subscribe to handlebars
@@ -509,13 +517,16 @@ class ScooterService {
   }
 
   void lock() async {
-    if (_seatController.value == true) {
+    if (_seatClosedController.value == false) {
+      log("Seat seems to be open, checking again...");
       // make really sure nothing has changed
       await _seatCharacteristic!.read();
-      if (_seatController.value == true) {
+      if (_seatClosedController.value == false) {
+        log("Yup, it's open.");
         throw "SEAT_OPEN";
       }
     }
+    log("Sending command");
     _sendCommand("scooter:state lock");
   }
 
@@ -690,7 +701,7 @@ class ScooterService {
   void dispose() {
     _connectedController.close();
     _stateController.close();
-    _seatController.close();
+    _seatClosedController.close();
     _handlebarController.close();
     _auxSOCController.close();
     _cbbSOCController.close();

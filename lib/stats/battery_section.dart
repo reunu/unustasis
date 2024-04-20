@@ -90,12 +90,15 @@ class _BatterySectionState extends State<BatterySection> {
             );
           },
         ),
-        const Divider(
-          height: 40,
-          indent: 12,
-          endIndent: 12,
-          color: Colors.white24,
-        ),
+        // hiding until it properly works
+        Platform.isWindows
+            ? const Divider(
+                height: 40,
+                indent: 12,
+                endIndent: 12,
+                color: Colors.white24,
+              )
+            : Container(),
         nfcBattery != 0 && nfcBattery != null && !nfcScanning
             ? _batteryCard(
                 type: BatteryType.nfc,
@@ -126,9 +129,8 @@ class _BatterySectionState extends State<BatterySection> {
                         : Container(),
                   ],
                 ))
-            : Platform.isAndroid
-                // only show the NFC tool on android for now
-                // TODO iOS implementation
+            : Platform.isWindows
+                // hiding until it works
                 ? Padding(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 16),
@@ -331,6 +333,7 @@ class _BatterySectionState extends State<BatterySection> {
                   Text(
                     "$soc%",
                     style: Theme.of(context).textTheme.displayMedium,
+                    textScaler: TextScaler.noScaling,
                   ),
                   const SizedBox(height: 12.0),
                   LinearProgressIndicator(

@@ -94,4 +94,8 @@ class FlutterBluePlusMockable {
   Stream<List<ScanResult>> get onScanResults {
     return FlutterBluePlus.onScanResults;
   }
+
+  BluetoothEvents get events {
+    return FlutterBluePlus.events;
+  }
 }

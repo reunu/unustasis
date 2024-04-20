@@ -125,6 +125,7 @@ class RangeSection extends StatelessWidget {
                   Text(
                     "~${range}km",
                     style: Theme.of(context).textTheme.headlineMedium,
+                    textScaler: TextScaler.noScaling,
                   ),
                   fullPowerRange > 0
                       ? Text(
@@ -134,11 +135,13 @@ class RangeSection extends StatelessWidget {
                                 "range": fullPowerRange.toString()
                               }),
                           style: Theme.of(context).textTheme.titleMedium,
+                          textScaler: TextScaler.noScaling,
                         )
                       : Text(
                           FlutterI18n.translate(
                               context, "stats_range_throttled"),
                           style: Theme.of(context).textTheme.titleMedium,
+                          textScaler: TextScaler.noScaling,
                         ),
                   const SizedBox(height: 16),
                 ],
@@ -213,6 +216,7 @@ class RangeSection extends StatelessWidget {
                   Text(
                     "~${range}km",
                     style: Theme.of(context).textTheme.displayMedium,
+                    textScaler: TextScaler.noScaling,
                   ),
                   const SizedBox(height: 4),
                   fullPowerRange > 0
@@ -223,6 +227,7 @@ class RangeSection extends StatelessWidget {
                                 "range": fullPowerRange.toString()
                               }),
                           style: Theme.of(context).textTheme.titleMedium,
+                          textScaler: TextScaler.noScaling,
                         )
                       : Text(
                           FlutterI18n.translate(
