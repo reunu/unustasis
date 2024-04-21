@@ -524,7 +524,7 @@ class ScooterService {
       return;
     }
     if (_state != null && powerState == "hibernating-imminent") {
-      _stateController.add(ScooterState.hibernating);
+      _stateController.add(ScooterState.hibernatingImminent);
       return;
     }
     if (_state != null && powerState == "booting") {
@@ -551,6 +551,24 @@ class ScooterService {
 
   void unlock() {
     _sendCommand("scooter:state unlock");
+  }
+
+  Future<void> wakeUpAndUnlock() async {
+    await wakeUp();
+
+    // wait for stand-by and unlock
+    var timer = Timer.periodic(const Duration(seconds: 2), (timer) {
+      ScooterState scooterState = ScooterState.fromString(_state!);
+      log("Waiting for new waking up state: $scooterState...");
+      if (scooterState == ScooterState.standby) {
+        unlock();
+        timer.cancel();
+      }
+    });
+
+    // cancel timer after 40s
+    await Future.delayed(const Duration(seconds: 40));
+    timer.cancel();
   }
 
   void lock() async {
