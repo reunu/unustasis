@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
@@ -554,21 +553,10 @@ class ScooterService {
   }
 
   Future<void> wakeUpAndUnlock() async {
-    await wakeUp();
-
-    // wait for stand-by and unlock
-    var timer = Timer.periodic(const Duration(seconds: 2), (timer) {
-      ScooterState scooterState = ScooterState.fromString(_state!);
-      log("Waiting for new waking up state: $scooterState...");
-      if (scooterState == ScooterState.standby) {
-        unlock();
-        timer.cancel();
-      }
-    });
-
-    // cancel timer to be sure it does not run forever
-    await Future.delayed(const Duration(seconds: 40));
-    timer.cancel();
+    wakeUp();
+    await _waitForScooterState(
+        ScooterState.standby, const Duration(seconds: 40));
+    unlock();
   }
 
   void lock() async {
@@ -696,6 +684,28 @@ class ScooterService {
     } catch (e) {
       rethrow;
     }
+  }
+
+  Future<void> _waitForScooterState(
+      ScooterState expectedScooterState, Duration limit) async {
+    Completer<void> completer = Completer<void>();
+
+    // wait for stand-by and unlock
+    var timer = Timer.periodic(const Duration(seconds: 2), (timer) {
+      ScooterState scooterState = ScooterState.fromString(_state!);
+      log("Waiting for $expectedScooterState, and got: $scooterState...");
+      if (scooterState == expectedScooterState) {
+        timer.cancel();
+        completer.complete();
+      }
+    });
+
+    // cancel timer to be sure it does not run forever
+    await Future.delayed(limit);
+    timer.cancel();
+    completer.complete();
+
+    return completer.future;
   }
 
   Future<String?> getSavedScooter() async {
