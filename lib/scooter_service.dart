@@ -590,26 +590,14 @@ class ScooterService {
   Future<void> wakeUp() async {
     String command = "wakeup";
 
-    Fluttertoast.showToast(
-      msg: "Send command: $command",
-      toastLength: Toast.LENGTH_SHORT,
-      gravity: ToastGravity.BOTTOM,
-      backgroundColor: Colors.black,
-      textColor: Colors.white,
-    );
+    Fluttertoast.showToast(msg: "Send command: $command");
     _sendCommand(command, characteristic: _hibernationCommandCharacteristic);
   }
 
   Future<void> hibernate() async {
     String command = "hibernate";
 
-    Fluttertoast.showToast(
-      msg: "Send command: $command",
-      toastLength: Toast.LENGTH_SHORT,
-      gravity: ToastGravity.BOTTOM,
-      backgroundColor: Colors.black,
-      textColor: Colors.white,
-    );
+    Fluttertoast.showToast(msg: "Send command: $command");
     _sendCommand(command, characteristic: _hibernationCommandCharacteristic);
   }
 
