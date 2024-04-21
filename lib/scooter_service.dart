@@ -565,6 +565,7 @@ class ScooterService {
     }
     log("Sending command");
     _sendCommand("scooter:state lock");
+    // don't immediately unlock again automatically
     _autoUnlockCooldown = true;
     await Future.delayed(const Duration(seconds: 30));
     _autoUnlockCooldown = false;
