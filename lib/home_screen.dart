@@ -262,7 +262,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                             }
                                           }
                                         }
-                                      : (_scooterState == ScooterState.hibernating ? widget.scooterService.wakeUpAndUnlock : widget.scooterService.unlock))
+                                      : (_scooterState == ScooterState.standby ? widget.scooterService.unlock : widget.scooterService.wakeUpAndUnlock))
                                   : null,
                           icon: _scooterState != null && _scooterState!.isOn
                               ? Icons.lock_open
