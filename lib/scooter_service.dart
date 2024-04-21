@@ -566,7 +566,7 @@ class ScooterService {
       }
     });
 
-    // cancel timer after 40s to be sure it does not run forever
+    // cancel timer to be sure it does not run forever
     await Future.delayed(const Duration(seconds: 40));
     timer.cancel();
   }
