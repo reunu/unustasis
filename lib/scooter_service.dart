@@ -21,8 +21,10 @@ class ScooterService {
   String? _state, _powerState;
   bool _autoRestarting = false;
   bool _scanning = false;
+  bool _autoUnlock = false;
+  bool _autoUnlockCooldown = false;
   SharedPreferences? prefs;
-  late Timer _locationTimer;
+  late Timer _locationTimer, _rssiTimer;
 
   // some useful characteristsics to save
   BluetoothCharacteristic? _commandCharacteristic;
@@ -43,7 +45,9 @@ class ScooterService {
 
   final FlutterBluePlusMockable flutterBluePlus;
 
+  // On initialization...
   ScooterService(this.flutterBluePlus) {
+    // Load saved scooter ID and cached values from SharedPrefs
     SharedPreferences.getInstance().then((prefs) {
       this.prefs = prefs;
       if (prefs.containsKey("savedScooterId")) {
@@ -58,15 +62,31 @@ class ScooterService {
           _auxSOCController.add(prefs.getInt("auxSOC"));
           double? lastLat = prefs.getDouble("lastLat");
           double? lastLon = prefs.getDouble("lastLon");
+          _autoUnlock = prefs.getBool("autoUnlock") ?? false;
           if (lastLat != null && lastLon != null) {
             _lastLocationController.add(LatLng(lastLat, lastLon));
           }
         }
       }
     });
+    // start the location polling timer
     _locationTimer = Timer.periodic(const Duration(seconds: 20), (timer) {
       if (myScooter != null && myScooter!.isConnected) {
         _pollLocation();
+      }
+    });
+    _rssiTimer = Timer.periodic(const Duration(seconds: 1), (timer) async {
+      if (myScooter != null && myScooter!.isConnected) {
+        int rssi = await myScooter!.readRssi();
+        if (_autoUnlock &&
+            rssi > -60 &&
+            _stateController.value == ScooterState.standby &&
+            !_autoUnlockCooldown) {
+          unlock();
+          _autoUnlockCooldown = true;
+          await Future.delayed(const Duration(seconds: 5));
+          _autoUnlockCooldown = false;
+        }
       }
     });
   }
@@ -166,7 +186,7 @@ class ScooterService {
       flutterBluePlus.startScan(
         withNames: [
           "unu Scooter"
-        ], // if we don't have a saved scooter, look for A scooter
+        ], // if we don't have a saved scooter, look for ANY scooter
         timeout: const Duration(seconds: 30),
       );
     }
@@ -203,6 +223,16 @@ class ScooterService {
       // save this as the last known location
       _pollLocation();
       _connectedController.add(true);
+      systemScooters.first.connectionState
+          .listen((BluetoothConnectionState state) async {
+        if (state == BluetoothConnectionState.disconnected) {
+          _connectedController.add(false);
+          _stateController.add(ScooterState.disconnected);
+          log("Lost connection to scooter! :(");
+          // Restart the process if we're not already doing so
+          // start(); // this leads to some conflicts right now if the phone auto-connects, so we're not doing it
+        }
+      });
     } else {
       try {
         // If not, start scanning for nearby scooters
@@ -276,6 +306,13 @@ class ScooterService {
     _autoRestarting = false;
     _autoRestartSubscription.cancel();
   }
+
+  void setAutoUnlock(bool enable) {
+    _autoUnlock = enable;
+    prefs?.setBool("autoUnlock", enable);
+  }
+
+  bool get autoUnlock => _autoUnlock;
 
   Future<void> setUpCharacteristics(BluetoothDevice scooter) async {
     if (myScooter!.isDisconnected) {
@@ -528,6 +565,9 @@ class ScooterService {
     }
     log("Sending command");
     _sendCommand("scooter:state lock");
+    _autoUnlockCooldown = true;
+    await Future.delayed(const Duration(seconds: 30));
+    _autoUnlockCooldown = false;
   }
 
   void openSeat() {
@@ -711,6 +751,7 @@ class ScooterService {
     _secondaryCyclesController.close();
     _lastPingController.close();
     _locationTimer.cancel();
+    _rssiTimer.cancel();
   }
 
   // thanks gemini advanced <3

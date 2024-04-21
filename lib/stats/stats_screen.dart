@@ -34,6 +34,7 @@ class StatsScreen extends StatefulWidget {
 class _StatsScreenState extends State<StatsScreen> {
   int color = 0;
   bool biometrics = false;
+  bool autoUnlock = false;
 
   @override
   void initState() {
@@ -46,6 +47,7 @@ class _StatsScreenState extends State<StatsScreen> {
     setState(() {
       color = prefs.getInt("color") ?? 0;
       biometrics = prefs.getBool("biometrics") ?? false;
+      autoUnlock = widget.service.autoUnlock;
     });
   }
 
@@ -184,16 +186,16 @@ class _StatsScreenState extends State<StatsScreen> {
                             );
                           },
                         ),
-                        // StreamBuilder<int?>(
-                        //   stream: widget.service.rssi,
-                        //   builder: (context, snapshot) {
-                        //     return ListTile(
-                        //       title:
-                        //           Text(FlutterI18n.translate(context, "RSSI")),
-                        //       subtitle: Text(snapshot.data.toString()),
-                        //     );
-                        //   },
-                        // ),
+                        StreamBuilder<int?>(
+                          stream: widget.service.rssi,
+                          builder: (context, snapshot) {
+                            return ListTile(
+                              title: Text(
+                                  FlutterI18n.translate(context, "stats_rssi")),
+                              subtitle: Text(snapshot.data.toString()),
+                            );
+                          },
+                        ),
                         StreamBuilder<LatLng?>(
                             stream: widget.service.lastLocation,
                             builder: (context, position) {
@@ -396,6 +398,8 @@ class _StatsScreenState extends State<StatsScreen> {
                                 return SwitchListTile(
                                   title: Text(FlutterI18n.translate(
                                       context, "settings_biometrics")),
+                                  subtitle: Text(FlutterI18n.translate(context,
+                                      "settings_biometrics_description")),
                                   value: biometrics,
                                   onChanged: (value) async {
                                     final LocalAuthentication auth =
@@ -433,6 +437,19 @@ class _StatsScreenState extends State<StatsScreen> {
                                 return Container();
                               }
                             }),
+                        SwitchListTile(
+                          title: Text(FlutterI18n.translate(
+                              context, "settings_auto_unlock")),
+                          subtitle: Text(FlutterI18n.translate(
+                              context, "settings_auto_unlock_description")),
+                          value: autoUnlock,
+                          onChanged: (value) async {
+                            widget.service.setAutoUnlock(value);
+                            setState(() {
+                              autoUnlock = value;
+                            });
+                          },
+                        ),
                         FutureBuilder(
                             future: PackageInfo.fromPlatform(),
                             builder: (context, packageInfo) {
