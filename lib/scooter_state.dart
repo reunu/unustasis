@@ -133,6 +133,7 @@ extension StateExtension on ScooterState {
   bool get isReady {
     switch (this) {
       case ScooterState.standby:
+      case ScooterState.hibernating:
       case ScooterState.hibernatingImminent:
       case ScooterState.parked:
       case ScooterState.ready:

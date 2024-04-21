@@ -246,7 +246,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Expanded(
                       child: ScooterPowerButton(
                           action:
-                              _scooterState != null
+                              _scooterState != null && _scooterState!.isReady
                                   ? (_scooterState!.isOn
                                       ? () {
                                           try {
