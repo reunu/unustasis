@@ -695,6 +695,7 @@ class ScooterService {
       ScooterState scooterState = ScooterState.fromString(_state!);
       log("Waiting for $expectedScooterState, and got: $scooterState...");
       if (scooterState == expectedScooterState) {
+        log("Found $expectedScooterState, cancel timer...");
         timer.cancel();
         completer.complete();
       }
@@ -703,7 +704,9 @@ class ScooterService {
     // cancel timer to be sure it does not run forever
     await Future.delayed(limit);
     timer.cancel();
-    completer.complete();
+    if (!completer.isCompleted) {
+      completer.complete();
+    }
 
     return completer.future;
   }
