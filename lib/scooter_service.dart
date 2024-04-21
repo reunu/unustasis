@@ -690,7 +690,7 @@ class ScooterService {
       ScooterState expectedScooterState, Duration limit) async {
     Completer<void> completer = Completer<void>();
 
-    // wait for stand-by and unlock
+    // Check new state every 2s
     var timer = Timer.periodic(const Duration(seconds: 2), (timer) {
       ScooterState scooterState = ScooterState.fromString(_state!);
       log("Waiting for $expectedScooterState, and got: $scooterState...");
