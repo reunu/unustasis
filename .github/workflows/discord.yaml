@@ -1,0 +1,15 @@
+name: Discord notifier
+on:
+  push:
+    tags:        
+      - '**'
+jobs:
+  Notify-Discord:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Notify Discord
+        uses: rjstone/discord-webhook-notify@v1
+        with:
+            severity: info
+            details: New app version created!
+            webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
