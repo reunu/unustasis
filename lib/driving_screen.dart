@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
@@ -39,8 +41,34 @@ class _DrivingScreenState extends State<DrivingScreen> {
       throw "Location permissions are denied forever";
     }
 
-    Geolocator.getPositionStream().listen((Position position) {
-      if (position.speedAccuracy < 3) {
+    LocationSettings? locationSettings;
+
+    if (Platform.isAndroid) {
+      locationSettings = AndroidSettings(
+        accuracy: LocationAccuracy.bestForNavigation,
+        intervalDuration: const Duration(seconds: 1),
+        // (Optional) Set foreground notification config to keep the app alive
+        // when going to the background
+        // foregroundNotificationConfig: const ForegroundNotificationConfig(
+        //  notificationText:
+        //      "Example app will continue to receive your location even when you aren't using it",
+        //  notificationTitle: "Running in Background",
+        //  enableWakeLock: true,
+        // ),
+      );
+    } else if (Platform.isIOS) {
+      locationSettings = AppleSettings(
+        accuracy: LocationAccuracy.bestForNavigation,
+        activityType: ActivityType.automotiveNavigation,
+        pauseLocationUpdatesAutomatically: true,
+        // Only set to true if our app will be started up in the background.
+        // showBackgroundLocationIndicator: false,
+      );
+    }
+
+    Geolocator.getPositionStream(locationSettings: locationSettings)
+        .listen((Position position) {
+      if (position.speedAccuracy < 5) {
         setState(() {
           _speed = (position.speed * 3.6).round();
         });

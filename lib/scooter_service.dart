@@ -79,7 +79,7 @@ class ScooterService {
       if (myScooter != null && myScooter!.isConnected) {
         int rssi = await myScooter!.readRssi();
         if (_autoUnlock &&
-            rssi > -60 &&
+            rssi > -65 &&
             _stateController.value == ScooterState.standby &&
             !_autoUnlockCooldown) {
           unlock();
