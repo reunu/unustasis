@@ -555,9 +555,13 @@ class ScooterService {
 
   Future<void> wakeUpAndUnlock() async {
     wakeUp();
+
     await _waitForScooterState(
         ScooterState.standby, const Duration(seconds: 40));
-    unlock();
+
+    if (_stateController.value == ScooterState.standby) {
+      unlock();
+    }
   }
 
   void lock() async {
@@ -693,7 +697,7 @@ class ScooterService {
 
     // Check new state every 2s
     var timer = Timer.periodic(const Duration(seconds: 2), (timer) {
-      ScooterState scooterState = ScooterState.fromString(_state!);
+      ScooterState? scooterState = _stateController.value;
       log("Waiting for $expectedScooterState, and got: $scooterState...");
       if (scooterState == expectedScooterState) {
         log("Found $expectedScooterState, cancel timer...");
@@ -702,12 +706,14 @@ class ScooterService {
       }
     });
 
-    // cancel timer to be sure it does not run forever
-    await Future.delayed(limit);
-    timer.cancel();
-    if (!completer.isCompleted) {
-      completer.complete();
-    }
+    // Clean up
+    Future.delayed(limit, () {
+      log("Timer limit reached after $limit");
+      timer.cancel();
+      if (!completer.isCompleted) {
+        completer.complete();
+      }
+    });
 
     return completer.future;
   }
