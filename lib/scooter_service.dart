@@ -558,8 +558,8 @@ class ScooterService {
   Future<void> wakeUpAndUnlock() async {
     wakeUp();
 
-    await _waitForScooterState(
-        ScooterState.standby, const Duration(seconds: BOOTING_TIME_SECONDS + 5));
+    await _waitForScooterState(ScooterState.standby,
+        const Duration(seconds: BOOTING_TIME_SECONDS + 5));
 
     if (_stateController.value == ScooterState.standby) {
       unlock();
