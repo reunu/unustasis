@@ -1,5 +1,8 @@
 name: Discord notifier
 on:
+  pull_request:
+    branches:
+    - main
   push:
     tags:        
       - '**'
@@ -8,8 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Notify Discord
-        uses: rjstone/discord-webhook-notify@v1
-        with:
-            severity: info
-            details: New app version created!
-            webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
+      uses: rjstone/discord-webhook-notify@v1
+      with:
+        severity: info
+        webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
