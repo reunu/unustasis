@@ -601,17 +601,12 @@ class ScooterService {
   }
 
   Future<void> wakeUp() async {
-    String command = "wakeup";
-
-    Fluttertoast.showToast(msg: "Send command: $command");
-    _sendCommand(command, characteristic: _hibernationCommandCharacteristic);
+    _sendCommand("wakeup", characteristic: _hibernationCommandCharacteristic);
   }
 
   Future<void> hibernate() async {
-    String command = "hibernate";
-
-    Fluttertoast.showToast(msg: "Send command: $command");
-    _sendCommand(command, characteristic: _hibernationCommandCharacteristic);
+    _sendCommand("hibernate",
+        characteristic: _hibernationCommandCharacteristic);
   }
 
   void ping() async {
