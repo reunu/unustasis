@@ -388,7 +388,7 @@ class ScooterService {
       // Subscribe to power state for correct hibernation
       _subscribeString(_powerStateCharacteristic!, "Power State",
           (String value) {
-        _setPowerState(value);
+        _powerState = value;
         _updateScooterState();
       });
       // Subscribe to seat
@@ -517,7 +517,7 @@ class ScooterService {
   }
 
   Future<void> _updateScooterState() async {
-    var powerState = await _getPowerState();
+    var powerState = _powerState;
     log("Update scooter state from state: '$_state' and power state: '$powerState'");
     if (_state != null && powerState == "hibernating") {
       _stateController.add(ScooterState.hibernating);
@@ -735,28 +735,6 @@ class ScooterService {
     savedScooterId = id;
     prefs ??= await SharedPreferences.getInstance();
     prefs!.setString("savedScooterId", id);
-  }
-
-  void _setPowerState(String powerState) async {
-    _powerState = powerState;
-    prefs ??= await SharedPreferences.getInstance();
-    if (powerState != "") {
-      // We're caching the power state, because it's updated less frequent to
-      // reflect the correct state after reopening the app
-      log("Write power state to cache: $_powerState");
-      prefs!.setString("powerState", powerState);
-    }
-  }
-
-  Future<String?> _getPowerState() async {
-    if (_powerState != null) {
-      return _powerState;
-    }
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    var powerState = prefs.getString("powerState");
-    log("Read power state from cache: $powerState");
-    _powerState = powerState;
-    return _powerState;
   }
 
   void dispose() {
