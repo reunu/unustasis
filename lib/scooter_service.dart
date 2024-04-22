@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
@@ -12,6 +11,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unustasis/flutter/blue_plus_mockable.dart';
 import 'package:unustasis/scooter_state.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+
+const BOOTING_TIME_SECONDS = 25;
 
 class ScooterService {
   String? savedScooterId;
@@ -389,7 +390,7 @@ class ScooterService {
       // Subscribe to power state for correct hibernation
       _subscribeString(_powerStateCharacteristic!, "Power State",
           (String value) {
-        _setPowerState(value);
+        _powerState = value;
         _updateScooterState();
       });
       // Subscribe to seat
@@ -502,6 +503,7 @@ class ScooterService {
       });
       // Read each value once to get the ball rolling
       _stateCharacteristic!.read();
+      _powerStateCharacteristic!.read();
       _seatCharacteristic!.read();
       _handlebarCharacteristic!.read();
       _auxSOCCharacteristic!.read();
@@ -517,14 +519,14 @@ class ScooterService {
   }
 
   Future<void> _updateScooterState() async {
-    var powerState = await _getPowerState();
+    var powerState = _powerState;
     log("Update scooter state from state: '$_state' and power state: '$powerState'");
     if (_state != null && powerState == "hibernating") {
       _stateController.add(ScooterState.hibernating);
       return;
     }
     if (_state != null && powerState == "hibernating-imminent") {
-      _stateController.add(ScooterState.hibernating);
+      _stateController.add(ScooterState.hibernatingImminent);
       return;
     }
     if (_state != null && powerState == "booting") {
@@ -551,6 +553,17 @@ class ScooterService {
 
   void unlock() {
     _sendCommand("scooter:state unlock");
+  }
+
+  Future<void> wakeUpAndUnlock() async {
+    wakeUp();
+
+    await _waitForScooterState(ScooterState.standby,
+        const Duration(seconds: BOOTING_TIME_SECONDS + 5));
+
+    if (_stateController.value == ScooterState.standby) {
+      unlock();
+    }
   }
 
   void lock() async {
@@ -588,29 +601,12 @@ class ScooterService {
   }
 
   Future<void> wakeUp() async {
-    String command = "wakeup";
-
-    Fluttertoast.showToast(
-      msg: "Send command: $command",
-      toastLength: Toast.LENGTH_SHORT,
-      gravity: ToastGravity.BOTTOM,
-      backgroundColor: Colors.black,
-      textColor: Colors.white,
-    );
-    _sendCommand(command, characteristic: _hibernationCommandCharacteristic);
+    _sendCommand("wakeup", characteristic: _hibernationCommandCharacteristic);
   }
 
   Future<void> hibernate() async {
-    String command = "hibernate";
-
-    Fluttertoast.showToast(
-      msg: "Send command: $command",
-      toastLength: Toast.LENGTH_SHORT,
-      gravity: ToastGravity.BOTTOM,
-      backgroundColor: Colors.black,
-      textColor: Colors.white,
-    );
-    _sendCommand(command, characteristic: _hibernationCommandCharacteristic);
+    _sendCommand("hibernate",
+        characteristic: _hibernationCommandCharacteristic);
   }
 
   void ping() async {
@@ -692,6 +688,33 @@ class ScooterService {
     }
   }
 
+  Future<void> _waitForScooterState(
+      ScooterState expectedScooterState, Duration limit) async {
+    Completer<void> completer = Completer<void>();
+
+    // Check new state every 2s
+    var timer = Timer.periodic(const Duration(seconds: 2), (timer) {
+      ScooterState? scooterState = _stateController.value;
+      log("Waiting for $expectedScooterState, and got: $scooterState...");
+      if (scooterState == expectedScooterState) {
+        log("Found $expectedScooterState, cancel timer...");
+        timer.cancel();
+        completer.complete();
+      }
+    });
+
+    // Clean up
+    Future.delayed(limit, () {
+      log("Timer limit reached after $limit");
+      timer.cancel();
+      if (!completer.isCompleted) {
+        completer.complete();
+      }
+    });
+
+    return completer.future;
+  }
+
   Future<String?> getSavedScooter() async {
     if (savedScooterId != null) {
       return savedScooterId;
@@ -715,28 +738,6 @@ class ScooterService {
     savedScooterId = id;
     prefs ??= await SharedPreferences.getInstance();
     prefs!.setString("savedScooterId", id);
-  }
-
-  void _setPowerState(String powerState) async {
-    _powerState = powerState;
-    prefs ??= await SharedPreferences.getInstance();
-    if (powerState != "") {
-      // We're caching the power state, because it's updated less frequent to
-      // reflect the correct state after reopening the app
-      log("Write power state to cache: $_powerState");
-      prefs!.setString("powerState", powerState);
-    }
-  }
-
-  Future<String?> _getPowerState() async {
-    if (_powerState != null) {
-      return _powerState;
-    }
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    var powerState = prefs.getString("powerState");
-    log("Read power state from cache: $powerState");
-    _powerState = powerState;
-    return _powerState;
   }
 
   void dispose() {

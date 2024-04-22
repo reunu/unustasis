@@ -10,6 +10,7 @@ enum ScooterState {
   shuttingDown,
   ready,
   hibernating,
+  hibernatingImminent,
   booting,
   unknown,
   linking,
@@ -29,6 +30,8 @@ enum ScooterState {
         return ScooterState.ready;
       case "hibernating":
         return ScooterState.hibernating;
+      case "hibernating-imminent":
+        return ScooterState.hibernatingImminent;
       case "booting":
         return ScooterState.booting;
       case "":
@@ -46,6 +49,7 @@ extension StateExtension on ScooterState {
     switch (this) {
       case ScooterState.off:
       case ScooterState.hibernating:
+      case ScooterState.hibernatingImminent:
       case ScooterState.booting:
       case ScooterState.shuttingDown:
         // scooter is connected and actionable, but asleep
@@ -76,6 +80,8 @@ extension StateExtension on ScooterState {
         return FlutterI18n.translate(context, "state_name_ready");
       case ScooterState.hibernating:
         return FlutterI18n.translate(context, "state_name_hibernating");
+      case ScooterState.hibernatingImminent:
+        return FlutterI18n.translate(context, "state_name_hibernating_imminent");
       case ScooterState.booting:
         return FlutterI18n.translate(context, "state_name_booting");
       case ScooterState.unknown:
@@ -101,6 +107,8 @@ extension StateExtension on ScooterState {
         return FlutterI18n.translate(context, "state_desc_ready");
       case ScooterState.hibernating:
         return FlutterI18n.translate(context, "state_desc_hibernating");
+      case ScooterState.hibernatingImminent:
+        return FlutterI18n.translate(context, "state_desc_hibernating_imminent");
       case ScooterState.booting:
         return FlutterI18n.translate(context, "state_desc_booting");
       case ScooterState.unknown:
@@ -122,9 +130,12 @@ extension StateExtension on ScooterState {
     }
   }
 
-  bool get isReady {
+  bool get isReadyForLockChange {
     switch (this) {
+      case ScooterState.off: // hibernating states can be missing
       case ScooterState.standby:
+      case ScooterState.hibernating:
+      case ScooterState.hibernatingImminent:
       case ScooterState.parked:
       case ScooterState.ready:
         return true;
