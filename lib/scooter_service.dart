@@ -501,6 +501,7 @@ class ScooterService {
       });
       // Read each value once to get the ball rolling
       _stateCharacteristic!.read();
+      _powerStateCharacteristic!.read();
       _seatCharacteristic!.read();
       _handlebarCharacteristic!.read();
       _auxSOCCharacteristic!.read();

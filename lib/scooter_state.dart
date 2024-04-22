@@ -130,8 +130,9 @@ extension StateExtension on ScooterState {
     }
   }
 
-  bool get isReady {
+  bool get isReadyForLockChange {
     switch (this) {
+      case ScooterState.off: // hibernating states can be missing
       case ScooterState.standby:
       case ScooterState.hibernating:
       case ScooterState.hibernatingImminent:

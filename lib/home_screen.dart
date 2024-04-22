@@ -246,7 +246,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Expanded(
                       child: ScooterPowerButton(
                           action:
-                              _scooterState != null && _scooterState!.isReady
+                              _scooterState != null && _scooterState!.isReadyForLockChange
                                   ? (_scooterState!.isOn
                                       ? () {
                                           try {
@@ -262,8 +262,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                             }
                                           }
                                         }
-                                      : (_scooterState == ScooterState.standby ? widget.scooterService.unlock : widget.scooterService.wakeUpAndUnlock))
-                                  : null,
+                                  : (_scooterState == ScooterState.standby
+                                      ? widget.scooterService.unlock
+                                      : widget.scooterService.wakeUpAndUnlock))
+                              : null,
                           icon: _scooterState != null && _scooterState!.isOn
                               ? Icons.lock_open
                               : Icons.lock_outline,
