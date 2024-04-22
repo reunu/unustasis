@@ -12,6 +12,8 @@ import 'package:unustasis/flutter/blue_plus_mockable.dart';
 import 'package:unustasis/scooter_state.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
+const BOOTING_TIME_SECONDS = 25;
+
 class ScooterService {
   String? savedScooterId;
   BluetoothDevice? myScooter; // reserved for a connected scooter!
@@ -557,7 +559,7 @@ class ScooterService {
     wakeUp();
 
     await _waitForScooterState(
-        ScooterState.standby, const Duration(seconds: 40));
+        ScooterState.standby, const Duration(seconds: BOOTING_TIME_SECONDS + 5));
 
     if (_stateController.value == ScooterState.standby) {
       unlock();
