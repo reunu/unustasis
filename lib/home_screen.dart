@@ -245,23 +245,23 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     Expanded(
                       child: ScooterPowerButton(
-                          action:
-                              _scooterState != null && _scooterState!.isReadyForLockChange
-                                  ? (_scooterState!.isOn
-                                      ? () {
-                                          try {
-                                            widget.scooterService.lock();
-                                          } catch (e) {
-                                            if (e
-                                                .toString()
-                                                .contains("SEAT_OPEN")) {
-                                              showSeatWarning();
-                                            } else {
-                                              Fluttertoast.showToast(
-                                                  msg: e.toString());
-                                            }
-                                          }
+                          action: _scooterState != null &&
+                                  _scooterState!.isReadyForLockChange
+                              ? (_scooterState!.isOn
+                                  ? () {
+                                      try {
+                                        widget.scooterService.lock();
+                                      } catch (e) {
+                                        if (e
+                                            .toString()
+                                            .contains("SEAT_OPEN")) {
+                                          showSeatWarning();
+                                        } else {
+                                          Fluttertoast.showToast(
+                                              msg: e.toString());
                                         }
+                                      }
+                                    }
                                   : (_scooterState == ScooterState.standby
                                       ? widget.scooterService.unlock
                                       : widget.scooterService.wakeUpAndUnlock))
@@ -347,7 +347,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void redirectOrStart() async {
-    if (await widget.scooterService.getSavedScooter() == null && mounted) {
+    if (await widget.scooterService.getSavedScooter() == null) {
       Navigator.push(
         context,
         MaterialPageRoute(
