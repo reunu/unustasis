@@ -49,6 +49,7 @@ dependencies:
   package_info_plus: ^7.0.0
   http: ^1.2.1
   local_auth: ^2.2.0
+  url_launcher: ^6.2.6
 
 dev_dependencies:
   flutter_test:
@@ -112,6 +113,8 @@ flutter:
     - images/battery/batt_aux.webp
     - assets/i18n/en.json
     - assets/i18n/de.json
+    - assets/faq_en.json
+    - assets/faq_de.json
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware

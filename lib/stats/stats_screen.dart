@@ -21,6 +21,7 @@ import 'package:unustasis/scooter_service.dart';
 import 'package:unustasis/scooter_state.dart';
 import 'package:unustasis/stats/battery_section.dart';
 import 'package:unustasis/stats/range_section.dart';
+import 'package:unustasis/support_screen.dart';
 
 class StatsScreen extends StatefulWidget {
   const StatsScreen({required this.service, super.key});
@@ -296,11 +297,19 @@ class _StatsScreenState extends State<StatsScreen> {
                       ],
                     ),
                     // SETTINGS TAB
-                    ListView(
+                    ListView.separated(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shrinkWrap: true,
-                      children: [
+                      itemCount: 7,
+                      separatorBuilder: (context, index) => const Divider(
+                        indent: 16,
+                        endIndent: 16,
+                        height: 24,
+                        color: Colors.white10,
+                      ),
+                      itemBuilder: (context, index) => [
                         ListTile(
+                          leading: const Icon(Icons.color_lens_outlined),
                           title: Text(
                               FlutterI18n.translate(context, "settings_color")),
                           subtitle: DropdownButtonFormField(
@@ -315,38 +324,129 @@ class _StatsScreenState extends State<StatsScreen> {
                             items: [
                               DropdownMenuItem(
                                 value: 0,
-                                child: Text(FlutterI18n.translate(
-                                    context, "color_black")),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 16,
+                                      height: 16,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.black,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Text(FlutterI18n.translate(
+                                        context, "color_black")),
+                                  ],
+                                ),
                               ),
                               DropdownMenuItem(
                                 value: 1,
-                                child: Text(FlutterI18n.translate(
-                                    context, "color_white")),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 16,
+                                      height: 16,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.white,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Text(FlutterI18n.translate(
+                                        context, "color_white")),
+                                  ],
+                                ),
                               ),
                               DropdownMenuItem(
                                 value: 2,
-                                child: Text(FlutterI18n.translate(
-                                    context, "color_green")),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 16,
+                                      height: 16,
+                                      decoration: BoxDecoration(
+                                        color: Colors.green.shade900,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Text(FlutterI18n.translate(
+                                        context, "color_green")),
+                                  ],
+                                ),
                               ),
                               DropdownMenuItem(
                                 value: 3,
-                                child: Text(FlutterI18n.translate(
-                                    context, "color_gray")),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 16,
+                                      height: 16,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.grey,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Text(FlutterI18n.translate(
+                                        context, "color_gray")),
+                                  ],
+                                ),
                               ),
                               DropdownMenuItem(
                                 value: 4,
-                                child: Text(FlutterI18n.translate(
-                                    context, "color_orange")),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 16,
+                                      height: 16,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.deepOrange,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Text(FlutterI18n.translate(
+                                        context, "color_orange")),
+                                  ],
+                                ),
                               ),
                               DropdownMenuItem(
                                 value: 5,
-                                child: Text(FlutterI18n.translate(
-                                    context, "color_red")),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 16,
+                                      height: 16,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.red,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Text(FlutterI18n.translate(
+                                        context, "color_red")),
+                                  ],
+                                ),
                               ),
                               DropdownMenuItem(
                                 value: 6,
-                                child: Text(FlutterI18n.translate(
-                                    context, "color_blue")),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 16,
+                                      height: 16,
+                                      decoration: BoxDecoration(
+                                        color: Colors.blue.shade900,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Text(FlutterI18n.translate(
+                                        context, "color_blue")),
+                                  ],
+                                ),
                               ),
                             ],
                             onChanged: (newColor) {
@@ -355,6 +455,7 @@ class _StatsScreenState extends State<StatsScreen> {
                           ),
                         ),
                         ListTile(
+                          leading: const Icon(Icons.language_outlined),
                           title: Text(FlutterI18n.translate(
                               context, "settings_language")),
                           subtitle: DropdownButtonFormField(
@@ -396,6 +497,7 @@ class _StatsScreenState extends State<StatsScreen> {
                               if (biometricsOptionsSnap.hasData &&
                                   biometricsOptionsSnap.data!.isNotEmpty) {
                                 return SwitchListTile(
+                                  secondary: const Icon(Icons.lock_outlined),
                                   title: Text(FlutterI18n.translate(
                                       context, "settings_biometrics")),
                                   subtitle: Text(FlutterI18n.translate(context,
@@ -438,6 +540,7 @@ class _StatsScreenState extends State<StatsScreen> {
                               }
                             }),
                         SwitchListTile(
+                          secondary: const Icon(Icons.key_outlined),
                           title: Text(FlutterI18n.translate(
                               context, "settings_auto_unlock")),
                           subtitle: Text(FlutterI18n.translate(
@@ -454,6 +557,7 @@ class _StatsScreenState extends State<StatsScreen> {
                             future: PackageInfo.fromPlatform(),
                             builder: (context, packageInfo) {
                               return ListTile(
+                                leading: const Icon(Icons.info_outline),
                                 title: Text(FlutterI18n.translate(
                                     context, "settings_app_version")),
                                 subtitle: Text(packageInfo.hasData
@@ -461,6 +565,16 @@ class _StatsScreenState extends State<StatsScreen> {
                                     : "..."),
                               );
                             }),
+                        ListTile(
+                          leading: const Icon(Icons.help_outline),
+                          title: Text(FlutterI18n.translate(
+                              context, "settings_support")),
+                          onTap: () {
+                            Navigator.of(context).push(MaterialPageRoute(
+                                builder: (context) => const SupportScreen()));
+                          },
+                          trailing: const Icon(Icons.chevron_right),
+                        ),
                         Padding(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 32),
@@ -527,7 +641,7 @@ class _StatsScreenState extends State<StatsScreen> {
                             ),
                           ),
                         ),
-                      ],
+                      ][index],
                     )
                   ],
                 );

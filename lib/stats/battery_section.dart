@@ -308,11 +308,14 @@ class _BatterySectionState extends State<BatterySection> {
                   Expanded(
                     child: Image.asset(
                       type.imagePath(soc),
+                      fit: BoxFit.contain,
+                      alignment: Alignment.bottomCenter,
                     ),
                   ),
                 ],
               ),
             ),
+            const SizedBox(width: 16.0), // for padding
             Expanded(
               child: Column(
                 mainAxisSize: MainAxisSize.max,
@@ -321,6 +324,7 @@ class _BatterySectionState extends State<BatterySection> {
                 children: [
                   Text(
                     type.description(context),
+                    textAlign: TextAlign.end,
                     style: TextStyle(
                         fontWeight: FontWeight.w900,
                         fontSize: 12,

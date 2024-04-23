@@ -1,12 +1,16 @@
 {
-    "About": {
-        "Is this app made by Unu?": "No, Unustasis is entirely developed by independent volunteer Unu drivers and has no relation to Unu Motors. Neither does it use any code or official APIs by Unu.",
-        "What does 'Unustasis' mean?": "Unustasis comes from the ancient greek 'anástasis', which refers to a recovery from a debilitating condition. It can also mean rebirth, or resurrection.",
-        "How can I support?": "Unustasis is an open source project. Therefore you are more than welcome to contribute to the source code, just check out Unustasis on GitHub!"
-    },
     "Setup": {
         "My scooter isn't connecting": "If you want to pair the scooter with Unustasis for the first time, you must be standing next to the scooter when it is switched on. If you receive a pairing request but the scooter does not yet display a code, in most cases you can simply click away the request and continue with the pairing process. However, make sure that there is no other switched-on unu scooter in the vicinity.\n\nIf your scooter suddenly stops connecting, check whether it can still be opened with the key card. If not, there may be a fault with the scooter.",
         "Do I have to uninstall the official Unu app?": "No, both apps run completely independently of each other. On iOS, however, you may first have to remove the scooter from your saved devices in the system settings in order to be able to pair it again via Unustasis.",
         "Can multiple devices control the same scooter?": "Yes! You can pair the scooter with as many apps and devices as you like. This means that with shared scooters, anyone can pair their own cell phone with the scooter to unlock it. However, only one app can control the scooter at a time. So while you have Unustasis open, no other app (and no other device) has access to the scooter."
+    },
+    "Frequently asked questions": {
+        "Can this app fix the clock in my display?": "Unfortunately not. The scooter can only get its time from the Unu cloud, which has been shut down. This app can only control the scooter via Bluetooth, through which the time cannot be set.",
+        "Why doesn't this app display driving statistics?": "The scooter does not provide any information about the driving statistics via Bluetooth. While the scooter outputs some data via Bluetooth, it does not include things like odometer, speed or power output."
+    },
+    "About the app": {
+        "Is this app made by Unu?": "No, Unustasis is entirely developed by independent volunteer Unu drivers and has no relation to Unu Motors. Neither does it use any code or official APIs by Unu.",
+        "What does 'Unustasis' mean?": "Unustasis comes from the ancient greek 'anástasis', which refers to a recovery from a debilitating condition. It can also mean rebirth, or resurrection.",
+        "How can I support?": "Unustasis is an open source project. Therefore you are more than welcome to contribute to the source code, just check out Unustasis on GitHub!"
     }
 }
