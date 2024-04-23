@@ -93,7 +93,7 @@
     "settings_biometrics_description": "Fingerabdruck oder Gesichtserkennung zum Entsperren der App verlangen.",
     "biometrics_message": "Authentifizieren, um fortzufahren",
     "biometrics_failed": "Authentifizierung fehlgeschlagen",
-    "settings_auto_unlock": "Auto-unlock",
+    "settings_auto_unlock": "Keyless Start",
     "settings_auto_unlock_description": "Experimentell: Automatisch entsperren wenn die App offen und das Gerät direkt neben dem Roller ist.",
     "settings_support": "Hilfethemen",
     "settings_forget": "Roller entfernen",
