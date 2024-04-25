@@ -1,17 +1,13 @@
 import 'dart:async';
 import 'dart:developer';
-import 'dart:io';
-import 'dart:math' as math;
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:nfc_manager/nfc_manager.dart';
-import 'package:nfc_manager/platform_tags.dart';
+import 'package:maps_launcher/maps_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:latlong2/latlong.dart';
@@ -112,7 +108,7 @@ class _StatsScreenState extends State<StatsScreen> {
                     ),
                   ])),
           actions: [
-            _lastPingInfo(stream: widget.service.lastPing),
+            LastPingInfo(stream: widget.service.lastPing),
           ],
         ),
         body: Container(
@@ -210,6 +206,17 @@ class _StatsScreenState extends State<StatsScreen> {
                                           ? address.data!
                                           : FlutterI18n.translate(
                                               context, "stats_unknown")),
+                                      trailing: position.hasData
+                                          ? const Icon(
+                                              Icons.exit_to_app_outlined)
+                                          : null,
+                                      onTap: position.hasData
+                                          ? () {
+                                              MapsLauncher.launchCoordinates(
+                                                  position.data!.latitude,
+                                                  position.data!.longitude);
+                                            }
+                                          : null,
                                     );
                                   });
                             }),
@@ -332,6 +339,13 @@ class _StatsScreenState extends State<StatsScreen> {
                                       decoration: const BoxDecoration(
                                         color: Colors.black,
                                         shape: BoxShape.circle,
+                                        border: Border.fromBorderSide(
+                                          BorderSide(
+                                              color: Colors.white30,
+                                              width: 1,
+                                              strokeAlign: BorderSide
+                                                  .strokeAlignOutside),
+                                        ),
                                       ),
                                     ),
                                     const SizedBox(width: 16),
@@ -652,8 +666,8 @@ class _StatsScreenState extends State<StatsScreen> {
   }
 }
 
-class _lastPingInfo extends StatelessWidget {
-  const _lastPingInfo({
+class LastPingInfo extends StatelessWidget {
+  const LastPingInfo({
     super.key,
     required this.stream,
   });

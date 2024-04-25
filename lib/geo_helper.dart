@@ -14,6 +14,6 @@ class GeoHelper {
       return null;
     }
     Map<String, dynamic> json = jsonDecode(response.body);
-    return "${json['address']['road']} ${json['address']['house_number']}, ${json['address']['city']}";
+    return "${json['address']['road']} ${json['address']['house_number'] ?? ""}, ${json['address']['city']}";
   }
 }

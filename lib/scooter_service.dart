@@ -10,9 +10,9 @@ import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unustasis/flutter/blue_plus_mockable.dart';
 import 'package:unustasis/scooter_state.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 
-const BOOTING_TIME_SECONDS = 25;
+const bootingTimeSeconds = 25;
+const keylessCooldownSeconds = 60;
 
 class ScooterService {
   String? savedScooterId;
@@ -25,9 +25,11 @@ class ScooterService {
   bool _autoUnlock = false;
   bool _autoUnlockCooldown = false;
   SharedPreferences? prefs;
-  late Timer _locationTimer, _rssiTimer;
+  late Timer _locationTimer, _rssiTimer, _manualRefreshTimer;
+  bool optionalAuth = false;
 
   // some useful characteristsics to save
+  List<BluetoothCharacteristic> _characteristics = [];
   BluetoothCharacteristic? _commandCharacteristic;
   BluetoothCharacteristic? _hibernationCommandCharacteristic;
   BluetoothCharacteristic? _stateCharacteristic;
@@ -82,12 +84,21 @@ class ScooterService {
         if (_autoUnlock &&
             rssi > -65 &&
             _stateController.value == ScooterState.standby &&
-            !_autoUnlockCooldown) {
+            !_autoUnlockCooldown &&
+            optionalAuth) {
           unlock();
           _autoUnlockCooldown = true;
           await Future.delayed(const Duration(seconds: 5));
           _autoUnlockCooldown = false;
         }
+      }
+    });
+    _manualRefreshTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      if (myScooter != null && myScooter!.isConnected) {
+        // only refresh state and seatbox, for now
+        log("Auto-refresh...");
+        _stateCharacteristic!.read();
+        _seatCharacteristic!.read();
       }
     });
   }
@@ -381,6 +392,24 @@ class ScooterService {
           myScooter!,
           "9a5900e0-6e67-5d0d-aab9-ad9126b66f91",
           "9a5900f5-6e67-5d0d-aab9-ad9126b66f91");
+      // Set up the characteristics list
+      _characteristics = [
+        _commandCharacteristic!,
+        _hibernationCommandCharacteristic!,
+        _stateCharacteristic!,
+        _powerStateCharacteristic!,
+        _seatCharacteristic!,
+        _handlebarCharacteristic!,
+        _auxSOCCharacteristic!,
+        // _cbbRemainingCapCharacteristic!,
+        // _cbbFullCapCharacteristic!,
+        _cbbSOCCharacteristic!,
+        _cbbChargingCharacteristic!,
+        _primaryCyclesCharacteristic!,
+        _primarySOCCharacteristic!,
+        _secondaryCyclesCharacteristic!,
+        _secondarySOCCharacteristic!,
+      ];
       // subscribe to a bunch of values
       // Subscribe to state
       _subscribeString(_stateCharacteristic!, "State", (String value) {
@@ -558,8 +587,8 @@ class ScooterService {
   Future<void> wakeUpAndUnlock() async {
     wakeUp();
 
-    await _waitForScooterState(ScooterState.standby,
-        const Duration(seconds: BOOTING_TIME_SECONDS + 5));
+    await _waitForScooterState(
+        ScooterState.standby, const Duration(seconds: bootingTimeSeconds + 5));
 
     if (_stateController.value == ScooterState.standby) {
       unlock();
@@ -580,7 +609,7 @@ class ScooterService {
     _sendCommand("scooter:state lock");
     // don't immediately unlock again automatically
     _autoUnlockCooldown = true;
-    await Future.delayed(const Duration(seconds: 30));
+    await Future.delayed(const Duration(seconds: keylessCooldownSeconds));
     _autoUnlockCooldown = false;
   }
 

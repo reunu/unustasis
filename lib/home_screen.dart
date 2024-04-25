@@ -364,6 +364,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     SharedPreferences prefs = await SharedPreferences.getInstance();
     if (prefs.getBool("biometrics") ?? false) {
+      widget.scooterService.optionalAuth = false;
       final LocalAuthentication auth = LocalAuthentication();
       try {
         final bool didAuthenticate = await auth.authenticate(
@@ -374,6 +375,8 @@ class _HomeScreenState extends State<HomeScreen> {
               msg: FlutterI18n.translate(context, "biometrics_failed"));
           Navigator.of(context).pop();
           SystemNavigator.pop();
+        } else {
+          widget.scooterService.optionalAuth = true;
         }
       } catch (e) {
         Fluttertoast.showToast(

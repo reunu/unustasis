@@ -335,22 +335,29 @@ class _BatterySectionState extends State<BatterySection> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    "$soc%",
-                    style: Theme.of(context).textTheme.displayMedium,
+                    type.socText(soc, context),
+                    style: Theme.of(context).textTheme.displaySmall,
                     textScaler: TextScaler.noScaling,
                   ),
                   const SizedBox(height: 12.0),
-                  LinearProgressIndicator(
-                    value: soc / 100,
-                    borderRadius: BorderRadius.circular(16.0),
-                    minHeight: 16,
-                    backgroundColor: Colors.black.withOpacity(0.5),
-                    color: old
-                        ? Theme.of(context).colorScheme.surface
-                        : soc <= 15
-                            ? Colors.red
-                            : Theme.of(context).colorScheme.primary,
-                  ),
+                  type == BatteryType.aux
+                      ? _splitProgressBar(
+                          maxSteps: 4,
+                          currentStep: soc ~/ 25,
+                          context: context,
+                          old: old,
+                        )
+                      : LinearProgressIndicator(
+                          value: soc / 100,
+                          borderRadius: BorderRadius.circular(16.0),
+                          minHeight: 16,
+                          backgroundColor: Colors.black.withOpacity(0.5),
+                          color: old
+                              ? Theme.of(context).colorScheme.surface
+                              : soc <= 15
+                                  ? Colors.red
+                                  : Theme.of(context).colorScheme.primary,
+                        ),
                   const SizedBox(height: 8),
                 ],
               ),
@@ -358,6 +365,38 @@ class _BatterySectionState extends State<BatterySection> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _splitProgressBar(
+      {required int maxSteps,
+      required int currentStep,
+      required BuildContext context,
+      required bool old}) {
+    List<Widget> bars = [];
+    for (int i = 0; i < maxSteps; i++) {
+      bars.add(
+        Expanded(
+          child: Container(
+            height: 16,
+            decoration: BoxDecoration(
+              color: i < currentStep
+                  ? (old
+                      ? Theme.of(context).colorScheme.surface
+                      : Theme.of(context).colorScheme.primary)
+                  : Colors.black.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        ),
+      );
+      if (i < maxSteps - 1) {
+        bars.add(const SizedBox(width: 8));
+      }
+    }
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: bars,
     );
   }
 }
@@ -393,6 +432,24 @@ extension BatteryExtension on BatteryType {
       case BatteryType.nfc:
         return FlutterI18n.translate(context, "stats_nfc_desc");
     }
+  }
+
+  String socText(int soc, BuildContext context) {
+    if (this == BatteryType.aux) {
+      switch (soc ~/ 25) {
+        case 0:
+          return FlutterI18n.translate(context, "stats_aux_0");
+        case 1:
+          return FlutterI18n.translate(context, "stats_aux_25");
+        case 2:
+          return FlutterI18n.translate(context, "stats_aux_50");
+        case 3:
+          return FlutterI18n.translate(context, "stats_aux_75");
+        case 4:
+          return FlutterI18n.translate(context, "stats_aux_100");
+      }
+    }
+    return "$soc%";
   }
 
   String imagePath(int soc) {
