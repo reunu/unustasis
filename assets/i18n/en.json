@@ -100,6 +100,8 @@
     "biometrics_failed": "Authentication failed",
     "settings_auto_unlock": "Keyless start",
     "settings_auto_unlock_description": "Experimental: Automatically unlock the scooter when the app is open and the scooter is right next to you.",
+    "settings_open_seat_on_unlock": "Open seat on unlock",
+    "settings_open_seat_on_unlock_description": "Experimental: Automatically open the seat while the scooter is unlocking.",
     "settings_support": "Help & Support",
     "settings_forget": "Forget scooter",
     "forget_alert_title": "Forget scooter?",

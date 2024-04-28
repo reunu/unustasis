@@ -23,6 +23,7 @@ class ScooterService {
   bool _autoRestarting = false;
   bool _scanning = false;
   bool _autoUnlock = false;
+  bool _openSeatOnUnlock = false;
   bool _autoUnlockCooldown = false;
   SharedPreferences? prefs;
   late Timer _locationTimer, _rssiTimer, _manualRefreshTimer;
@@ -66,6 +67,7 @@ class ScooterService {
           double? lastLat = prefs.getDouble("lastLat");
           double? lastLon = prefs.getDouble("lastLon");
           _autoUnlock = prefs.getBool("autoUnlock") ?? false;
+          _openSeatOnUnlock = prefs.getBool("openSeatOnUnlock") ?? false;
           if (lastLat != null && lastLon != null) {
             _lastLocationController.add(LatLng(lastLat, lastLon));
           }
@@ -319,12 +321,18 @@ class ScooterService {
     _autoRestartSubscription.cancel();
   }
 
-  void setAutoUnlock(bool enable) {
-    _autoUnlock = enable;
-    prefs?.setBool("autoUnlock", enable);
+  void setAutoUnlock(bool enabled) {
+    _autoUnlock = enabled;
+    prefs?.setBool("autoUnlock", enabled);
+  }
+
+  void setOpenSeatOnUnlock(bool enabled) {
+    _openSeatOnUnlock = enabled;
+    prefs?.setBool("openSeatOnUnlock", enabled);
   }
 
   bool get autoUnlock => _autoUnlock;
+  bool get openSeatOnUnlock => _openSeatOnUnlock;
 
   Future<void> setUpCharacteristics(BluetoothDevice scooter) async {
     if (myScooter!.isDisconnected) {
@@ -582,6 +590,10 @@ class ScooterService {
 
   void unlock() {
     _sendCommand("scooter:state unlock");
+
+    if (_openSeatOnUnlock) {
+      openSeat();
+    }
   }
 
   Future<void> wakeUpAndUnlock() async {
