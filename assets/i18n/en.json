@@ -101,7 +101,7 @@
     "settings_auto_unlock": "Keyless start",
     "settings_auto_unlock_description": "Experimental: Automatically unlock the scooter when the app is open and the scooter is right next to you.",
     "settings_open_seat_on_unlock": "Open seat on unlock",
-    "settings_open_seat_on_unlock_description": "Experimental: Automatically open the seat while the scooter is unlocking.",
+    "settings_open_seat_on_unlock_description": "Automatically open the seat while the scooter is unlocking.",
     "settings_hazard_locking": "Hazard on (un)lock",
     "settings_hazard_locking_description": "Automatically hazard once on lock and twice on unlock.",
     "settings_support": "Help & Support",
