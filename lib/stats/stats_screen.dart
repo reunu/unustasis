@@ -33,6 +33,7 @@ class _StatsScreenState extends State<StatsScreen> {
   bool biometrics = false;
   bool autoUnlock = false;
   bool openSeatOnUnlock = false;
+  bool hazardLocking = false;
 
   @override
   void initState() {
@@ -46,6 +47,7 @@ class _StatsScreenState extends State<StatsScreen> {
       color = prefs.getInt("color") ?? 0;
       biometrics = prefs.getBool("biometrics") ?? false;
       openSeatOnUnlock = widget.service.openSeatOnUnlock;
+      hazardLocking = widget.service.hazardLocking;
     });
   }
 
@@ -579,6 +581,20 @@ class _StatsScreenState extends State<StatsScreen> {
                             widget.service.setOpenSeatOnUnlock(value);
                             setState(() {
                               openSeatOnUnlock = value;
+                            });
+                          },
+                        ),
+                        SwitchListTile(
+                          secondary: const Icon(Icons.code_rounded),
+                          title: Text(FlutterI18n.translate(
+                              context, "settings_hazard_locking")),
+                          subtitle: Text(FlutterI18n.translate(
+                              context, "settings_hazard_locking_description")),
+                          value: hazardLocking,
+                          onChanged: (value) async {
+                            widget.service.setHazardLocking(value);
+                            setState(() {
+                              hazardLocking = value;
                             });
                           },
                         ),

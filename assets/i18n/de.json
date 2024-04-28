@@ -102,6 +102,8 @@
     "settings_auto_unlock_description": "Experimentell: Automatisch entsperren, wenn die App offen und das Gerät direkt neben dem Roller ist.",
     "settings_open_seat_on_unlock": "Öffne Sitz während Entriegeln",
     "settings_open_seat_on_unlock_description": "Experimentell: Automatisches Öffnen des Siztes, wenn der Roller entriegelt wird.",
+    "settings_hazard_locking": "Blinke bei Entriegeln und Abschließen",
+    "settings_hazard_locking_description": "Scooter blinkt einmal beim Abschließen und zweimal beim Entriegeln.",
     "settings_support": "Hilfethemen",
     "settings_forget": "Roller entfernen",
     "forget_alert_title": "Roller entfernen?",
