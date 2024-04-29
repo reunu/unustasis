@@ -32,6 +32,7 @@ class _StatsScreenState extends State<StatsScreen> {
   int color = 0;
   bool biometrics = false;
   bool autoUnlock = false;
+  int autoUnlockThreshold = -65;
   bool openSeatOnUnlock = false;
   bool hazardLocking = false;
 
@@ -46,6 +47,8 @@ class _StatsScreenState extends State<StatsScreen> {
     setState(() {
       color = prefs.getInt("color") ?? 0;
       biometrics = prefs.getBool("biometrics") ?? false;
+      autoUnlock = widget.service.autoUnlock;
+      autoUnlockThreshold = widget.service.autoUnlockThreshold;
       openSeatOnUnlock = widget.service.openSeatOnUnlock;
       hazardLocking = widget.service.hazardLocking;
     });
@@ -570,12 +573,31 @@ class _StatsScreenState extends State<StatsScreen> {
                             });
                           },
                         ),
+                        if (autoUnlock)
+                          ListTile(
+                            title: Text(
+                                "${FlutterI18n.translate(context, "settings_auto_unlock_threshold")}: ${_thresholdToString(autoUnlockThreshold)}"),
+                            subtitle: Slider(
+                              value: autoUnlockThreshold.toDouble(),
+                              min: -75,
+                              max: -55,
+                              divisions: 2,
+                              label: "$autoUnlockThreshold dBm",
+                              onChanged: (value) async {
+                                widget.service
+                                    .setAutoUnlockThreshold(value.toInt());
+                                setState(() {
+                                  autoUnlockThreshold = value.toInt();
+                                });
+                              },
+                            ),
+                          ),
                         SwitchListTile(
                           secondary: const Icon(Icons.work_outline),
                           title: Text(FlutterI18n.translate(
                               context, "settings_open_seat_on_unlock")),
-                          subtitle: Text(FlutterI18n.translate(
-                              context, "settings_open_seat_on_unlock_description")),
+                          subtitle: Text(FlutterI18n.translate(context,
+                              "settings_open_seat_on_unlock_description")),
                           value: openSeatOnUnlock,
                           onChanged: (value) async {
                             widget.service.setOpenSeatOnUnlock(value);
@@ -694,6 +716,18 @@ class _StatsScreenState extends State<StatsScreen> {
         ),
       ),
     );
+  }
+
+  String _thresholdToString(int threshold) {
+    if (threshold == -55) {
+      return FlutterI18n.translate(context, "auto_unlock_threshold_hard");
+    } else if (threshold == -65) {
+      return FlutterI18n.translate(context, "auto_unlock_threshold_regular");
+    } else if (threshold == -75) {
+      return FlutterI18n.translate(context, "auto_unlock_threshold_easy");
+    } else {
+      return "$threshold dBm";
+    }
   }
 }
 

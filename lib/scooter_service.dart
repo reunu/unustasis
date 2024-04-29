@@ -25,6 +25,7 @@ class ScooterService {
   bool _autoRestarting = false;
   bool _scanning = false;
   bool _autoUnlock = false;
+  int _autoUnlockThreshold = -65;
   bool _openSeatOnUnlock = false;
   bool _hazardLocking = false;
   bool _autoUnlockCooldown = false;
@@ -70,6 +71,7 @@ class ScooterService {
           double? lastLat = prefs.getDouble("lastLat");
           double? lastLon = prefs.getDouble("lastLon");
           _autoUnlock = prefs.getBool("autoUnlock") ?? false;
+          _autoUnlockThreshold = prefs.getInt("autoUnlockThreshold") ?? -65;
           _openSeatOnUnlock = prefs.getBool("openSeatOnUnlock") ?? false;
           _hazardLocking = prefs.getBool("hazardLocking") ?? false;
           if (lastLat != null && lastLon != null) {
@@ -88,7 +90,7 @@ class ScooterService {
       if (myScooter != null && myScooter!.isConnected) {
         int rssi = await myScooter!.readRssi();
         if (_autoUnlock &&
-            rssi > -65 &&
+            rssi > _autoUnlockThreshold &&
             _stateController.value == ScooterState.standby &&
             !_autoUnlockCooldown &&
             optionalAuth) {
@@ -330,6 +332,11 @@ class ScooterService {
     prefs?.setBool("autoUnlock", enabled);
   }
 
+  void setAutoUnlockThreshold(int threshold) {
+    _autoUnlockThreshold = threshold;
+    prefs?.setInt("autoUnlockThreshold", threshold);
+  }
+
   void setOpenSeatOnUnlock(bool enabled) {
     _openSeatOnUnlock = enabled;
     prefs?.setBool("openSeatOnUnlock", enabled);
@@ -341,6 +348,7 @@ class ScooterService {
   }
 
   bool get autoUnlock => _autoUnlock;
+  int get autoUnlockThreshold => _autoUnlockThreshold;
   bool get openSeatOnUnlock => _openSeatOnUnlock;
   bool get hazardLocking => _hazardLocking;
 
@@ -569,7 +577,8 @@ class ScooterService {
     log("Update scooter state from state: '$_state' and power state: '$_powerState'");
     if (_state != null && _powerState != null) {
       ScooterPowerState powerState = ScooterPowerState.fromString(_powerState);
-      ScooterState newState = ScooterState.fromStateAndPowerState(_state!, powerState);
+      ScooterState newState =
+          ScooterState.fromStateAndPowerState(_state!, powerState);
       _stateController.add(newState);
     }
   }
@@ -649,7 +658,7 @@ class ScooterService {
 
   Future<void> hazard({int times = 1}) async {
     blink(left: true, right: true);
-    await _sleepSeconds((0.6)*times);
+    await _sleepSeconds((0.6) * times);
     blink(left: false, right: false);
   }
 
@@ -825,6 +834,6 @@ class ScooterService {
   }
 
   Future<void> _sleepSeconds(double seconds) async {
-    await Future.delayed(Duration(milliseconds: (seconds*1000).floor()));
+    await Future.delayed(Duration(milliseconds: (seconds * 1000).floor()));
   }
 }

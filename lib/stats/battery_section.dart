@@ -91,22 +91,20 @@ class _BatterySectionState extends State<BatterySection> {
           },
         ),
         // hiding until it properly works
-        Platform.isWindows
-            ? const Divider(
-                height: 40,
-                indent: 12,
-                endIndent: 12,
-                color: Colors.white24,
-              )
-            : Container(),
-        nfcBattery != 0 && nfcBattery != null && !nfcScanning
-            ? _batteryCard(
-                type: BatteryType.nfc,
-                soc: nfcBattery ?? 0,
-                cycles: nfcCycles,
-                old: false,
-              )
-            : Container(),
+        if (Platform.isWindows)
+          const Divider(
+            height: 40,
+            indent: 12,
+            endIndent: 12,
+            color: Colors.white24,
+          ),
+        if (nfcBattery != 0 && nfcBattery != null && !nfcScanning)
+          _batteryCard(
+            type: BatteryType.nfc,
+            soc: nfcBattery ?? 0,
+            cycles: nfcCycles,
+            old: false,
+          ),
         nfcScanning
             ? Padding(
                 padding: const EdgeInsets.all(16),
@@ -121,12 +119,11 @@ class _BatterySectionState extends State<BatterySection> {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
-                    showNfcNotice
-                        ? Text(
-                            FlutterI18n.translate(context, "stats_nfc_notice"),
-                            textAlign: TextAlign.center,
-                          )
-                        : Container(),
+                    if (showNfcNotice)
+                      Text(
+                        FlutterI18n.translate(context, "stats_nfc_notice"),
+                        textAlign: TextAlign.center,
+                      ),
                   ],
                 ))
             : Platform.isWindows
@@ -273,33 +270,31 @@ class _BatterySectionState extends State<BatterySection> {
                             .onBackground
                             .withOpacity(0.5)),
                   ),
-                  (cycles != null && cycles > 0)
-                      ? Row(
-                          children: [
-                            const Icon(
-                              Icons.refresh,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              FlutterI18n.translate(context, "stats_cycles",
-                                  translationParams: {
-                                    "cycles": cycles.toString(),
-                                  }),
-                            ),
-                          ],
-                        )
-                      : Container(),
-                  type == BatteryType.cbb
-                      ? charging != null
-                          ? Text(FlutterI18n.translate(
-                              context,
-                              charging
-                                  ? "stats_cbb_charging"
-                                  : "stats_cbb_not_charging"))
-                          : const Text("   ")
-                      : Container(),
-                  type == BatteryType.aux ? const Text("    ") : Container(),
+                  if (cycles != null && cycles > 0)
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.refresh,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          FlutterI18n.translate(context, "stats_cycles",
+                              translationParams: {
+                                "cycles": cycles.toString(),
+                              }),
+                        ),
+                      ],
+                    ),
+                  if (type == BatteryType.cbb)
+                    (charging != null)
+                        ? Text(FlutterI18n.translate(
+                            context,
+                            charging
+                                ? "stats_cbb_charging"
+                                : "stats_cbb_not_charging"))
+                        : const Text("   "),
+                  if (type == BatteryType.aux) const Text("    "),
                   SizedBox(
                       height:
                           (type == BatteryType.aux || type == BatteryType.cbb)

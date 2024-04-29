@@ -126,6 +126,7 @@ class RangeSection extends StatelessWidget {
                     "~${range}km",
                     style: Theme.of(context).textTheme.headlineMedium,
                     textScaler: TextScaler.noScaling,
+                    textAlign: TextAlign.end,
                   ),
                   fullPowerRange > 0
                       ? Text(
@@ -136,12 +137,14 @@ class RangeSection extends StatelessWidget {
                               }),
                           style: Theme.of(context).textTheme.titleMedium,
                           textScaler: TextScaler.noScaling,
+                          textAlign: TextAlign.end,
                         )
                       : Text(
                           FlutterI18n.translate(
                               context, "stats_range_throttled"),
                           style: Theme.of(context).textTheme.titleMedium,
                           textScaler: TextScaler.noScaling,
+                          textAlign: TextAlign.end,
                         ),
                   const SizedBox(height: 16),
                 ],
@@ -217,6 +220,7 @@ class RangeSection extends StatelessWidget {
                     "~${range}km",
                     style: Theme.of(context).textTheme.displayMedium,
                     textScaler: TextScaler.noScaling,
+                    textAlign: TextAlign.end,
                   ),
                   const SizedBox(height: 4),
                   fullPowerRange > 0
@@ -228,10 +232,12 @@ class RangeSection extends StatelessWidget {
                               }),
                           style: Theme.of(context).textTheme.titleMedium,
                           textScaler: TextScaler.noScaling,
+                          textAlign: TextAlign.end,
                         )
                       : Text(
                           FlutterI18n.translate(
                               context, "stats_range_throttled"),
+                          textAlign: TextAlign.end,
                         ),
                 ],
               ),

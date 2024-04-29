@@ -131,27 +131,26 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             }),
           ),
           const SizedBox(height: 40),
-          !_scanning
-              ? ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(
-                        60), // fromHeight use double.infinity as width and 40 is the height
+          if (!_scanning)
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size.fromHeight(
+                    60), // fromHeight use double.infinity as width and 40 is the height
+              ),
+              onPressed: () {
+                log("Retrying");
+                widget.service.start();
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  FlutterI18n.translate(context, "onboarding_step2_button"),
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onBackground,
                   ),
-                  onPressed: () {
-                    log("Retrying");
-                    widget.service.start();
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Text(
-                      FlutterI18n.translate(context, "onboarding_step2_button"),
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onBackground,
-                      ),
-                    ),
-                  ),
-                )
-              : Container(),
+                ),
+              ),
+            ),
         ];
       case 3:
         return [
