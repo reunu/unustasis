@@ -32,6 +32,8 @@ class _StatsScreenState extends State<StatsScreen> {
   int color = 0;
   bool biometrics = false;
   bool autoUnlock = false;
+  bool openSeatOnUnlock = false;
+  bool hazardLocking = false;
 
   @override
   void initState() {
@@ -44,7 +46,8 @@ class _StatsScreenState extends State<StatsScreen> {
     setState(() {
       color = prefs.getInt("color") ?? 0;
       biometrics = prefs.getBool("biometrics") ?? false;
-      autoUnlock = widget.service.autoUnlock;
+      openSeatOnUnlock = widget.service.openSeatOnUnlock;
+      hazardLocking = widget.service.hazardLocking;
     });
   }
 
@@ -564,6 +567,34 @@ class _StatsScreenState extends State<StatsScreen> {
                             widget.service.setAutoUnlock(value);
                             setState(() {
                               autoUnlock = value;
+                            });
+                          },
+                        ),
+                        SwitchListTile(
+                          secondary: const Icon(Icons.work_outline),
+                          title: Text(FlutterI18n.translate(
+                              context, "settings_open_seat_on_unlock")),
+                          subtitle: Text(FlutterI18n.translate(
+                              context, "settings_open_seat_on_unlock_description")),
+                          value: openSeatOnUnlock,
+                          onChanged: (value) async {
+                            widget.service.setOpenSeatOnUnlock(value);
+                            setState(() {
+                              openSeatOnUnlock = value;
+                            });
+                          },
+                        ),
+                        SwitchListTile(
+                          secondary: const Icon(Icons.code_rounded),
+                          title: Text(FlutterI18n.translate(
+                              context, "settings_hazard_locking")),
+                          subtitle: Text(FlutterI18n.translate(
+                              context, "settings_hazard_locking_description")),
+                          value: hazardLocking,
+                          onChanged: (value) async {
+                            widget.service.setHazardLocking(value);
+                            setState(() {
+                              hazardLocking = value;
                             });
                           },
                         ),
