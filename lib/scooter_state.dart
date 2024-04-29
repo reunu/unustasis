@@ -25,7 +25,7 @@ enum ScooterState {
       return ScooterState.hibernatingImminent;
     }
 
-    if (powerState == "booting") {
+    if (state == "off" && powerState == "booting") {
       return ScooterState.booting;
     }
 
