@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:unustasis/domain/scooter_power_state.dart';
 
 enum ScooterState {
   standby,
@@ -16,8 +17,20 @@ enum ScooterState {
   linking,
   disconnected;
 
-  static ScooterState fromString(String stateString) {
-    switch (stateString) {
+  static ScooterState fromStateAndPowerState(String state, ScooterPowerState powerState) {
+    if (powerState == ScooterPowerState.hibernating) {
+      return ScooterState.hibernating;
+    }
+
+    if (powerState == ScooterPowerState.hibernatingImminent) {
+      return ScooterState.hibernatingImminent;
+    }
+
+    if (state == "off" && powerState == ScooterPowerState.booting) {
+      return ScooterState.booting;
+    }
+
+    switch (state) {
       case "stand-by":
         return ScooterState.standby;
       case "off":
@@ -35,10 +48,10 @@ enum ScooterState {
       case "booting":
         return ScooterState.booting;
       case "":
-        // this is somethimes sent during standby, off or hibernating...
+        // this is sometimes sent during standby, off or hibernating...
         return ScooterState.unknown;
       default:
-        log("Unknown state: $stateString");
+        log("Unknown state: $state");
         return ScooterState.unknown;
     }
   }

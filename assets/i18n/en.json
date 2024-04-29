@@ -26,7 +26,7 @@
     "state_name_standby": "Standby",
     "state_name_off": "Powered off",
     "state_name_parked": "Parked",
-    "state_name_shutting_down": "Shutting down",
+    "state_name_shutting_down": "Shutting down...",
     "state_name_ready": "Ready",
     "state_name_hibernating": "Hibernating",
     "state_name_hibernating_imminent": "Hibernating...",

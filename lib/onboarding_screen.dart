@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:unustasis/scooter_service.dart';
-import 'package:unustasis/scooter_state.dart';
+import 'package:unustasis/domain/scooter_state.dart';
 import 'package:unustasis/scooter_visual.dart';
 import 'package:unustasis/support_screen.dart';
 
