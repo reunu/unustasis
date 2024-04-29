@@ -25,6 +25,8 @@ class ScooterService {
   bool _autoRestarting = false;
   bool _scanning = false;
   bool _autoUnlock = false;
+  bool _openSeatOnUnlock = false;
+  bool _hazardLocking = false;
   bool _autoUnlockCooldown = false;
   SharedPreferences? prefs;
   late Timer _locationTimer, _rssiTimer, _manualRefreshTimer;
@@ -68,6 +70,8 @@ class ScooterService {
           double? lastLat = prefs.getDouble("lastLat");
           double? lastLon = prefs.getDouble("lastLon");
           _autoUnlock = prefs.getBool("autoUnlock") ?? false;
+          _openSeatOnUnlock = prefs.getBool("openSeatOnUnlock") ?? false;
+          _hazardLocking = prefs.getBool("hazardLocking") ?? false;
           if (lastLat != null && lastLon != null) {
             _lastLocationController.add(LatLng(lastLat, lastLon));
           }
@@ -321,12 +325,24 @@ class ScooterService {
     _autoRestartSubscription.cancel();
   }
 
-  void setAutoUnlock(bool enable) {
-    _autoUnlock = enable;
-    prefs?.setBool("autoUnlock", enable);
+  void setAutoUnlock(bool enabled) {
+    _autoUnlock = enabled;
+    prefs?.setBool("autoUnlock", enabled);
+  }
+
+  void setOpenSeatOnUnlock(bool enabled) {
+    _openSeatOnUnlock = enabled;
+    prefs?.setBool("openSeatOnUnlock", enabled);
+  }
+
+  void setHazardLocking(bool enabled) {
+    _hazardLocking = enabled;
+    prefs?.setBool("hazardLocking", enabled);
   }
 
   bool get autoUnlock => _autoUnlock;
+  bool get openSeatOnUnlock => _openSeatOnUnlock;
+  bool get hazardLocking => _hazardLocking;
 
   Future<void> setUpCharacteristics(BluetoothDevice scooter) async {
     if (myScooter!.isDisconnected) {
@@ -572,6 +588,14 @@ class ScooterService {
 
   void unlock() {
     _sendCommand("scooter:state unlock");
+
+    if (_hazardLocking) {
+      hazard(times: 2);
+    }
+
+    if (_openSeatOnUnlock) {
+      openSeat();
+    }
   }
 
   Future<void> wakeUpAndUnlock() async {
@@ -591,15 +615,19 @@ class ScooterService {
       // make really sure nothing has changed
       await _seatCharacteristic!.read();
       if (_seatClosedController.value == false) {
-        log("Yup, it's open.");
+        log("Locking aborted, because seat is open!");
         throw "SEAT_OPEN";
       }
     }
-    log("Sending command");
     _sendCommand("scooter:state lock");
+
+    if (_hazardLocking) {
+      hazard(times: 1);
+    }
+
     // don't immediately unlock again automatically
     _autoUnlockCooldown = true;
-    await Future.delayed(const Duration(seconds: keylessCooldownSeconds));
+    await _sleepSeconds(keylessCooldownSeconds.toDouble());
     _autoUnlockCooldown = false;
   }
 
@@ -617,6 +645,12 @@ class ScooterService {
     } else {
       _sendCommand("scooter:blinker off");
     }
+  }
+
+  Future<void> hazard({int times = 1}) async {
+    blink(left: true, right: true);
+    await _sleepSeconds((0.6)*times);
+    blink(left: false, right: false);
   }
 
   Future<void> wakeUp() async {
@@ -788,5 +822,9 @@ class ScooterService {
         (uint32data[2] << 16) +
         (uint32data[1] << 8) +
         uint32data[0];
+  }
+
+  Future<void> _sleepSeconds(double seconds) async {
+    await Future.delayed(Duration(milliseconds: (seconds*1000).floor()));
   }
 }
