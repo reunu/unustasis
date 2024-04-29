@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:unustasis/scooter_state.dart';
+import 'package:unustasis/domain/scooter_state.dart';
 
 class ScooterVisual extends StatelessWidget {
   final ScooterState? state;

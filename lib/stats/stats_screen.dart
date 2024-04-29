@@ -14,7 +14,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:unustasis/geo_helper.dart';
 import 'package:unustasis/onboarding_screen.dart';
 import 'package:unustasis/scooter_service.dart';
-import 'package:unustasis/scooter_state.dart';
+import 'package:unustasis/domain/scooter_state.dart';
 import 'package:unustasis/stats/battery_section.dart';
 import 'package:unustasis/stats/range_section.dart';
 import 'package:unustasis/support_screen.dart';

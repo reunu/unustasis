@@ -10,7 +10,7 @@ import 'package:unustasis/control_screen.dart';
 import 'package:unustasis/driving_screen.dart';
 import 'package:unustasis/onboarding_screen.dart';
 import 'package:unustasis/scooter_service.dart';
-import 'package:unustasis/scooter_state.dart';
+import 'package:unustasis/domain/scooter_state.dart';
 import 'package:unustasis/scooter_visual.dart';
 import 'package:unustasis/stats/stats_screen.dart';
 
