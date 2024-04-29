@@ -15,7 +15,15 @@ If you just want to use this app, go into the "Releases" section on this page an
 
 ### Building this app yourself
 
-This app is made in Flutter for cross-platform functionality, UI performance, and rapid development. To build it on your system, [follow this getting-started guide](https://docs.flutter.dev/get-started/install) to install the Flutter SDK and required Android or iOS SDKs, then run  `flutter run` in the root of this project.
+This app is made in Flutter for cross-platform functionality, UI performance, and rapid development. To build it on your system, [follow this getting-started guide](https://docs.flutter.dev/get-started/install) to install the Flutter SDK and required Android or iOS SDKs.
+
+Run the following command  in the root of this project to install and start the development version on your device:
+
+```
+flutter run --dart-define='STADIA_TOKEN=<your-api-key>'
+```
+
+You can create your Stadia Maps API key [here](https://stadiamaps.com).
 
 ### Contributing
 
