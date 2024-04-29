@@ -548,22 +548,9 @@ class ScooterService {
   }
 
   Future<void> _updateScooterState() async {
-    var powerState = _powerState;
-    log("Update scooter state from state: '$_state' and power state: '$powerState'");
-    if (_state != null && powerState == "hibernating") {
-      _stateController.add(ScooterState.hibernating);
-      return;
-    }
-    if (_state != null && powerState == "hibernating-imminent") {
-      _stateController.add(ScooterState.hibernatingImminent);
-      return;
-    }
-    if (_state != null && powerState == "booting") {
-      _stateController.add(ScooterState.booting);
-      return;
-    }
-    if (_state != null) {
-      ScooterState newState = ScooterState.fromString(_state!);
+    log("Update scooter state from state: '$_state' and power state: '$_powerState'");
+    if (_state != null && _powerState != null) {
+      ScooterState newState = ScooterState.fromStateAndPowerState(_state!, _powerState!);
       _stateController.add(newState);
     }
   }

@@ -16,8 +16,20 @@ enum ScooterState {
   linking,
   disconnected;
 
-  static ScooterState fromString(String stateString) {
-    switch (stateString) {
+  static ScooterState fromStateAndPowerState(String state, String powerState) {
+    if (powerState == "hibernating") {
+      return ScooterState.hibernating;
+    }
+
+    if (powerState == "hibernating-imminent") {
+      return ScooterState.hibernatingImminent;
+    }
+
+    if (powerState == "booting") {
+      return ScooterState.booting;
+    }
+
+    switch (state) {
       case "stand-by":
         return ScooterState.standby;
       case "off":
@@ -35,10 +47,10 @@ enum ScooterState {
       case "booting":
         return ScooterState.booting;
       case "":
-        // this is somethimes sent during standby, off or hibernating...
+        // this is sometimes sent during standby, off or hibernating...
         return ScooterState.unknown;
       default:
-        log("Unknown state: $stateString");
+        log("Unknown state: $state");
         return ScooterState.unknown;
     }
   }
