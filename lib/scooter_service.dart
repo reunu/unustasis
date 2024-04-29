@@ -8,7 +8,9 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unustasis/domain/scooter_power_state.dart';
 import 'package:unustasis/flutter/blue_plus_mockable.dart';
+import 'package:unustasis/home_screen.dart';
 import 'package:unustasis/scooter_state.dart';
 
 const bootingTimeSeconds = 25;
@@ -550,7 +552,8 @@ class ScooterService {
   Future<void> _updateScooterState() async {
     log("Update scooter state from state: '$_state' and power state: '$_powerState'");
     if (_state != null && _powerState != null) {
-      ScooterState newState = ScooterState.fromStateAndPowerState(_state!, _powerState!);
+      ScooterPowerState powerState = ScooterPowerState.fromString(_powerState);
+      ScooterState newState = ScooterState.fromStateAndPowerState(_state!, powerState);
       _stateController.add(newState);
     }
   }

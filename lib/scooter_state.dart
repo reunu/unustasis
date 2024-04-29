@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:unustasis/domain/scooter_power_state.dart';
 
 enum ScooterState {
   standby,
@@ -16,16 +17,16 @@ enum ScooterState {
   linking,
   disconnected;
 
-  static ScooterState fromStateAndPowerState(String state, String powerState) {
-    if (powerState == "hibernating") {
+  static ScooterState fromStateAndPowerState(String state, ScooterPowerState powerState) {
+    if (powerState == ScooterPowerState.hibernating) {
       return ScooterState.hibernating;
     }
 
-    if (powerState == "hibernating-imminent") {
+    if (powerState == ScooterPowerState.hibernatingImminent) {
       return ScooterState.hibernatingImminent;
     }
 
-    if (state == "off" && powerState == "booting") {
+    if (state == "off" && powerState == ScooterPowerState.booting) {
       return ScooterState.booting;
     }
 
