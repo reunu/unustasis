@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
@@ -72,6 +73,8 @@ class ScooterService {
           double? lastLon = prefs.getDouble("lastLon");
           _autoUnlock = prefs.getBool("autoUnlock") ?? false;
           _autoUnlockThreshold = prefs.getInt("autoUnlockThreshold") ?? -65;
+          // if biometrics are disabled, we can treat everything as authenticated
+          optionalAuth = !(prefs.getBool("biometrics") ?? false);
           _openSeatOnUnlock = prefs.getBool("openSeatOnUnlock") ?? false;
           _hazardLocking = prefs.getBool("hazardLocking") ?? false;
           if (lastLat != null && lastLon != null) {
@@ -96,7 +99,7 @@ class ScooterService {
             optionalAuth) {
           unlock();
           _autoUnlockCooldown = true;
-          await Future.delayed(const Duration(seconds: 5));
+          await Future.delayed(const Duration(seconds: keylessCooldownSeconds));
           _autoUnlockCooldown = false;
         }
       }
@@ -597,6 +600,7 @@ class ScooterService {
 
   void unlock() {
     _sendCommand("scooter:state unlock");
+    HapticFeedback.heavyImpact();
 
     if (_hazardLocking) {
       hazard(times: 2);
@@ -629,6 +633,7 @@ class ScooterService {
       }
     }
     _sendCommand("scooter:state lock");
+    HapticFeedback.heavyImpact();
 
     if (_hazardLocking) {
       hazard(times: 1);
@@ -816,6 +821,7 @@ class ScooterService {
     _lastPingController.close();
     _locationTimer.cancel();
     _rssiTimer.cancel();
+    _manualRefreshTimer.cancel();
   }
 
   // thanks gemini advanced <3

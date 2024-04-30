@@ -378,6 +378,8 @@ class _HomeScreenState extends State<HomeScreen> {
         Navigator.of(context).pop();
         SystemNavigator.pop();
       }
+    } else {
+      widget.scooterService.optionalAuth = true;
     }
   }
 }
