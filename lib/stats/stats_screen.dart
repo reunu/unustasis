@@ -579,7 +579,7 @@ class _StatsScreenState extends State<StatsScreen> {
                         if (autoUnlock)
                           ListTile(
                             title: Text(
-                                "${FlutterI18n.translate(context, "settings_auto_unlock_threshold")}: ${FlutterI18n.translate(context, autoUnlockDistance.translationKey)}"),
+                                "${FlutterI18n.translate(context, "settings_auto_unlock_threshold")}: ${autoUnlockDistance.name(context)}"),
                             subtitle: Slider(
                               value: autoUnlockDistance.threshold.toDouble(),
                               min: ScooterKeylessDistance

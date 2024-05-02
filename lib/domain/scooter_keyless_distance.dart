@@ -1,3 +1,6 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
+
 enum ScooterKeylessDistance {
   // Important: ensure all thresholds are equally spread
   close(-55, "auto_unlock_threshold_close"),
@@ -5,10 +8,10 @@ enum ScooterKeylessDistance {
   far(-75, "auto_unlock_threshold_far"),
   veryFar(-85, "auto_unlock_threshold_very_far");
 
-  const ScooterKeylessDistance(this.threshold, this.translationKey);
+  const ScooterKeylessDistance(this.threshold, this._translationKey);
 
   final int threshold;
-  final String translationKey;
+  final String _translationKey;
 
   static fromThreshold(int threshold) {
     return ScooterKeylessDistance.values
@@ -25,5 +28,9 @@ enum ScooterKeylessDistance {
 
   String getFormattedThreshold() {
     return "$threshold dBm";
+  }
+
+  String name(BuildContext context) {
+    return FlutterI18n.translate(context, _translationKey);
   }
 }
