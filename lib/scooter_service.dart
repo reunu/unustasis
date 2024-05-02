@@ -72,7 +72,8 @@ class ScooterService {
           double? lastLat = prefs.getDouble("lastLat");
           double? lastLon = prefs.getDouble("lastLon");
           _autoUnlock = prefs.getBool("autoUnlock") ?? false;
-          _autoUnlockThreshold = prefs.getInt("autoUnlockThreshold") ?? ScooterKeylessDistance.regular.threshold;
+          _autoUnlockThreshold = prefs.getInt("autoUnlockThreshold") ??
+              ScooterKeylessDistance.regular.threshold;
           // if biometrics are disabled, we can treat everything as authenticated
           optionalAuth = !(prefs.getBool("biometrics") ?? false);
           _openSeatOnUnlock = prefs.getBool("openSeatOnUnlock") ?? false;
@@ -91,8 +92,14 @@ class ScooterService {
     });
     _rssiTimer = Timer.periodic(const Duration(seconds: 1), (timer) async {
       if (myScooter != null && myScooter!.isConnected) {
-        int rssi = await myScooter!.readRssi();
+        int? rssi;
+        try {
+          rssi = await myScooter!.readRssi();
+        } catch (e) {
+          // probably not connected anymore
+        }
         if (_autoUnlock &&
+            rssi != null &&
             rssi > _autoUnlockThreshold &&
             _stateController.value == ScooterState.standby &&
             !_autoUnlockCooldown &&
@@ -182,6 +189,16 @@ class ScooterService {
 
   // MAIN FUNCTIONS
 
+  Future<BluetoothDevice> findEligibleScooter() async {
+    List<BluetoothDevice> foundScooters = await getSystemScooters();
+    if (foundScooters.isNotEmpty) {
+      return foundScooters.first;
+    }
+    BluetoothDevice found = await getNearbyScooters().first;
+    flutterBluePlus.stopScan();
+    return found;
+  }
+
   Future<List<BluetoothDevice>> getSystemScooters() async {
     // See if the phone is already connected to a scooter. If so, hook into that.
     List<BluetoothDevice> systemDevices = await flutterBluePlus.systemDevices;
@@ -231,6 +248,7 @@ class ScooterService {
     // TODO: Turn on bluetooth if it's off, or prompt the user to do so on iOS
     // Cleanup in case this is a restart
     _connectedController.add(false);
+    _stateController.add(ScooterState.disconnected);
     if (myScooter != null) {
       myScooter!.disconnect();
     }
@@ -300,6 +318,27 @@ class ScooterService {
     }
     if (restart) {
       startAutoRestart();
+    }
+  }
+
+  void startWithFoundDevice({required BluetoothDevice device}) async {
+    try {
+      await device.connect();
+      myScooter = device;
+      setSavedScooter(device.remoteId.toString());
+      await setUpCharacteristics(device);
+      // save this as the last known location
+      _pollLocation();
+      _connectedController.add(true);
+      device.connectionState.listen((BluetoothConnectionState state) async {
+        if (state == BluetoothConnectionState.disconnected) {
+          _connectedController.add(false);
+          _stateController.add(ScooterState.disconnected);
+          log("Lost connection to scooter! :(");
+        }
+      });
+    } catch (e) {
+      throw "Failed to connect to scooter!";
     }
   }
 

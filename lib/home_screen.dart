@@ -223,7 +223,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: ScooterActionButton(
                         onPressed: _connected &&
                                 _scooterState != null &&
-                                _seatClosed == true
+                                _seatClosed == true &&
+                                _scanning == false
                             ? widget.scooterService.openSeat
                             : null,
                         label: _seatClosed == false

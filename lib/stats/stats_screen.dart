@@ -198,7 +198,10 @@ class _StatsScreenState extends State<StatsScreen> {
                             return ListTile(
                               title: Text(
                                   FlutterI18n.translate(context, "stats_rssi")),
-                              subtitle: Text(snapshot.data != null ? "${snapshot.data} dBm" : FlutterI18n.translate(context, "stats_unknown")),
+                              subtitle: Text(snapshot.data != null
+                                  ? "${snapshot.data} dBm"
+                                  : FlutterI18n.translate(
+                                      context, "stats_rssi_disconnected")),
                             );
                           },
                         ),
@@ -320,7 +323,7 @@ class _StatsScreenState extends State<StatsScreen> {
                     ListView.separated(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shrinkWrap: true,
-                      itemCount: 7,
+                      itemCount: (autoUnlock ? 11 : 10),
                       separatorBuilder: (context, index) => const Divider(
                         indent: 16,
                         endIndent: 16,
@@ -636,6 +639,16 @@ class _StatsScreenState extends State<StatsScreen> {
                             });
                           },
                         ),
+                        ListTile(
+                          leading: const Icon(Icons.help_outline),
+                          title: Text(FlutterI18n.translate(
+                              context, "settings_support")),
+                          onTap: () {
+                            Navigator.of(context).push(MaterialPageRoute(
+                                builder: (context) => const SupportScreen()));
+                          },
+                          trailing: const Icon(Icons.chevron_right),
+                        ),
                         FutureBuilder(
                             future: PackageInfo.fromPlatform(),
                             builder: (context, packageInfo) {
@@ -648,16 +661,27 @@ class _StatsScreenState extends State<StatsScreen> {
                                     : "..."),
                               );
                             }),
-                        ListTile(
-                          leading: const Icon(Icons.help_outline),
-                          title: Text(FlutterI18n.translate(
-                              context, "settings_support")),
-                          onTap: () {
-                            Navigator.of(context).push(MaterialPageRoute(
-                                builder: (context) => const SupportScreen()));
-                          },
-                          trailing: const Icon(Icons.chevron_right),
-                        ),
+                        FutureBuilder(
+                            future: PackageInfo.fromPlatform(),
+                            builder: (context, packageInfo) {
+                              return ListTile(
+                                leading: const Icon(Icons.code_rounded),
+                                title: Text(FlutterI18n.translate(
+                                    context, "settings_licenses")),
+                                trailing: const Icon(Icons.chevron_right),
+                                onTap: () {
+                                  showLicensePage(
+                                    context: context,
+                                    applicationName: packageInfo.hasData
+                                        ? packageInfo.data!.appName
+                                        : "Unustasis",
+                                    applicationVersion: packageInfo.hasData
+                                        ? packageInfo.data!.version
+                                        : "?.?.?",
+                                  );
+                                },
+                              );
+                            }),
                         Padding(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 32),

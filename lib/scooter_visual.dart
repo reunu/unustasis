@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import 'package:unustasis/domain/scooter_state.dart';
 
 class ScooterVisual extends StatelessWidget {
@@ -60,11 +61,15 @@ class ScooterVisual extends StatelessWidget {
               ),
             ),
             //BlinkerWidget(blinkerLeft: blinkerLeft, blinkerRight: blinkerRight),
-            CircularProgressIndicator(
-              value:
-                  scanning || state == ScooterState.shuttingDown ? null : 0.0,
-              color: Colors.white,
-            ),
+            AnimatedOpacity(
+              opacity: scanning ? 0.75 : 0,
+              duration: const Duration(milliseconds: 600),
+              child: Lottie.asset(
+                "assets/anim/scanning.json",
+                width: 250,
+                fit: BoxFit.contain,
+              ),
+            )
           ],
         ),
       ),
