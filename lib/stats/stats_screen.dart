@@ -49,7 +49,9 @@ class _StatsScreenState extends State<StatsScreen> {
       color = prefs.getInt("color") ?? 0;
       biometrics = prefs.getBool("biometrics") ?? false;
       autoUnlock = widget.service.autoUnlock;
-      autoUnlockDistance = ScooterKeylessDistance.fromThreshold(widget.service.autoUnlockThreshold);
+      autoUnlockDistance = ScooterKeylessDistance.fromThreshold(
+              widget.service.autoUnlockThreshold) ??
+          ScooterKeylessDistance.regular.threshold;
       openSeatOnUnlock = widget.service.openSeatOnUnlock;
       hazardLocking = widget.service.hazardLocking;
     });
@@ -580,14 +582,20 @@ class _StatsScreenState extends State<StatsScreen> {
                                 "${FlutterI18n.translate(context, "settings_auto_unlock_threshold")}: ${FlutterI18n.translate(context, autoUnlockDistance.translationKey)}"),
                             subtitle: Slider(
                               value: autoUnlockDistance.threshold.toDouble(),
-                              min: ScooterKeylessDistance.getMinDistance().threshold.toDouble(),
-                              max: ScooterKeylessDistance.getMaxDistance().threshold.toDouble(),
-                              divisions: ScooterKeylessDistance.values.length - 1,
+                              min: ScooterKeylessDistance.getMinDistance()
+                                  .threshold
+                                  .toDouble(),
+                              max: ScooterKeylessDistance.getMaxDistance()
+                                  .threshold
+                                  .toDouble(),
+                              divisions:
+                                  ScooterKeylessDistance.values.length - 1,
                               label: autoUnlockDistance.getFormattedThreshold(),
                               onChanged: (value) async {
-                                var distance = ScooterKeylessDistance.fromThreshold(value.toInt());
-                                widget.service
-                                    .setAutoUnlockThreshold(distance);
+                                var distance =
+                                    ScooterKeylessDistance.fromThreshold(
+                                        value.toInt());
+                                widget.service.setAutoUnlockThreshold(distance);
                                 setState(() {
                                   autoUnlockDistance = distance;
                                 });
