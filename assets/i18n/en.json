@@ -101,6 +101,7 @@
     "settings_auto_unlock": "Keyless start",
     "settings_auto_unlock_description": "Experimental: Automatically unlock the scooter when the app is open and the scooter is right next to you.",
     "settings_auto_unlock_threshold": "Keyless start distance",
+    "auto_unlock_threshold_very_easy": "Very far",
     "auto_unlock_threshold_easy": "Far",
     "auto_unlock_threshold_regular": "Balanced",
     "auto_unlock_threshold_hard": "Close",

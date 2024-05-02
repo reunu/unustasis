@@ -1,7 +1,9 @@
 enum ScooterKeylessDistance {
+  // Important: ensure all thresholds are equally spread
   hard(-55, "auto_unlock_threshold_hard"),
   regular(-65, "auto_unlock_threshold_regular"),
-  easy(-75, "auto_unlock_threshold_easy");
+  easy(-75, "auto_unlock_threshold_easy"),
+  veryEasy(-85, "auto_unlock_threshold_very_easy");
 
   const ScooterKeylessDistance(this.threshold, this.translationKey);
 
@@ -14,7 +16,7 @@ enum ScooterKeylessDistance {
   }
 
   static getMinDistance() {
-    return ScooterKeylessDistance.easy;
+    return ScooterKeylessDistance.veryEasy;
   }
 
   static getMaxDistance() {

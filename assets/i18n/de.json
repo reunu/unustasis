@@ -101,6 +101,7 @@
     "settings_auto_unlock": "Keyless Start",
     "settings_auto_unlock_description": "Experimentell: Automatisch entsperren, wenn die App offen und das Gerät direkt neben dem Roller ist.",
     "settings_auto_unlock_threshold": "Keyless Start Distanz",
+    "auto_unlock_threshold_very_easy": "Sehr weit",
     "auto_unlock_threshold_easy": "Weit",
     "auto_unlock_threshold_regular": "Ausgewogen",
     "auto_unlock_threshold_hard": "Nah",
