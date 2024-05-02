@@ -582,10 +582,12 @@ class _StatsScreenState extends State<StatsScreen> {
                                 "${FlutterI18n.translate(context, "settings_auto_unlock_threshold")}: ${FlutterI18n.translate(context, autoUnlockDistance.translationKey)}"),
                             subtitle: Slider(
                               value: autoUnlockDistance.threshold.toDouble(),
-                              min: ScooterKeylessDistance.getMinDistance()
+                              min: ScooterKeylessDistance
+                                      .getMinThresholdDistance()
                                   .threshold
                                   .toDouble(),
-                              max: ScooterKeylessDistance.getMaxDistance()
+                              max: ScooterKeylessDistance
+                                      .getMaxThresholdDistance()
                                   .threshold
                                   .toDouble(),
                               divisions:

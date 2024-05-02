@@ -1,9 +1,9 @@
 enum ScooterKeylessDistance {
   // Important: ensure all thresholds are equally spread
-  hard(-55, "auto_unlock_threshold_hard"),
+  close(-55, "auto_unlock_threshold_hard"),
   regular(-65, "auto_unlock_threshold_regular"),
-  easy(-75, "auto_unlock_threshold_easy"),
-  veryEasy(-85, "auto_unlock_threshold_very_easy");
+  far(-75, "auto_unlock_threshold_easy"),
+  veryFar(-85, "auto_unlock_threshold_very_easy");
 
   const ScooterKeylessDistance(this.threshold, this.translationKey);
 
@@ -15,12 +15,12 @@ enum ScooterKeylessDistance {
         .firstWhere((distance) => distance.threshold == threshold);
   }
 
-  static getMinDistance() {
-    return ScooterKeylessDistance.veryEasy;
+  static getMinThresholdDistance() {
+    return ScooterKeylessDistance.veryFar;
   }
 
-  static getMaxDistance() {
-    return ScooterKeylessDistance.hard;
+  static getMaxThresholdDistance() {
+    return ScooterKeylessDistance.close;
   }
 
   String getFormattedThreshold() {
