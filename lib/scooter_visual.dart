@@ -29,11 +29,14 @@ class ScooterVisual extends StatelessWidget {
           children: [
             AnimatedCrossFade(
               duration: const Duration(milliseconds: 500),
-              firstChild: const Image(
-                image: AssetImage("images/scooter/disconnected.webp"),
+              firstChild: const Opacity(
+                opacity: 0.7,
+                child: Image(
+                  image: AssetImage("images/scooter/disconnected.webp"),
+                ),
               ),
               secondChild: Opacity(
-                opacity: 0.7,
+                opacity: 1,
                 child: Image(
                   image: AssetImage("images/scooter/base_${color ?? 0}.webp"),
                 ),

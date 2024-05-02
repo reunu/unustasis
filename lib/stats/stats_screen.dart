@@ -284,7 +284,11 @@ class _StatsScreenState extends State<StatsScreen> {
                                                 decoration: BoxDecoration(
                                                   color: dataIsOld
                                                       ? Colors.grey
-                                                      : Colors.lightBlue,
+                                                      : (Theme.of(context)
+                                                                  .colorScheme
+                                                                  .primary
+                                                              as MaterialColor)
+                                                          .shade600,
                                                   shape: BoxShape.circle,
                                                 ),
                                                 child: const Icon(

@@ -17,7 +17,8 @@ enum ScooterState {
   linking,
   disconnected;
 
-  static ScooterState fromStateAndPowerState(String state, ScooterPowerState powerState) {
+  static ScooterState fromStateAndPowerState(
+      String state, ScooterPowerState powerState) {
     if (powerState == ScooterPowerState.hibernating) {
       return ScooterState.hibernating;
     }
@@ -58,7 +59,7 @@ enum ScooterState {
 }
 
 extension StateExtension on ScooterState {
-  Color get color {
+  Color color(BuildContext context) {
     switch (this) {
       case ScooterState.off:
       case ScooterState.hibernating:
@@ -70,7 +71,7 @@ extension StateExtension on ScooterState {
       case ScooterState.ready:
       case ScooterState.parked:
         // scooter is awake and ready to party!
-        return Colors.blue;
+        return Theme.of(context).colorScheme.primary;
       case ScooterState.unknown:
       case ScooterState.disconnected:
       default:
@@ -94,7 +95,8 @@ extension StateExtension on ScooterState {
       case ScooterState.hibernating:
         return FlutterI18n.translate(context, "state_name_hibernating");
       case ScooterState.hibernatingImminent:
-        return FlutterI18n.translate(context, "state_name_hibernating_imminent");
+        return FlutterI18n.translate(
+            context, "state_name_hibernating_imminent");
       case ScooterState.booting:
         return FlutterI18n.translate(context, "state_name_booting");
       case ScooterState.unknown:
@@ -121,7 +123,8 @@ extension StateExtension on ScooterState {
       case ScooterState.hibernating:
         return FlutterI18n.translate(context, "state_desc_hibernating");
       case ScooterState.hibernatingImminent:
-        return FlutterI18n.translate(context, "state_desc_hibernating_imminent");
+        return FlutterI18n.translate(
+            context, "state_desc_hibernating_imminent");
       case ScooterState.booting:
         return FlutterI18n.translate(context, "state_desc_booting");
       case ScooterState.unknown:

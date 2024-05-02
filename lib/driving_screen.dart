@@ -1,8 +1,7 @@
+import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:unustasis/scooter_service.dart';
 
@@ -23,6 +22,7 @@ class _DrivingScreenState extends State<DrivingScreen> {
     super.initState();
   }
 
+  late StreamSubscription<Position> _positionSubscription;
   void startLocator() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
@@ -66,8 +66,9 @@ class _DrivingScreenState extends State<DrivingScreen> {
       );
     }
 
-    Geolocator.getPositionStream(locationSettings: locationSettings)
-        .listen((Position position) {
+    _positionSubscription =
+        Geolocator.getPositionStream(locationSettings: locationSettings)
+            .listen((Position position) {
       if (position.speedAccuracy < 5) {
         setState(() {
           _speed = (position.speed * 3.6).round();
@@ -132,7 +133,7 @@ class _DrivingScreenState extends State<DrivingScreen> {
                       child: LinearProgressIndicator(
                         value: (snapshot.data ?? 0) / 100,
                         backgroundColor: Colors.grey.shade800,
-                        color: Colors.blue,
+                        color: Theme.of(context).colorScheme.primary,
                         minHeight: 16,
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -155,7 +156,7 @@ class _DrivingScreenState extends State<DrivingScreen> {
                       child: LinearProgressIndicator(
                         value: (snapshot.data ?? 0) / 100,
                         backgroundColor: Colors.grey.shade800,
-                        color: Colors.blue,
+                        color: Theme.of(context).colorScheme.primary,
                         minHeight: 16,
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -168,5 +169,11 @@ class _DrivingScreenState extends State<DrivingScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _positionSubscription.cancel();
+    super.dispose();
   }
 }

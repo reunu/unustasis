@@ -11,7 +11,6 @@ import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unustasis/domain/scooter_power_state.dart';
 import 'package:unustasis/flutter/blue_plus_mockable.dart';
-import 'package:unustasis/home_screen.dart';
 import 'package:unustasis/domain/scooter_state.dart';
 
 const bootingTimeSeconds = 25;
