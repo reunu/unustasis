@@ -9,6 +9,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unustasis/domain/scooter_keyless_distance.dart';
 import 'package:unustasis/domain/scooter_power_state.dart';
 import 'package:unustasis/flutter/blue_plus_mockable.dart';
 import 'package:unustasis/domain/scooter_state.dart';
@@ -25,7 +26,7 @@ class ScooterService {
   bool _autoRestarting = false;
   bool _scanning = false;
   bool _autoUnlock = false;
-  int _autoUnlockThreshold = -65;
+  int _autoUnlockThreshold = ScooterKeylessDistance.regular.threshold;
   bool _openSeatOnUnlock = false;
   bool _hazardLocking = false;
   bool _autoUnlockCooldown = false;
@@ -71,7 +72,7 @@ class ScooterService {
           double? lastLat = prefs.getDouble("lastLat");
           double? lastLon = prefs.getDouble("lastLon");
           _autoUnlock = prefs.getBool("autoUnlock") ?? false;
-          _autoUnlockThreshold = prefs.getInt("autoUnlockThreshold") ?? -65;
+          _autoUnlockThreshold = prefs.getInt("autoUnlockThreshold") ?? ScooterKeylessDistance.regular.threshold;
           // if biometrics are disabled, we can treat everything as authenticated
           optionalAuth = !(prefs.getBool("biometrics") ?? false);
           _openSeatOnUnlock = prefs.getBool("openSeatOnUnlock") ?? false;
@@ -334,9 +335,9 @@ class ScooterService {
     prefs?.setBool("autoUnlock", enabled);
   }
 
-  void setAutoUnlockThreshold(int threshold) {
-    _autoUnlockThreshold = threshold;
-    prefs?.setInt("autoUnlockThreshold", threshold);
+  void setAutoUnlockThreshold(ScooterKeylessDistance distance) {
+    _autoUnlockThreshold = distance.threshold;
+    prefs?.setInt("autoUnlockThreshold", distance.threshold);
   }
 
   void setOpenSeatOnUnlock(bool enabled) {
