@@ -15,7 +15,6 @@ import 'package:unustasis/flutter/blue_plus_mockable.dart';
 import 'package:unustasis/domain/scooter_state.dart';
 
 import 'infrastructure/battery_reader.dart';
-import 'infrastructure/cycle_reader.dart';
 import 'infrastructure/state_of_charge_reader.dart';
 import 'infrastructure/string_reader.dart';
 
@@ -26,7 +25,6 @@ class ScooterService {
   String? savedScooterId;
   BluetoothDevice? myScooter; // reserved for a connected scooter!
   bool _foundSth = false; // whether we've found a scooter yet
-  int? cbbRemainingCap, cbbFullCap;
   String? _state, _powerState;
   bool _autoRestarting = false;
   bool _scanning = false;
@@ -47,8 +45,6 @@ class ScooterService {
   BluetoothCharacteristic? _seatCharacteristic;
   BluetoothCharacteristic? _handlebarCharacteristic;
   BluetoothCharacteristic? _auxSOCCharacteristic;
-  // BluetoothCharacteristic? _cbbRemainingCapCharacteristic;
-  // BluetoothCharacteristic? _cbbFullCapCharacteristic;
   BluetoothCharacteristic? _cbbSOCCharacteristic;
   BluetoothCharacteristic? _cbbChargingCharacteristic;
   BluetoothCharacteristic? _primaryCyclesCharacteristic;
@@ -432,14 +428,6 @@ class ScooterService {
           myScooter!,
           "9a590040-6e67-5d0d-aab9-ad9126b66f91",
           "9a590044-6e67-5d0d-aab9-ad9126b66f91");
-      //_cbbRemainingCapCharacteristic = _findCharacteristic(
-      //     myScooter!,
-      //     "9a590060-6e67-5d0d-aab9-ad9126b66f91",
-      //     "9a590063-6e67-5d0d-aab9-ad9126b66f91");
-      // _cbbFullCapCharacteristic = _findCharacteristic(
-      //     myScooter!,
-      //     "9a590060-6e67-5d0d-aab9-ad9126b66f91",
-      //     "9a590064-6e67-5d0d-aab9-ad9126b66f91");
       _cbbSOCCharacteristic = _findCharacteristic(
           myScooter!,
           "9a590060-6e67-5d0d-aab9-ad9126b66f91",
@@ -495,26 +483,6 @@ class ScooterService {
       StateOfChargeReader(
           "aux", _auxSOCCharacteristic, _auxSOCController, prefs!)
           .readAndSubscribe(ping);
-      // // subscribe to CBB remaining capacity
-      // _cbbRemainingCapCharacteristic!.setNotifyValue(true);
-      // _cbbRemainingCapCharacteristic!.lastValueStream.listen((value) {
-      //   int? remainingCap = _convertUint32ToInt(value);
-      //   log("CBB remaining capacity received: $remainingCap");
-      //   cbbRemainingCap = remainingCap;
-      //   if (cbbRemainingCap != null && cbbFullCap != null) {
-      //     _cbbHealthController.add(cbbRemainingCap! / cbbFullCap!);
-      //   }
-      // });
-      // // subscribe to CBB full capacity
-      // _cbbFullCapCharacteristic!.setNotifyValue(true);
-      // _cbbFullCapCharacteristic!.lastValueStream.listen((value) {
-      //   int? fullCap = _convertUint32ToInt(value);
-      //   log("CBB full capacity received: $fullCap");
-      //   cbbFullCap = fullCap;
-      //   if (cbbRemainingCap != null && cbbFullCap != null) {
-      //     _cbbHealthController.add(cbbRemainingCap! / cbbFullCap!);
-      //   }
-      // });
       // Subscribe to internal CBB SOC
       StateOfChargeReader(
           "cbb", _cbbSOCCharacteristic, _cbbSOCController, prefs!)
