@@ -17,6 +17,42 @@ import 'package:unustasis/domain/scooter_state.dart';
 const bootingTimeSeconds = 25;
 const keylessCooldownSeconds = 60;
 
+class BatteryReader {
+  final String _name;
+  final BluetoothCharacteristic? _cyclesCharacteristic;
+  final BluetoothCharacteristic? _socCharacteristic;
+  final BehaviorSubject<int?> _cyclesController;
+  final BehaviorSubject<int?> _socController;
+  final SharedPreferences _sharedPrefs;
+
+  BatteryReader(this._name, this._cyclesCharacteristic, this._socCharacteristic, this._cyclesController, this._socController, this._sharedPrefs);
+
+  readAndSubscribe(Function() ping) {
+    // Subscribe to battery charge cycles
+    _cyclesCharacteristic!.setNotifyValue(true);
+    _cyclesCharacteristic.lastValueStream.listen((value) {
+      int? cycles = _convertUint32ToInt(value);
+      log("$_name battery cycles received: $cycles");
+      _cyclesController.add(cycles);
+    });
+
+    // Subscribe to SOC
+    _socCharacteristic!.setNotifyValue(true);
+    _socCharacteristic.lastValueStream.listen((value) async {
+      int? soc = _convertUint32ToInt(value);
+      log("$_name SOC received: $soc");
+      _socController.add(soc);
+      if (soc != null) {
+        ping();
+        _sharedPrefs.setInt("${_name}SOC", soc);
+      }
+    });
+
+    _socCharacteristic.read();
+  }
+
+}
+
 class ScooterService {
   String? savedScooterId;
   BluetoothDevice? myScooter; // reserved for a connected scooter!
@@ -35,7 +71,6 @@ class ScooterService {
   bool optionalAuth = false;
 
   // some useful characteristsics to save
-  List<BluetoothCharacteristic> _characteristics = [];
   BluetoothCharacteristic? _commandCharacteristic;
   BluetoothCharacteristic? _hibernationCommandCharacteristic;
   BluetoothCharacteristic? _stateCharacteristic;
@@ -460,24 +495,6 @@ class ScooterService {
           myScooter!,
           "9a5900e0-6e67-5d0d-aab9-ad9126b66f91",
           "9a5900f5-6e67-5d0d-aab9-ad9126b66f91");
-      // Set up the characteristics list
-      _characteristics = [
-        _commandCharacteristic!,
-        _hibernationCommandCharacteristic!,
-        _stateCharacteristic!,
-        _powerStateCharacteristic!,
-        _seatCharacteristic!,
-        _handlebarCharacteristic!,
-        _auxSOCCharacteristic!,
-        // _cbbRemainingCapCharacteristic!,
-        // _cbbFullCapCharacteristic!,
-        _cbbSOCCharacteristic!,
-        _cbbChargingCharacteristic!,
-        _primaryCyclesCharacteristic!,
-        _primarySOCCharacteristic!,
-        _secondaryCyclesCharacteristic!,
-        _secondarySOCCharacteristic!,
-      ];
       // subscribe to a bunch of values
       // Subscribe to state
       _subscribeString(_stateCharacteristic!, "State", (String value) {
@@ -560,44 +577,25 @@ class ScooterService {
           _cbbChargingController.add(false);
         }
       });
-      // Subscribe to primary battery charge cycles
-      _primaryCyclesCharacteristic!.setNotifyValue(true);
-      _primaryCyclesCharacteristic!.lastValueStream.listen((value) {
-        int? cycles = _convertUint32ToInt(value);
-        log("Primary battery cycles received: $cycles");
-        _primaryCyclesController.add(cycles);
-      });
-      // Subscribe to primary SOC
-      _primarySOCCharacteristic!.setNotifyValue(true);
-      _primarySOCCharacteristic!.lastValueStream.listen((value) async {
-        int? soc = _convertUint32ToInt(value);
-        log("Primary SOC received: $soc");
-        _primarySOCController.add(soc);
-        if (soc != null) {
-          ping();
-          prefs ??= await SharedPreferences.getInstance();
-          prefs!.setInt("primarySOC", soc);
-        }
-      });
-      // Subscribe to secondary battery charge cycles
-      _secondaryCyclesCharacteristic!.setNotifyValue(true);
-      _secondaryCyclesCharacteristic!.lastValueStream.listen((value) {
-        int? cycles = _convertUint32ToInt(value);
-        log("Secondary battery cycles received: $cycles");
-        _secondaryCyclesController.add(cycles);
-      });
-      // Subscribe to secondary SOC
-      _secondarySOCCharacteristic!.setNotifyValue(true);
-      _secondarySOCCharacteristic!.lastValueStream.listen((value) async {
-        int? soc = _convertUint32ToInt(value);
-        log("Secondary SOC received: $soc");
-        _secondarySOCController.add(soc);
-        if (soc != null) {
-          ping();
-          prefs ??= await SharedPreferences.getInstance();
-          prefs!.setInt("secondarySOC", soc);
-        }
-      });
+
+      var primaryBatterReader = BatteryReader(
+          "primary",
+          _primaryCyclesCharacteristic,
+          _primarySOCCharacteristic,
+          _primaryCyclesController,
+          _primarySOCController,
+          prefs!).readAndSubscribe(ping);
+      primaryBatterReader.readAndSubscribe(ping);
+
+      var secondaryBatteryReader = BatteryReader(
+          "secondary",
+          _secondaryCyclesCharacteristic,
+          _secondarySOCCharacteristic,
+          _secondaryCyclesController,
+          _secondarySOCController,
+          prefs!);
+      secondaryBatteryReader.readAndSubscribe(ping);
+
       // Read each value once to get the ball rolling
       _stateCharacteristic!.read();
       _powerStateCharacteristic!.read();
@@ -606,10 +604,6 @@ class ScooterService {
       _auxSOCCharacteristic!.read();
       _cbbSOCCharacteristic!.read();
       _cbbChargingCharacteristic!.read();
-      _primaryCyclesCharacteristic!.read();
-      _primarySOCCharacteristic!.read();
-      _secondaryCyclesCharacteristic!.read();
-      _secondarySOCCharacteristic!.read();
     } catch (e) {
       rethrow;
     }
@@ -863,22 +857,21 @@ class ScooterService {
     _manualRefreshTimer.cancel();
   }
 
-  // thanks gemini advanced <3
-  int? _convertUint32ToInt(List<int> uint32data) {
-    log("Converting $uint32data to int.");
-    if (uint32data.length != 4) {
-      log("Received empty data for uint32 conversion. Ignoring.");
-      return null;
-    }
-
-    // Little-endian to big-endian interpretation (important for proper UInt32 conversion)
-    return (uint32data[3] << 24) +
-        (uint32data[2] << 16) +
-        (uint32data[1] << 8) +
-        uint32data[0];
-  }
-
   Future<void> _sleepSeconds(double seconds) async {
     await Future.delayed(Duration(milliseconds: (seconds * 1000).floor()));
   }
+}
+
+int? _convertUint32ToInt(List<int> uint32data) {
+  log("Converting $uint32data to int.");
+  if (uint32data.length != 4) {
+    log("Received empty data for uint32 conversion. Ignoring.");
+    return null;
+  }
+
+  // Little-endian to big-endian interpretation (important for proper UInt32 conversion)
+  return (uint32data[3] << 24) +
+      (uint32data[2] << 16) +
+      (uint32data[1] << 8) +
+      uint32data[0];
 }
