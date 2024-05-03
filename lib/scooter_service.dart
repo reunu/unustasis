@@ -14,96 +14,13 @@ import 'package:unustasis/domain/scooter_power_state.dart';
 import 'package:unustasis/flutter/blue_plus_mockable.dart';
 import 'package:unustasis/domain/scooter_state.dart';
 
+import 'infrastructure/battery_reader.dart';
+import 'infrastructure/cycle_reader.dart';
+import 'infrastructure/state_of_charge_reader.dart';
+import 'infrastructure/string_reader.dart';
+
 const bootingTimeSeconds = 25;
 const keylessCooldownSeconds = 60;
-
-class BatteryReader {
-  final String _name;
-  final BluetoothCharacteristic? _cyclesCharacteristic;
-  final BluetoothCharacteristic? _socCharacteristic;
-  final BehaviorSubject<int?> _cyclesController;
-  final BehaviorSubject<int?> _socController;
-  final SharedPreferences _sharedPrefs;
-
-  BatteryReader(this._name, this._cyclesCharacteristic, this._socCharacteristic, this._cyclesController, this._socController, this._sharedPrefs);
-
-  readAndSubscribe(Function() ping) {
-    // Subscribe to battery charge cycles
-    var cycleReader = CycleReader(_name, _cyclesCharacteristic, _cyclesController);
-    cycleReader.readAndSubscribe(ping);
-
-    // Subscribe to SOC
-    var stateOfChargeReader = StateOfChargeReader(_name, _socCharacteristic, _socController, _sharedPrefs);
-    stateOfChargeReader.readAndSubscribe(ping);
-  }
-
-}
-
-class CycleReader {
-  final String _name;
-  final BluetoothCharacteristic? _cyclesCharacteristic;
-  final BehaviorSubject<int?> _cyclesController;
-
-  CycleReader(this._name, this._cyclesCharacteristic, this._cyclesController);
-
-  readAndSubscribe(Function() ping) {
-    // Subscribe to battery charge cycles
-    _cyclesCharacteristic!.setNotifyValue(true);
-    _cyclesCharacteristic.lastValueStream.listen((value) {
-      int? cycles = _convertUint32ToInt(value);
-      log("$_name battery cycles received: $cycles");
-      _cyclesController.add(cycles);
-    });
-
-    _cyclesCharacteristic.read();
-  }
-}
-
-class StateOfChargeReader {
-  final String _name;
-  final BluetoothCharacteristic? _socCharacteristic;
-  final BehaviorSubject<int?> _socController;
-  final SharedPreferences _sharedPrefs;
-
-  StateOfChargeReader(this._name, this._socCharacteristic, this._socController, this._sharedPrefs);
-
-  readAndSubscribe(Function() ping) {
-    _socCharacteristic!.setNotifyValue(true);
-    _socCharacteristic.lastValueStream.listen((value) async {
-      int? soc = _convertUint32ToInt(value);
-      log("$_name SOC received: $soc");
-      _socController.add(soc);
-      if (soc != null) {
-        ping();
-        _sharedPrefs.setInt("${_name}SOC", soc);
-      }
-    });
-
-    _socCharacteristic.read();
-  }
-}
-
-class StringReader {
-  final String _name;
-  final BluetoothCharacteristic? _characteristic;
-
-  StringReader(this._name, this._characteristic);
-
-  readAndSubscribe(Function(String) callback) {
-    _characteristic!.setNotifyValue(true);
-    _characteristic.lastValueStream.listen((value) {
-      log("$_name received: ${ascii.decode(value)}");
-      String state = _convertBytesToString(value);
-      callback(state);
-    });
-  }
-
-  String _convertBytesToString(List<int> value) {
-    value.removeWhere((element) => element == 0);
-    String state = ascii.decode(value).trim();
-    return state;
-  }
-}
 
 class ScooterService {
   String? savedScooterId;
@@ -867,18 +784,4 @@ class ScooterService {
   Future<void> _sleepSeconds(double seconds) async {
     await Future.delayed(Duration(milliseconds: (seconds * 1000).floor()));
   }
-}
-
-int? _convertUint32ToInt(List<int> uint32data) {
-  log("Converting $uint32data to int.");
-  if (uint32data.length != 4) {
-    log("Received empty data for uint32 conversion. Ignoring.");
-    return null;
-  }
-
-  // Little-endian to big-endian interpretation (important for proper UInt32 conversion)
-  return (uint32data[3] << 24) +
-      (uint32data[2] << 16) +
-      (uint32data[1] << 8) +
-      uint32data[0];
 }
