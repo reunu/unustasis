@@ -29,6 +29,25 @@ class BatteryReader {
 
   readAndSubscribe(Function() ping) {
     // Subscribe to battery charge cycles
+    var cycleReader = CycleReader(_name, _cyclesCharacteristic, _cyclesController);
+    cycleReader.readAndSubscribe(ping);
+
+    // Subscribe to SOC
+    var stateOfChargeReader = StateOfChargeReader(_name, _socCharacteristic, _socController, _sharedPrefs);
+    stateOfChargeReader.readAndSubscribe(ping);
+  }
+
+}
+
+class CycleReader {
+  final String _name;
+  final BluetoothCharacteristic? _cyclesCharacteristic;
+  final BehaviorSubject<int?> _cyclesController;
+
+  CycleReader(this._name, this._cyclesCharacteristic, this._cyclesController);
+
+  readAndSubscribe(Function() ping) {
+    // Subscribe to battery charge cycles
     _cyclesCharacteristic!.setNotifyValue(true);
     _cyclesCharacteristic.lastValueStream.listen((value) {
       int? cycles = _convertUint32ToInt(value);
@@ -36,7 +55,19 @@ class BatteryReader {
       _cyclesController.add(cycles);
     });
 
-    // Subscribe to SOC
+    _cyclesCharacteristic.read();
+  }
+}
+
+class StateOfChargeReader {
+  final String _name;
+  final BluetoothCharacteristic? _socCharacteristic;
+  final BehaviorSubject<int?> _socController;
+  final SharedPreferences _sharedPrefs;
+
+  StateOfChargeReader(this._name, this._socCharacteristic, this._socController, this._sharedPrefs);
+
+  readAndSubscribe(Function() ping) {
     _socCharacteristic!.setNotifyValue(true);
     _socCharacteristic.lastValueStream.listen((value) async {
       int? soc = _convertUint32ToInt(value);
@@ -50,7 +81,28 @@ class BatteryReader {
 
     _socCharacteristic.read();
   }
+}
 
+class StringReader {
+  final String _name;
+  final BluetoothCharacteristic? _characteristic;
+
+  StringReader(this._name, this._characteristic);
+
+  readAndSubscribe(Function(String) callback) {
+    _characteristic!.setNotifyValue(true);
+    _characteristic.lastValueStream.listen((value) {
+      log("$_name received: ${ascii.decode(value)}");
+      String state = _convertBytesToString(value);
+      callback(state);
+    });
+  }
+
+  String _convertBytesToString(List<int> value) {
+    value.removeWhere((element) => element == 0);
+    String state = ascii.decode(value).trim();
+    return state;
+  }
 }
 
 class ScooterService {
@@ -497,45 +549,35 @@ class ScooterService {
           "9a5900f5-6e67-5d0d-aab9-ad9126b66f91");
       // subscribe to a bunch of values
       // Subscribe to state
-      _subscribeString(_stateCharacteristic!, "State", (String value) {
-        _state = value;
-        _updateScooterState();
-      });
+      StringReader("State", _stateCharacteristic!).readAndSubscribe((String value) {
+          _state = value;
+          _updateScooterState();
+        });
       // Subscribe to power state for correct hibernation
-      _subscribeString(_powerStateCharacteristic!, "Power State",
-          (String value) {
-        _powerState = value;
-        _updateScooterState();
-      });
+      StringReader("Power State", _powerStateCharacteristic!).readAndSubscribe((String value) {
+          _powerState = value;
+          _updateScooterState();
+        });
       // Subscribe to seat
-      _subscribeString(_seatCharacteristic!, "Seat", (String seatState) {
-        if (seatState == "open") {
-          _seatClosedController.add(false);
-        } else {
-          _seatClosedController.add(true);
-        }
-      });
+      StringReader("Seat", _seatCharacteristic!).readAndSubscribe((String seatState) {
+          if (seatState == "open") {
+            _seatClosedController.add(false);
+          } else {
+            _seatClosedController.add(true);
+          }
+        });
       // Subscribe to handlebars
-      _subscribeString(_handlebarCharacteristic!, "Handlebars",
-          (String handlebarState) {
-        if (handlebarState == "unlocked") {
-          _handlebarController.add(false);
-        } else {
-          _handlebarController.add(true);
-        }
-      });
+      StringReader("Handlebars", _handlebarCharacteristic!).readAndSubscribe((String handlebarState) {
+          if (handlebarState == "unlocked") {
+            _handlebarController.add(false);
+          } else {
+            _handlebarController.add(true);
+          }
+        });
       // Subscribe to aux battery SOC
-      _auxSOCCharacteristic!.setNotifyValue(true);
-      _auxSOCCharacteristic!.lastValueStream.listen((value) async {
-        int? soc = _convertUint32ToInt(value);
-        log("Aux SOC received: $soc");
-        _auxSOCController.add(soc);
-        if (soc != null) {
-          ping();
-          prefs ??= await SharedPreferences.getInstance();
-          prefs!.setInt("auxSOC", soc);
-        }
-      });
+      StateOfChargeReader(
+          "aux", _auxSOCCharacteristic, _auxSOCController, prefs!)
+          .readAndSubscribe(ping);
       // // subscribe to CBB remaining capacity
       // _cbbRemainingCapCharacteristic!.setNotifyValue(true);
       // _cbbRemainingCapCharacteristic!.lastValueStream.listen((value) {
@@ -557,26 +599,17 @@ class ScooterService {
       //   }
       // });
       // Subscribe to internal CBB SOC
-      _cbbSOCCharacteristic!.setNotifyValue(true);
-      _cbbSOCCharacteristic!.lastValueStream.listen((value) async {
-        int? soc = value.firstOrNull;
-        log("cbb SOC received: ${value.toString()}");
-        _cbbSOCController.add(soc);
-        if (soc != null) {
-          ping();
-          prefs ??= await SharedPreferences.getInstance();
-          prefs!.setInt("cbbSOC", soc);
-        }
-      });
+      StateOfChargeReader(
+          "cbb", _cbbSOCCharacteristic, _cbbSOCController, prefs!)
+          .readAndSubscribe(ping);
       // subscribe to CBB charging status
-      _subscribeString(_cbbChargingCharacteristic!, "CBB charging",
-          (String chargingState) {
-        if (chargingState == "charging") {
-          _cbbChargingController.add(true);
-        } else if (chargingState == "not-charging") {
-          _cbbChargingController.add(false);
-        }
-      });
+      StringReader("CBB charging", _cbbChargingCharacteristic!).readAndSubscribe((String chargingState) {
+          if (chargingState == "charging") {
+            _cbbChargingController.add(true);
+          } else if (chargingState == "not-charging") {
+            _cbbChargingController.add(false);
+          }
+        });
 
       var primaryBatterReader = BatteryReader(
           "primary",
@@ -595,15 +628,6 @@ class ScooterService {
           _secondarySOCController,
           prefs!);
       secondaryBatteryReader.readAndSubscribe(ping);
-
-      // Read each value once to get the ball rolling
-      _stateCharacteristic!.read();
-      _powerStateCharacteristic!.read();
-      _seatCharacteristic!.read();
-      _handlebarCharacteristic!.read();
-      _auxSOCCharacteristic!.read();
-      _cbbSOCCharacteristic!.read();
-      _cbbChargingCharacteristic!.read();
     } catch (e) {
       rethrow;
     }
@@ -749,23 +773,6 @@ class ScooterService {
   }
 
   // HELPER FUNCTIONS
-
-  void _subscribeString(
-      BluetoothCharacteristic characteristic, String name, Function callback) {
-    // Subscribe to value
-    characteristic.setNotifyValue(true);
-    characteristic.lastValueStream.listen((value) {
-      log("$name received: ${ascii.decode(value)}");
-      String state = _convertBytesToString(value);
-      callback(state);
-    });
-  }
-
-  String _convertBytesToString(List<int> value) {
-    value.removeWhere((element) => element == 0);
-    String state = ascii.decode(value).trim();
-    return state;
-  }
 
   void _sendCommand(String command, {BluetoothCharacteristic? characteristic}) {
     log("Sending command: $command");
