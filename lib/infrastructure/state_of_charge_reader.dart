@@ -9,11 +9,12 @@ class StateOfChargeReader {
   final String _name;
   final BluetoothCharacteristic? _socCharacteristic;
   final BehaviorSubject<int?> _socController;
+  final BehaviorSubject<DateTime?> _lastPingController;
   final SharedPreferences _sharedPrefs;
 
-  StateOfChargeReader(this._name, this._socCharacteristic, this._socController, this._sharedPrefs);
+  StateOfChargeReader(this._name, this._socCharacteristic, this._socController, this._lastPingController, this._sharedPrefs);
 
-  readAndSubscribe(Function() ping) {
+  readAndSubscribe() {
     _socCharacteristic!.setNotifyValue(true);
     _socCharacteristic.lastValueStream.listen((value) async {
       int? soc = convertUint32ToInt(value);
@@ -26,5 +27,10 @@ class StateOfChargeReader {
     });
 
     _socCharacteristic.read();
+  }
+
+  void ping() async {
+    _lastPingController.add(DateTime.now());
+    _sharedPrefs.setInt("lastPing", DateTime.now().microsecondsSinceEpoch);
   }
 }

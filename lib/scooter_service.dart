@@ -481,12 +481,12 @@ class ScooterService {
         });
       // Subscribe to aux battery SOC
       StateOfChargeReader(
-          "aux", _auxSOCCharacteristic, _auxSOCController, prefs!)
-          .readAndSubscribe(ping);
+          "aux", _auxSOCCharacteristic, _auxSOCController, _lastPingController, prefs!)
+          .readAndSubscribe();
       // Subscribe to internal CBB SOC
       StateOfChargeReader(
-          "cbb", _cbbSOCCharacteristic, _cbbSOCController, prefs!)
-          .readAndSubscribe(ping);
+          "cbb", _cbbSOCCharacteristic, _cbbSOCController, _lastPingController, prefs!)
+          .readAndSubscribe();
       // subscribe to CBB charging status
       StringReader("CBB charging", _cbbChargingCharacteristic!).readAndSubscribe((String chargingState) {
           if (chargingState == "charging") {
@@ -502,8 +502,9 @@ class ScooterService {
           _primarySOCCharacteristic,
           _primaryCyclesController,
           _primarySOCController,
-          prefs!).readAndSubscribe(ping);
-      primaryBatterReader.readAndSubscribe(ping);
+          _lastPingController,
+          prefs!).readAndSubscribe();
+      primaryBatterReader.readAndSubscribe();
 
       var secondaryBatteryReader = BatteryReader(
           "secondary",
@@ -511,8 +512,9 @@ class ScooterService {
           _secondarySOCCharacteristic,
           _secondaryCyclesController,
           _secondarySOCController,
+          _lastPingController,
           prefs!);
-      secondaryBatteryReader.readAndSubscribe(ping);
+      secondaryBatteryReader.readAndSubscribe();
     } catch (e) {
       rethrow;
     }
@@ -616,12 +618,6 @@ class ScooterService {
   Future<void> hibernate() async {
     _sendCommand("hibernate",
         characteristic: _hibernationCommandCharacteristic);
-  }
-
-  void ping() async {
-    _lastPingController.add(DateTime.now());
-    prefs ??= await SharedPreferences.getInstance();
-    prefs!.setInt("lastPing", DateTime.now().microsecondsSinceEpoch);
   }
 
   void _pollLocation() async {

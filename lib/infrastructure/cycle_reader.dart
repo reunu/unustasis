@@ -11,7 +11,7 @@ class CycleReader {
 
   CycleReader(this._name, this._cyclesCharacteristic, this._cyclesController);
 
-  readAndSubscribe(Function() ping) {
+  readAndSubscribe() {
     // Subscribe to battery charge cycles
     _cyclesCharacteristic!.setNotifyValue(true);
     _cyclesCharacteristic.lastValueStream.listen((value) {
