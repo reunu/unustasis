@@ -10,9 +10,9 @@ class StateOfChargeReader {
   final BluetoothCharacteristic? _characteristic;
   final BehaviorSubject<int?> _socController;
   final BehaviorSubject<DateTime?> _lastPingController;
-  final SharedPreferences _sharedPrefs;
+  late SharedPreferences _sharedPrefs;
 
-  StateOfChargeReader(this._name, this._characteristic, this._socController, this._lastPingController, this._sharedPrefs);
+  StateOfChargeReader(this._name, this._characteristic, this._socController, this._lastPingController);
 
   readAndSubscribe() {
     subscribeCharacteristic(_characteristic!, (value) {
@@ -21,13 +21,18 @@ class StateOfChargeReader {
       _socController.add(soc);
       if (soc != null) {
         ping();
-        _sharedPrefs.setInt("${_name}SOC", soc);
+        _getSharedPrefs().setInt("${_name}SOC", soc);
       }
     });
   }
 
   void ping() async {
     _lastPingController.add(DateTime.now());
-    _sharedPrefs.setInt("lastPing", DateTime.now().microsecondsSinceEpoch);
+    _getSharedPrefs().setInt("lastPing", DateTime.now().microsecondsSinceEpoch);
+  }
+
+  _getSharedPrefs() async {
+    _sharedPrefs = await SharedPreferences.getInstance();
+    return _sharedPrefs;
   }
 }

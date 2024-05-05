@@ -1,6 +1,5 @@
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unustasis/infrastructure/state_of_charge_reader.dart';
 
 import 'cycle_reader.dart';
@@ -12,9 +11,8 @@ class BatteryReader {
   final BehaviorSubject<int?> _cyclesController;
   final BehaviorSubject<int?> _socController;
   final BehaviorSubject<DateTime?> _lastPingController;
-  final SharedPreferences _sharedPrefs;
 
-  BatteryReader(this._name, this._cyclesCharacteristic, this._socCharacteristic, this._cyclesController, this._socController, this._lastPingController, this._sharedPrefs);
+  BatteryReader(this._name, this._cyclesCharacteristic, this._socCharacteristic, this._cyclesController, this._socController, this._lastPingController);
 
   readAndSubscribe() {
     // Subscribe to battery charge cycles
@@ -24,7 +22,7 @@ class BatteryReader {
     });
 
     // Subscribe to SOC
-    var stateOfChargeReader = StateOfChargeReader(_name, _socCharacteristic, _socController, _lastPingController, _sharedPrefs);
+    var stateOfChargeReader = StateOfChargeReader(_name, _socCharacteristic, _socController, _lastPingController);
     stateOfChargeReader.readAndSubscribe();
   }
 }

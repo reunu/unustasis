@@ -465,27 +465,19 @@ class ScooterService {
         });
       // Subscribe to seat
       StringReader("Seat", _seatCharacteristic!).readAndSubscribe((String seatState) {
-          if (seatState == "open") {
-            _seatClosedController.add(false);
-          } else {
-            _seatClosedController.add(true);
-          }
+          _seatClosedController.add(seatState != "open");
         });
       // Subscribe to handlebars
       StringReader("Handlebars", _handlebarCharacteristic!).readAndSubscribe((String handlebarState) {
-          if (handlebarState == "unlocked") {
-            _handlebarController.add(false);
-          } else {
-            _handlebarController.add(true);
-          }
+          _handlebarController.add(handlebarState != "unlocked");
         });
       // Subscribe to aux battery SOC
       StateOfChargeReader(
-          "aux", _auxSOCCharacteristic, _auxSOCController, _lastPingController, prefs!)
+          "aux", _auxSOCCharacteristic, _auxSOCController, _lastPingController)
           .readAndSubscribe();
       // Subscribe to internal CBB SOC
       StateOfChargeReader(
-          "cbb", _cbbSOCCharacteristic, _cbbSOCController, _lastPingController, prefs!)
+          "cbb", _cbbSOCCharacteristic, _cbbSOCController, _lastPingController)
           .readAndSubscribe();
       // subscribe to CBB charging status
       StringReader("CBB charging", _cbbChargingCharacteristic!).readAndSubscribe((String chargingState) {
@@ -497,13 +489,12 @@ class ScooterService {
         });
 
       var primaryBatterReader = BatteryReader(
-          "primary",
-          _primaryCyclesCharacteristic,
-          _primarySOCCharacteristic,
-          _primaryCyclesController,
-          _primarySOCController,
-          _lastPingController,
-          prefs!).readAndSubscribe();
+              "primary",
+              _primaryCyclesCharacteristic,
+              _primarySOCCharacteristic,
+              _primaryCyclesController,
+              _primarySOCController,
+              _lastPingController);
       primaryBatterReader.readAndSubscribe();
 
       var secondaryBatteryReader = BatteryReader(
@@ -512,8 +503,7 @@ class ScooterService {
           _secondarySOCCharacteristic,
           _secondaryCyclesController,
           _secondarySOCController,
-          _lastPingController,
-          prefs!);
+          _lastPingController);
       secondaryBatteryReader.readAndSubscribe();
     } catch (e) {
       rethrow;
