@@ -7,15 +7,15 @@ import 'package:unustasis/infrastructure/utils.dart';
 
 class StateOfChargeReader {
   final String _name;
-  final BluetoothCharacteristic? _socCharacteristic;
+  final BluetoothCharacteristic? _characteristic;
   final BehaviorSubject<int?> _socController;
   final BehaviorSubject<DateTime?> _lastPingController;
   final SharedPreferences _sharedPrefs;
 
-  StateOfChargeReader(this._name, this._socCharacteristic, this._socController, this._lastPingController, this._sharedPrefs);
+  StateOfChargeReader(this._name, this._characteristic, this._socController, this._lastPingController, this._sharedPrefs);
 
   readAndSubscribe() {
-    subscribeCharacteristic(_socCharacteristic!, (value) {
+    subscribeCharacteristic(_characteristic!, (value) {
       int? soc = convertUint32ToInt(value);
       log("$_name SOC received: $soc");
       _socController.add(soc);
