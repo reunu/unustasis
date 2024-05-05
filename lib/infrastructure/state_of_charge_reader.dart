@@ -11,7 +11,8 @@ class StateOfChargeReader {
   final BehaviorSubject<DateTime?> _lastPingController;
   late SharedPreferences _sharedPrefs;
 
-  StateOfChargeReader(this._name, this._characteristic, this._lastPingController);
+  StateOfChargeReader(
+      this._name, this._characteristic, this._lastPingController);
 
   readAndSubscribe(Function(int?) callback) {
     subscribeCharacteristic(_characteristic!, (value) {

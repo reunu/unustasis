@@ -11,8 +11,8 @@ import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unustasis/domain/scooter_keyless_distance.dart';
 import 'package:unustasis/domain/scooter_power_state.dart';
-import 'package:unustasis/flutter/blue_plus_mockable.dart';
 import 'package:unustasis/domain/scooter_state.dart';
+import 'package:unustasis/flutter/blue_plus_mockable.dart';
 
 import 'infrastructure/battery_reader.dart';
 import 'infrastructure/state_of_charge_reader.dart';
@@ -452,57 +452,65 @@ class ScooterService {
           myScooter!,
           "9a5900e0-6e67-5d0d-aab9-ad9126b66f91",
           "9a5900f5-6e67-5d0d-aab9-ad9126b66f91");
+
       // subscribe to a bunch of values
-      // Subscribe to state
-      StringReader("State", _stateCharacteristic!).readAndSubscribe((String value) {
-          _state = value;
-          _updateScooterState();
-        });
+      StringReader("State", _stateCharacteristic!)
+          .readAndSubscribe((String value) {
+        _state = value;
+        _updateScooterState();
+      });
+
       // Subscribe to power state for correct hibernation
-      StringReader("Power State", _powerStateCharacteristic!).readAndSubscribe((String value) {
-          _powerState = value;
-          _updateScooterState();
-        });
-      // Subscribe to seat
-      StringReader("Seat", _seatCharacteristic!).readAndSubscribe((String seatState) {
-          _seatClosedController.add(seatState != "open");
-        });
-      // Subscribe to handlebars
-      StringReader("Handlebars", _handlebarCharacteristic!).readAndSubscribe((String handlebarState) {
-          _handlebarController.add(handlebarState != "unlocked");
-        });
-      // Subscribe to aux battery SOC
+      StringReader("Power State", _powerStateCharacteristic!)
+          .readAndSubscribe((String value) {
+        _powerState = value;
+        _updateScooterState();
+      });
+
+      StringReader("Seat", _seatCharacteristic!)
+          .readAndSubscribe((String seatState) {
+        _seatClosedController.add(seatState != "open");
+      });
+
+      StringReader("Handlebars", _handlebarCharacteristic!)
+          .readAndSubscribe((String handlebarState) {
+        _handlebarController.add(handlebarState != "unlocked");
+      });
+
       StateOfChargeReader("aux", _auxSOCCharacteristic, _lastPingController)
           .readAndSubscribe((soc) {
         _auxSOCController.add(soc);
       });
-      // Subscribe to internal CBB SOC
+
       StateOfChargeReader("cbb", _cbbSOCCharacteristic, _lastPingController)
           .readAndSubscribe((soc) {
         _cbbSOCController.add(soc);
       });
-      // subscribe to CBB charging status
-      StringReader("CBB charging", _cbbChargingCharacteristic!).readAndSubscribe((String chargingState) {
-          if (chargingState == "charging") {
-            _cbbChargingController.add(true);
-          } else if (chargingState == "not-charging") {
-            _cbbChargingController.add(false);
-          }
-        });
+
+      StringReader("CBB charging", _cbbChargingCharacteristic!)
+          .readAndSubscribe((String chargingState) {
+        if (chargingState == "charging") {
+          _cbbChargingController.add(true);
+        } else if (chargingState == "not-charging") {
+          _cbbChargingController.add(false);
+        }
+      });
 
       var primaryBatterReader = BatteryReader(
           "primary",
           _primaryCyclesCharacteristic,
           _primarySOCCharacteristic,
           _lastPingController);
-      primaryBatterReader.readAndSubscribe(_primarySOCController, _primaryCyclesController);
+      primaryBatterReader.readAndSubscribe(
+          _primarySOCController, _primaryCyclesController);
 
       var secondaryBatteryReader = BatteryReader(
           "secondary",
           _secondaryCyclesCharacteristic,
           _secondarySOCCharacteristic,
           _lastPingController);
-      secondaryBatteryReader.readAndSubscribe(_secondarySOCController, _secondarySOCController);
+      secondaryBatteryReader.readAndSubscribe(
+          _secondarySOCController, _secondarySOCController);
     } catch (e) {
       rethrow;
     }
