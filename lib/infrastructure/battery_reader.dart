@@ -18,8 +18,10 @@ class BatteryReader {
 
   readAndSubscribe() {
     // Subscribe to battery charge cycles
-    var cycleReader = CycleReader(_name, _cyclesCharacteristic, _cyclesController);
-    cycleReader.readAndSubscribe();
+    var cycleReader = CycleReader(_name, _cyclesCharacteristic);
+    cycleReader.readAndSubscribe((cycles) {
+      _cyclesController.add(cycles);
+    });
 
     // Subscribe to SOC
     var stateOfChargeReader = StateOfChargeReader(_name, _socCharacteristic, _socController, _lastPingController, _sharedPrefs);
