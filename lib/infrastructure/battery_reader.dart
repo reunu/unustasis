@@ -15,11 +15,9 @@ class BatteryReader {
 
   readAndSubscribe(BehaviorSubject<int?> socController,
       BehaviorSubject<int?> cyclesController) {
-    var stateOfChargeReader =
-        StateOfChargeReader(_name, _socCharacteristic, _lastPingController);
-    stateOfChargeReader.readAndSubscribe((soc) {
-      socController.add(soc);
-    });
+    var stateOfChargeReader = StateOfChargeReader(
+        _name, _socCharacteristic, socController, _lastPingController);
+    stateOfChargeReader.readAndSubscribe();
 
     var cycleReader = CycleReader(_name, _cyclesCharacteristic);
     cycleReader.readAndSubscribe((cycles) {

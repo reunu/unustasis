@@ -46,12 +46,6 @@ class ScooterService {
         savedScooterId = prefs.getString("savedScooterId");
         int? lastPing = prefs.getInt("lastPing");
         if (lastPing != null) {
-          _lastPingController
-              .add(DateTime.fromMicrosecondsSinceEpoch(lastPing));
-          _primarySOCController.add(prefs.getInt("primarySOC"));
-          _secondarySOCController.add(prefs.getInt("secondarySOC"));
-          _cbbSOCController.add(prefs.getInt("cbbSOC"));
-          _auxSOCController.add(prefs.getInt("auxSOC"));
           double? lastLat = prefs.getDouble("lastLat");
           double? lastLon = prefs.getDouble("lastLon");
           _autoUnlock = prefs.getBool("autoUnlock") ?? false;

@@ -79,16 +79,12 @@ class ScooterReader {
     });
 
     StateOfChargeReader("aux", _characteristicRepository.auxSOCCharacteristic,
-            _lastPingController)
-        .readAndSubscribe((soc) {
-      _auxSOCController.add(soc);
-    });
+            _auxSOCController, _lastPingController)
+        .readAndSubscribe();
 
     StateOfChargeReader("cbb", _characteristicRepository.cbbSOCCharacteristic,
-            _lastPingController)
-        .readAndSubscribe((soc) {
-      _cbbSOCController.add(soc);
-    });
+            _cbbSOCController, _lastPingController)
+        .readAndSubscribe();
 
     StringReader("CBB charging",
             _characteristicRepository.cbbChargingCharacteristic!)

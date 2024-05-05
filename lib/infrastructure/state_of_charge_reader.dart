@@ -8,31 +8,52 @@ import 'package:unustasis/infrastructure/utils.dart';
 class StateOfChargeReader {
   final String _name;
   final BluetoothCharacteristic? _characteristic;
+  final BehaviorSubject<int?> _socController;
   final BehaviorSubject<DateTime?> _lastPingController;
   late SharedPreferences _sharedPrefs;
 
-  StateOfChargeReader(
-      this._name, this._characteristic, this._lastPingController);
+  final String _lastPingCacheKey = "lastPing";
+  late String _socCacheKey;
 
-  readAndSubscribe(Function(int?) callback) {
+  StateOfChargeReader(this._name, this._characteristic, this._socController,
+      this._lastPingController) {
+    _socCacheKey = "${_name}SOC";
+  }
+
+  readAndSubscribe() {
     subscribeCharacteristic(_characteristic!, (value) {
       int? soc = convertUint32ToInt(value);
       log("$_name SOC received: $soc");
-      callback(soc);
-      _cache(soc);
+      _socController.add(soc);
+      _writeCache(soc);
     });
+
+    _readCache();
   }
 
-  void _cache(int? soc) {
-    if (soc != null) {
-      _ping();
-      _getSharedPrefs().setInt("${_name}SOC", soc);
+  void _readCache() {
+    int? lastPing = _getSharedPrefs().getInt(_lastPingCacheKey);
+    if (lastPing == null) {
+      return;
     }
+
+    _lastPingController.add(DateTime.fromMicrosecondsSinceEpoch(lastPing));
+    _socController.add(_getSharedPrefs().getInt(_socCacheKey));
+  }
+
+  void _writeCache(int? soc) {
+    if (soc == null) {
+      return;
+    }
+
+    _ping();
+    _getSharedPrefs().setInt(_socCacheKey, soc);
   }
 
   void _ping() async {
     _lastPingController.add(DateTime.now());
-    _getSharedPrefs().setInt("lastPing", DateTime.now().microsecondsSinceEpoch);
+    _getSharedPrefs()
+        .setInt(_lastPingCacheKey, DateTime.now().microsecondsSinceEpoch);
   }
 
   _getSharedPrefs() async {
