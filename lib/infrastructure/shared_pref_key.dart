@@ -1,3 +1,0 @@
-enum SharedPrefKey {
-  lastPing;
-}

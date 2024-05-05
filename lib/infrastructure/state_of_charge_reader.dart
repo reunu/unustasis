@@ -2,8 +2,7 @@ import 'dart:developer';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:unustasis/infrastructure/shared_pref_key.dart';
+import 'package:unustasis/infrastructure/cache_manager.dart';
 import 'package:unustasis/infrastructure/utils.dart';
 
 class StateOfChargeReader {
@@ -11,15 +10,9 @@ class StateOfChargeReader {
   final BluetoothCharacteristic? _characteristic;
   final BehaviorSubject<int?> _socController;
   final BehaviorSubject<DateTime?> _lastPingController;
-  late SharedPreferences _sharedPrefs;
-
-  final String _lastPingCacheKey = SharedPrefKey.lastPing.name;
-  late String _socCacheKey;
 
   StateOfChargeReader(this._name, this._characteristic, this._socController,
-      this._lastPingController) {
-    _socCacheKey = "${_name}SOC";
-  }
+      this._lastPingController);
 
   readAndSubscribe() {
     subscribeCharacteristic(_characteristic!, (value) {
@@ -33,13 +26,13 @@ class StateOfChargeReader {
   }
 
   void _readCache() {
-    int? lastPing = _getSharedPrefs().getInt(_lastPingCacheKey);
+    DateTime? lastPing = CacheManager.readLastPing();
     if (lastPing == null) {
       return;
     }
 
-    _lastPingController.add(DateTime.fromMicrosecondsSinceEpoch(lastPing));
-    _socController.add(_getSharedPrefs().getInt(_socCacheKey));
+    _lastPingController.add(lastPing);
+    _socController.add(CacheManager.readSOC(_name));
   }
 
   void _writeCache(int? soc) {
@@ -47,18 +40,8 @@ class StateOfChargeReader {
       return;
     }
 
-    _ping();
-    _getSharedPrefs().setInt(_socCacheKey, soc);
-  }
-
-  void _ping() async {
     _lastPingController.add(DateTime.now());
-    _getSharedPrefs()
-        .setInt(_lastPingCacheKey, DateTime.now().microsecondsSinceEpoch);
-  }
-
-  _getSharedPrefs() async {
-    _sharedPrefs = await SharedPreferences.getInstance();
-    return _sharedPrefs;
+    CacheManager.writeLastPing();
+    CacheManager.writeSOC(_name, soc);
   }
 }
