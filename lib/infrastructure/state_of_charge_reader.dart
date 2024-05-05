@@ -15,8 +15,7 @@ class StateOfChargeReader {
   StateOfChargeReader(this._name, this._socCharacteristic, this._socController, this._lastPingController, this._sharedPrefs);
 
   readAndSubscribe() {
-    _socCharacteristic!.setNotifyValue(true);
-    _socCharacteristic.lastValueStream.listen((value) async {
+    subscribeCharacteristic(_socCharacteristic!, (value) {
       int? soc = convertUint32ToInt(value);
       log("$_name SOC received: $soc");
       _socController.add(soc);
@@ -25,8 +24,6 @@ class StateOfChargeReader {
         _sharedPrefs.setInt("${_name}SOC", soc);
       }
     });
-
-    _socCharacteristic.read();
   }
 
   void ping() async {

@@ -1,5 +1,13 @@
 import 'dart:developer';
 
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+
+subscribeCharacteristic(BluetoothCharacteristic characteristic, Function(List<int>) callback) {
+  characteristic.setNotifyValue(true);
+  characteristic.lastValueStream.listen(callback);
+  characteristic.read();
+}
+
 int? convertUint32ToInt(List<int> uint32data) {
   log("Converting $uint32data to int.");
   if (uint32data.length != 4) {

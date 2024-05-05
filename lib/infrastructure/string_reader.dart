@@ -2,6 +2,7 @@ import 'dart:developer';
 import 'dart:convert';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:unustasis/infrastructure/utils.dart';
 
 class StringReader {
   final String _name;
@@ -10,8 +11,7 @@ class StringReader {
   StringReader(this._name, this._characteristic);
 
   readAndSubscribe(Function(String) callback) {
-    _characteristic!.setNotifyValue(true);
-    _characteristic.lastValueStream.listen((value) {
+    subscribeCharacteristic(_characteristic!, (value) {
       log("$_name received: ${ascii.decode(value)}");
       String state = _convertBytesToString(value);
       callback(state);

@@ -12,14 +12,10 @@ class CycleReader {
   CycleReader(this._name, this._cyclesCharacteristic, this._cyclesController);
 
   readAndSubscribe() {
-    // Subscribe to battery charge cycles
-    _cyclesCharacteristic!.setNotifyValue(true);
-    _cyclesCharacteristic.lastValueStream.listen((value) {
+    subscribeCharacteristic(_cyclesCharacteristic!, (value) {
       int? cycles = convertUint32ToInt(value);
       log("$_name battery cycles received: $cycles");
       _cyclesController.add(cycles);
     });
-
-    _cyclesCharacteristic.read();
   }
 }
