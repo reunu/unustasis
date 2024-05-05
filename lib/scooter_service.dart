@@ -13,6 +13,7 @@ import 'package:unustasis/domain/scooter_keyless_distance.dart';
 import 'package:unustasis/domain/scooter_power_state.dart';
 import 'package:unustasis/domain/scooter_state.dart';
 import 'package:unustasis/flutter/blue_plus_mockable.dart';
+import 'package:unustasis/infrastructure/characteristic_repository.dart';
 
 import 'infrastructure/battery_reader.dart';
 import 'infrastructure/state_of_charge_reader.dart';
@@ -36,21 +37,7 @@ class ScooterService {
   SharedPreferences? prefs;
   late Timer _locationTimer, _rssiTimer, _manualRefreshTimer;
   bool optionalAuth = false;
-
-  // some useful characteristsics to save
-  BluetoothCharacteristic? _commandCharacteristic;
-  BluetoothCharacteristic? _hibernationCommandCharacteristic;
-  BluetoothCharacteristic? _stateCharacteristic;
-  BluetoothCharacteristic? _powerStateCharacteristic;
-  BluetoothCharacteristic? _seatCharacteristic;
-  BluetoothCharacteristic? _handlebarCharacteristic;
-  BluetoothCharacteristic? _auxSOCCharacteristic;
-  BluetoothCharacteristic? _cbbSOCCharacteristic;
-  BluetoothCharacteristic? _cbbChargingCharacteristic;
-  BluetoothCharacteristic? _primaryCyclesCharacteristic;
-  BluetoothCharacteristic? _primarySOCCharacteristic;
-  BluetoothCharacteristic? _secondaryCyclesCharacteristic;
-  BluetoothCharacteristic? _secondarySOCCharacteristic;
+  late CharacteristicRepository characteristicRepository;
 
   final FlutterBluePlusMockable flutterBluePlus;
 
@@ -115,8 +102,8 @@ class ScooterService {
       if (myScooter != null && myScooter!.isConnected) {
         // only refresh state and seatbox, for now
         log("Auto-refresh...");
-        _stateCharacteristic!.read();
-        _seatCharacteristic!.read();
+        characteristicRepository.stateCharacteristic!.read();
+        characteristicRepository.seatCharacteristic!.read();
       }
     });
   }
@@ -399,95 +386,49 @@ class ScooterService {
       throw "Scooter disconnected, can't set up characteristics!";
     }
     try {
-      await scooter.discoverServices();
-      _commandCharacteristic = _findCharacteristic(
-          myScooter!,
-          "9a590000-6e67-5d0d-aab9-ad9126b66f91",
-          "9a590001-6e67-5d0d-aab9-ad9126b66f91");
-      _hibernationCommandCharacteristic = _findCharacteristic(
-          myScooter!,
-          "9a590000-6e67-5d0d-aab9-ad9126b66f91",
-          "9a590002-6e67-5d0d-aab9-ad9126b66f91");
-      _stateCharacteristic = _findCharacteristic(
-          myScooter!,
-          "9a590020-6e67-5d0d-aab9-ad9126b66f91",
-          "9a590021-6e67-5d0d-aab9-ad9126b66f91");
-      _powerStateCharacteristic = _findCharacteristic(
-          myScooter!,
-          "9a5900a0-6e67-5d0d-aab9-ad9126b66f91",
-          "9a5900a1-6e67-5d0d-aab9-ad9126b66f91");
-      _seatCharacteristic = _findCharacteristic(
-          myScooter!,
-          "9a590020-6e67-5d0d-aab9-ad9126b66f91",
-          "9a590022-6e67-5d0d-aab9-ad9126b66f91");
-      _handlebarCharacteristic = _findCharacteristic(
-          myScooter!,
-          "9a590020-6e67-5d0d-aab9-ad9126b66f91",
-          "9a590023-6e67-5d0d-aab9-ad9126b66f91");
-      _auxSOCCharacteristic = _findCharacteristic(
-          myScooter!,
-          "9a590040-6e67-5d0d-aab9-ad9126b66f91",
-          "9a590044-6e67-5d0d-aab9-ad9126b66f91");
-      _cbbSOCCharacteristic = _findCharacteristic(
-          myScooter!,
-          "9a590060-6e67-5d0d-aab9-ad9126b66f91",
-          "9a590061-6e67-5d0d-aab9-ad9126b66f91");
-      _cbbChargingCharacteristic = _findCharacteristic(
-          myScooter!,
-          "9a590060-6e67-5d0d-aab9-ad9126b66f91",
-          "9a590072-6e67-5d0d-aab9-ad9126b66f91");
-      _primaryCyclesCharacteristic = _findCharacteristic(
-          myScooter!,
-          "9a5900e0-6e67-5d0d-aab9-ad9126b66f91",
-          "9a5900e6-6e67-5d0d-aab9-ad9126b66f91");
-      _primarySOCCharacteristic = _findCharacteristic(
-          myScooter!,
-          "9a5900e0-6e67-5d0d-aab9-ad9126b66f91",
-          "9a5900e9-6e67-5d0d-aab9-ad9126b66f91");
-      _secondaryCyclesCharacteristic = _findCharacteristic(
-          myScooter!,
-          "9a5900e0-6e67-5d0d-aab9-ad9126b66f91",
-          "9a5900f2-6e67-5d0d-aab9-ad9126b66f91");
-      _secondarySOCCharacteristic = _findCharacteristic(
-          myScooter!,
-          "9a5900e0-6e67-5d0d-aab9-ad9126b66f91",
-          "9a5900f5-6e67-5d0d-aab9-ad9126b66f91");
+      characteristicRepository = CharacteristicRepository(myScooter);
+      await characteristicRepository.findAll();
 
       // subscribe to a bunch of values
-      StringReader("State", _stateCharacteristic!)
+      StringReader("State", characteristicRepository.stateCharacteristic!)
           .readAndSubscribe((String value) {
         _state = value;
         _updateScooterState();
       });
 
       // Subscribe to power state for correct hibernation
-      StringReader("Power State", _powerStateCharacteristic!)
+      StringReader(
+              "Power State", characteristicRepository.powerStateCharacteristic!)
           .readAndSubscribe((String value) {
         _powerState = value;
         _updateScooterState();
       });
 
-      StringReader("Seat", _seatCharacteristic!)
+      StringReader("Seat", characteristicRepository.seatCharacteristic!)
           .readAndSubscribe((String seatState) {
         _seatClosedController.add(seatState != "open");
       });
 
-      StringReader("Handlebars", _handlebarCharacteristic!)
+      StringReader(
+              "Handlebars", characteristicRepository.handlebarCharacteristic!)
           .readAndSubscribe((String handlebarState) {
         _handlebarController.add(handlebarState != "unlocked");
       });
 
-      StateOfChargeReader("aux", _auxSOCCharacteristic, _lastPingController)
+      StateOfChargeReader("aux", characteristicRepository.auxSOCCharacteristic,
+              _lastPingController)
           .readAndSubscribe((soc) {
         _auxSOCController.add(soc);
       });
 
-      StateOfChargeReader("cbb", _cbbSOCCharacteristic, _lastPingController)
+      StateOfChargeReader("cbb", characteristicRepository.cbbSOCCharacteristic,
+              _lastPingController)
           .readAndSubscribe((soc) {
         _cbbSOCController.add(soc);
       });
 
-      StringReader("CBB charging", _cbbChargingCharacteristic!)
+      StringReader("CBB charging",
+              characteristicRepository.cbbChargingCharacteristic!)
           .readAndSubscribe((String chargingState) {
         if (chargingState == "charging") {
           _cbbChargingController.add(true);
@@ -498,16 +439,16 @@ class ScooterService {
 
       var primaryBatterReader = BatteryReader(
           "primary",
-          _primaryCyclesCharacteristic,
-          _primarySOCCharacteristic,
+          characteristicRepository.primaryCyclesCharacteristic,
+          characteristicRepository.primarySOCCharacteristic,
           _lastPingController);
       primaryBatterReader.readAndSubscribe(
           _primarySOCController, _primaryCyclesController);
 
       var secondaryBatteryReader = BatteryReader(
           "secondary",
-          _secondaryCyclesCharacteristic,
-          _secondarySOCCharacteristic,
+          characteristicRepository.secondaryCyclesCharacteristic,
+          characteristicRepository.secondarySOCCharacteristic,
           _lastPingController);
       secondaryBatteryReader.readAndSubscribe(
           _secondarySOCController, _secondarySOCController);
@@ -524,16 +465,6 @@ class ScooterService {
           ScooterState.fromStateAndPowerState(_state!, powerState);
       _stateController.add(newState);
     }
-  }
-
-  BluetoothCharacteristic? _findCharacteristic(
-      BluetoothDevice device, String serviceUuid, String characteristicUuid) {
-    log("Finding characteristic $characteristicUuid in service $serviceUuid...");
-    return device.servicesList
-        .firstWhere((service) => service.serviceUuid.toString() == serviceUuid)
-        .characteristics
-        .firstWhere(
-            (char) => char.characteristicUuid.toString() == characteristicUuid);
   }
 
   // SCOOTER ACTIONS
@@ -566,7 +497,7 @@ class ScooterService {
     if (_seatClosedController.value == false) {
       log("Seat seems to be open, checking again...");
       // make really sure nothing has changed
-      await _seatCharacteristic!.read();
+      await characteristicRepository.seatCharacteristic!.read();
       if (_seatClosedController.value == false) {
         log("Locking aborted, because seat is open!");
         throw "SEAT_OPEN";
@@ -608,12 +539,15 @@ class ScooterService {
   }
 
   Future<void> wakeUp() async {
-    _sendCommand("wakeup", characteristic: _hibernationCommandCharacteristic);
+    _sendCommand("wakeup",
+        characteristic:
+            characteristicRepository.hibernationCommandCharacteristic);
   }
 
   Future<void> hibernate() async {
     _sendCommand("hibernate",
-        characteristic: _hibernationCommandCharacteristic);
+        characteristic:
+            characteristicRepository.hibernationCommandCharacteristic);
   }
 
   void _pollLocation() async {
@@ -660,7 +594,7 @@ class ScooterService {
       throw "Scooter disconnected!";
     }
 
-    var characteristicToSend = _commandCharacteristic;
+    var characteristicToSend = characteristicRepository.commandCharacteristic;
     if (characteristic != null) {
       characteristicToSend = characteristic;
     }
