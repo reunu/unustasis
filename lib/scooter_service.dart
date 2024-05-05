@@ -472,13 +472,15 @@ class ScooterService {
           _handlebarController.add(handlebarState != "unlocked");
         });
       // Subscribe to aux battery SOC
-      StateOfChargeReader(
-          "aux", _auxSOCCharacteristic, _auxSOCController, _lastPingController)
-          .readAndSubscribe();
+      StateOfChargeReader("aux", _auxSOCCharacteristic, _lastPingController)
+          .readAndSubscribe((soc) {
+        _auxSOCController.add(soc);
+      });
       // Subscribe to internal CBB SOC
-      StateOfChargeReader(
-          "cbb", _cbbSOCCharacteristic, _cbbSOCController, _lastPingController)
-          .readAndSubscribe();
+      StateOfChargeReader("cbb", _cbbSOCCharacteristic, _lastPingController)
+          .readAndSubscribe((soc) {
+        _cbbSOCController.add(soc);
+      });
       // subscribe to CBB charging status
       StringReader("CBB charging", _cbbChargingCharacteristic!).readAndSubscribe((String chargingState) {
           if (chargingState == "charging") {
@@ -489,22 +491,18 @@ class ScooterService {
         });
 
       var primaryBatterReader = BatteryReader(
-              "primary",
-              _primaryCyclesCharacteristic,
-              _primarySOCCharacteristic,
-              _primaryCyclesController,
-              _primarySOCController,
-              _lastPingController);
-      primaryBatterReader.readAndSubscribe();
+          "primary",
+          _primaryCyclesCharacteristic,
+          _primarySOCCharacteristic,
+          _lastPingController);
+      primaryBatterReader.readAndSubscribe(_primarySOCController, _primaryCyclesController);
 
       var secondaryBatteryReader = BatteryReader(
           "secondary",
           _secondaryCyclesCharacteristic,
           _secondarySOCCharacteristic,
-          _secondaryCyclesController,
-          _secondarySOCController,
           _lastPingController);
-      secondaryBatteryReader.readAndSubscribe();
+      secondaryBatteryReader.readAndSubscribe(_secondarySOCController, _secondarySOCController);
     } catch (e) {
       rethrow;
     }

@@ -20,7 +20,6 @@ class StringReader {
 
   String _convertBytesToString(List<int> value) {
     value.removeWhere((element) => element == 0);
-    String state = ascii.decode(value).trim();
-    return state;
+    return ascii.decode(value).trim();
   }
 }
