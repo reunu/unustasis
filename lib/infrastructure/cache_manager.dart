@@ -1,4 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unustasis/domain/scooter_battery.dart';
 
 enum CacheKey {
   lastPing;
@@ -7,15 +8,16 @@ enum CacheKey {
 class CacheManager {
   static SharedPreferences? _sharedPrefs;
 
-  static writeSOC(String name, int soc) async {
+  static writeSOC(ScooterBattery name, int soc) async {
     return (await _getSharedPrefs()).setInt(getSocCacheKey(name), soc);
   }
 
-  static Future<int?> readSOC(String name) async {
+  static Future<int?> readSOC(ScooterBattery name) async {
     return (await _getSharedPrefs()).getInt(getSocCacheKey(name));
   }
 
-  static String getSocCacheKey(String name) => "${name}SOC";
+  static String getSocCacheKey(ScooterBattery batteryName) =>
+      "${batteryName.name}SOC";
 
   static writeLastPing() async {
     (await _getSharedPrefs())

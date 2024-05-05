@@ -1,6 +1,7 @@
 import 'dart:developer';
 
 import 'package:rxdart/rxdart.dart';
+import 'package:unustasis/domain/scooter_battery.dart';
 import 'package:unustasis/infrastructure/characteristic_repository.dart';
 import 'package:unustasis/infrastructure/state_of_charge_reader.dart';
 import 'package:unustasis/infrastructure/string_reader.dart';
@@ -78,12 +79,18 @@ class ScooterReader {
       _handlebarController.add(handlebarState != "unlocked");
     });
 
-    StateOfChargeReader("aux", _characteristicRepository.auxSOCCharacteristic,
-            _auxSOCController, _lastPingController)
+    StateOfChargeReader(
+            ScooterBattery.aux,
+            _characteristicRepository.auxSOCCharacteristic,
+            _auxSOCController,
+            _lastPingController)
         .readAndSubscribe();
 
-    StateOfChargeReader("cbb", _characteristicRepository.cbbSOCCharacteristic,
-            _cbbSOCController, _lastPingController)
+    StateOfChargeReader(
+            ScooterBattery.cbb,
+            _characteristicRepository.cbbSOCCharacteristic,
+            _cbbSOCController,
+            _lastPingController)
         .readAndSubscribe();
 
     StringReader("CBB charging",
@@ -97,7 +104,7 @@ class ScooterReader {
     });
 
     var primaryBatterReader = BatteryReader(
-        "primary",
+        ScooterBattery.primary,
         _characteristicRepository.primaryCyclesCharacteristic,
         _characteristicRepository.primarySOCCharacteristic,
         _lastPingController);
@@ -105,7 +112,7 @@ class ScooterReader {
         _primarySOCController, _primaryCyclesController);
 
     var secondaryBatteryReader = BatteryReader(
-        "secondary",
+        ScooterBattery.secondary,
         _characteristicRepository.secondaryCyclesCharacteristic,
         _characteristicRepository.secondarySOCCharacteristic,
         _lastPingController);

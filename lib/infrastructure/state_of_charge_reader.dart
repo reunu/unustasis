@@ -2,22 +2,23 @@ import 'dart:developer';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:unustasis/domain/scooter_battery.dart';
 import 'package:unustasis/infrastructure/cache_manager.dart';
 import 'package:unustasis/infrastructure/utils.dart';
 
 class StateOfChargeReader {
-  final String _name;
+  final ScooterBattery _battery;
   final BluetoothCharacteristic? _characteristic;
   final BehaviorSubject<int?> _socController;
   final BehaviorSubject<DateTime?> _lastPingController;
 
-  StateOfChargeReader(this._name, this._characteristic, this._socController,
+  StateOfChargeReader(this._battery, this._characteristic, this._socController,
       this._lastPingController);
 
   readAndSubscribe() {
     subscribeCharacteristic(_characteristic!, (value) {
       int? soc = convertUint32ToInt(value);
-      log("$_name SOC received: $soc");
+      log("$_battery SOC received: $soc");
       _socController.add(soc);
       _writeCache(soc);
     });
@@ -32,7 +33,7 @@ class StateOfChargeReader {
     }
 
     _lastPingController.add(lastPing);
-    _socController.add(await CacheManager.readSOC(_name));
+    _socController.add(await CacheManager.readSOC(_battery));
   }
 
   void _writeCache(int? soc) {
@@ -42,6 +43,6 @@ class StateOfChargeReader {
 
     _lastPingController.add(DateTime.now());
     CacheManager.writeLastPing();
-    CacheManager.writeSOC(_name, soc);
+    CacheManager.writeSOC(_battery, soc);
   }
 }
