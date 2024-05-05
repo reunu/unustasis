@@ -10,14 +10,10 @@ import 'package:latlong2/latlong.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unustasis/domain/scooter_keyless_distance.dart';
-import 'package:unustasis/domain/scooter_power_state.dart';
 import 'package:unustasis/domain/scooter_state.dart';
 import 'package:unustasis/flutter/blue_plus_mockable.dart';
 import 'package:unustasis/infrastructure/characteristic_repository.dart';
-
-import 'infrastructure/battery_reader.dart';
-import 'infrastructure/state_of_charge_reader.dart';
-import 'infrastructure/string_reader.dart';
+import 'package:unustasis/infrastructure/scooter_reader.dart';
 
 const bootingTimeSeconds = 25;
 const keylessCooldownSeconds = 60;
@@ -26,7 +22,6 @@ class ScooterService {
   String? savedScooterId;
   BluetoothDevice? myScooter; // reserved for a connected scooter!
   bool _foundSth = false; // whether we've found a scooter yet
-  String? _state, _powerState;
   bool _autoRestarting = false;
   bool _scanning = false;
   bool _autoUnlock = false;
@@ -38,6 +33,7 @@ class ScooterService {
   late Timer _locationTimer, _rssiTimer, _manualRefreshTimer;
   bool optionalAuth = false;
   late CharacteristicRepository characteristicRepository;
+  late ScooterReader _scooterReader;
 
   final FlutterBluePlusMockable flutterBluePlus;
 
@@ -112,7 +108,6 @@ class ScooterService {
 
   final BehaviorSubject<bool> _connectedController =
       BehaviorSubject<bool>.seeded(false);
-
   Stream<bool> get connected => _connectedController.stream;
 
   final BehaviorSubject<ScooterState?> _stateController =
@@ -389,81 +384,22 @@ class ScooterService {
       characteristicRepository = CharacteristicRepository(myScooter);
       await characteristicRepository.findAll();
 
-      // subscribe to a bunch of values
-      StringReader("State", characteristicRepository.stateCharacteristic!)
-          .readAndSubscribe((String value) {
-        _state = value;
-        _updateScooterState();
-      });
-
-      // Subscribe to power state for correct hibernation
-      StringReader(
-              "Power State", characteristicRepository.powerStateCharacteristic!)
-          .readAndSubscribe((String value) {
-        _powerState = value;
-        _updateScooterState();
-      });
-
-      StringReader("Seat", characteristicRepository.seatCharacteristic!)
-          .readAndSubscribe((String seatState) {
-        _seatClosedController.add(seatState != "open");
-      });
-
-      StringReader(
-              "Handlebars", characteristicRepository.handlebarCharacteristic!)
-          .readAndSubscribe((String handlebarState) {
-        _handlebarController.add(handlebarState != "unlocked");
-      });
-
-      StateOfChargeReader("aux", characteristicRepository.auxSOCCharacteristic,
-              _lastPingController)
-          .readAndSubscribe((soc) {
-        _auxSOCController.add(soc);
-      });
-
-      StateOfChargeReader("cbb", characteristicRepository.cbbSOCCharacteristic,
-              _lastPingController)
-          .readAndSubscribe((soc) {
-        _cbbSOCController.add(soc);
-      });
-
-      StringReader("CBB charging",
-              characteristicRepository.cbbChargingCharacteristic!)
-          .readAndSubscribe((String chargingState) {
-        if (chargingState == "charging") {
-          _cbbChargingController.add(true);
-        } else if (chargingState == "not-charging") {
-          _cbbChargingController.add(false);
-        }
-      });
-
-      var primaryBatterReader = BatteryReader(
-          "primary",
-          characteristicRepository.primaryCyclesCharacteristic,
-          characteristicRepository.primarySOCCharacteristic,
-          _lastPingController);
-      primaryBatterReader.readAndSubscribe(
-          _primarySOCController, _primaryCyclesController);
-
-      var secondaryBatteryReader = BatteryReader(
-          "secondary",
-          characteristicRepository.secondaryCyclesCharacteristic,
-          characteristicRepository.secondarySOCCharacteristic,
-          _lastPingController);
-      secondaryBatteryReader.readAndSubscribe(
-          _secondarySOCController, _secondarySOCController);
+      _scooterReader = ScooterReader(
+          characteristicRepository: characteristicRepository,
+          stateController: _stateController,
+          seatClosedController: _seatClosedController,
+          handlebarController: _handlebarController,
+          lastPingController: _lastPingController,
+          auxSOCController: _auxSOCController,
+          cbbSOCController: _cbbSOCController,
+          cbbChargingController: _cbbChargingController,
+          primarySOCController: _primarySOCController,
+          secondarySOCController: _secondarySOCController,
+          primaryCyclesController: _primaryCyclesController,
+          secondaryCyclesController: _secondaryCyclesController);
+      _scooterReader.readAndSubscribe();
     } catch (e) {
       rethrow;
-    }
-  }
-
-  Future<void> _updateScooterState() async {
-    log("Update scooter state from state: '$_state' and power state: '$_powerState'");
-    if (_state != null && _powerState != null) {
-      ScooterPowerState powerState = ScooterPowerState.fromString(_powerState);
-      ScooterState newState =
-          ScooterState.fromStateAndPowerState(_state!, powerState);
-      _stateController.add(newState);
     }
   }
 
