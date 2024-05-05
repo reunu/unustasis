@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unustasis/infrastructure/shared_pref_key.dart';
 import 'package:unustasis/infrastructure/utils.dart';
 
 class StateOfChargeReader {
@@ -12,7 +13,7 @@ class StateOfChargeReader {
   final BehaviorSubject<DateTime?> _lastPingController;
   late SharedPreferences _sharedPrefs;
 
-  final String _lastPingCacheKey = "lastPing";
+  final String _lastPingCacheKey = SharedPrefKey.lastPing.name;
   late String _socCacheKey;
 
   StateOfChargeReader(this._name, this._characteristic, this._socController,

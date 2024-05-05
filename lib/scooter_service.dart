@@ -15,6 +15,8 @@ import 'package:unustasis/flutter/blue_plus_mockable.dart';
 import 'package:unustasis/infrastructure/characteristic_repository.dart';
 import 'package:unustasis/infrastructure/scooter_reader.dart';
 
+import 'infrastructure/shared_pref_key.dart';
+
 const bootingTimeSeconds = 25;
 const keylessCooldownSeconds = 60;
 
@@ -44,7 +46,7 @@ class ScooterService {
       this.prefs = prefs;
       if (prefs.containsKey("savedScooterId")) {
         savedScooterId = prefs.getString("savedScooterId");
-        int? lastPing = prefs.getInt("lastPing");
+        int? lastPing = prefs.getInt(SharedPrefKey.lastPing.name);
         if (lastPing != null) {
           double? lastLat = prefs.getDouble("lastLat");
           double? lastLon = prefs.getDouble("lastLon");
