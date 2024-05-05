@@ -12,10 +12,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unustasis/domain/scooter_keyless_distance.dart';
 import 'package:unustasis/domain/scooter_state.dart';
 import 'package:unustasis/flutter/blue_plus_mockable.dart';
+import 'package:unustasis/infrastructure/cache_manager.dart';
 import 'package:unustasis/infrastructure/characteristic_repository.dart';
 import 'package:unustasis/infrastructure/scooter_reader.dart';
-
-import 'infrastructure/cache_key.dart';
 
 const bootingTimeSeconds = 25;
 const keylessCooldownSeconds = 60;

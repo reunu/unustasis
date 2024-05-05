@@ -1,5 +1,8 @@
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:unustasis/infrastructure/cache_key.dart';
+
+enum CacheKey {
+  lastPing;
+}
 
 class CacheManager {
   static SharedPreferences? _sharedPrefs;
