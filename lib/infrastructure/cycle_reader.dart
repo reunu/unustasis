@@ -13,7 +13,7 @@ class CycleReader {
   readAndSubscribe(Function(int?) callback) {
     subscribeCharacteristic(_characteristic!, (value) {
       int? cycles = convertUint32ToInt(value);
-      log("${_battery} battery cycles received: $cycles");
+      log("$_battery battery cycles received: $cycles");
       callback(cycles);
     });
   }

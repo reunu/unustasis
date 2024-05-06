@@ -8,16 +8,15 @@ enum CacheKey {
 class CacheManager {
   static SharedPreferences? _sharedPrefs;
 
-  static writeSOC(ScooterBattery name, int soc) async {
-    return (await _getSharedPrefs()).setInt(getSocCacheKey(name), soc);
+  static writeSOC(ScooterBattery battery, int soc) async {
+    return (await _getSharedPrefs()).setInt(getSocCacheKey(battery), soc);
   }
 
-  static Future<int?> readSOC(ScooterBattery name) async {
-    return (await _getSharedPrefs()).getInt(getSocCacheKey(name));
+  static Future<int?> readSOC(ScooterBattery battery) async {
+    return (await _getSharedPrefs()).getInt(getSocCacheKey(battery));
   }
 
-  static String getSocCacheKey(ScooterBattery batteryName) =>
-      "${batteryName.name}SOC";
+  static String getSocCacheKey(ScooterBattery battery) => "${battery.name}SOC";
 
   static writeLastPing() async {
     (await _getSharedPrefs())
