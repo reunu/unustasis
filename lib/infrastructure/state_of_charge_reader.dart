@@ -19,8 +19,11 @@ class StateOfChargeReader {
     subscribeCharacteristic(_characteristic!, (value) {
       int? soc = convertUint32ToInt(value);
       log("$_battery SOC received: $soc");
-      _socController.add(soc);
-      _writeCache(soc);
+      // sometimes the scooter sends null. Ignoring those values...
+      if (soc != null) {
+        _socController.add(soc);
+        _writeCache(soc);
+      }
     });
 
     _readCache();
@@ -36,11 +39,7 @@ class StateOfChargeReader {
     _socController.add(await CacheManager.readSOC(_battery));
   }
 
-  void _writeCache(int? soc) {
-    if (soc == null) {
-      return;
-    }
-
+  void _writeCache(int soc) {
     _lastPingController.add(DateTime.now());
     CacheManager.writeLastPing();
     CacheManager.writeSOC(_battery, soc);
