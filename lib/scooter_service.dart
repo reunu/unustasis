@@ -93,8 +93,9 @@ class ScooterService {
       if (myScooter != null && myScooter!.isConnected) {
         // only refresh state and seatbox, for now
         log("Auto-refresh...");
-        characteristicRepository.stateCharacteristic!.read();
-        characteristicRepository.seatCharacteristic!.read();
+        characteristicRepository.stateCharacteristic.read();
+        characteristicRepository.seatCharacteristic.read();
+        characteristicRepository.cbbSOCCharacteristic.read();
       }
     });
   }
@@ -376,7 +377,7 @@ class ScooterService {
       throw "Scooter disconnected, can't set up characteristics!";
     }
     try {
-      characteristicRepository = CharacteristicRepository(myScooter);
+      characteristicRepository = CharacteristicRepository(myScooter!);
       await characteristicRepository.findAll();
 
       _scooterReader = ScooterReader(
@@ -428,7 +429,7 @@ class ScooterService {
     if (_seatClosedController.value == false) {
       log("Seat seems to be open, checking again...");
       // make really sure nothing has changed
-      await characteristicRepository.seatCharacteristic!.read();
+      await characteristicRepository.seatCharacteristic.read();
       if (_seatClosedController.value == false) {
         log("Locking aborted, because seat is open!");
         throw "SEAT_OPEN";
@@ -531,7 +532,7 @@ class ScooterService {
     }
 
     try {
-      characteristicToSend!.write(ascii.encode(command));
+      characteristicToSend.write(ascii.encode(command));
     } catch (e) {
       rethrow;
     }

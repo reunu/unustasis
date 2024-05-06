@@ -54,7 +54,7 @@ class ScooterReader {
 
   readAndSubscribe() {
     // subscribe to a bunch of values
-    StringReader("State", _characteristicRepository.stateCharacteristic!)
+    StringReader("State", _characteristicRepository.stateCharacteristic)
         .readAndSubscribe((String value) {
       _state = value;
       _updateScooterState();
@@ -62,19 +62,19 @@ class ScooterReader {
 
     // Subscribe to power state for correct hibernation
     StringReader(
-            "Power State", _characteristicRepository.powerStateCharacteristic!)
+            "Power State", _characteristicRepository.powerStateCharacteristic)
         .readAndSubscribe((String value) {
       _powerState = value;
       _updateScooterState();
     });
 
-    StringReader("Seat", _characteristicRepository.seatCharacteristic!)
+    StringReader("Seat", _characteristicRepository.seatCharacteristic)
         .readAndSubscribe((String seatState) {
       _seatClosedController.add(seatState != "open");
     });
 
     StringReader(
-            "Handlebars", _characteristicRepository.handlebarCharacteristic!)
+            "Handlebars", _characteristicRepository.handlebarCharacteristic)
         .readAndSubscribe((String handlebarState) {
       _handlebarController.add(handlebarState != "unlocked");
     });
@@ -93,8 +93,7 @@ class ScooterReader {
             _lastPingController)
         .readAndSubscribe();
 
-    StringReader("CBB charging",
-            _characteristicRepository.cbbChargingCharacteristic!)
+    StringReader("CBB charging", _characteristicRepository.cbbChargingCharacteristic)
         .readAndSubscribe((String chargingState) {
       if (chargingState == "charging") {
         _cbbChargingController.add(true);
