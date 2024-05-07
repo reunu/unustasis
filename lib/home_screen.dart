@@ -442,8 +442,12 @@ class _ScooterPowerButtonState extends State<ScooterPowerButton> {
                   });
                 },
           child: loading
-              ? CircularProgressIndicator(
-                  color: Theme.of(context).colorScheme.background,
+              ? SizedBox(
+                  height: 16,
+                  width: 16,
+                  child: CircularProgressIndicator(
+                    color: Theme.of(context).colorScheme.background,
+                  ),
                 )
               : Icon(
                   widget._icon,

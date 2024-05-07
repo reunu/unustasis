@@ -183,14 +183,16 @@ class _OnboardingScreenState extends State<OnboardingScreen>
         duration: const Duration(milliseconds: 600),
         width: double.infinity,
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.bottomCenter,
-            end: Alignment.topCenter,
+          gradient: RadialGradient(
+            center: Alignment.center,
+            radius: 1.5,
             colors: [
-              Theme.of(context).colorScheme.onTertiary,
               _step == 5
-                  ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
+                  ? HSLColor.fromColor(Theme.of(context).colorScheme.primary)
+                      .withLightness(0.2)
+                      .toColor()
                   : Theme.of(context).colorScheme.surface,
+              Theme.of(context).colorScheme.onTertiary,
             ],
           ),
         ),
