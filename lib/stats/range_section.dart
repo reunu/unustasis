@@ -121,7 +121,7 @@ class RangeSection extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    "~${range} km",
+                    "~${range}km",
                     style: Theme.of(context).textTheme.headlineMedium,
                     textScaler: TextScaler.noScaling,
                     textAlign: TextAlign.end,
@@ -140,7 +140,7 @@ class RangeSection extends StatelessWidget {
                       : Text(
                           FlutterI18n.translate(
                               context, "stats_range_throttled"),
-                          style: Theme.of(context).textTheme.titleMedium,
+                          style: Theme.of(context).textTheme.titleSmall,
                           textScaler: TextScaler.noScaling,
                           textAlign: TextAlign.end,
                         ),
@@ -164,7 +164,7 @@ class RangeSection extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Container(
-        height: 300,
+        height: 200,
         padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 16.0),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.background,
@@ -201,6 +201,7 @@ class RangeSection extends StatelessWidget {
                         }
                         int? color = prefs.data!.getInt("color");
                         return Image(
+                          width: 160,
                           image: AssetImage(
                               "images/scooter/side_${color ?? 0}.webp"),
                         );
@@ -215,12 +216,11 @@ class RangeSection extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    "~${range} km",
-                    style: Theme.of(context).textTheme.displayMedium,
+                    "~${range}km",
+                    style: Theme.of(context).textTheme.displaySmall,
                     textScaler: TextScaler.noScaling,
                     textAlign: TextAlign.end,
                   ),
-                  const SizedBox(height: 4),
                   fullPowerRange > 0
                       ? Text(
                           FlutterI18n.translate(
@@ -228,7 +228,7 @@ class RangeSection extends StatelessWidget {
                               translationParams: {
                                 "range": fullPowerRange.toString()
                               }),
-                          style: Theme.of(context).textTheme.titleMedium,
+                          style: Theme.of(context).textTheme.titleSmall,
                           textScaler: TextScaler.noScaling,
                           textAlign: TextAlign.end,
                         )
