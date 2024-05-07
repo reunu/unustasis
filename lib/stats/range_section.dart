@@ -121,7 +121,7 @@ class RangeSection extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    "~${range}km",
+                    "~${range} km",
                     style: Theme.of(context).textTheme.headlineMedium,
                     textScaler: TextScaler.noScaling,
                     textAlign: TextAlign.end,
@@ -133,7 +133,7 @@ class RangeSection extends StatelessWidget {
                               translationParams: {
                                 "range": fullPowerRange.toString()
                               }),
-                          style: Theme.of(context).textTheme.titleMedium,
+                          style: Theme.of(context).textTheme.titleSmall,
                           textScaler: TextScaler.noScaling,
                           textAlign: TextAlign.end,
                         )
@@ -202,7 +202,7 @@ class RangeSection extends StatelessWidget {
                         int? color = prefs.data!.getInt("color");
                         return Image(
                           image: AssetImage(
-                              "images/scooter/base_${color ?? 0}.webp"),
+                              "images/scooter/side_${color ?? 0}.webp"),
                         );
                       }),
                 ),
@@ -215,7 +215,7 @@ class RangeSection extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    "~${range}km",
+                    "~${range} km",
                     style: Theme.of(context).textTheme.displayMedium,
                     textScaler: TextScaler.noScaling,
                     textAlign: TextAlign.end,

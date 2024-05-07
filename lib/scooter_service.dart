@@ -90,8 +90,8 @@ class ScooterService {
         _pollLocation();
       }
     });
-    _rssiTimer = Timer.periodic(const Duration(seconds: 1), (timer) async {
-      if (myScooter != null && myScooter!.isConnected) {
+    _rssiTimer = Timer.periodic(const Duration(seconds: 2), (timer) async {
+      if (myScooter != null && myScooter!.isConnected && _autoUnlock) {
         int? rssi;
         try {
           rssi = await myScooter!.readRssi();
@@ -325,8 +325,10 @@ class ScooterService {
     try {
       log("Connecting...");
       await device.connect();
-      log("Bonding...");
-      await device.createBond();
+      if (Platform.isAndroid) {
+        log("Bonding...");
+        await device.createBond();
+      }
       myScooter = device;
       setSavedScooter(device.remoteId.toString());
       await setUpCharacteristics(device);
