@@ -102,6 +102,13 @@ flutter:
     - images/scooter/base_4.webp
     - images/scooter/base_5.webp
     - images/scooter/base_6.webp
+    - images/scooter/side_0.webp
+    - images/scooter/side_1.webp
+    - images/scooter/side_2.webp
+    - images/scooter/side_3.webp
+    - images/scooter/side_4.webp
+    - images/scooter/side_5.webp
+    - images/scooter/side_6.webp
     - images/scooter/disconnected.webp
     - images/scooter/light_beam.webp
     - images/scooter/light_ring.webp
