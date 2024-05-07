@@ -191,7 +191,7 @@ class RangeSection extends StatelessWidget {
                           .onBackground
                           .withOpacity(0.5)),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
                 Expanded(
                   child: FutureBuilder<SharedPreferences>(
                       future: SharedPreferences.getInstance(),
@@ -201,7 +201,7 @@ class RangeSection extends StatelessWidget {
                         }
                         int? color = prefs.data!.getInt("color");
                         return Image(
-                          width: 160,
+                          width: 150,
                           image: AssetImage(
                               "images/scooter/side_${color ?? 0}.webp"),
                         );

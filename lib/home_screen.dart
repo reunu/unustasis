@@ -214,6 +214,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ],
                         );
                       }),
+                const SizedBox(height: 16),
                 Expanded(
                     child: ScooterVisual(
                         color: color,
@@ -221,6 +222,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         scanning: _scanning,
                         blinkerLeft: false, // TODO: extract ScooterBlinkerState
                         blinkerRight: false)),
+                const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   mainAxisSize: MainAxisSize.max,
