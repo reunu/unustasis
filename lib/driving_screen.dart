@@ -100,7 +100,7 @@ class _DrivingScreenState extends State<DrivingScreen> {
                     child: CircularProgressIndicator(
                       value: _speed / 120,
                       strokeWidth: 10,
-                      backgroundColor: Colors.grey.shade800,
+                      backgroundColor: Theme.of(context).colorScheme.surface,
                     ),
                   ),
                 ),
@@ -132,7 +132,7 @@ class _DrivingScreenState extends State<DrivingScreen> {
                       width: 150,
                       child: LinearProgressIndicator(
                         value: (snapshot.data ?? 0) / 100,
-                        backgroundColor: Colors.grey.shade800,
+                        backgroundColor: Theme.of(context).colorScheme.surface,
                         color: Theme.of(context).colorScheme.primary,
                         minHeight: 16,
                         borderRadius: BorderRadius.circular(8),
@@ -155,7 +155,7 @@ class _DrivingScreenState extends State<DrivingScreen> {
                       width: 150,
                       child: LinearProgressIndicator(
                         value: (snapshot.data ?? 0) / 100,
-                        backgroundColor: Colors.grey.shade800,
+                        backgroundColor: Theme.of(context).colorScheme.surface,
                         color: Theme.of(context).colorScheme.primary,
                         minHeight: 16,
                         borderRadius: BorderRadius.circular(8),

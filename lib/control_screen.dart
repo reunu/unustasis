@@ -20,7 +20,7 @@ class _ControlScreenState extends State<ControlScreen> {
       appBar: AppBar(
         title: Text(FlutterI18n.translate(context, "controls_title")),
         elevation: 0.0,
-        backgroundColor: Colors.black,
+        backgroundColor: Theme.of(context).colorScheme.onTertiary,
         bottomOpacity: 0.0,
       ),
       body: Container(
@@ -29,7 +29,7 @@ class _ControlScreenState extends State<ControlScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Colors.black,
+              Theme.of(context).colorScheme.onTertiary,
               Theme.of(context).colorScheme.background,
             ],
           ),

@@ -8,6 +8,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unustasis/control_screen.dart';
 import 'package:unustasis/driving_screen.dart';
+import 'package:unustasis/main.dart';
 import 'package:unustasis/onboarding_screen.dart';
 import 'package:unustasis/scooter_service.dart';
 import 'package:unustasis/domain/scooter_state.dart';
@@ -81,16 +82,21 @@ class _HomeScreenState extends State<HomeScreen> {
       body: AnimatedContainer(
         duration: const Duration(milliseconds: 500),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.bottomCenter,
-            end: Alignment.topCenter,
+          gradient: RadialGradient(
+            center: Alignment.center,
+            radius: 1.3,
             colors: [
-              Colors.black,
               _scooterState?.isOn == true
-                  ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
+                  ? HSLColor.fromColor(Theme.of(context).colorScheme.primary)
+                      .withLightness(0.3)
+                      .toColor()
                   : _connected
-                      ? Theme.of(context).colorScheme.surface
-                      : Theme.of(context).colorScheme.background,
+                      ? HSLColor.fromColor(
+                              Theme.of(context).colorScheme.primary)
+                          .withLightness(0.2)
+                          .toColor()
+                      : Theme.of(context).colorScheme.surface,
+              Theme.of(context).colorScheme.onTertiary,
             ],
           ),
         ),
@@ -343,7 +349,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void redirectOrStart() async {
     if (await widget.scooterService.getSavedScooter() == null) {
-      Navigator.push(
+      Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (context) => OnboardingScreen(

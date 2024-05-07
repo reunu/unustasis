@@ -44,11 +44,11 @@ class RangeSection extends StatelessWidget {
                 return Container();
               }
             }),
-        const Divider(
+        Divider(
           height: 40,
           indent: 12,
           endIndent: 12,
-          color: Colors.white24,
+          color: Theme.of(context).colorScheme.onBackground.withOpacity(0.1),
         ),
         StreamBuilder<int?>(
             stream: service.primarySOC,

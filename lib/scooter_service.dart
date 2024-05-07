@@ -323,7 +323,10 @@ class ScooterService {
 
   void startWithFoundDevice({required BluetoothDevice device}) async {
     try {
+      log("Connecting...");
       await device.connect();
+      log("Bonding...");
+      await device.createBond();
       myScooter = device;
       setSavedScooter(device.remoteId.toString());
       await setUpCharacteristics(device);
@@ -338,6 +341,7 @@ class ScooterService {
         }
       });
     } catch (e) {
+      log("Error in startWithFoundDevice: $e");
       throw "Failed to connect to scooter!";
     }
   }

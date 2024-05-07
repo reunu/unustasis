@@ -92,11 +92,11 @@ class _BatterySectionState extends State<BatterySection> {
         ),
         // hiding until it properly works
         if (Platform.isWindows)
-          const Divider(
+          Divider(
             height: 40,
             indent: 12,
             endIndent: 12,
-            color: Colors.white24,
+            color: Theme.of(context).colorScheme.onBackground.withOpacity(0.1),
           ),
         if (nfcBattery != 0 && nfcBattery != null && !nfcScanning)
           _batteryCard(
@@ -134,8 +134,8 @@ class _BatterySectionState extends State<BatterySection> {
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size.fromHeight(60),
-                        side: const BorderSide(
-                          color: Colors.white,
+                        side: BorderSide(
+                          color: Theme.of(context).colorScheme.onBackground,
                         ),
                       ),
                       onPressed: () async {
@@ -216,8 +216,8 @@ class _BatterySectionState extends State<BatterySection> {
                       },
                       child: Text(
                         FlutterI18n.translate(context, "stats_nfc_button"),
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onBackground,
                         ),
                       ),
                     ),
@@ -240,7 +240,7 @@ class _BatterySectionState extends State<BatterySection> {
         height: 180,
         padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.background,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16.0),
           border: (soc <= 15 && !old)
               ? Border.all(
@@ -346,9 +346,15 @@ class _BatterySectionState extends State<BatterySection> {
                           value: soc / 100,
                           borderRadius: BorderRadius.circular(16.0),
                           minHeight: 16,
-                          backgroundColor: Colors.black.withOpacity(0.5),
+                          backgroundColor: Theme.of(context)
+                              .colorScheme
+                              .onTertiary
+                              .withOpacity(0.7),
                           color: old
-                              ? Theme.of(context).colorScheme.surface
+                              ? Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withOpacity(0.4)
                               : soc <= 15
                                   ? Colors.red
                                   : Theme.of(context).colorScheme.primary,
@@ -377,9 +383,9 @@ class _BatterySectionState extends State<BatterySection> {
             decoration: BoxDecoration(
               color: i < currentStep
                   ? (old
-                      ? Theme.of(context).colorScheme.surface
+                      ? Theme.of(context).colorScheme.onSurface.withOpacity(0.4)
                       : Theme.of(context).colorScheme.primary)
-                  : Colors.black.withOpacity(0.5),
+                  : Theme.of(context).colorScheme.onTertiary.withOpacity(0.5),
               borderRadius: BorderRadius.circular(8),
             ),
           ),

@@ -76,7 +76,7 @@ extension StateExtension on ScooterState {
       case ScooterState.disconnected:
       default:
         // scooter is disconnected or in a bad state (like Bavaria or sth)
-        return Colors.grey.shade800;
+        return Theme.of(context).colorScheme.surface;
     }
   }
 

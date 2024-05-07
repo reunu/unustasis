@@ -61,7 +61,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     widget.service.connected.listen((connected) {
       if (connected) {
         setState(() {
-          _step = 3;
+          _step = 5;
         });
       }
     });
@@ -187,7 +187,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             begin: Alignment.bottomCenter,
             end: Alignment.topCenter,
             colors: [
-              Colors.black,
+              Theme.of(context).colorScheme.onTertiary,
               _step == 5
                   ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
                   : Theme.of(context).colorScheme.surface,
@@ -300,5 +300,12 @@ class _OnboardingScreenState extends State<OnboardingScreen>
           ),
         ),
     ];
+  }
+
+  @override
+  void dispose() {
+    _scanningController.dispose();
+    _pairingController.dispose();
+    super.dispose();
   }
 }

@@ -45,19 +45,21 @@ class SupportScreen extends StatelessWidget {
                       onPressed: () {
                         launchUrl(Uri.parse("https://discord.gg/UEPGY8AG9V"));
                       },
-                      child: const Padding(
-                        padding: EdgeInsets.all(16.0),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
                               Icons.discord_outlined,
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.onBackground,
                             ),
-                            SizedBox(width: 16),
+                            const SizedBox(width: 16),
                             Text(
                               "Unu Community Discord",
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface),
                             ),
                           ],
                         ),
@@ -72,7 +74,7 @@ class SupportScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   initiallyExpanded: true,
-                  iconColor: Colors.white,
+                  iconColor: Theme.of(context).colorScheme.onBackground,
                   tilePadding: const EdgeInsets.only(
                       left: 16, right: 16, top: 8, bottom: 8),
                   title: Text(
@@ -82,7 +84,7 @@ class SupportScreen extends StatelessWidget {
                   children: [
                     for (MapEntry question in category.value.entries)
                       ExpansionTile(
-                          iconColor: Colors.white,
+                          iconColor: Theme.of(context).colorScheme.onBackground,
                           tilePadding: const EdgeInsets.only(
                               left: 32, right: 16, top: 8, bottom: 8),
                           title: Text(question.key.toString()),
@@ -91,7 +93,11 @@ class SupportScreen extends StatelessWidget {
                               padding: const EdgeInsets.fromLTRB(32, 0, 16, 32),
                               child: Text(
                                 question.value.toString(),
-                                style: TextStyle(color: Colors.grey.shade400),
+                                style: TextStyle(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onBackground
+                                        .withOpacity(0.6)),
                               ),
                             )
                           ]),
