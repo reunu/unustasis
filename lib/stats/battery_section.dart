@@ -90,8 +90,8 @@ class _BatterySectionState extends State<BatterySection> {
             );
           },
         ),
-        // hiding until it properly works
-        if (Platform.isWindows)
+        // only available on Android
+        if (Platform.isAndroid)
           Divider(
             height: 40,
             indent: 12,
@@ -126,7 +126,7 @@ class _BatterySectionState extends State<BatterySection> {
                       ),
                   ],
                 ))
-            : Platform.isWindows
+            : (Platform.isAndroid)
                 // hiding until it works
                 ? Padding(
                     padding: const EdgeInsets.symmetric(
@@ -162,6 +162,18 @@ class _BatterySectionState extends State<BatterySection> {
                         });
                         // Start Session
                         NfcManager.instance.startSession(
+                          onError: (error) {
+                            log("NFC Error: ${error.message}");
+                            Fluttertoast.showToast(
+                              msg: FlutterI18n.translate(
+                                  context, "stats_nfc_error"),
+                            );
+                            setState(() {
+                              nfcScanning = false;
+                              showNfcNotice = false;
+                            });
+                            throw error;
+                          },
                           onDiscovered: (NfcTag tag) async {
                             noticeTimer.cancel();
                             setState(() {
@@ -189,7 +201,16 @@ class _BatterySectionState extends State<BatterySection> {
                                 cycleData =
                                     await mifare.readPages(pageOffset: 20);
                               } else {
-                                // NOT AVAILABLE ON iOS YET
+                                Ndef? ndef = Ndef.from(tag);
+                                if (ndef == null) {
+                                  Fluttertoast.showToast(
+                                    msg: FlutterI18n.translate(
+                                        context, "stats_nfc_invalid"),
+                                  );
+                                  return;
+                                }
+                                NdefMessage? message = await ndef.read();
+                                log(message.records.toString());
                                 return;
                               }
 
