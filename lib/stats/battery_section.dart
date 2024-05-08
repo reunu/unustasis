@@ -237,7 +237,11 @@ class _BatterySectionState extends State<BatterySection> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Container(
-        height: 180,
+        height: (type == BatteryType.primary ||
+                type == BatteryType.secondary ||
+                type == BatteryType.nfc)
+            ? 180
+            : 160,
         padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
@@ -270,22 +274,26 @@ class _BatterySectionState extends State<BatterySection> {
                             .onBackground
                             .withOpacity(0.5)),
                   ),
-                  if (cycles != null && cycles > 0)
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.refresh,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          FlutterI18n.translate(context, "stats_cycles",
-                              translationParams: {
-                                "cycles": cycles.toString(),
-                              }),
-                        ),
-                      ],
-                    ),
+                  if (type == BatteryType.primary ||
+                      type == BatteryType.secondary ||
+                      type == BatteryType.nfc)
+                    (cycles != null && cycles > 0)
+                        ? Row(
+                            children: [
+                              const Icon(
+                                Icons.refresh,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                FlutterI18n.translate(context, "stats_cycles",
+                                    translationParams: {
+                                      "cycles": cycles.toString(),
+                                    }),
+                              ),
+                            ],
+                          )
+                        : const Text("   "),
                   if (type == BatteryType.cbb)
                     (charging != null)
                         ? Text(FlutterI18n.translate(

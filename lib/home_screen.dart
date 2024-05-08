@@ -7,6 +7,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unustasis/control_screen.dart';
+import 'package:unustasis/domain/icomoon.dart';
 import 'package:unustasis/driving_screen.dart';
 import 'package:unustasis/main.dart';
 import 'package:unustasis/onboarding_screen.dart';
@@ -240,7 +241,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 context, "home_seat_button_open")
                             : FlutterI18n.translate(
                                 context, "home_seat_button_closed"),
-                        icon: Icons.work_outline,
+                        icon: _seatClosed == false
+                            ? Icomoon.seat_open
+                            : Icomoon.seat_closed,
                         iconColor: _seatClosed == false
                             ? Theme.of(context).colorScheme.error
                             : null,
