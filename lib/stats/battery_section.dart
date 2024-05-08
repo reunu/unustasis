@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
@@ -201,27 +202,20 @@ class _BatterySectionState extends State<BatterySection> {
                                 cycleData =
                                     await mifare.readPages(pageOffset: 20);
                               } else {
-                                Ndef? ndef = Ndef.from(tag);
-                                if (ndef == null) {
-                                  Fluttertoast.showToast(
-                                    msg: FlutterI18n.translate(
-                                        context, "stats_nfc_invalid"),
-                                  );
-                                  return;
-                                }
-                                NdefMessage? message = await ndef.read();
-                                log(message.records.toString());
                                 return;
                               }
 
                               // Parse data
+                              log("SOC Hex: ${socData.map((e) => e.toRadixString(16))}");
+                              int fullCap = (socData[5] << 8) + socData[4];
                               int remainingCap = (socData[3] << 8) + socData[2];
-                              int cycles = cycleData[0];
+                              int cycles = cycleData[0] - 1;
                               log("Remaining: $remainingCap");
+                              log("Full: $fullCap");
                               log("Cycles: $cycles");
                               setState(() {
                                 nfcBattery =
-                                    (remainingCap / 33000 * 100).round();
+                                    (remainingCap / fullCap * 100).round();
                                 nfcCycles = cycles;
                               });
                             } catch (e) {

@@ -201,9 +201,9 @@ class RangeSection extends StatelessWidget {
                         }
                         int? color = prefs.data!.getInt("color");
                         return Image(
-                          width: 150,
+                          width: 160,
                           image: AssetImage(
-                              "images/scooter/side_${color ?? 0}.webp"),
+                              "images/scooter/side_${color ?? 3}.webp"),
                         );
                       }),
                 ),
