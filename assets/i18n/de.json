@@ -19,6 +19,7 @@
     "onboarding_step5_heading": "Das war's!",
     "onboarding_step5_body": "Dein Roller wurde gekoppelt und kann jetzt mit der App gesteuert werden. Viel Spaß!",
     "onboarding_step5_button": "ZUR APP",
+    "bluetooth_error_generic": "Fehler beim Suchen oder Verbinden!",
     "home_scanning": "Suche...",
     "home_scanning_known": "Suche deinen Scooter...",
     "home_loading_state": "Lade...",

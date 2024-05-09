@@ -9,7 +9,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unustasis/control_screen.dart';
 import 'package:unustasis/domain/icomoon.dart';
 import 'package:unustasis/driving_screen.dart';
-import 'package:unustasis/main.dart';
 import 'package:unustasis/onboarding_screen.dart';
 import 'package:unustasis/scooter_service.dart';
 import 'package:unustasis/domain/scooter_state.dart';
@@ -18,7 +17,12 @@ import 'package:unustasis/stats/stats_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final ScooterService scooterService;
-  const HomeScreen({required this.scooterService, super.key});
+  final bool? forceOpen;
+  const HomeScreen({
+    required this.scooterService,
+    this.forceOpen,
+    super.key,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -38,7 +42,9 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     setupColor();
-    redirectOrStart();
+    if (widget.forceOpen != true) {
+      redirectOrStart();
+    }
     widget.scooterService.state.listen((state) {
       setState(() {
         _scooterState = state;
@@ -353,7 +359,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void redirectOrStart() async {
-    if (await widget.scooterService.getSavedScooter() == null) {
+    if (await widget.scooterService.getSavedScooter() == null && mounted) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(

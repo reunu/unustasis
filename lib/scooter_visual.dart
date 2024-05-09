@@ -116,7 +116,7 @@ class BlinkerWidget extends StatefulWidget {
       {required this.blinkerLeft, required this.blinkerRight, super.key});
 
   @override
-  _BlinkerWidgetState createState() => _BlinkerWidgetState();
+  State<BlinkerWidget> createState() => _BlinkerWidgetState();
 }
 
 class _BlinkerWidgetState extends State<BlinkerWidget> {

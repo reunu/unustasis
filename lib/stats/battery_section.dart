@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
@@ -91,12 +90,12 @@ class _BatterySectionState extends State<BatterySection> {
             );
           },
         ),
-        // only available on Android
-        if (Platform.isAndroid)
+        // only available on Android, hidden right now though
+        if (Platform.isWindows)
           Divider(
             height: 40,
-            indent: 12,
-            endIndent: 12,
+            indent: 0,
+            endIndent: 0,
             color: Theme.of(context).colorScheme.onBackground.withOpacity(0.1),
           ),
         if (nfcBattery != 0 && nfcBattery != null && !nfcScanning)
@@ -108,7 +107,7 @@ class _BatterySectionState extends State<BatterySection> {
           ),
         nfcScanning
             ? Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(vertical: 16),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -127,11 +126,10 @@ class _BatterySectionState extends State<BatterySection> {
                       ),
                   ],
                 ))
-            : (Platform.isAndroid)
+            : (Platform.isWindows)
                 // hiding until it works
                 ? Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 16),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size.fromHeight(60),
@@ -187,7 +185,7 @@ class _BatterySectionState extends State<BatterySection> {
                               Uint8List socData;
                               Uint8List cycleData;
                               // Read from battery
-                              if (Platform.isAndroid) {
+                              if (Platform.isWindows) {
                                 MifareUltralight? mifare =
                                     MifareUltralight.from(tag);
                                 if (mifare == null) {
@@ -207,8 +205,9 @@ class _BatterySectionState extends State<BatterySection> {
 
                               // Parse data
                               log("SOC Hex: ${socData.map((e) => e.toRadixString(16))}");
-                              int fullCap = (socData[5] << 8) + socData[4];
-                              int remainingCap = (socData[3] << 8) + socData[2];
+                              int fullCap =
+                                  33000; //(socData[5] << 8) + socData[4];
+                              int remainingCap = (socData[3] << 8) + socData[1];
                               int cycles = cycleData[0] - 1;
                               log("Remaining: $remainingCap");
                               log("Full: $fullCap");

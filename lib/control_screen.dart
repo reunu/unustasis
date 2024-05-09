@@ -42,7 +42,6 @@ class _ControlScreenState extends State<ControlScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // TODO CHECK IF THIS WORKS!!!!
                   Expanded(
                     child: ScooterActionButton(
                       onPressed: () {

@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:rxdart/rxdart.dart';
@@ -243,9 +244,12 @@ class ScooterService {
 
   // spins up the whole connection process, and connects/bonds with the nearest scooter
   void start({bool restart = true}) async {
+    if (Platform.isAndroid) {
+      await flutterBluePlus.turnOn();
+    }
+    // TODO: prompt the user to turn it on manually on iOS
     log("Starting connection process...");
     _foundSth = false;
-    // TODO: Turn on bluetooth if it's off, or prompt the user to do so on iOS
     // Cleanup in case this is a restart
     _connectedController.add(false);
     _stateController.add(ScooterState.disconnected);
@@ -311,9 +315,11 @@ class ScooterService {
         });
       } catch (e) {
         // Guess this one is not happy with us
-        // TODO: we'll probably need some error handling here
+        // TODO: Handle errors more elegantly
         log("Error during search or connect!");
         log(e.toString());
+        Fluttertoast.showToast(
+            msg: "Error during search or connect!"); // TODO: Localize
       }
     }
     if (restart) {

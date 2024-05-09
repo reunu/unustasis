@@ -19,6 +19,7 @@
     "onboarding_step5_heading": "That's it!",
     "onboarding_step5_body": "Your scooter was connected and is ready to use. Enjoy your ride!",
     "onboarding_step5_button": "CONTINUE TO APP",
+    "bluetooth_error_generic": "Error during search or connect!",
     "home_scanning": "Searching...",
     "home_scanning_known": "Searching for your scooter...",
     "home_loading_state": "Loading...",

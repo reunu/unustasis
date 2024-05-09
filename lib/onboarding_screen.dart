@@ -1,7 +1,8 @@
+import 'dart:async';
 import 'dart:developer';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -30,6 +31,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   BluetoothDevice? _foundScooter;
   late AnimationController _scanningController;
   late AnimationController _pairingController;
+  late StreamSubscription<bool> _scanningSubscription;
+  late StreamSubscription<bool> _connectedSubscription;
   // Step 0: Welcome
   // Step 1: Explan visibility
   // Step 2: Scanning (or nothing found, retry)
@@ -48,7 +51,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       vsync: this,
     );
     _pairingController.repeat();
-    widget.service.scanning.listen((scanning) {
+    _scanningSubscription = widget.service.scanning.listen((scanning) {
       if (scanning) {
         _scanningController.repeat();
       } else {
@@ -58,7 +61,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
         _scanning = scanning;
       });
     });
-    widget.service.connected.listen((connected) {
+    _connectedSubscription = widget.service.connected.listen((connected) {
       if (connected) {
         setState(() {
           _step = 5;
@@ -233,12 +236,32 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   Widget _onboardingVisual({required int step}) {
     switch (step) {
       case 0:
-        return const ScooterVisual(
-          state: ScooterState.disconnected,
-          scanning: false,
-          blinkerLeft: false,
-          blinkerRight: false,
+        int tapCount = 0;
+        final tapGestureRecognizer = TapGestureRecognizer()
+          ..onTapDown = (_) {
+            tapCount++;
+            if (tapCount >= 27) {
+              // Handle the 10 taps in short succession
+              log('27 taps detected! Skipping onboarding...');
+              tapCount = 0;
+              Navigator.of(context).pushReplacement(MaterialPageRoute(
+                builder: (context) => HomeScreen(
+                  scooterService: widget.service,
+                  forceOpen: true,
+                ),
+              ));
+            }
+          };
+        return GestureDetector(
+          onTapDown: tapGestureRecognizer.onTapDown,
+          child: const ScooterVisual(
+            state: ScooterState.disconnected,
+            scanning: false,
+            blinkerLeft: false,
+            blinkerRight: false,
+          ),
         );
+
       case 1:
       case 2:
         return Lottie.asset("assets/anim/scanning.json",
@@ -308,6 +331,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   void dispose() {
     _scanningController.dispose();
     _pairingController.dispose();
+    _scanningSubscription.cancel();
+    _connectedSubscription.cancel();
     super.dispose();
   }
 }
