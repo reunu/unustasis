@@ -87,6 +87,8 @@
     "stats_location_disclaimer": "Die Karte zeigt den letzten Ort, an dem die App mit dem Roller verbunden war. Dies ist keine Echtzeit-Ortung und nicht als Diebstahlschutz geeignet.",
     "stats_last_seen_near": "Zuletzt verbunden nahe",
     "stats_title_scooter": "Roller",
+    "stats_name": "Rollername",
+    "stats_no_name": "Kein Roller",
     "stats_state": "Zustand",
     "stats_state_description": "Zustandsbeschreibung",
     "stats_scooter_id": "Roller ID",
