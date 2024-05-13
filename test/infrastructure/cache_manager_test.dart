@@ -11,13 +11,13 @@ void main() {
 
     test('writes and reads SOC from shared preferences', () async {
       int soc = 1;
-      await CacheManager.writeSOC(ScooterBattery.primary, soc);
-      expect(await CacheManager.readSOC(ScooterBattery.primary), equals(soc));
+      await CacheManager().writeSOC(ScooterBattery.primary, soc);
+      expect(await CacheManager().readSOC(ScooterBattery.primary), equals(soc));
     });
 
     test('writes and reads last ping from shared preferences', () async {
-      await CacheManager.writeLastPing();
-      expect(await CacheManager.readLastPing(), isNot(equals(null)));
+      await CacheManager().writeLastPing();
+      expect(await CacheManager().readLastPing(), isNot(equals(null)));
     });
   });
 }

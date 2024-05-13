@@ -30,18 +30,18 @@ class StateOfChargeReader {
   }
 
   Future<void> _readCache() async {
-    DateTime? lastPing = await CacheManager.readLastPing();
+    DateTime? lastPing = await CacheManager().readLastPing();
     if (lastPing == null) {
       return;
     }
 
     _lastPingController.add(lastPing);
-    _socController.add(await CacheManager.readSOC(_battery));
+    _socController.add(await CacheManager().readSOC(_battery));
   }
 
   void _writeCache(int soc) {
     _lastPingController.add(DateTime.now());
-    CacheManager.writeLastPing();
-    CacheManager.writeSOC(_battery, soc);
+    CacheManager().writeLastPing();
+    CacheManager().writeSOC(_battery, soc);
   }
 }

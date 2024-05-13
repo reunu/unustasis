@@ -6,24 +6,31 @@ enum CacheKey {
 }
 
 class CacheManager {
+  static final CacheManager _singleton = CacheManager._internal();
   static SharedPreferences? _sharedPrefs;
 
-  static writeSOC(ScooterBattery battery, int soc) async {
+  factory CacheManager() {
+    return _singleton;
+  }
+
+  CacheManager._internal();
+
+  writeSOC(ScooterBattery battery, int soc) async {
     return (await _getSharedPrefs()).setInt(getSocCacheKey(battery), soc);
   }
 
-  static Future<int?> readSOC(ScooterBattery battery) async {
+  Future<int?> readSOC(ScooterBattery battery) async {
     return (await _getSharedPrefs()).getInt(getSocCacheKey(battery));
   }
 
-  static String getSocCacheKey(ScooterBattery battery) => "${battery.name}SOC";
+  String getSocCacheKey(ScooterBattery battery) => "${battery.name}SOC";
 
-  static writeLastPing() async {
+  writeLastPing() async {
     (await _getSharedPrefs())
         .setInt(CacheKey.lastPing.name, DateTime.now().microsecondsSinceEpoch);
   }
 
-  static Future<DateTime?> readLastPing() async {
+  Future<DateTime?> readLastPing() async {
     int? epoch = (await _getSharedPrefs()).getInt(CacheKey.lastPing.name);
     if (epoch == null) {
       return null;
@@ -31,7 +38,7 @@ class CacheManager {
     return DateTime.fromMicrosecondsSinceEpoch(epoch);
   }
 
-  static Future<SharedPreferences> _getSharedPrefs() async {
+  Future<SharedPreferences> _getSharedPrefs() async {
     return _sharedPrefs ??= await SharedPreferences.getInstance();
   }
 }
