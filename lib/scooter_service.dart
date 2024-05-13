@@ -12,7 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unustasis/domain/scooter_keyless_distance.dart';
 import 'package:unustasis/domain/scooter_state.dart';
 import 'package:unustasis/flutter/blue_plus_mockable.dart';
-import 'package:unustasis/infrastructure/cache_manager.dart';
+import 'package:unustasis/infrastructure/battery_reader.dart';
 import 'package:unustasis/infrastructure/characteristic_repository.dart';
 import 'package:unustasis/infrastructure/scooter_reader.dart';
 
@@ -45,7 +45,7 @@ class ScooterService {
       this.prefs = prefs;
       if (prefs.containsKey("savedScooterId")) {
         savedScooterId = prefs.getString("savedScooterId");
-        int? lastPing = prefs.getInt(CacheKey.lastPing.name);
+        int? lastPing = prefs.getInt(BatteryReader.lastPingCacheKey);
         if (lastPing != null) {
           double? lastLat = prefs.getDouble("lastLat");
           double? lastLon = prefs.getDouble("lastLon");

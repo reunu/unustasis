@@ -80,11 +80,11 @@ class ScooterReader {
 
     var auxBatterReader = BatteryReader(ScooterBattery.aux,
         _characteristicRepository.auxSOCCharacteristic, _lastPingController);
-    auxBatterReader.readAndSubscribe(_auxSOCController);
+    auxBatterReader.readAndSubscribeSOC(_auxSOCController);
 
     var cbbBatterReader = BatteryReader(ScooterBattery.cbb,
         _characteristicRepository.cbbSOCCharacteristic, _lastPingController);
-    cbbBatterReader.readAndSubscribe(_cbbSOCController);
+    cbbBatterReader.readAndSubscribeSOC(_cbbSOCController);
 
     StringReader("CBB charging", _characteristicRepository.cbbChargingCharacteristic)
         .readAndSubscribe((String chargingState) {
@@ -99,7 +99,7 @@ class ScooterReader {
         ScooterBattery.primary,
         _characteristicRepository.primaryCyclesCharacteristic,
         _lastPingController);
-    primaryBatteryReader.readAndSubscribe(_primarySOCController);
+    primaryBatteryReader.readAndSubscribeSOC(_primarySOCController);
     primaryBatteryReader.readAndSubscribeCycles(
         _characteristicRepository.primaryCyclesCharacteristic,
         _primaryCyclesController);
@@ -108,7 +108,7 @@ class ScooterReader {
         ScooterBattery.secondary,
         _characteristicRepository.secondaryCyclesCharacteristic,
         _lastPingController);
-    secondaryBatteryReader.readAndSubscribe(_secondarySOCController);
+    secondaryBatteryReader.readAndSubscribeSOC(_secondarySOCController);
     secondaryBatteryReader.readAndSubscribeCycles(
         _characteristicRepository.secondaryCyclesCharacteristic,
         _secondaryCyclesController);

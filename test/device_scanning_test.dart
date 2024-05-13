@@ -2,7 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unustasis/domain/scooter_state.dart';
 import 'package:unustasis/scooter_service.dart';
+
 import 'builder/bluetooth.dart';
 
 final BluetoothBuilder flutterBlueBuilder = BluetoothBuilder();

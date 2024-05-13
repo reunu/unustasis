@@ -2,5 +2,5 @@ enum ScooterBattery {
   primary,
   secondary,
   aux,
-  cbb
+  cbb;
 }
