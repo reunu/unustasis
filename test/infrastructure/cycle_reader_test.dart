@@ -12,7 +12,7 @@ void main() {
   group('CycleReader', () {
     test('converts bytes to number', () async {
       var uint32 = [40, 0, 0, 0];
-      var mockCharacteristic = buildCharacterWithState(uint32);
+      var mockCharacteristic = buildCharacterWithValue(uint32);
 
       CycleReader stringReader = CycleReader(ScooterBattery.primary, mockCharacteristic);
 
@@ -26,7 +26,7 @@ void main() {
   });
 }
 
-MockBluetoothCharacteristic buildCharacterWithState(List<int> stateAsByteList) {
+MockBluetoothCharacteristic buildCharacterWithValue(List<int> stateAsByteList) {
   MockBluetoothCharacteristic mockCharacteristic =
       MockBluetoothCharacteristic();
   when(mockCharacteristic.setNotifyValue(any))
