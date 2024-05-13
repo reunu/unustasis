@@ -4,21 +4,21 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unustasis/domain/scooter_battery.dart';
+import 'package:unustasis/infrastructure/string_reader.dart';
 import 'package:unustasis/infrastructure/utils.dart';
 
 class BatteryReader {
   final ScooterBattery _battery;
-  final BluetoothCharacteristic? _socCharacteristic;
   final BehaviorSubject<DateTime?> _lastPingController;
   late final SharedPreferences? _sharedPrefs;
 
   static const lastPingCacheKey = "lastPing";
 
-  BatteryReader(
-      this._battery, this._socCharacteristic, this._lastPingController);
+  BatteryReader(this._battery, this._lastPingController);
 
-  readAndSubscribeSOC(BehaviorSubject<int?> socController) async {
-    subscribeCharacteristic(_socCharacteristic!, (value) {
+  readAndSubscribeSOC(BluetoothCharacteristic? socCharacteristic,
+      BehaviorSubject<int?> socController) async {
+    subscribeCharacteristic(socCharacteristic!, (value) {
       int? soc = convertUint32ToInt(value);
       log("$_battery SOC received: $soc");
       // sometimes the scooter sends null. Ignoring those values...
@@ -38,6 +38,18 @@ class BatteryReader {
       int? cycles = convertUint32ToInt(value);
       log("$_battery battery cycles received: $cycles");
       cyclesController.add(cycles);
+    });
+  }
+
+  readAndSubscribeCharging(BluetoothCharacteristic chargingCharacteristic,
+      BehaviorSubject<bool?> chargingController) {
+    StringReader("${_battery.name} charging", chargingCharacteristic)
+        .readAndSubscribe((String chargingState) {
+      if (chargingState == "charging") {
+        chargingController.add(true);
+      } else if (chargingState == "not-charging") {
+        chargingController.add(false);
+      }
     });
   }
 

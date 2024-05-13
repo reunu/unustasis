@@ -78,37 +78,35 @@ class ScooterReader {
       _handlebarController.add(handlebarState != "unlocked");
     });
 
-    var auxBatterReader = BatteryReader(ScooterBattery.aux,
-        _characteristicRepository.auxSOCCharacteristic, _lastPingController);
-    auxBatterReader.readAndSubscribeSOC(_auxSOCController);
+    var auxBatterReader =
+        BatteryReader(ScooterBattery.aux, _lastPingController);
+    auxBatterReader.readAndSubscribeSOC(
+        _characteristicRepository.auxSOCCharacteristic, _auxSOCController);
 
-    var cbbBatterReader = BatteryReader(ScooterBattery.cbb,
-        _characteristicRepository.cbbSOCCharacteristic, _lastPingController);
-    cbbBatterReader.readAndSubscribeSOC(_cbbSOCController);
-
-    StringReader("CBB charging", _characteristicRepository.cbbChargingCharacteristic)
-        .readAndSubscribe((String chargingState) {
-      if (chargingState == "charging") {
-        _cbbChargingController.add(true);
-      } else if (chargingState == "not-charging") {
-        _cbbChargingController.add(false);
-      }
-    });
+    var cbbBatterReader =
+        BatteryReader(ScooterBattery.cbb, _lastPingController);
+    cbbBatterReader.readAndSubscribeSOC(
+        _characteristicRepository.cbbSOCCharacteristic, _cbbSOCController);
+    cbbBatterReader.readAndSubscribeCharging(
+        _characteristicRepository.cbbChargingCharacteristic,
+        _cbbChargingController);
 
     var primaryBatteryReader = BatteryReader(
         ScooterBattery.primary,
-        _characteristicRepository.primaryCyclesCharacteristic,
         _lastPingController);
-    primaryBatteryReader.readAndSubscribeSOC(_primarySOCController);
+    primaryBatteryReader.readAndSubscribeSOC(
+        _characteristicRepository.primaryCyclesCharacteristic,
+        _primarySOCController);
     primaryBatteryReader.readAndSubscribeCycles(
         _characteristicRepository.primaryCyclesCharacteristic,
         _primaryCyclesController);
 
     var secondaryBatteryReader = BatteryReader(
         ScooterBattery.secondary,
-        _characteristicRepository.secondaryCyclesCharacteristic,
         _lastPingController);
-    secondaryBatteryReader.readAndSubscribeSOC(_secondarySOCController);
+    secondaryBatteryReader.readAndSubscribeSOC(
+        _characteristicRepository.secondaryCyclesCharacteristic,
+        _secondarySOCController);
     secondaryBatteryReader.readAndSubscribeCycles(
         _characteristicRepository.secondaryCyclesCharacteristic,
         _secondaryCyclesController);
