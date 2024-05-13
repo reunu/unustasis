@@ -3,7 +3,6 @@ import 'dart:developer';
 import 'package:rxdart/rxdart.dart';
 import 'package:unustasis/domain/scooter_battery.dart';
 import 'package:unustasis/infrastructure/characteristic_repository.dart';
-import 'package:unustasis/infrastructure/state_of_charge_reader.dart';
 import 'package:unustasis/infrastructure/string_reader.dart';
 
 import '../domain/scooter_power_state.dart';
@@ -79,19 +78,13 @@ class ScooterReader {
       _handlebarController.add(handlebarState != "unlocked");
     });
 
-    StateOfChargeReader(
-            ScooterBattery.aux,
-            _characteristicRepository.auxSOCCharacteristic,
-            _auxSOCController,
-            _lastPingController)
-        .readAndSubscribe();
+    var auxBatterReader = BatteryReader(ScooterBattery.aux,
+        _characteristicRepository.auxSOCCharacteristic, _lastPingController);
+    auxBatterReader.readAndSubscribe(_auxSOCController);
 
-    StateOfChargeReader(
-            ScooterBattery.cbb,
-            _characteristicRepository.cbbSOCCharacteristic,
-            _cbbSOCController,
-            _lastPingController)
-        .readAndSubscribe();
+    var cbbBatterReader = BatteryReader(ScooterBattery.cbb,
+        _characteristicRepository.cbbSOCCharacteristic, _lastPingController);
+    cbbBatterReader.readAndSubscribe(_cbbSOCController);
 
     StringReader("CBB charging", _characteristicRepository.cbbChargingCharacteristic)
         .readAndSubscribe((String chargingState) {
@@ -102,21 +95,23 @@ class ScooterReader {
       }
     });
 
-    var primaryBatterReader = BatteryReader(
+    var primaryBatteryReader = BatteryReader(
         ScooterBattery.primary,
         _characteristicRepository.primaryCyclesCharacteristic,
-        _characteristicRepository.primarySOCCharacteristic,
         _lastPingController);
-    primaryBatterReader.readAndSubscribe(
-        _primarySOCController, _primaryCyclesController);
+    primaryBatteryReader.readAndSubscribe(_primarySOCController);
+    primaryBatteryReader.readAndSubscribeCycles(
+        _characteristicRepository.primaryCyclesCharacteristic,
+        _primaryCyclesController);
 
     var secondaryBatteryReader = BatteryReader(
         ScooterBattery.secondary,
         _characteristicRepository.secondaryCyclesCharacteristic,
-        _characteristicRepository.secondarySOCCharacteristic,
         _lastPingController);
-    secondaryBatteryReader.readAndSubscribe(
-        _secondarySOCController, _secondaryCyclesController);
+    secondaryBatteryReader.readAndSubscribe(_secondarySOCController);
+    secondaryBatteryReader.readAndSubscribeCycles(
+        _characteristicRepository.secondaryCyclesCharacteristic,
+        _secondaryCyclesController);
   }
 
   Future<void> _updateScooterState() async {
