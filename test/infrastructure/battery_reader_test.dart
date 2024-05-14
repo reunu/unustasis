@@ -29,9 +29,8 @@ void main() {
 
         await batteryReader.readAndSubscribeSOC(mockCharacteristic, controller);
 
-        verify(await mockCharacteristic.setNotifyValue(true)).called(1);
-        verify(await mockCharacteristic.read()).called(1);
-        expect(controller.stream, emitsInOrder([40]));
+        await expectCharacteristicEmitting(
+            mockCharacteristic, controller, [40]);
 
         // writes cache
         var instance = await SharedPreferences.getInstance();
@@ -50,7 +49,7 @@ void main() {
 
         await batteryReader.readAndSubscribeSOC(mockCharacteristic, controller);
 
-        expect(controller.stream, emitsInOrder([]));
+        await expectCharacteristicEmitting(mockCharacteristic, controller, []);
       });
 
       test('writes valid state of charge to cache', () async {
@@ -99,8 +98,8 @@ void main() {
 
         await batteryReader.readAndSubscribeSOC(mockCharacteristic, controller);
 
-        // We wrap our test in a fakeAsync to control the time in called code
-        expect(controller.stream, emitsInOrder([30]));
+        await expectCharacteristicEmitting(
+            mockCharacteristic, controller, [30]);
         expect(lastPingController.stream, emitsInOrder([fixedDate]));
       });
     });
@@ -109,18 +108,16 @@ void main() {
       test('reads cycles', () async {
         var uint32 = [40, 0, 0, 0];
         var mockCharacteristic = buildCharacterWithValue(uint32);
-        var mockController = BehaviorSubject<int?>();
+        var controller = BehaviorSubject<int?>();
         var lastPingController = BehaviorSubject<DateTime?>();
 
         BatteryReader batteryReader =
             BatteryReader(ScooterBattery.primary, lastPingController);
 
-        batteryReader.readAndSubscribeCycles(
-            mockCharacteristic, mockController);
+        batteryReader.readAndSubscribeCycles(mockCharacteristic, controller);
 
-        verify(await mockCharacteristic.setNotifyValue(true)).called(1);
-        verify(await mockCharacteristic.read()).called(1);
-        expect(mockController.stream, emitsInOrder([40]));
+        await expectCharacteristicEmitting(
+            mockCharacteristic, controller, [40]);
       });
     });
 
@@ -128,38 +125,43 @@ void main() {
       test('reads state charging ', () async {
         var bytes = stringToBytes("charging");
         var mockCharacteristic = buildCharacterWithValue(bytes);
-        var mockController = BehaviorSubject<bool?>();
+        var controller = BehaviorSubject<bool?>();
         var lastPingController = BehaviorSubject<DateTime?>();
 
         BatteryReader batteryReader =
             BatteryReader(ScooterBattery.primary, lastPingController);
 
-        batteryReader.readAndSubscribeCharging(
-            mockCharacteristic, mockController);
+        batteryReader.readAndSubscribeCharging(mockCharacteristic, controller);
 
-        verify(await mockCharacteristic.setNotifyValue(true)).called(1);
-        verify(await mockCharacteristic.read()).called(1);
-        expect(mockController.stream, emitsInOrder([true]));
+        await expectCharacteristicEmitting(
+            mockCharacteristic, controller, [true]);
       });
 
       test('reads state not-charging ', () async {
         var bytes = stringToBytes("not-charging");
         var mockCharacteristic = buildCharacterWithValue(bytes);
-        var mockController = BehaviorSubject<bool?>();
+        var controller = BehaviorSubject<bool?>();
         var lastPingController = BehaviorSubject<DateTime?>();
 
         BatteryReader batteryReader =
             BatteryReader(ScooterBattery.primary, lastPingController);
 
-        batteryReader.readAndSubscribeCharging(
-            mockCharacteristic, mockController);
+        batteryReader.readAndSubscribeCharging(mockCharacteristic, controller);
 
-        verify(await mockCharacteristic.setNotifyValue(true)).called(1);
-        verify(await mockCharacteristic.read()).called(1);
-        expect(mockController.stream, emitsInOrder([false]));
+        await expectCharacteristicEmitting(
+            mockCharacteristic, controller, [false]);
       });
     });
   });
+}
+
+Future<void> expectCharacteristicEmitting<T>(
+    MockBluetoothCharacteristic mockCharacteristic,
+    BehaviorSubject<T> controller,
+    List<T> values) async {
+  verify(await mockCharacteristic.setNotifyValue(true)).called(1);
+  verify(await mockCharacteristic.read()).called(1);
+  expect(controller.stream, emitsInOrder(values));
 }
 
 MockBluetoothCharacteristic buildCharacterWithValue(List<int> stateAsByteList) {
