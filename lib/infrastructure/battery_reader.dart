@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:developer';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -10,31 +12,35 @@ import 'package:unustasis/infrastructure/utils.dart';
 class BatteryReader {
   final ScooterBattery _battery;
   final BehaviorSubject<DateTime?> _lastPingController;
-  late final SharedPreferences? _sharedPrefs;
 
   static const lastPingCacheKey = "lastPing";
 
   BatteryReader(this._battery, this._lastPingController);
 
-  readAndSubscribeSOC(BluetoothCharacteristic? socCharacteristic,
+  readAndSubscribeSOC(BluetoothCharacteristic socCharacteristic,
       BehaviorSubject<int?> socController) async {
-    subscribeCharacteristic(socCharacteristic!, (value) {
+    var c = Completer();
+    subscribeCharacteristic(socCharacteristic, (value) async {
       int? soc = convertUint32ToInt(value);
       log("$_battery SOC received: $soc");
       // sometimes the scooter sends null. Ignoring those values...
       if (soc != null) {
         socController.add(soc);
-        _writeSocToCache(soc);
+        await _writeSocToCache(soc);
       }
+      c.complete();
     });
+
+    // wait for written values
+    await c.future;
 
     int? cachedSoc = await _readSocFromCache();
     socController.add(cachedSoc);
   }
 
-  readAndSubscribeCycles(BluetoothCharacteristic? cyclesCharacteristic,
+  readAndSubscribeCycles(BluetoothCharacteristic cyclesCharacteristic,
       BehaviorSubject<int?> cyclesController) {
-    subscribeCharacteristic(cyclesCharacteristic!, (value) {
+    subscribeCharacteristic(cyclesCharacteristic, (value) {
       int? cycles = convertUint32ToInt(value);
       log("$_battery battery cycles received: $cycles");
       cyclesController.add(cycles);
@@ -65,10 +71,11 @@ class BatteryReader {
   }
 
   Future<void> _writeSocToCache(int soc) async {
-    _lastPingController.add(DateTime.now());
-    (await _getSharedPrefs())
-        .setInt(lastPingCacheKey, DateTime.now().microsecondsSinceEpoch);
-    (await _getSharedPrefs()).setInt(_getSocCacheKey(_battery), soc);
+    _lastPingController.add(clock.now());
+    var sharedPrefs = await _getSharedPrefs();
+    await sharedPrefs.setInt(_getSocCacheKey(_battery), soc);
+    await sharedPrefs.setInt(
+        lastPingCacheKey, clock.now().microsecondsSinceEpoch);
   }
 
   String _getSocCacheKey(ScooterBattery battery) => "${battery.name}SOC";
@@ -82,6 +89,6 @@ class BatteryReader {
   }
 
   Future<SharedPreferences> _getSharedPrefs() async {
-    return _sharedPrefs ??= await SharedPreferences.getInstance();
+    return await SharedPreferences.getInstance();
   }
 }
