@@ -1,4 +1,3 @@
-
 import 'dart:async';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
@@ -7,10 +6,12 @@ import 'package:mockito/mockito.dart';
 
 import 'service.mocks.dart';
 
-@GenerateMocks([Stream,StreamSubscription,  BluetoothService,
+@GenerateMocks([
+  Stream,
+  StreamSubscription,
+  BluetoothService,
   BluetoothCharacteristic,
 ])
-
 class StreamMock extends Stream<List<int>> {
   @override
   StreamSubscription<List<int>> listen(void Function(List<int> event)? onData,

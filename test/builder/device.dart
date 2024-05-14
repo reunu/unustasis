@@ -1,4 +1,3 @@
-
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
@@ -11,7 +10,6 @@ import 'service.dart';
   AdvertisementData,
   BluetoothDevice,
 ])
-
 class DeviceBuilder {
   final FlutterBluePlusMockable flutterBluePlus;
   final String remoteId;
@@ -46,4 +44,3 @@ class DeviceBuilder {
     return ServiceCharacteristicsBuilder(bluetoothDevice);
   }
 }
-

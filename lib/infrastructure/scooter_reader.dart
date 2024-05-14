@@ -3,7 +3,6 @@ import 'dart:developer';
 import 'package:rxdart/rxdart.dart';
 import 'package:unustasis/domain/scooter_battery.dart';
 import 'package:unustasis/infrastructure/characteristic_repository.dart';
-import 'package:unustasis/infrastructure/state_of_charge_reader.dart';
 import 'package:unustasis/infrastructure/string_reader.dart';
 
 import '../domain/scooter_power_state.dart';
@@ -79,44 +78,38 @@ class ScooterReader {
       _handlebarController.add(handlebarState != "unlocked");
     });
 
-    StateOfChargeReader(
-            ScooterBattery.aux,
-            _characteristicRepository.auxSOCCharacteristic,
-            _auxSOCController,
-            _lastPingController)
-        .readAndSubscribe();
+    var auxBatterReader =
+        BatteryReader(ScooterBattery.aux, _lastPingController);
+    auxBatterReader.readAndSubscribeSOC(
+        _characteristicRepository.auxSOCCharacteristic, _auxSOCController);
 
-    StateOfChargeReader(
-            ScooterBattery.cbb,
-            _characteristicRepository.cbbSOCCharacteristic,
-            _cbbSOCController,
-            _lastPingController)
-        .readAndSubscribe();
+    var cbbBatterReader =
+        BatteryReader(ScooterBattery.cbb, _lastPingController);
+    cbbBatterReader.readAndSubscribeSOC(
+        _characteristicRepository.cbbSOCCharacteristic, _cbbSOCController);
+    cbbBatterReader.readAndSubscribeCharging(
+        _characteristicRepository.cbbChargingCharacteristic,
+        _cbbChargingController);
 
-    StringReader("CBB charging", _characteristicRepository.cbbChargingCharacteristic)
-        .readAndSubscribe((String chargingState) {
-      if (chargingState == "charging") {
-        _cbbChargingController.add(true);
-      } else if (chargingState == "not-charging") {
-        _cbbChargingController.add(false);
-      }
-    });
-
-    var primaryBatterReader = BatteryReader(
+    var primaryBatteryReader = BatteryReader(
         ScooterBattery.primary,
-        _characteristicRepository.primaryCyclesCharacteristic,
-        _characteristicRepository.primarySOCCharacteristic,
         _lastPingController);
-    primaryBatterReader.readAndSubscribe(
-        _primarySOCController, _primaryCyclesController);
+    primaryBatteryReader.readAndSubscribeSOC(
+        _characteristicRepository.primaryCyclesCharacteristic,
+        _primarySOCController);
+    primaryBatteryReader.readAndSubscribeCycles(
+        _characteristicRepository.primaryCyclesCharacteristic,
+        _primaryCyclesController);
 
     var secondaryBatteryReader = BatteryReader(
         ScooterBattery.secondary,
-        _characteristicRepository.secondaryCyclesCharacteristic,
-        _characteristicRepository.secondarySOCCharacteristic,
         _lastPingController);
-    secondaryBatteryReader.readAndSubscribe(
-        _secondarySOCController, _secondaryCyclesController);
+    secondaryBatteryReader.readAndSubscribeSOC(
+        _characteristicRepository.secondaryCyclesCharacteristic,
+        _secondarySOCController);
+    secondaryBatteryReader.readAndSubscribeCycles(
+        _characteristicRepository.secondaryCyclesCharacteristic,
+        _secondaryCyclesController);
   }
 
   Future<void> _updateScooterState() async {

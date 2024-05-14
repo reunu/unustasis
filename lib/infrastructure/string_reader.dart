@@ -19,7 +19,7 @@ class StringReader {
   }
 
   String _convertBytesToString(List<int> value) {
-    value.removeWhere((element) => element == 0);
-    return ascii.decode(value).trim();
+    var withoutZeros = value.where((element) => element != 0).toList();
+    return ascii.decode(withoutZeros).trim();
   }
 }
