@@ -39,7 +39,7 @@ class BatteryReader {
   }
 
   readAndSubscribeCycles(BluetoothCharacteristic cyclesCharacteristic,
-      BehaviorSubject<int?> cyclesController) {
+      BehaviorSubject<int?> cyclesController) async {
     subscribeCharacteristic(cyclesCharacteristic, (value) {
       int? cycles = convertUint32ToInt(value);
       log("$_battery battery cycles received: $cycles");
