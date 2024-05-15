@@ -52,31 +52,56 @@ class ScooterReader {
         _secondaryCyclesController = secondaryCyclesController;
 
   readAndSubscribe() {
+    _subscribeState();
+    _subscribePowerStateForHibernation();
+    _subscribeSeat();
+    _subscribeHandlebars();
+    _subscribeBatteries();
+  }
+
+  void _subscribeState() {
     StringReader("State", _characteristicRepository.stateCharacteristic)
         .readAndSubscribe((String value) {
       _state = value;
       _updateScooterState();
     });
+  }
 
-    // Subscribe to power state for correct hibernation
+  void _subscribePowerStateForHibernation() {
     StringReader(
             "Power State", _characteristicRepository.powerStateCharacteristic)
         .readAndSubscribe((String value) {
       _powerState = value;
       _updateScooterState();
     });
+  }
 
+  Future<void> _updateScooterState() async {
+    log("Update scooter state from state: '$_state' and power state: '$_powerState'");
+    if (_state != null && _powerState != null) {
+      ScooterPowerState powerState = ScooterPowerState.fromString(_powerState);
+      ScooterState newState =
+          ScooterState.fromStateAndPowerState(_state!, powerState);
+      _stateController.add(newState);
+    }
+  }
+
+  void _subscribeSeat() {
     StringReader("Seat", _characteristicRepository.seatCharacteristic)
         .readAndSubscribe((String seatState) {
       _seatClosedController.add(seatState != "open");
     });
+  }
 
+  void _subscribeHandlebars() {
     StringReader(
             "Handlebars", _characteristicRepository.handlebarCharacteristic)
         .readAndSubscribe((String handlebarState) {
       _handlebarController.add(handlebarState != "unlocked");
     });
+  }
 
+  void _subscribeBatteries() {
     var auxBatterReader =
         BatteryReader(ScooterBattery.aux, _lastPingController);
     auxBatterReader.readAndSubscribeSOC(
@@ -107,15 +132,5 @@ class ScooterReader {
     secondaryBatteryReader.readAndSubscribeCycles(
         _characteristicRepository.secondaryCyclesCharacteristic,
         _secondaryCyclesController);
-  }
-
-  Future<void> _updateScooterState() async {
-    log("Update scooter state from state: '$_state' and power state: '$_powerState'");
-    if (_state != null && _powerState != null) {
-      ScooterPowerState powerState = ScooterPowerState.fromString(_powerState);
-      ScooterState newState =
-          ScooterState.fromStateAndPowerState(_state!, powerState);
-      _stateController.add(newState);
-    }
   }
 }
