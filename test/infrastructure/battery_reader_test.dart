@@ -32,9 +32,28 @@ void main() {
         await expectCharacteristicEmitting(
             mockCharacteristic, controller, [40]);
 
-        // writes cache
+        // checks written cache
         var instance = await SharedPreferences.getInstance();
         expect(instance.getInt("primarySOC"), equals(40));
+      });
+
+      test('does not emit state of charge if not cached and not provided',
+          () async {
+        var uint32 = [0];
+        var mockCharacteristic = buildCharacterWithValue(uint32);
+        var controller = BehaviorSubject<int?>();
+        var lastPingController = BehaviorSubject<DateTime?>();
+
+        BatteryReader batteryReader =
+            BatteryReader(ScooterBattery.primary, lastPingController);
+
+        await batteryReader.readAndSubscribeSOC(mockCharacteristic, controller);
+
+        await expectCharacteristicEmitting(mockCharacteristic, controller, []);
+
+        // checks written cache
+        var instance = await SharedPreferences.getInstance();
+        expect(instance.getInt("primarySOC"), equals(null));
       });
 
       test('ignores state of charge value which does not have length of 4',

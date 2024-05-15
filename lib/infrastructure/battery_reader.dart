@@ -35,7 +35,9 @@ class BatteryReader {
     await c.future;
 
     int? cachedSoc = await _readSocFromCache();
-    socController.add(cachedSoc);
+    if (cachedSoc != null) {
+      socController.add(cachedSoc);
+    }
   }
 
   readAndSubscribeCycles(BluetoothCharacteristic cyclesCharacteristic,
