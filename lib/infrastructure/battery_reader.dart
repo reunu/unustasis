@@ -68,7 +68,8 @@ class BatteryReader {
     }
 
     _lastPingController.add(lastPing);
-    int? soc = (await _getSharedPrefs()).getInt(_getSocCacheKey(_battery));
+    var sharedPrefs = await _getSharedPrefs();
+    int? soc = sharedPrefs.getInt(_getSocCacheKey(_battery));
     return soc;
   }
 
@@ -83,7 +84,8 @@ class BatteryReader {
   String _getSocCacheKey(ScooterBattery battery) => "${battery.name}SOC";
 
   Future<DateTime?> _readLastPing() async {
-    int? epoch = (await _getSharedPrefs()).getInt(lastPingCacheKey);
+    var sharedPrefs = await _getSharedPrefs();
+    int? epoch = sharedPrefs.getInt(lastPingCacheKey);
     if (epoch == null) {
       return null;
     }
