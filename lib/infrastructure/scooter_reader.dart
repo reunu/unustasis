@@ -117,7 +117,7 @@ class ScooterReader {
     var primaryBatteryReader =
         BatteryReader(ScooterBattery.primary, _lastPingController);
     primaryBatteryReader.readAndSubscribeSOC(
-        _characteristicRepository.primaryCyclesCharacteristic,
+        _characteristicRepository.primarySOCCharacteristic,
         _primarySOCController);
     primaryBatteryReader.readAndSubscribeCycles(
         _characteristicRepository.primaryCyclesCharacteristic,
@@ -126,7 +126,7 @@ class ScooterReader {
     var secondaryBatteryReader =
         BatteryReader(ScooterBattery.secondary, _lastPingController);
     secondaryBatteryReader.readAndSubscribeSOC(
-        _characteristicRepository.secondaryCyclesCharacteristic,
+        _characteristicRepository.secondarySOCCharacteristic,
         _secondarySOCController);
     secondaryBatteryReader.readAndSubscribeCycles(
         _characteristicRepository.secondaryCyclesCharacteristic,
