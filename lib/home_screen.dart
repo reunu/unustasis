@@ -43,6 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     setupColor();
     if (widget.forceOpen != true) {
+      log("Redirecting or starting");
       redirectOrStart();
     }
     widget.scooterService.state.listen((state) {
@@ -366,7 +367,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void redirectOrStart() async {
-    if ((await widget.scooterService.getSavedScooterIds()).isEmpty && mounted) {
+    List<String> ids = await widget.scooterService.getSavedScooterIds();
+    log("Saved scooters: $ids");
+    if ((await widget.scooterService.getSavedScooterIds()).isEmpty) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(

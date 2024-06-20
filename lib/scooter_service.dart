@@ -19,7 +19,7 @@ const bootingTimeSeconds = 25;
 const keylessCooldownSeconds = 60;
 
 class ScooterService {
-  Map<String, Map<String, dynamic>> savedScooters = {};
+  Map<String, dynamic> savedScooters = {};
   BluetoothDevice? myScooter; // reserved for a connected scooter!
   bool _foundSth = false; // whether we've found a scooter yet
   int? cbbRemainingCap, cbbFullCap;
@@ -60,15 +60,15 @@ class ScooterService {
     // Load saved scooter ID and cached values from SharedPrefs
     SharedPreferences.getInstance().then((prefs) {
       this.prefs = prefs;
+
       if (prefs.containsKey("savedScooters")) {
         savedScooters = jsonDecode(prefs.getString("savedScooters")!)
-            as Map<String, Map<String, dynamic>>;
+            as Map<String, dynamic>;
       } else if (prefs.containsKey("savedScooterId")) {
-        savedScooters = {
-          prefs.getString("savedScooterId")!: {"name": "Scooter Pro"}
-        };
+        addSavedScooter(prefs.getString("savedScooterId")!);
       }
       if (savedScooters.isNotEmpty) {
+        // if we found a saved scooter in the previous step...
         _scooterNameController.add(savedScooters.values.first[
             "name"]); // TODO: This needs to be fixed for multiple scooters
       }
@@ -217,10 +217,11 @@ class ScooterService {
     // See if the phone is already connected to a scooter. If so, hook into that.
     List<BluetoothDevice> systemDevices = await flutterBluePlus.systemDevices;
     List<BluetoothDevice> systemScooters = [];
+    List<String> savedScooterIds = await getSavedScooterIds();
     for (var device in systemDevices) {
-      // criteria: it's named "unu Scooter" or it's the one we saved
+      // criteria: it's named "unu Scooter" or it's one we saved
       if (device.advName == "unu Scooter" ||
-          (await getSavedScooterIds()).contains(device.remoteId.toString())) {
+          savedScooterIds.contains(device.remoteId.toString())) {
         // That's a scooter!
         systemScooters.add(device);
       }
@@ -274,10 +275,16 @@ class ScooterService {
     if (systemScooters.isNotEmpty) {
       // TODO: this might return multiple scooters in super rare cases
       // get the first one, hook into its connection, and remember the ID for future reference
-      await systemScooters.first.connect();
-      myScooter = systemScooters.first;
-      addSavedScooter(systemScooters.first.remoteId.toString());
-      await setUpCharacteristics(systemScooters.first);
+      await systemScooters.first.connect(
+          // autoConnect: true,
+          // mtu: null,
+          );
+      // await systemScooters.first.connectionState
+      //     .where((val) => val == BluetoothConnectionState.connected)
+      //     .first;
+      // myScooter = systemScooters.first;
+      // addSavedScooter(systemScooters.first.remoteId.toString());
+      // await setUpCharacteristics(systemScooters.first);
       // save this as the last known location
       _pollLocation();
       _connectedController.add(true);
@@ -306,8 +313,16 @@ class ScooterService {
           flutterBluePlus.stopScan();
           // attempt to connect to what we found
           await foundScooter.connect(
-              //autoConnect: true, // significantly slows down the connection process
+              // autoConnect: true, significantly slows down the connection process
+              // mtu: null,
               );
+          // wait for the connection to be established
+          // await foundScooter.connectionState
+          //     .where((val) => val == BluetoothConnectionState.connected)
+          //     .first;
+          // if (Platform.isAndroid) {
+          //   await foundScooter.requestMtu(512);
+          // }
           // Set up this scooter as ours
           myScooter = foundScooter;
           addSavedScooter(foundScooter.remoteId.toString());
@@ -333,8 +348,8 @@ class ScooterService {
       } catch (e) {
         // Guess this one is not happy with us
         // TODO: Handle errors more elegantly
-        log("Error during search or connect!");
-        log(e.toString());
+        print("Error during search or connect!");
+        print(e.toString());
         Fluttertoast.showToast(
             msg: "Error during search or connect!"); // TODO: Localize
       }
@@ -858,8 +873,8 @@ class ScooterService {
       prefs ??= await SharedPreferences.getInstance();
       if (prefs!.containsKey("savedScooters")) {
         savedScooters = jsonDecode(prefs!.getString("savedScooters")!)
-            as Map<String, Map<String, dynamic>>;
-        return savedScooters!.keys.toList();
+            as Map<String, dynamic>;
+        return savedScooters.keys.toList();
       } else if (prefs!.containsKey("savedScooterId")) {
         return [prefs!.getString("savedScooterId")!];
       } else {

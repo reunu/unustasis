@@ -27,6 +27,9 @@ class ScooterSection extends StatefulWidget {
 
 class _ScooterSectionState extends State<ScooterSection> {
   int color = 3;
+  String? nameCache;
+  TextEditingController nameController = TextEditingController();
+  FocusNode nameFocusNode = FocusNode();
 
   void setColor(int newColor) async {
     setState(() {
@@ -58,24 +61,43 @@ class _ScooterSectionState extends State<ScooterSection> {
         StreamBuilder<String?>(
           stream: widget.service.scooterName,
           builder: (context, name) {
-            return ListTile(
-              title: Text(FlutterI18n.translate(context, "stats_name")),
-              subtitle: Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: TextFormField(
-                  enabled: name.hasData,
-                  initialValue: name.data ??
-                      FlutterI18n.translate(context, "stats_no_name"),
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    //labelText: FlutterI18n.translate(context, "stats_name"),
-                  ),
-                  onFieldSubmitted: (value) {
-                    widget.service.renameSavedScooter(name: value);
-                  },
-                ),
-              ),
-            );
+            nameController.text = name.data ?? "";
+            return StreamBuilder<bool>(
+                stream: widget.service.connected,
+                builder: (context, connected) {
+                  return ListTile(
+                    title: Text(FlutterI18n.translate(context, "stats_name")),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: TextField(
+                        enabled: connected.data ?? false,
+                        controller: TextEditingController(
+                            text: name.data ??
+                                FlutterI18n.translate(
+                                    context, "stats_no_name")),
+                        focusNode: nameFocusNode,
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          //labelText: FlutterI18n.translate(context, "stats_name"),
+                        ),
+                        onChanged: (value) {
+                          nameCache = value;
+                        },
+                        onSubmitted: (value) {
+                          widget.service.renameSavedScooter(name: value);
+                        },
+                        onTapOutside: (event) {
+                          print(
+                              "Tapped outside, saving ${nameController.text}");
+                          if (nameCache != null) {
+                            widget.service.renameSavedScooter(name: nameCache!);
+                          }
+                          nameFocusNode.unfocus();
+                        },
+                      ),
+                    ),
+                  );
+                });
           },
         ),
         const SizedBox(height: 4),
@@ -252,12 +274,15 @@ class _ScooterSectionState extends State<ScooterSection> {
             );
           },
         ),
-        ListTile(
-          title: Text(FlutterI18n.translate(context, "stats_scooter_id")),
-          subtitle: Text((widget.service.myScooter?.remoteId != null)
-              ? widget.service.myScooter!.remoteId.toString()
-              : FlutterI18n.translate(context, "stats_unknown")),
-        ),
+        FutureBuilder<List<String>>(
+            future: widget.service.getSavedScooterIds(),
+            builder: (context, ids) {
+              return ListTile(
+                title: Text(FlutterI18n.translate(context, "stats_scooter_id")),
+                subtitle: Text(ids.data?.first ??
+                    FlutterI18n.translate(context, "stats_unknown")),
+              );
+            }),
         StreamBuilder<int?>(
           stream: widget.service.rssi,
           builder: (context, snapshot) {
@@ -371,5 +396,12 @@ class _ScooterSectionState extends State<ScooterSection> {
         ),
       ],
     );
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    nameFocusNode.dispose();
+    super.dispose();
   }
 }

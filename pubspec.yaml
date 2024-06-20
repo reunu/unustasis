@@ -1,5 +1,5 @@
 name: unustasis
-description: "An unofficial app for the unu Scooter Pro"
+description: "An open-source app for the unu Scooter Pro"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+8
+version: 1.1.0+9
 
 environment:
   sdk: '>=3.3.2 <4.0.0'
@@ -73,10 +73,7 @@ dev_dependencies:
 
 flutter_launcher_icons:
   android: true
-  image_path: "icon/icon.png"
-  adaptive_icon_background: "icon/icon_background.png"
-  adaptive_icon_foreground: "icon/icon_foreground.png"
-  adaptive_icon_monochrome: "icon/icon_monochrome.png"
+  image_path: "icon.png"
   min_sdk_android: 21 # android min sdk min:16, default 21
   ios: true
   remove_alpha_ios: true
@@ -123,6 +120,7 @@ flutter:
     - images/battery/batt_aux.webp
     - assets/i18n/en.json
     - assets/i18n/de.json
+    - assets/i18n/pi.json
     - assets/faq_en.json
     - assets/faq_de.json
     - assets/anim/scanning.json
