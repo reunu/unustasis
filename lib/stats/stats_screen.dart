@@ -183,6 +183,11 @@ class _StatsScreenState extends State<StatsScreen> {
                                   child: Text(FlutterI18n.translate(
                                       context, "language_german")),
                                 ),
+                                DropdownMenuItem<Locale>(
+                                  value: const Locale("pi"),
+                                  child: Text(FlutterI18n.translate(
+                                      context, "language_pirate")),
+                                ),
                               ],
                               onChanged: (newLanguage) async {
                                 await FlutterI18n.refresh(context, newLanguage);
