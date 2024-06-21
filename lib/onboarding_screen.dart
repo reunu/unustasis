@@ -208,6 +208,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             children: [
               Expanded(child: _onboardingVisual(step: _step)),
               Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   ...getWidgets(_step),
                   const SizedBox(height: 16),
@@ -299,6 +300,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       Text(
         heading,
         style: Theme.of(context).textTheme.headlineLarge,
+        textAlign: TextAlign.center,
       ),
       const SizedBox(height: 16),
       Text(

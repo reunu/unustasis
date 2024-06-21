@@ -1,0 +1,17 @@
+{
+    "Setup": {
+        "Me ship ain't connectin'": "If ye want to pair the ship with Unustasis for the first time, ye must be standin' next to the ship when it be switched on. If ye receive a pairin' request but the ship does not yet display a code, in most cases ye can simply dismiss the request and continue with the pairin' process. However, make sure that there be no other switched-on unu ship in the vicinity.\n\nIf yer ship suddenly stops connectin', check whether it can still be opened with the key card. If not, there may be a fault with the ship.",
+        "Do I have to uninstall the official Unu app?": "No, both apps sail in completely different waters. Ye should, however, disable background connection in the old app. On iOS ye might also have to remove the ship from yer saved devices in the system settings in order to be able to pair it again via Unustasis.",
+        "Can multiple devices control the same ship?": "Aye! Ye can pair the ship with up to six devices at the same time. This means that with shared ships, anyone can pair their own cell phone with the ship to unlock it. However, only one app can control the ship at a time. So while ye have Unustasis open, no other app (and no other device) has access to the ship."
+    },
+    "Frequently asked questions": {
+        "Can this app fix the clock in me display?": "Unfortunately not. The ship can only get its time from the Unu cloud, which has been shut down. This app can only control the ship via Bluetooth, through which the time cannot be set.",
+        "Why doesn't this app display sailin' statistics?": "The ship does not provide any information about the sailin' statistics via Bluetooth. While the ship outputs some data via Bluetooth, it does not include things like odometer, speed or power output.",
+        "Me ship's been havin' issues since installin' this app": "Unustasis only communicates with the ship via Bluetooth. It does not change any settings on the ship, and it does not have any influence on the ship's behavior. If ye be experiencin' issues with yer ship, it be likely not related to Unustasis. If ye be unsure, ye can always uninstall the app to see if the issues persist."
+    },
+    "About the app": {
+        "Is this app made by Unu?": "Unustasis was initially created by independent unu sailors. As the new owners of the unu brand, Emco have been supportin' the ongoing development of this app.",
+        "What does 'Unustasis' mean?": "Unustasis comes from the ancient greek 'anástasis', which refers to a recovery from a debilitating condition. It can also mean rebirth, or resurrection. After the bankruptcy of unu motors, this app was meant to 'revive' the lost smart features.",
+        "How can I support?": "Unustasis be an open source project. Therefore ye be more than welcome to contribute to the source code, just check out Unustasis on GitHub! If ye encounter any issues or have any suggestions, feel free to open an issue on GitHub."
+    }
+}

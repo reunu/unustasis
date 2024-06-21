@@ -19,7 +19,7 @@ const bootingTimeSeconds = 25;
 const keylessCooldownSeconds = 60;
 
 class ScooterService {
-  String? savedScooterId;
+  Map<String, dynamic> savedScooters = {};
   BluetoothDevice? myScooter; // reserved for a connected scooter!
   bool _foundSth = false; // whether we've found a scooter yet
   int? cbbRemainingCap, cbbFullCap;
@@ -60,28 +60,37 @@ class ScooterService {
     // Load saved scooter ID and cached values from SharedPrefs
     SharedPreferences.getInstance().then((prefs) {
       this.prefs = prefs;
-      if (prefs.containsKey("savedScooterId")) {
-        savedScooterId = prefs.getString("savedScooterId");
-        int? lastPing = prefs.getInt("lastPing");
-        if (lastPing != null) {
-          _lastPingController
-              .add(DateTime.fromMicrosecondsSinceEpoch(lastPing));
-          _primarySOCController.add(prefs.getInt("primarySOC"));
-          _secondarySOCController.add(prefs.getInt("secondarySOC"));
-          _cbbSOCController.add(prefs.getInt("cbbSOC"));
-          _auxSOCController.add(prefs.getInt("auxSOC"));
-          double? lastLat = prefs.getDouble("lastLat");
-          double? lastLon = prefs.getDouble("lastLon");
-          _autoUnlock = prefs.getBool("autoUnlock") ?? false;
-          _autoUnlockThreshold = prefs.getInt("autoUnlockThreshold") ??
-              ScooterKeylessDistance.regular.threshold;
-          // if biometrics are disabled, we can treat everything as authenticated
-          optionalAuth = !(prefs.getBool("biometrics") ?? false);
-          _openSeatOnUnlock = prefs.getBool("openSeatOnUnlock") ?? false;
-          _hazardLocking = prefs.getBool("hazardLocking") ?? false;
-          if (lastLat != null && lastLon != null) {
-            _lastLocationController.add(LatLng(lastLat, lastLon));
-          }
+
+      if (prefs.containsKey("savedScooters")) {
+        savedScooters = jsonDecode(prefs.getString("savedScooters")!)
+            as Map<String, dynamic>;
+      } else if (prefs.containsKey("savedScooterId")) {
+        addSavedScooter(prefs.getString("savedScooterId")!);
+      }
+      if (savedScooters.isNotEmpty) {
+        // if we found a saved scooter in the previous step...
+        _scooterNameController.add(savedScooters.values.first[
+            "name"]); // TODO: This needs to be fixed for multiple scooters
+      }
+
+      int? lastPing = prefs.getInt("lastPing");
+      if (lastPing != null) {
+        _lastPingController.add(DateTime.fromMicrosecondsSinceEpoch(lastPing));
+        _primarySOCController.add(prefs.getInt("primarySOC"));
+        _secondarySOCController.add(prefs.getInt("secondarySOC"));
+        _cbbSOCController.add(prefs.getInt("cbbSOC"));
+        _auxSOCController.add(prefs.getInt("auxSOC"));
+        double? lastLat = prefs.getDouble("lastLat");
+        double? lastLon = prefs.getDouble("lastLon");
+        _autoUnlock = prefs.getBool("autoUnlock") ?? false;
+        _autoUnlockThreshold = prefs.getInt("autoUnlockThreshold") ??
+            ScooterKeylessDistance.regular.threshold;
+        // if biometrics are disabled, we can treat everything as authenticated
+        optionalAuth = !(prefs.getBool("biometrics") ?? false);
+        _openSeatOnUnlock = prefs.getBool("openSeatOnUnlock") ?? false;
+        _hazardLocking = prefs.getBool("hazardLocking") ?? false;
+        if (lastLat != null && lastLon != null) {
+          _lastLocationController.add(LatLng(lastLat, lastLon));
         }
       }
     });
@@ -171,6 +180,10 @@ class ScooterService {
       BehaviorSubject<LatLng?>();
   Stream<LatLng?> get lastLocation => _lastLocationController.stream;
 
+  final BehaviorSubject<String?> _scooterNameController =
+      BehaviorSubject<String?>();
+  Stream<String?> get scooterName => _scooterNameController.stream;
+
   // PINGING
   // We store the most recent SOC values (and, in the future, location) to SharedPrefs so that we can see the last known state even when disconnected
   //
@@ -204,10 +217,11 @@ class ScooterService {
     // See if the phone is already connected to a scooter. If so, hook into that.
     List<BluetoothDevice> systemDevices = await flutterBluePlus.systemDevices;
     List<BluetoothDevice> systemScooters = [];
+    List<String> savedScooterIds = await getSavedScooterIds();
     for (var device in systemDevices) {
-      // criteria: it's named "unu Scooter" or it's the one we saved
+      // criteria: it's named "unu Scooter" or it's one we saved
       if (device.advName == "unu Scooter" ||
-          device.remoteId.toString() == await getSavedScooter()) {
+          savedScooterIds.contains(device.remoteId.toString())) {
         // That's a scooter!
         systemScooters.add(device);
       }
@@ -217,10 +231,10 @@ class ScooterService {
 
   Stream<BluetoothDevice> getNearbyScooters() async* {
     List<BluetoothDevice> foundScooterCache = [];
-    String? savedScooterId = await getSavedScooter();
-    if (savedScooterId != null) {
+    List<String> savedScooterIds = await getSavedScooterIds();
+    if (savedScooterIds.isNotEmpty) {
       flutterBluePlus.startScan(
-        withRemoteIds: [savedScooterId], // look for OUR scooter
+        withRemoteIds: savedScooterIds, // look for OUR scooter
         timeout: const Duration(seconds: 30),
       );
     } else {
@@ -261,13 +275,21 @@ class ScooterService {
     if (systemScooters.isNotEmpty) {
       // TODO: this might return multiple scooters in super rare cases
       // get the first one, hook into its connection, and remember the ID for future reference
-      await systemScooters.first.connect();
-      myScooter = systemScooters.first;
-      setSavedScooter(systemScooters.first.remoteId.toString());
-      await setUpCharacteristics(systemScooters.first);
+      await systemScooters.first.connect(
+          // autoConnect: true,
+          // mtu: null,
+          );
+      // await systemScooters.first.connectionState
+      //     .where((val) => val == BluetoothConnectionState.connected)
+      //     .first;
+      // myScooter = systemScooters.first;
+      // addSavedScooter(systemScooters.first.remoteId.toString());
+      // await setUpCharacteristics(systemScooters.first);
       // save this as the last known location
       _pollLocation();
       _connectedController.add(true);
+      _scooterNameController
+          .add(savedScooters[myScooter!.remoteId.toString()]?["name"]);
       systemScooters.first.connectionState
           .listen((BluetoothConnectionState state) async {
         if (state == BluetoothConnectionState.disconnected) {
@@ -291,16 +313,26 @@ class ScooterService {
           flutterBluePlus.stopScan();
           // attempt to connect to what we found
           await foundScooter.connect(
-              //autoConnect: true, // significantly slows down the connection process
+              // autoConnect: true, significantly slows down the connection process
+              // mtu: null,
               );
+          // wait for the connection to be established
+          // await foundScooter.connectionState
+          //     .where((val) => val == BluetoothConnectionState.connected)
+          //     .first;
+          // if (Platform.isAndroid) {
+          //   await foundScooter.requestMtu(512);
+          // }
           // Set up this scooter as ours
           myScooter = foundScooter;
-          setSavedScooter(foundScooter.remoteId.toString());
+          addSavedScooter(foundScooter.remoteId.toString());
           await setUpCharacteristics(foundScooter);
           // save this as the last known location
           _pollLocation();
           // Let everybody know
           _connectedController.add(true);
+          _scooterNameController
+              .add(savedScooters[myScooter!.remoteId.toString()]?["name"]);
           // listen for disconnects
           foundScooter.connectionState
               .listen((BluetoothConnectionState state) async {
@@ -316,8 +348,8 @@ class ScooterService {
       } catch (e) {
         // Guess this one is not happy with us
         // TODO: Handle errors more elegantly
-        log("Error during search or connect!");
-        log(e.toString());
+        print("Error during search or connect!");
+        print(e.toString());
         Fluttertoast.showToast(
             msg: "Error during search or connect!"); // TODO: Localize
       }
@@ -336,7 +368,7 @@ class ScooterService {
         await device.createBond();
       }
       myScooter = device;
-      setSavedScooter(device.remoteId.toString());
+      addSavedScooter(device.remoteId.toString());
       await setUpCharacteristics(device);
       // save this as the last known location
       _pollLocation();
@@ -833,18 +865,39 @@ class ScooterService {
     return completer.future;
   }
 
-  Future<String?> getSavedScooter() async {
-    if (savedScooterId != null) {
-      return savedScooterId;
+  Future<List<String>> getSavedScooterIds() async {
+    if (savedScooters.isNotEmpty) {
+      return savedScooters.keys.toList();
+    } else {
+      // nothing saved locally yet, check prefs
+      prefs ??= await SharedPreferences.getInstance();
+      if (prefs!.containsKey("savedScooters")) {
+        savedScooters = jsonDecode(prefs!.getString("savedScooters")!)
+            as Map<String, dynamic>;
+        return savedScooters.keys.toList();
+      } else if (prefs!.containsKey("savedScooterId")) {
+        return [prefs!.getString("savedScooterId")!];
+      } else {
+        return [];
+      }
     }
-    prefs ??= await SharedPreferences.getInstance();
-    return prefs!.getString("savedScooterId");
   }
 
-  void forgetSavedScooter() async {
+  void forgetSavedScooter([String? id]) async {
     stopAutoRestart();
+    // if the ID is not specified, we're forgetting the currently connected scooter
+    id ??= myScooter?.remoteId.toString();
+    if (id == null) {
+      // this means we're not connected to anything either
+      log("Attempted to forget scooter, but no ID was given and we're not connected to anything!");
+      return;
+    }
+    if (savedScooters.isNotEmpty) {
+      savedScooters.remove(id);
+      prefs ??= await SharedPreferences.getInstance();
+      prefs!.setString("savedScooters", jsonEncode(savedScooters));
+    }
     _connectedController.add(false);
-    savedScooterId = null;
     prefs ??= await SharedPreferences.getInstance();
     prefs!.remove("savedScooterId");
     if (Platform.isAndroid) {
@@ -852,10 +905,32 @@ class ScooterService {
     }
   }
 
-  void setSavedScooter(String id) async {
-    savedScooterId = id;
+  void renameSavedScooter({String? id, required String name}) async {
+    id ??= myScooter?.remoteId.toString();
+    if (id == null) {
+      log("Attempted to rename scooter, but no ID was given and we're not connected to anything!");
+      return;
+    }
+    if (savedScooters[id] == null) {
+      savedScooters[id] = {"name": name}; // TODO: MOVE COLOR HERE
+    } else {
+      savedScooters[id]!["name"] = name;
+    }
+
     prefs ??= await SharedPreferences.getInstance();
-    prefs!.setString("savedScooterId", id);
+    prefs!.setString("savedScooters", jsonEncode(savedScooters));
+    _scooterNameController.add(name);
+  }
+
+  void addSavedScooter(String id) async {
+    if (savedScooters.containsKey(id)) {
+      // we already know this scooter!
+      return;
+    }
+    savedScooters[id] = {"name": "Scooter Pro"}; // TODO: MOVE COLOR HERE
+    prefs ??= await SharedPreferences.getInstance();
+    prefs!.setString("savedScooters", jsonEncode(savedScooters));
+    _scooterNameController.add("Scooter Pro");
   }
 
   void dispose() {

@@ -43,6 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     setupColor();
     if (widget.forceOpen != true) {
+      log("Redirecting or starting");
       redirectOrStart();
     }
     widget.scooterService.state.listen((state) {
@@ -100,7 +101,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   : _connected
                       ? HSLColor.fromColor(
                               Theme.of(context).colorScheme.primary)
-                          .withLightness(0.2)
+                          .withLightness(0.1)
+                          .withSaturation(0.5)
                           .toColor()
                       : Theme.of(context).colorScheme.surface,
               Theme.of(context).colorScheme.onTertiary,
@@ -137,10 +139,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       SizedBox(width: _connected ? 32 : 0),
-                      Text(
-                        "Scooter Pro",
-                        style: Theme.of(context).textTheme.headlineLarge,
-                      ),
+                      StreamBuilder<String?>(
+                          stream: widget.scooterService.scooterName,
+                          builder: (context, name) {
+                            return Text(
+                              name.data ??
+                                  FlutterI18n.translate(
+                                      context, "stats_no_name"),
+                              style: Theme.of(context).textTheme.headlineLarge,
+                            );
+                          }),
                       const SizedBox(width: 16),
                       const Icon(
                         Icons.arrow_forward_ios_rounded,
@@ -153,7 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   _scanning &&
                           (_scooterState == null ||
                               _scooterState! == ScooterState.disconnected)
-                      ? (widget.scooterService.savedScooterId != null
+                      ? (widget.scooterService.savedScooters.isNotEmpty
                           ? FlutterI18n.translate(
                               context, "home_scanning_known")
                           : FlutterI18n.translate(context, "home_scanning"))
@@ -359,7 +367,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void redirectOrStart() async {
-    if (await widget.scooterService.getSavedScooter() == null && mounted) {
+    List<String> ids = await widget.scooterService.getSavedScooterIds();
+    log("Saved scooters: $ids");
+    if ((await widget.scooterService.getSavedScooterIds()).isEmpty) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
