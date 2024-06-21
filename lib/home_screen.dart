@@ -7,6 +7,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unustasis/control_screen.dart';
+import 'package:unustasis/domain/icomoon.dart';
 import 'package:unustasis/driving_screen.dart';
 import 'package:unustasis/onboarding_screen.dart';
 import 'package:unustasis/scooter_service.dart';
@@ -16,7 +17,12 @@ import 'package:unustasis/stats/stats_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final ScooterService scooterService;
-  const HomeScreen({required this.scooterService, super.key});
+  final bool? forceOpen;
+  const HomeScreen({
+    required this.scooterService,
+    this.forceOpen,
+    super.key,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -36,7 +42,10 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     setupColor();
-    redirectOrStart();
+    if (widget.forceOpen != true) {
+      log("Redirecting or starting");
+      redirectOrStart();
+    }
     widget.scooterService.state.listen((state) {
       setState(() {
         _scooterState = state;
@@ -81,16 +90,22 @@ class _HomeScreenState extends State<HomeScreen> {
       body: AnimatedContainer(
         duration: const Duration(milliseconds: 500),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.bottomCenter,
-            end: Alignment.topCenter,
+          gradient: RadialGradient(
+            center: Alignment.center,
+            radius: 1.3,
             colors: [
-              Colors.black,
               _scooterState?.isOn == true
-                  ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
+                  ? HSLColor.fromColor(Theme.of(context).colorScheme.primary)
+                      .withLightness(0.3)
+                      .toColor()
                   : _connected
-                      ? Theme.of(context).colorScheme.surface
-                      : Theme.of(context).colorScheme.background,
+                      ? HSLColor.fromColor(
+                              Theme.of(context).colorScheme.primary)
+                          .withLightness(0.1)
+                          .withSaturation(0.5)
+                          .toColor()
+                      : Theme.of(context).colorScheme.surface,
+              Theme.of(context).colorScheme.onTertiary,
             ],
           ),
         ),
@@ -124,10 +139,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       SizedBox(width: _connected ? 32 : 0),
-                      Text(
-                        "Scooter Pro",
-                        style: Theme.of(context).textTheme.headlineLarge,
-                      ),
+                      StreamBuilder<String?>(
+                          stream: widget.scooterService.scooterName,
+                          builder: (context, name) {
+                            return Text(
+                              name.data ??
+                                  FlutterI18n.translate(
+                                      context, "stats_no_name"),
+                              style: Theme.of(context).textTheme.headlineLarge,
+                            );
+                          }),
                       const SizedBox(width: 16),
                       const Icon(
                         Icons.arrow_forward_ios_rounded,
@@ -140,7 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   _scanning &&
                           (_scooterState == null ||
                               _scooterState! == ScooterState.disconnected)
-                      ? (widget.scooterService.savedScooterId != null
+                      ? (widget.scooterService.savedScooters.isNotEmpty
                           ? FlutterI18n.translate(
                               context, "home_scanning_known")
                           : FlutterI18n.translate(context, "home_scanning"))
@@ -208,6 +229,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ],
                         );
                       }),
+                const SizedBox(height: 16),
                 Expanded(
                     child: ScooterVisual(
                         color: color,
@@ -215,6 +237,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         scanning: _scanning,
                         blinkerLeft: false, // TODO: extract ScooterBlinkerState
                         blinkerRight: false)),
+                const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   mainAxisSize: MainAxisSize.max,
@@ -232,7 +255,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 context, "home_seat_button_open")
                             : FlutterI18n.translate(
                                 context, "home_seat_button_closed"),
-                        icon: Icons.work_outline,
+                        icon: _seatClosed == false
+                            ? Icomoon.seat_open
+                            : Icomoon.seat_closed,
                         iconColor: _seatClosed == false
                             ? Theme.of(context).colorScheme.error
                             : null,
@@ -342,8 +367,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void redirectOrStart() async {
-    if (await widget.scooterService.getSavedScooter() == null) {
-      Navigator.push(
+    List<String> ids = await widget.scooterService.getSavedScooterIds();
+    log("Saved scooters: $ids");
+    if ((await widget.scooterService.getSavedScooterIds()).isEmpty) {
+      Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (context) => OnboardingScreen(
@@ -436,8 +463,12 @@ class _ScooterPowerButtonState extends State<ScooterPowerButton> {
                   });
                 },
           child: loading
-              ? CircularProgressIndicator(
-                  color: Theme.of(context).colorScheme.background,
+              ? SizedBox(
+                  height: 16,
+                  width: 16,
+                  child: CircularProgressIndicator(
+                    color: Theme.of(context).colorScheme.background,
+                  ),
                 )
               : Icon(
                   widget._icon,

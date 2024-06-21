@@ -1,5 +1,5 @@
 name: unustasis
-description: "An unofficial app for the unu Scooter Pro"
+description: "An open-source app for the unu Scooter Pro"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+8
+version: 1.1.0+9
 
 environment:
   sdk: '>=3.3.2 <4.0.0'
@@ -74,10 +74,7 @@ dev_dependencies:
 
 flutter_launcher_icons:
   android: true
-  image_path: "icon/icon.png"
-  adaptive_icon_background: "icon/icon_background.png"
-  adaptive_icon_foreground: "icon/icon_foreground.png"
-  adaptive_icon_monochrome: "icon/icon_monochrome.png"
+  image_path: "icon.png"
   min_sdk_android: 21 # android min sdk min:16, default 21
   ios: true
   remove_alpha_ios: true
@@ -103,6 +100,13 @@ flutter:
     - images/scooter/base_4.webp
     - images/scooter/base_5.webp
     - images/scooter/base_6.webp
+    - images/scooter/side_0.webp
+    - images/scooter/side_1.webp
+    - images/scooter/side_2.webp
+    - images/scooter/side_3.webp
+    - images/scooter/side_4.webp
+    - images/scooter/side_5.webp
+    - images/scooter/side_6.webp
     - images/scooter/disconnected.webp
     - images/scooter/light_beam.webp
     - images/scooter/light_ring.webp
@@ -117,10 +121,16 @@ flutter:
     - images/battery/batt_aux.webp
     - assets/i18n/en.json
     - assets/i18n/de.json
+    - assets/i18n/pi.json
     - assets/faq_en.json
     - assets/faq_de.json
     - assets/anim/scanning.json
     - assets/anim/found.json
+
+  fonts:
+    - family: icomoon
+      fonts:
+       - asset: assets/fonts/icomoon.ttf
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware

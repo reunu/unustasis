@@ -90,13 +90,13 @@ class _BatterySectionState extends State<BatterySection> {
             );
           },
         ),
-        // hiding until it properly works
+        // only available on Android, hidden right now though
         if (Platform.isWindows)
-          const Divider(
+          Divider(
             height: 40,
-            indent: 12,
-            endIndent: 12,
-            color: Colors.white24,
+            indent: 0,
+            endIndent: 0,
+            color: Theme.of(context).colorScheme.onBackground.withOpacity(0.1),
           ),
         if (nfcBattery != 0 && nfcBattery != null && !nfcScanning)
           _batteryCard(
@@ -107,7 +107,7 @@ class _BatterySectionState extends State<BatterySection> {
           ),
         nfcScanning
             ? Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(vertical: 16),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -126,16 +126,15 @@ class _BatterySectionState extends State<BatterySection> {
                       ),
                   ],
                 ))
-            : Platform.isWindows
+            : (Platform.isWindows)
                 // hiding until it works
                 ? Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 16),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size.fromHeight(60),
-                        side: const BorderSide(
-                          color: Colors.white,
+                        side: BorderSide(
+                          color: Theme.of(context).colorScheme.onBackground,
                         ),
                       ),
                       onPressed: () async {
@@ -162,6 +161,18 @@ class _BatterySectionState extends State<BatterySection> {
                         });
                         // Start Session
                         NfcManager.instance.startSession(
+                          onError: (error) {
+                            log("NFC Error: ${error.message}");
+                            Fluttertoast.showToast(
+                              msg: FlutterI18n.translate(
+                                  context, "stats_nfc_error"),
+                            );
+                            setState(() {
+                              nfcScanning = false;
+                              showNfcNotice = false;
+                            });
+                            throw error;
+                          },
                           onDiscovered: (NfcTag tag) async {
                             noticeTimer.cancel();
                             setState(() {
@@ -174,7 +185,7 @@ class _BatterySectionState extends State<BatterySection> {
                               Uint8List socData;
                               Uint8List cycleData;
                               // Read from battery
-                              if (Platform.isAndroid) {
+                              if (Platform.isWindows) {
                                 MifareUltralight? mifare =
                                     MifareUltralight.from(tag);
                                 if (mifare == null) {
@@ -189,18 +200,21 @@ class _BatterySectionState extends State<BatterySection> {
                                 cycleData =
                                     await mifare.readPages(pageOffset: 20);
                               } else {
-                                // NOT AVAILABLE ON iOS YET
                                 return;
                               }
 
                               // Parse data
-                              int remainingCap = (socData[3] << 8) + socData[2];
-                              int cycles = cycleData[0];
+                              log("SOC Hex: ${socData.map((e) => e.toRadixString(16))}");
+                              int fullCap =
+                                  33000; //(socData[5] << 8) + socData[4];
+                              int remainingCap = (socData[3] << 8) + socData[1];
+                              int cycles = cycleData[0] - 1;
                               log("Remaining: $remainingCap");
+                              log("Full: $fullCap");
                               log("Cycles: $cycles");
                               setState(() {
                                 nfcBattery =
-                                    (remainingCap / 33000 * 100).round();
+                                    (remainingCap / fullCap * 100).round();
                                 nfcCycles = cycles;
                               });
                             } catch (e) {
@@ -216,8 +230,8 @@ class _BatterySectionState extends State<BatterySection> {
                       },
                       child: Text(
                         FlutterI18n.translate(context, "stats_nfc_button"),
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onBackground,
                         ),
                       ),
                     ),
@@ -237,10 +251,14 @@ class _BatterySectionState extends State<BatterySection> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Container(
-        height: 180,
+        height: (type == BatteryType.primary ||
+                type == BatteryType.secondary ||
+                type == BatteryType.nfc)
+            ? 180
+            : 160,
         padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.background,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16.0),
           border: (soc <= 15 && !old)
               ? Border.all(
@@ -270,22 +288,26 @@ class _BatterySectionState extends State<BatterySection> {
                             .onBackground
                             .withOpacity(0.5)),
                   ),
-                  if (cycles != null && cycles > 0)
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.refresh,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          FlutterI18n.translate(context, "stats_cycles",
-                              translationParams: {
-                                "cycles": cycles.toString(),
-                              }),
-                        ),
-                      ],
-                    ),
+                  if (type == BatteryType.primary ||
+                      type == BatteryType.secondary ||
+                      type == BatteryType.nfc)
+                    (cycles != null && cycles > 0)
+                        ? Row(
+                            children: [
+                              const Icon(
+                                Icons.refresh,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                FlutterI18n.translate(context, "stats_cycles",
+                                    translationParams: {
+                                      "cycles": cycles.toString(),
+                                    }),
+                              ),
+                            ],
+                          )
+                        : const Text("   "),
                   if (type == BatteryType.cbb)
                     (charging != null)
                         ? Text(FlutterI18n.translate(
@@ -346,9 +368,15 @@ class _BatterySectionState extends State<BatterySection> {
                           value: soc / 100,
                           borderRadius: BorderRadius.circular(16.0),
                           minHeight: 16,
-                          backgroundColor: Colors.black.withOpacity(0.5),
+                          backgroundColor: Theme.of(context)
+                              .colorScheme
+                              .onTertiary
+                              .withOpacity(0.7),
                           color: old
-                              ? Theme.of(context).colorScheme.surface
+                              ? Theme.of(context)
+                                  .colorScheme
+                                  .onSurface
+                                  .withOpacity(0.4)
                               : soc <= 15
                                   ? Colors.red
                                   : Theme.of(context).colorScheme.primary,
@@ -377,9 +405,9 @@ class _BatterySectionState extends State<BatterySection> {
             decoration: BoxDecoration(
               color: i < currentStep
                   ? (old
-                      ? Theme.of(context).colorScheme.surface
+                      ? Theme.of(context).colorScheme.onSurface.withOpacity(0.4)
                       : Theme.of(context).colorScheme.primary)
-                  : Colors.black.withOpacity(0.5),
+                  : Theme.of(context).colorScheme.onTertiary.withOpacity(0.5),
               borderRadius: BorderRadius.circular(8),
             ),
           ),

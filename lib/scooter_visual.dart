@@ -22,54 +22,63 @@ class ScooterVisual extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: MediaQuery.of(context).size.width * 0.6,
+      width: MediaQuery.of(context).size.width * 0.8,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Stack(
           alignment: Alignment.center,
           children: [
-            AnimatedCrossFade(
-              duration: const Duration(milliseconds: 500),
-              firstChild: const Opacity(
-                opacity: 0.7,
-                child: Image(
-                  image: AssetImage("images/scooter/disconnected.webp"),
-                ),
+            SizedBox(
+              width: MediaQuery.of(context).size.width * 0.55,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  AnimatedCrossFade(
+                    duration: const Duration(milliseconds: 500),
+                    firstChild: const Opacity(
+                      opacity: 0.8,
+                      child: Image(
+                        image: AssetImage("images/scooter/disconnected.webp"),
+                      ),
+                    ),
+                    secondChild: Opacity(
+                      opacity: 1,
+                      child: Image(
+                        image: AssetImage(
+                            "images/scooter/base_${color ?? 3}.webp"),
+                      ),
+                    ),
+                    crossFadeState: state == ScooterState.disconnected
+                        ? CrossFadeState.showFirst
+                        : CrossFadeState.showSecond,
+                  ),
+                  AnimatedOpacity(
+                    opacity: state != null && state!.isOn ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 1000),
+                    child: const Image(
+                      image: AssetImage("images/scooter/light_ring.webp"),
+                    ),
+                  ),
+                  AnimatedOpacity(
+                    opacity: state == ScooterState.ready ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 1000),
+                    child: const Image(
+                      image: AssetImage("images/scooter/light_beam.webp"),
+                    ),
+                  ),
+                ],
               ),
-              secondChild: Opacity(
-                opacity: 1,
-                child: Image(
-                  image: AssetImage("images/scooter/base_${color ?? 0}.webp"),
-                ),
-              ),
-              crossFadeState: state == ScooterState.disconnected
-                  ? CrossFadeState.showFirst
-                  : CrossFadeState.showSecond,
             ),
             AnimatedOpacity(
-              opacity: state != null && state!.isOn ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 1000),
-              child: const Image(
-                image: AssetImage("images/scooter/light_ring.webp"),
-              ),
-            ),
-            AnimatedOpacity(
-              opacity: state == ScooterState.ready ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 1000),
-              child: const Image(
-                image: AssetImage("images/scooter/light_beam.webp"),
-              ),
-            ),
-            //BlinkerWidget(blinkerLeft: blinkerLeft, blinkerRight: blinkerRight),
-            AnimatedOpacity(
-              opacity: scanning ? 0.75 : 0,
+              opacity: scanning ? 1 : 0,
               duration: const Duration(milliseconds: 600),
               child: Lottie.asset(
                 "assets/anim/scanning.json",
-                width: 250,
                 fit: BoxFit.contain,
+                width: 160,
               ),
-            )
+            ),
+            //BlinkerWidget(blinkerLeft: blinkerLeft, blinkerRight: blinkerRight),
           ],
         ),
       ),
@@ -107,7 +116,7 @@ class BlinkerWidget extends StatefulWidget {
       {required this.blinkerLeft, required this.blinkerRight, super.key});
 
   @override
-  _BlinkerWidgetState createState() => _BlinkerWidgetState();
+  State<BlinkerWidget> createState() => _BlinkerWidgetState();
 }
 
 class _BlinkerWidgetState extends State<BlinkerWidget> {
