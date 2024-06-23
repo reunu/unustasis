@@ -1,0 +1,1 @@
+enum WearMode { active, ambient }
