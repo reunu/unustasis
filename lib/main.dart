@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unustasis/flutter/blue_plus_mockable.dart';
 import 'package:unustasis/home_screen.dart';
+import 'package:unustasis/interfaces/wear/home_screen_watch.dart';
 import 'package:unustasis/scooter_service.dart';
 
 void main() async {
@@ -102,8 +103,19 @@ class _MyAppState extends State<MyApp> {
           },
         ),
       ],
-      home: HomeScreen(
-        scooterService: service,
+      home: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          debugPrint('Host device screen width: ${constraints.maxWidth}');
+
+          // Watch-sized device
+          if (constraints.maxWidth < 500) {
+            return HomeScreenWatch(scooterService: service);
+          }
+          // Phone-sized device
+          else {
+            return HomeScreen(scooterService: service);
+          }
+        },
       ),
     );
   }
