@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:unustasis/domain/scooter_state.dart';
+import 'package:unustasis/interfaces/phone/scooter_power_button.dart';
 import 'package:unustasis/scooter_service.dart';
 import 'package:wear_plus/wear_plus.dart';
 
@@ -23,20 +27,14 @@ class HomeScreenWatch extends StatelessWidget {
               return Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
-                  Text(
-                    'Shape: ${shape == WearShape.round ? 'round' : 'square'}',
+                  ScooterPowerButton(
+                    action: null,
+                    icon: Icons.lock_open,
+                    label: "unlock"
                   ),
-                  child!,
                 ],
               );
             },
-            child: AmbientMode(
-              builder: (BuildContext context, WearMode mode, Widget? child) {
-                return Text(
-                  'Mode: ${mode == WearMode.active ? 'Active' : 'Ambient'}',
-                );
-              },
-            ),
           ),
         ),
       ),
