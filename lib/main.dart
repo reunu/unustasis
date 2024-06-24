@@ -108,7 +108,7 @@ class _MyAppState extends State<MyApp> {
           debugPrint('Host device screen width: ${constraints.maxWidth}');
 
           // Watch-sized device
-          if (constraints.maxWidth < 500) {
+          if (constraints.maxWidth < 400) {
             return HomeScreenWatch(scooterService: service);
           }
           // Phone-sized device
