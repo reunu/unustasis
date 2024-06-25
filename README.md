@@ -4,14 +4,14 @@
 Anastasis, noun - a recovery from a debilitating condition. Rebirth, resurrection.
 ```
   
-This is an attempt at an inofficial, BLE-only app for the Unu Scooter Pro after the official app was shut down due to bancruptcy.
-This app does NOT use any offical code by Unu, and is not endorsed by unu Motors GmbH in any way. Interested in contributing? Join the [Unu Community Discord](https://discord.gg/fa63HJYaP4)!
+This is an open-source, BLE-only app for the Unu Scooter Pro, created as an alternative by the community after unu motors filed for banktruptcy.
+This app does not use any offical code by unu, but has since been endorsed and supported by emco electroroller as new owners of the unu brand. Interested in contributing? Join the [Unu Community Discord](https://discord.gg/fa63HJYaP4) or create an issue right here on GitHub!
 
 ## Getting Started
 
 ### Using this app
 
-If you just want to use this app, go into the "Releases" section on this page and download the latest APK file. We also intend to publish this app to the Google Play and Apple App Stores once a base level of features and stability has been reached.
+If you just want to use this app, go into the "Releases" section on this page and download the latest APK file. The app is also available as proe-release through Google Play and Apple TestFlight, but that will change shortly.
 
 ### Building this app yourself
 
