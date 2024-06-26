@@ -92,6 +92,24 @@ class _HomeScreenStateWatch extends State<HomeScreenWatch> {
                   Text(_scooterState!.name(context), style: TextStyle(color: Colors.white),),
                   ScooterPowerButtonContainer(
                       _scooterState, widget.scooterService),
+                  Expanded(
+                    child: ScooterActionButton(
+                        onPressed: !_scanning
+                            ? () {
+                          if (!_connected) {
+                            widget.scooterService.start();
+                          }
+                        }
+                            : null,
+                        icon: (!_connected && !_scanning)
+                            ? Icons.refresh_rounded
+                            : Icons.more_vert_rounded,
+                        label: (!_connected && !_scanning)
+                            ? FlutterI18n.translate(
+                            context, "home_reconnect_button")
+                            : FlutterI18n.translate(
+                            context, "home_controls_button")),
+                  ),
                 ],
               );
             },
