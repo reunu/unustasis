@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:unustasis/domain/scooter_state.dart';
 import 'package:unustasis/domain/theme_helper.dart';
 
@@ -36,8 +36,18 @@ class ScooterVisual extends StatelessWidget {
                 children: [
                   AnimatedCrossFade(
                     duration: const Duration(milliseconds: 500),
-                    firstChild: Opacity(
-                      opacity: (context.isDarkMode ? 0.8 : 0.4),
+                    firstChild: Shimmer.fromColors(
+                      baseColor: context.isDarkMode
+                          ? (scanning ? Colors.black54 : Colors.black)
+                          : Colors.black26,
+                      highlightColor: scanning
+                          ? Colors.transparent
+                          : context.isDarkMode
+                              ? Colors.black
+                              : Colors.black26,
+                      enabled: scanning,
+                      direction: ShimmerDirection.ltr,
+                      period: const Duration(seconds: 2),
                       child: const Image(
                         image: AssetImage("images/scooter/disconnected.webp"),
                       ),
@@ -68,15 +78,6 @@ class ScooterVisual extends StatelessWidget {
                     ),
                   ),
                 ],
-              ),
-            ),
-            AnimatedOpacity(
-              opacity: scanning ? 1 : 0,
-              duration: const Duration(milliseconds: 600),
-              child: Lottie.asset(
-                "assets/anim/scanning.json",
-                fit: BoxFit.contain,
-                width: 160,
               ),
             ),
             //BlinkerWidget(blinkerLeft: blinkerLeft, blinkerRight: blinkerRight),
