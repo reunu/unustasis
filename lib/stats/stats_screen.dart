@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
 
+import 'package:easy_dynamic_theme/easy_dynamic_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -8,6 +9,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unustasis/domain/scooter_keyless_distance.dart';
+import 'package:unustasis/domain/theme_helper.dart';
 import 'package:unustasis/onboarding_screen.dart';
 import 'package:unustasis/scooter_service.dart';
 import 'package:unustasis/stats/battery_section.dart';
@@ -58,7 +60,9 @@ class _StatsScreenState extends State<StatsScreen> {
         extendBodyBehindAppBar: true,
         appBar: AppBar(
           title: Text(FlutterI18n.translate(context, 'stats_title')),
-          backgroundColor: Colors.transparent,
+          backgroundColor: context.isDarkMode
+              ? Colors.transparent
+              : Theme.of(context).colorScheme.onTertiary,
           bottom: PreferredSize(
               preferredSize: const Size.fromHeight(50.0),
               child: TabBar(
@@ -146,7 +150,7 @@ class _StatsScreenState extends State<StatsScreen> {
                       ListView.separated(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shrinkWrap: true,
-                        itemCount: (autoUnlock ? 10 : 9),
+                        itemCount: (autoUnlock ? 11 : 10),
                         separatorBuilder: (context, index) => Divider(
                           indent: 16,
                           endIndent: 16,
@@ -157,48 +161,6 @@ class _StatsScreenState extends State<StatsScreen> {
                               .withOpacity(0.1),
                         ),
                         itemBuilder: (context, index) => [
-                          ListTile(
-                            leading: const Icon(Icons.language_outlined),
-                            title: Text(FlutterI18n.translate(
-                                context, "settings_language")),
-                            subtitle: DropdownButtonFormField(
-                              padding: const EdgeInsets.only(top: 8),
-                              value: Locale(FlutterI18n.currentLocale(context)!
-                                  .languageCode),
-                              isExpanded: true,
-                              decoration: const InputDecoration(
-                                contentPadding: EdgeInsets.all(16),
-                                border: OutlineInputBorder(),
-                              ),
-                              dropdownColor:
-                                  Theme.of(context).colorScheme.background,
-                              items: [
-                                DropdownMenuItem<Locale>(
-                                  value: const Locale("en"),
-                                  child: Text(FlutterI18n.translate(
-                                      context, "language_english")),
-                                ),
-                                DropdownMenuItem<Locale>(
-                                  value: const Locale("de"),
-                                  child: Text(FlutterI18n.translate(
-                                      context, "language_german")),
-                                ),
-                                DropdownMenuItem<Locale>(
-                                  value: const Locale("pi"),
-                                  child: Text(FlutterI18n.translate(
-                                      context, "language_pirate")),
-                                ),
-                              ],
-                              onChanged: (newLanguage) async {
-                                await FlutterI18n.refresh(context, newLanguage);
-                                SharedPreferences prefs =
-                                    await SharedPreferences.getInstance();
-                                prefs.setString(
-                                    "savedLocale", newLanguage!.languageCode);
-                                setState(() {});
-                              },
-                            ),
-                          ),
                           FutureBuilder<List<BiometricType>>(
                               future: LocalAuthentication()
                                   .getAvailableBiometrics(),
@@ -321,6 +283,85 @@ class _StatsScreenState extends State<StatsScreen> {
                                 hazardLocking = value;
                               });
                             },
+                          ),
+                          ListTile(
+                            leading: const Icon(Icons.wb_sunny_outlined),
+                            title: Text(FlutterI18n.translate(
+                                context, "settings_theme")),
+                            subtitle: DropdownButtonFormField(
+                              padding: const EdgeInsets.only(top: 8),
+                              value: EasyDynamicTheme.of(context).themeMode,
+                              isExpanded: true,
+                              decoration: const InputDecoration(
+                                contentPadding: EdgeInsets.all(16),
+                                border: OutlineInputBorder(),
+                              ),
+                              dropdownColor:
+                                  Theme.of(context).colorScheme.background,
+                              items: [
+                                DropdownMenuItem<ThemeMode>(
+                                  value: ThemeMode.dark,
+                                  child: Text(FlutterI18n.translate(
+                                      context, "theme_dark")),
+                                ),
+                                DropdownMenuItem<ThemeMode>(
+                                  value: ThemeMode.light,
+                                  child: Text(FlutterI18n.translate(
+                                      context, "theme_light")),
+                                ),
+                                DropdownMenuItem<ThemeMode>(
+                                  value: ThemeMode.system,
+                                  child: Text(FlutterI18n.translate(
+                                      context, "theme_system")),
+                                ),
+                              ],
+                              onChanged: (newTheme) async {
+                                context.setThemeMode(newTheme!);
+                                // TODO: If the language was changed during runtime, changing the theme resets it again
+                              },
+                            ),
+                          ),
+                          ListTile(
+                            leading: const Icon(Icons.language_outlined),
+                            title: Text(FlutterI18n.translate(
+                                context, "settings_language")),
+                            subtitle: DropdownButtonFormField(
+                              padding: const EdgeInsets.only(top: 8),
+                              value: Locale(FlutterI18n.currentLocale(context)!
+                                  .languageCode),
+                              isExpanded: true,
+                              decoration: const InputDecoration(
+                                contentPadding: EdgeInsets.all(16),
+                                border: OutlineInputBorder(),
+                              ),
+                              dropdownColor:
+                                  Theme.of(context).colorScheme.background,
+                              items: [
+                                DropdownMenuItem<Locale>(
+                                  value: const Locale("en"),
+                                  child: Text(FlutterI18n.translate(
+                                      context, "language_english")),
+                                ),
+                                DropdownMenuItem<Locale>(
+                                  value: const Locale("de"),
+                                  child: Text(FlutterI18n.translate(
+                                      context, "language_german")),
+                                ),
+                                DropdownMenuItem<Locale>(
+                                  value: const Locale("pi"),
+                                  child: Text(FlutterI18n.translate(
+                                      context, "language_pirate")),
+                                ),
+                              ],
+                              onChanged: (newLanguage) async {
+                                await FlutterI18n.refresh(context, newLanguage);
+                                SharedPreferences prefs =
+                                    await SharedPreferences.getInstance();
+                                prefs.setString(
+                                    "savedLocale", newLanguage!.languageCode);
+                                setState(() {});
+                              },
+                            ),
                           ),
                           ListTile(
                             leading: const Icon(Icons.help_outline),
@@ -505,32 +546,6 @@ class LastPingInfo extends StatelessWidget {
             ),
           );
         });
-  }
-}
-
-class Header extends StatelessWidget {
-  const Header(this.title, {super.key});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      //color: Theme.of(context).colorScheme.background,
-      child: Row(
-        children: [
-          Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-            child: Text(title,
-                style: Theme.of(context)
-                    .textTheme
-                    .headlineSmall!
-                    .copyWith(color: Colors.white70)),
-          ),
-        ],
-      ),
-    );
   }
 }
 

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:unustasis/domain/scooter_state.dart';
+import 'package:unustasis/domain/theme_helper.dart';
 
 class ScooterVisual extends StatelessWidget {
   final ScooterState? state;
@@ -35,9 +36,9 @@ class ScooterVisual extends StatelessWidget {
                 children: [
                   AnimatedCrossFade(
                     duration: const Duration(milliseconds: 500),
-                    firstChild: const Opacity(
-                      opacity: 0.8,
-                      child: Image(
+                    firstChild: Opacity(
+                      opacity: (context.isDarkMode ? 0.8 : 0.4),
+                      child: const Image(
                         image: AssetImage("images/scooter/disconnected.webp"),
                       ),
                     ),

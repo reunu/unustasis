@@ -187,12 +187,13 @@ class _OnboardingScreenState extends State<OnboardingScreen>
         width: double.infinity,
         decoration: BoxDecoration(
           gradient: RadialGradient(
-            center: Alignment.center,
-            radius: 1.5,
+            center: const Alignment(0.0, -0.15),
+            radius: 1,
             colors: [
               _step == 5
                   ? HSLColor.fromColor(Theme.of(context).colorScheme.primary)
-                      .withLightness(0.2)
+                      .withLightness(0.3)
+                      .withSaturation(1)
                       .toColor()
                   : Theme.of(context).colorScheme.surface,
               Theme.of(context).colorScheme.onTertiary,
@@ -313,7 +314,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
         ElevatedButton(
           style: ElevatedButton.styleFrom(
             minimumSize: const Size.fromHeight(
-                60), // fromHeight use double.infinity as width and 40 is the height
+              60,
+            ), // fromHeight use double.infinity as width and 40 is the height
+            backgroundColor: Theme.of(context).colorScheme.onBackground,
           ),
           onPressed: onPressed,
           child: Padding(
@@ -321,7 +324,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             child: Text(
               btnText,
               style: TextStyle(
-                color: Theme.of(context).colorScheme.onBackground,
+                color: Theme.of(context).colorScheme.onTertiary,
               ),
             ),
           ),
