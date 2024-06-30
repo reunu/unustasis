@@ -22,7 +22,7 @@ class ScooterSeatButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var isSeatOpen = seatClosed != null && seatClosed != false;
+    var isSeatOpen = seatClosed == false;
 
     var readyToBePressed = connected &&
         scooterState != null &&
