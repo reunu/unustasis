@@ -44,3 +44,4 @@ app.*.map.json
 
 *.mocks.dart
 
+scripts/debug-phone.sh
