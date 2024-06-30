@@ -1,9 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
-import 'package:flutter_i18n/flutter_i18n.dart';
-import 'package:fluttertoast/fluttertoast.dart';
-import 'package:unustasis/domain/scooter_state.dart';
-import 'package:unustasis/scooter_service.dart';
 
 class ScooterActionButton extends StatelessWidget {
   const ScooterActionButton({
