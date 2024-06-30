@@ -7,8 +7,13 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unustasis/control_screen.dart';
-import 'package:unustasis/domain/icomoon.dart';
+import 'package:unustasis/interfaces/components/icomoon.dart';
 import 'package:unustasis/driving_screen.dart';
+import 'package:unustasis/interfaces/phone/scooter_action_button.dart';
+import 'package:unustasis/interfaces/phone/scooter_connect_button.dart';
+import 'package:unustasis/interfaces/phone/scooter_control_button.dart';
+import 'package:unustasis/interfaces/phone/scooter_power_button.dart';
+import 'package:unustasis/interfaces/phone/scooter_seat_button.dart';
 import 'package:unustasis/onboarding_screen.dart';
 import 'package:unustasis/scooter_service.dart';
 import 'package:unustasis/domain/scooter_state.dart';
@@ -243,84 +248,20 @@ class _HomeScreenState extends State<HomeScreen> {
                   mainAxisSize: MainAxisSize.max,
                   children: [
                     Expanded(
-                      child: ScooterActionButton(
-                        onPressed: _connected &&
-                                _scooterState != null &&
-                                _seatClosed == true &&
-                                _scanning == false
-                            ? widget.scooterService.openSeat
-                            : null,
-                        label: _seatClosed == false
-                            ? FlutterI18n.translate(
-                                context, "home_seat_button_open")
-                            : FlutterI18n.translate(
-                                context, "home_seat_button_closed"),
-                        icon: _seatClosed == false
-                            ? Icomoon.seat_open
-                            : Icomoon.seat_closed,
-                        iconColor: _seatClosed == false
-                            ? Theme.of(context).colorScheme.error
-                            : null,
+                      child: ScooterSeatButton(
+                        scooterService: widget.scooterService,
+                        connected: _connected,
+                        scooterState: _scooterState,
+                        seatClosed: _seatClosed,
+                        scanning: _scanning,
                       ),
                     ),
+                    ScooterPowerButtonContainer(
+                        _scooterState, widget.scooterService),
                     Expanded(
-                      child: ScooterPowerButton(
-                          action: _scooterState != null &&
-                                  _scooterState!.isReadyForLockChange
-                              ? (_scooterState!.isOn
-                                  ? () {
-                                      try {
-                                        widget.scooterService.lock();
-                                      } catch (e) {
-                                        if (e
-                                            .toString()
-                                            .contains("SEAT_OPEN")) {
-                                          showSeatWarning();
-                                        } else {
-                                          Fluttertoast.showToast(
-                                              msg: e.toString());
-                                        }
-                                      }
-                                    }
-                                  : (_scooterState == ScooterState.standby
-                                      ? widget.scooterService.unlock
-                                      : widget.scooterService.wakeUpAndUnlock))
-                              : null,
-                          icon: _scooterState != null && _scooterState!.isOn
-                              ? Icons.lock_open
-                              : Icons.lock_outline,
-                          label: _scooterState != null && _scooterState!.isOn
-                              ? FlutterI18n.translate(
-                                  context, "home_lock_button")
-                              : FlutterI18n.translate(
-                                  context, "home_unlock_button")),
-                    ),
-                    Expanded(
-                      child: ScooterActionButton(
-                          onPressed: !_scanning
-                              ? () {
-                                  if (!_connected) {
-                                    widget.scooterService.start();
-                                  } else {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => ControlScreen(
-                                            service: widget.scooterService),
-                                      ),
-                                    );
-                                  }
-                                }
-                              : null,
-                          icon: (!_connected && !_scanning)
-                              ? Icons.refresh_rounded
-                              : Icons.more_vert_rounded,
-                          label: (!_connected && !_scanning)
-                              ? FlutterI18n.translate(
-                                  context, "home_reconnect_button")
-                              : FlutterI18n.translate(
-                                  context, "home_controls_button")),
-                    ),
+                        child: _connected ? ScooterControlButton(widget.scooterService) :
+                            ScooterConnectButton(widget.scooterService, _scanning)
+                    )
                   ],
                 )
               ],
@@ -409,131 +350,5 @@ class _HomeScreenState extends State<HomeScreen> {
     } else {
       widget.scooterService.optionalAuth = true;
     }
-  }
-}
-
-class ScooterPowerButton extends StatefulWidget {
-  const ScooterPowerButton({
-    super.key,
-    required void Function()? action,
-    Widget? child,
-    required IconData icon,
-    required String label,
-  })  : _action = action,
-        _icon = icon,
-        _label = label;
-
-  final void Function()? _action;
-  final String _label;
-  final IconData _icon;
-
-  @override
-  State<ScooterPowerButton> createState() => _ScooterPowerButtonState();
-}
-
-class _ScooterPowerButtonState extends State<ScooterPowerButton> {
-  bool loading = false;
-
-  @override
-  Widget build(BuildContext context) {
-    Color mainColor = widget._action == null
-        ? Theme.of(context).colorScheme.onSurface.withOpacity(0.2)
-        : Theme.of(context).colorScheme.onSurface;
-    return Column(
-      children: [
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-            backgroundColor: mainColor,
-          ),
-          onPressed: () {
-            Fluttertoast.showToast(msg: widget._label);
-          },
-          onLongPress: widget._action == null
-              ? null
-              : () {
-                  setState(() {
-                    loading = true;
-                  });
-                  widget._action!();
-                  Future.delayed(const Duration(seconds: 5), () {
-                    setState(() {
-                      loading = false;
-                    });
-                  });
-                },
-          child: loading
-              ? SizedBox(
-                  height: 16,
-                  width: 16,
-                  child: CircularProgressIndicator(
-                    color: Theme.of(context).colorScheme.background,
-                  ),
-                )
-              : Icon(
-                  widget._icon,
-                  color: Theme.of(context).colorScheme.background,
-                ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          widget._label,
-          style: TextStyle(
-            color: mainColor,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    );
-  }
-}
-
-class ScooterActionButton extends StatelessWidget {
-  const ScooterActionButton({
-    super.key,
-    required void Function()? onPressed,
-    required IconData icon,
-    Color? iconColor,
-    required String label,
-  })  : _onPressed = onPressed,
-        _icon = icon,
-        _iconColor = iconColor,
-        _label = label;
-
-  final void Function()? _onPressed;
-  final IconData _icon;
-  final String _label;
-  final Color? _iconColor;
-
-  @override
-  Widget build(BuildContext context) {
-    Color mainColor = _iconColor ??
-        (_onPressed == null
-            ? Theme.of(context).colorScheme.onBackground.withOpacity(0.2)
-            : Theme.of(context).colorScheme.onBackground);
-    return Column(
-      children: [
-        OutlinedButton(
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.all(24),
-            side: BorderSide(
-              color: mainColor,
-            ),
-          ),
-          onPressed: _onPressed,
-          child: Icon(
-            _icon,
-            color: mainColor,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          _label,
-          style: TextStyle(
-            color: mainColor,
-          ),
-        ),
-      ],
-    );
   }
 }
