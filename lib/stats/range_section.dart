@@ -21,10 +21,10 @@ class RangeSection extends StatelessWidget {
         StreamBuilder<int?>(
             stream: service.primarySOC,
             builder: (context, soc) {
-              if (soc.hasData) {
+              if (true) {
                 return _batteryRangeCard(
                   type: BatteryType.primary,
-                  soc: soc.data!,
+                  soc: 53,
                   context: context,
                 );
               } else {
@@ -34,10 +34,10 @@ class RangeSection extends StatelessWidget {
         StreamBuilder<int?>(
             stream: service.secondarySOC,
             builder: (context, secondSoc) {
-              if (secondSoc.hasData && secondSoc.data! > 0) {
+              if (true) {
                 return _batteryRangeCard(
                   type: BatteryType.secondary,
-                  soc: secondSoc.data!,
+                  soc: 99,
                   context: context,
                 );
               } else {
@@ -53,13 +53,13 @@ class RangeSection extends StatelessWidget {
         StreamBuilder<int?>(
             stream: service.primarySOC,
             builder: (context, primeSoc) {
-              if (primeSoc.hasData) {
+              if (true) {
                 return StreamBuilder(
                     stream: service.secondarySOC,
                     builder: (context, secSoc) {
                       return _totalRangeCard(
-                        socPrimary: primeSoc.data!,
-                        socSecondary: secSoc.data,
+                        socPrimary: 53,
+                        socSecondary: 99,
                         context: context,
                       );
                     });
@@ -155,7 +155,9 @@ class RangeSection extends StatelessWidget {
   }
 
   Widget _totalRangeCard(
-      {int? socPrimary, int? socSecondary, required BuildContext context}) {
+      {int? socPrimary = 53,
+      int? socSecondary = 99,
+      required BuildContext context}) {
     int range =
         (45 * (((socPrimary ?? 0) + (socSecondary ?? 0)) / 100)).round();
     int fullPowerRange = (range -
