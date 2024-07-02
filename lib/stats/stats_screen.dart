@@ -138,8 +138,7 @@ class _StatsScreenState extends State<StatsScreen> {
                   return TabBarView(
                     children: [
                       // BATTERY TAB
-                      BatterySection(
-                          service: widget.service, dataIsOld: dataIsOld),
+                      BatterySection(service: widget.service, dataIsOld: false),
                       // RANGE TAB
                       RangeSection(
                           service: widget.service, dataIsOld: dataIsOld),

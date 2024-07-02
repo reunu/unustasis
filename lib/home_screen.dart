@@ -31,12 +31,12 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  ScooterState? _scooterState = ScooterState.disconnected;
-  bool _connected = false;
+  ScooterState? _scooterState = ScooterState.parked;
+  bool _connected = true;
   bool _scanning = false;
   bool? _seatClosed;
   bool? _handlebarsLocked;
-  int? _primarySOC;
+  int? _primarySOC = 53;
   int? _secondarySOC;
   int? color;
 
@@ -50,17 +50,17 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     widget.scooterService.state.listen((state) {
       setState(() {
-        _scooterState = state;
+        _scooterState = ScooterState.parked;
       });
     });
     widget.scooterService.connected.listen((isConnected) {
       setState(() {
-        _connected = isConnected;
+        _connected = true;
       });
     });
     widget.scooterService.scanning.listen((isScanning) {
       setState(() {
-        _scanning = isScanning;
+        _scanning = false;
       });
       log("Scanning: $isScanning");
     });
@@ -76,7 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     widget.scooterService.primarySOC.listen((soc) {
       setState(() {
-        _primarySOC = soc;
+        _primarySOC = 85;
       });
     });
     widget.scooterService.secondarySOC.listen((soc) {
@@ -187,13 +187,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     StreamBuilder<DateTime?>(
                         stream: widget.scooterService.lastPing,
                         builder: (context, lastPing) {
-                          bool dataIsOld = !lastPing.hasData ||
-                              lastPing.hasData &&
-                                  lastPing.data!
-                                          .difference(DateTime.now())
-                                          .inMinutes
-                                          .abs() >
-                                      5;
+                          bool dataIsOld = false;
                           return Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [

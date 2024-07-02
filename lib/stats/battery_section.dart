@@ -40,7 +40,7 @@ class _BatterySectionState extends State<BatterySection> {
                 builder: (context, cycleSnap) {
                   return _batteryCard(
                     type: BatteryType.primary,
-                    soc: socSnap.data ?? 0,
+                    soc: 53 ?? 0,
                     cycles: cycleSnap.data,
                     old: widget.dataIsOld,
                   );
@@ -58,9 +58,9 @@ class _BatterySectionState extends State<BatterySection> {
                 builder: (context, cycleSnap) {
                   return _batteryCard(
                     type: BatteryType.secondary,
-                    soc: socSnap.data ?? 0,
+                    soc: 99 ?? 0,
                     cycles: cycleSnap.data,
-                    old: widget.dataIsOld,
+                    old: false,
                   );
                 });
           },
@@ -73,9 +73,9 @@ class _BatterySectionState extends State<BatterySection> {
                 builder: (context, cbbCharging) {
                   return _batteryCard(
                     type: BatteryType.cbb,
-                    soc: snapshot.data ?? 0,
+                    soc: 100 ?? 0,
                     charging: cbbCharging.data,
-                    old: widget.dataIsOld,
+                    old: false,
                   );
                 });
           },
@@ -85,8 +85,8 @@ class _BatterySectionState extends State<BatterySection> {
           builder: (context, snapshot) {
             return _batteryCard(
               type: BatteryType.aux,
-              soc: snapshot.data ?? 0,
-              old: widget.dataIsOld,
+              soc: 100 ?? 0,
+              old: false,
             );
           },
         ),
