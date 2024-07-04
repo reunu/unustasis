@@ -21,7 +21,12 @@ class BatteryReader {
       BehaviorSubject<int?> socController) async {
     var c = Completer();
     subscribeCharacteristic(socCharacteristic, (value) async {
-      int? soc = _convertUint32ToInt(value);
+      int? soc;
+      if (_battery == ScooterBattery.cbb) {
+        soc = value[0];
+      } else {
+        soc = _convertUint32ToInt(value);
+      }
       log("$_battery SOC received: $soc");
       // sometimes the scooter sends null. Ignoring those values...
       if (soc != null) {

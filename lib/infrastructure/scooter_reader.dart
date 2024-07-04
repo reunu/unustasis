@@ -76,7 +76,6 @@ class ScooterReader {
   }
 
   Future<void> _updateScooterState() async {
-    log("Update scooter state from state: '$_state' and power state: '$_powerState'");
     if (_state != null && _powerState != null) {
       ScooterPowerState powerState = ScooterPowerState.fromString(_powerState);
       ScooterState newState =
