@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:easy_dynamic_theme/easy_dynamic_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unustasis/flutter/blue_plus_mockable.dart';
@@ -22,8 +23,11 @@ void main() async {
     log("Saved locale: $localeString");
     savedLocale = Locale(localeString);
   }
-  runApp(MyApp(
-    savedLocale: savedLocale,
+  runApp(EasyDynamicThemeWidget(
+    initialThemeMode: ThemeMode.dark,
+    child: MyApp(
+      savedLocale: savedLocale,
+    ),
   ));
 }
 
@@ -51,14 +55,14 @@ class _MyAppState extends State<MyApp> {
         brightness: Brightness.light,
         useMaterial3: true,
         colorScheme: ColorScheme.light(
-          primary: createMaterialColor(const Color(0xFF3DCC9D)),
+          primary: createMaterialColor(Color.fromARGB(255, 9, 151, 104)),
           onPrimary: Colors.black,
           secondary: Colors.green,
           onSecondary: Colors.black,
-          background: Colors.grey.shade400,
+          background: Colors.grey.shade300,
           onTertiary: Colors.white,
           onBackground: Colors.black,
-          surface: Colors.grey.shade400,
+          surface: Colors.grey.shade300,
           onSurface: Colors.black,
           error: Colors.red,
           onError: Colors.black,
@@ -88,7 +92,7 @@ class _MyAppState extends State<MyApp> {
         ),
         /* dark theme settings */
       ),
-      themeMode: ThemeMode.dark,
+      themeMode: EasyDynamicTheme.of(context).themeMode,
       localizationsDelegates: [
         FlutterI18nDelegate(
           translationLoader: FileTranslationLoader(

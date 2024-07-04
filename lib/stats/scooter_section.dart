@@ -1,13 +1,13 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:maps_launcher/maps_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unustasis/domain/scooter_state.dart';
+import 'package:unustasis/domain/theme_helper.dart';
 import 'package:unustasis/geo_helper.dart';
 import 'package:unustasis/scooter_service.dart';
 
@@ -359,7 +359,7 @@ class _ScooterSectionState extends State<ScooterSection> {
                         TileLayer(
                           retinaMode: true,
                           urlTemplate:
-                              'https://tiles-eu.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png?api_key=${const String.fromEnvironment("STADIA_TOKEN")}',
+                              'https://tiles-eu.stadiamaps.com/tiles/alidade_smooth${context.isDarkMode ? "_dark" : ""}/{z}/{x}/{y}{r}.png?api_key=${const String.fromEnvironment("STADIA_TOKEN")}',
                           userAgentPackageName: 'de.freal.unustasis',
                         ),
                         MarkerLayer(

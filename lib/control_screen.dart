@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:unustasis/home_screen.dart';
 import 'package:unustasis/scooter_service.dart';
-import 'package:unustasis/stats/stats_screen.dart';
 
 class ControlScreen extends StatefulWidget {
   const ControlScreen({required ScooterService service, super.key})
@@ -148,6 +147,33 @@ class _ControlScreenState extends State<ControlScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class Header extends StatelessWidget {
+  const Header(this.title, {super.key});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      //color: Theme.of(context).colorScheme.background,
+      child: Row(
+        children: [
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+            child: Text(title,
+                style: Theme.of(context).textTheme.headlineSmall!.copyWith(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.7))),
+          ),
+        ],
       ),
     );
   }
