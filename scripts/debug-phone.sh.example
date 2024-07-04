@@ -1,0 +1,6 @@
+#!/bin/bash
+
+DEVICE_ID="<ip>" # device IP
+STADIA_TOKEN="<token>"
+
+flutter run --debug -d $DEVICE_ID --dart-define="STADIA_TOKEN=$STADIA_TOKEN"

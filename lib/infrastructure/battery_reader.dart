@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:developer';
 
-import 'package:clock/clock.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -74,11 +73,11 @@ class BatteryReader {
   }
 
   Future<void> _writeSocToCache(int soc) async {
-    _lastPingController.add(clock.now());
+    _lastPingController.add(DateTime.now());
     var sharedPrefs = await _getSharedPrefs();
     await sharedPrefs.setInt(_getSocCacheKey(_battery), soc);
     await sharedPrefs.setInt(
-        lastPingCacheKey, clock.now().microsecondsSinceEpoch);
+        lastPingCacheKey, DateTime.now().microsecondsSinceEpoch);
   }
 
   String _getSocCacheKey(ScooterBattery battery) => "${battery.name}SOC";
