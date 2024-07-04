@@ -38,12 +38,12 @@ class ScooterVisual extends StatelessWidget {
                     duration: const Duration(milliseconds: 500),
                     firstChild: Shimmer.fromColors(
                       baseColor: context.isDarkMode
-                          ? (scanning ? Colors.black54 : Colors.black)
+                          ? (scanning ? Colors.white12 : Colors.white12)
                           : Colors.black26,
                       highlightColor: scanning
                           ? Colors.transparent
                           : context.isDarkMode
-                              ? Colors.black
+                              ? Colors.white12
                               : Colors.black26,
                       enabled: scanning,
                       direction: ShimmerDirection.ltr,
@@ -80,7 +80,7 @@ class ScooterVisual extends StatelessWidget {
                 ],
               ),
             ),
-            //BlinkerWidget(blinkerLeft: blinkerLeft, blinkerRight: blinkerRight),
+            BlinkerWidget(blinkerLeft: blinkerLeft, blinkerRight: blinkerRight),
           ],
         ),
       ),
@@ -134,7 +134,7 @@ class _BlinkerWidgetState extends State<BlinkerWidget> {
     var anyBlinker = widget.blinkerLeft || widget.blinkerRight;
 
     if (anyBlinker) {
-      _timer = Timer.periodic(const Duration(seconds: 1), (Timer t) {
+      _timer = Timer.periodic(const Duration(milliseconds: 600), (Timer t) {
         setState(() => _showBlinker = !_showBlinker);
       });
     }

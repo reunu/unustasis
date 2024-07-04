@@ -55,7 +55,7 @@ class _MyAppState extends State<MyApp> {
         brightness: Brightness.light,
         useMaterial3: true,
         colorScheme: ColorScheme.light(
-          primary: createMaterialColor(Color.fromARGB(255, 9, 151, 104)),
+          primary: createMaterialColor(const Color(0xFF099768)),
           onPrimary: Colors.black,
           secondary: Colors.green,
           onSecondary: Colors.black,

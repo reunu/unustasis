@@ -10,7 +10,7 @@
         "My scooter's been having issues since installing this app": "Unustasis only communicates with the scooter via Bluetooth. It does not change any settings on the scooter, and it does not have any influence on the scooter's behavior. If you are experiencing issues with your scooter, it is likely not related to Unustasis. If you are unsure, you can always uninstall the app to see if the issues persist."
     },
     "About the app": {
-        "Is this app made by Unu?": "Unustasis was initially created by independent unu drivers. As the new owners of the unu brand, Emco have been supporting the ongoing development of this app.",
+        "Is this app made by Unu?": "Unustasis was initially created by independent unu drivers. Emco electroroller GmbH, as the new owners of the unu brand, have been supporting the ongoing development of this app.",
         "What does 'Unustasis' mean?": "Unustasis comes from the ancient greek 'anástasis', which refers to a recovery from a debilitating condition. It can also mean rebirth, or resurrection. After the bankruptcy of unu motors, this app was meant to 'revive' the lost smart features.",
         "How can I support?": "Unustasis is an open source project. Therefore you are more than welcome to contribute to the source code, just check out Unustasis on GitHub! If you encounter any issues or have any suggestions, feel free to open an issue on GitHub."
     }
