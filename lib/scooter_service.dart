@@ -106,7 +106,6 @@ class ScooterService {
         log("Auto-refresh...");
         characteristicRepository.stateCharacteristic.read();
         characteristicRepository.seatCharacteristic.read();
-        characteristicRepository.cbbSOCCharacteristic.read();
       }
     });
   }
@@ -470,14 +469,14 @@ class ScooterService {
     }
   }
 
-  void lock() async {
+  Future<void> lock() async {
     if (_seatClosedController.value == false) {
       log("Seat seems to be open, checking again...");
       // make really sure nothing has changed
       await characteristicRepository.seatCharacteristic.read();
       if (_seatClosedController.value == false) {
         log("Locking aborted, because seat is open!");
-        throw "SEAT_OPEN";
+        throw SeatOpenException();
       }
     }
     _sendCommand("scooter:state lock");
@@ -699,3 +698,5 @@ class ScooterService {
     await Future.delayed(Duration(milliseconds: (seconds * 1000).floor()));
   }
 }
+
+class SeatOpenException {}
