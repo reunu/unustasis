@@ -24,7 +24,6 @@ void main() async {
     savedLocale = Locale(localeString);
   }
   runApp(EasyDynamicThemeWidget(
-    initialThemeMode: ThemeMode.system,
     child: MyApp(
       savedLocale: savedLocale,
     ),
