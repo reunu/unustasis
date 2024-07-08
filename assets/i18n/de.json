@@ -38,7 +38,7 @@
     "state_name_shutting_down": "Fährt herunter...",
     "state_name_ready": "Bereit",
     "state_name_hibernating": "Tiefschlaf",
-    "state_name_hibernating_imminent": "Tiefschlaf...",
+    "state_name_hibernating_imminent": "Beginne Tiefschlaf...",
     "state_name_booting": "Fährt hoch...",
     "state_name_unknown": "Verbunden",
     "state_name_disconnected": "Getrennt",
