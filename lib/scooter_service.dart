@@ -13,7 +13,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unustasis/domain/scooter_keyless_distance.dart';
 import 'package:unustasis/domain/scooter_state.dart';
 import 'package:unustasis/flutter/blue_plus_mockable.dart';
-import 'package:unustasis/infrastructure/battery_reader.dart';
 import 'package:unustasis/infrastructure/characteristic_repository.dart';
 import 'package:unustasis/infrastructure/scooter_reader.dart';
 
@@ -39,6 +38,15 @@ class ScooterService {
 
   final FlutterBluePlusMockable flutterBluePlus;
 
+  void ping() {
+    try {
+      prefs?.setInt("lastPing", DateTime.now().microsecondsSinceEpoch);
+      _lastPingController.add(DateTime.now());
+    } catch (e) {
+      log("Couldn't save ping");
+    }
+  }
+
   // On initialization...
   ScooterService(this.flutterBluePlus) {
     // Load saved scooter ID and cached values from SharedPrefs
@@ -57,22 +65,10 @@ class ScooterService {
             "name"]); // TODO: This needs to be fixed for multiple scooters
       }
 
-      int? lastPing = prefs.getInt(BatteryReader.lastPingCacheKey);
-      if (lastPing != null) {
-        double? lastLat = prefs.getDouble("lastLat");
-        double? lastLon = prefs.getDouble("lastLon");
-        _autoUnlock = prefs.getBool("autoUnlock") ?? false;
-        _autoUnlockThreshold = prefs.getInt("autoUnlockThreshold") ??
-            ScooterKeylessDistance.regular.threshold;
-        // if biometrics are disabled, we can treat everything as authenticated
-        optionalAuth = !(prefs.getBool("biometrics") ?? false);
-        _openSeatOnUnlock = prefs.getBool("openSeatOnUnlock") ?? false;
-        _hazardLocking = prefs.getBool("hazardLocking") ?? false;
-        if (lastLat != null && lastLon != null) {
-          _lastLocationController.add(LatLng(lastLat, lastLon));
-        }
-      }
+      restoreCachedData();
+      restoreCachedSettings();
     });
+
     // start the location polling timer
     _locationTimer = Timer.periodic(const Duration(seconds: 20), (timer) {
       if (myScooter != null && myScooter!.isConnected) {
@@ -110,8 +106,33 @@ class ScooterService {
     });
   }
 
-  // STATUS STREAMS
+  void restoreCachedSettings() {
+    _autoUnlock = prefs?.getBool("autoUnlock") ?? false;
+    _autoUnlockThreshold = prefs?.getInt("autoUnlockThreshold") ??
+        ScooterKeylessDistance.regular.threshold;
+    optionalAuth = !(prefs?.getBool("biometrics") ?? false);
+    _openSeatOnUnlock = prefs?.getBool("openSeatOnUnlock") ?? false;
+    _hazardLocking = prefs?.getBool("hazardLocking") ?? false;
+  }
 
+  void restoreCachedData() {
+    if (prefs?.getInt("lastPing") != null) {
+      _lastPingController
+          .add(DateTime.fromMicrosecondsSinceEpoch(prefs!.getInt("lastPing")!));
+      // we have connected to a scooter before, fetch cached data and settings
+      double? lastLat = prefs?.getDouble("lastLat");
+      double? lastLon = prefs?.getDouble("lastLon");
+      if (lastLat != null && lastLon != null) {
+        _lastLocationController.add(LatLng(lastLat, lastLon));
+      }
+      _primarySOCController.add(prefs?.getInt("primarySOC"));
+      _secondarySOCController.add(prefs?.getInt("secondarySOC"));
+      _cbbSOCController.add(prefs?.getInt("cbbSOC"));
+      _auxSOCController.add(prefs?.getInt("auxSOC"));
+    }
+  }
+
+  // STATUS STREAMS
   final BehaviorSubject<bool> _connectedController =
       BehaviorSubject<bool>.seeded(false);
   Stream<bool> get connected => _connectedController.stream;
@@ -162,9 +183,6 @@ class ScooterService {
       BehaviorSubject<String?>();
   Stream<String?> get scooterName => _scooterNameController.stream;
 
-  // PINGING
-  // We store the most recent SOC values (and, in the future, location) to SharedPrefs so that we can see the last known state even when disconnected
-  //
   final BehaviorSubject<DateTime?> _lastPingController =
       BehaviorSubject<DateTime?>();
   Stream<DateTime?> get lastPing => _lastPingController.stream;
@@ -429,14 +447,14 @@ class ScooterService {
           stateController: _stateController,
           seatClosedController: _seatClosedController,
           handlebarController: _handlebarController,
-          lastPingController: _lastPingController,
           auxSOCController: _auxSOCController,
           cbbSOCController: _cbbSOCController,
           cbbChargingController: _cbbChargingController,
           primarySOCController: _primarySOCController,
           secondarySOCController: _secondarySOCController,
           primaryCyclesController: _primaryCyclesController,
-          secondaryCyclesController: _secondaryCyclesController);
+          secondaryCyclesController: _secondaryCyclesController,
+          pingFunc: ping);
       _scooterReader.readAndSubscribe();
     } catch (e) {
       rethrow;
@@ -530,9 +548,6 @@ class ScooterService {
     // Test if location services are enabled.
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      // Location services are not enabled don't continue
-      // accessing the position and request users of the
-      // App to enable the location services.
       throw "Location services are not enabled";
     }
 
