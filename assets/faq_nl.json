@@ -1,0 +1,17 @@
+{
+    "Setup": {
+        "Mijn scooter verbindt niet": "Als je de scooter voor de eerste keer met Unustasis wilt koppelen, moet je naast de scooter staan wanneer deze is ingeschakeld. Als je een koppelingsverzoek ontvangt maar de scooter nog geen code weergeeft, kun je het verzoek meestal gewoon negeren en doorgaan met het koppelingsproces. Zorg er wel voor dat er geen andere ingeschakelde unu scooter in de buurt is.\n\nAls je scooter plotseling niet meer verbindt, controleer dan of je deze nog steeds met de keycard kunt openen. Zo niet, dan kan er een probleem zijn met de scooter.",
+        "Moet ik de officiële Unu-app deïnstalleren?": "Nee, beide apps werken volledig onafhankelijk van elkaar. Je moet echter wel de achtergrondverbinding in de oude app uitschakelen. Op iOS moet je mogelijk ook de scooter uit je opgeslagen apparaten verwijderen in de systeeminstellingen om deze opnieuw te kunnen koppelen via Unustasis.",
+        "Kunnen meerdere apparaten dezelfde scooter bedienen?": "Ja! Je kunt de scooter met maximaal zes apparaten tegelijk koppelen. Dit betekent dat bij gedeelde scooters iedereen zijn eigen telefoon met de scooter kan koppelen om deze te ontgrendelen. Slechts één app kan echter tegelijkertijd de scooter bedienen. Dus terwijl je Unustasis open hebt, heeft geen enkele andere app (en geen ander apparaat) toegang tot de scooter."
+    },
+    "Veelgestelde vragen": {
+        "Kan deze app de klok op mijn display repareren?": "Helaas niet. De scooter kan alleen zijn tijd krijgen van de Unu-cloud, die is afgesloten. Deze app kan alleen de scooter via Bluetooth bedienen, waarmee de tijd niet kan worden ingesteld.",
+        "Waarom toont deze app geen rijstatistieken?": "De scooter geeft geen informatie over de rijstatistieken via Bluetooth. Hoewel de scooter enige gegevens via Bluetooth uitvoert, omvatten deze niet zaken als de kilometerteller, snelheid of vermogensuitvoer.",
+        "Mijn scooter heeft problemen sinds ik deze app heb geïnstalleerd": "Unustasis communiceert alleen met de scooter via Bluetooth. Het verandert geen instellingen op de scooter en heeft geen invloed op het gedrag van de scooter. Als je problemen ondervindt met je scooter, is het waarschijnlijk niet gerelateerd aan Unustasis. Als je twijfelt, kun je altijd de app verwijderen om te zien of de problemen aanhouden."
+    },
+    "Over de app": {
+        "Is deze app gemaakt door Unu?": "Unustasis is oorspronkelijk gemaakt door onafhankelijke bestuurders van unu. Als de nieuwe eigenaren van het unu-merk, ondersteunt Emco de voortdurende ontwikkeling van deze app.",
+        "Wat betekent 'Unustasis'?": "Unustasis komt van het oude Griekse 'anástasis', wat verwijst naar herstel van een verlammende toestand. Het kan ook wedergeboorte of opstanding betekenen. Na het faillissement van unu motors was deze app bedoeld om de verloren slimme functies te 'herstellen'.",
+        "Hoe kan ik ondersteunen?": "Unustasis is een open source project. Je bent dus van harte welkom om bij te dragen aan de broncode, bekijk gewoon Unustasis op GitHub! Als je problemen ondervindt of suggesties hebt, voel je vrij om een probleem te openen op GitHub."
+    }
+}

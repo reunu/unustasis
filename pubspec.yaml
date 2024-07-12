@@ -20,7 +20,7 @@ version: 1.1.1+10
 
 environment:
   sdk: '>=3.3.2 <4.0.0'
-  flutter: 3.19.5
+  flutter: 3.22.2
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -124,8 +124,21 @@ flutter:
     - assets/i18n/en.json
     - assets/i18n/de.json
     - assets/i18n/pi.json
+    - assets/i18n/nl.json
+    - assets/i18n/fr.json
+    - assets/i18n/es.json
+    - assets/i18n/pt.json
+    - assets/i18n/it.json
+    - assets/i18n/tr.json
     - assets/faq_en.json
     - assets/faq_de.json
+    - assets/faq_pi.json
+    - assets/faq_nl.json
+    - assets/faq_fr.json
+    - assets/faq_es.json
+    - assets/faq_pt.json
+    - assets/faq_it.json
+    - assets/faq_tr.json 
     - assets/anim/scanning.json
     - assets/anim/found.json
 
