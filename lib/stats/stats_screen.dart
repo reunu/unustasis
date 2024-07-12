@@ -352,6 +352,36 @@ class _StatsScreenState extends State<StatsScreen> {
                                   child: Text(FlutterI18n.translate(
                                       context, "language_pirate")),
                                 ),
+                                DropdownMenuItem<Locale>(
+                                  value: const Locale("nl"),
+                                  child: Text(FlutterI18n.translate(
+                                      context, "language_dutch")),
+                                ),
+                                DropdownMenuItem<Locale>(
+                                  value: const Locale("fr"),
+                                  child: Text(FlutterI18n.translate(
+                                      context, "language_french")),
+                                ),
+                                DropdownMenuItem<Locale>(
+                                  value: const Locale("es"),
+                                  child: Text(FlutterI18n.translate(
+                                      context, "language_spanish")),
+                                ),
+                                DropdownMenuItem<Locale>(
+                                  value: const Locale("pt"),
+                                  child: Text(FlutterI18n.translate(
+                                      context, "language_portuguese")),
+                                ),
+                                DropdownMenuItem<Locale>(
+                                  value: const Locale("it"),
+                                  child: Text(FlutterI18n.translate(
+                                      context, "language_italian")),
+                                ),
+                                DropdownMenuItem<Locale>(
+                                  value: const Locale("tr"),
+                                  child: Text(FlutterI18n.translate(
+                                      context, "language_turkish")),
+                                ),
                               ],
                               onChanged: (newLanguage) async {
                                 await FlutterI18n.refresh(context, newLanguage);
