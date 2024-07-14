@@ -15,7 +15,6 @@ class ScooterReader {
   final BehaviorSubject<ScooterState?> _stateController;
   final BehaviorSubject<bool?> _seatClosedController;
   final BehaviorSubject<bool?> _handlebarController;
-  final BehaviorSubject<DateTime?> _lastPingController;
   final BehaviorSubject<int?> _auxSOCController;
   final BehaviorSubject<int?> _cbbSOCController;
   final BehaviorSubject<bool?> _cbbChargingController;
@@ -24,31 +23,33 @@ class ScooterReader {
   final BehaviorSubject<int?> _primaryCyclesController;
   final BehaviorSubject<int?> _secondaryCyclesController;
 
+  final void Function() ping;
+
   ScooterReader(
       {required CharacteristicRepository characteristicRepository,
       required BehaviorSubject<ScooterState?> stateController,
       required BehaviorSubject<bool?> seatClosedController,
       required BehaviorSubject<bool?> handlebarController,
-      required BehaviorSubject<DateTime?> lastPingController,
       required BehaviorSubject<int?> auxSOCController,
       required BehaviorSubject<int?> cbbSOCController,
       required BehaviorSubject<bool?> cbbChargingController,
       required BehaviorSubject<int?> primarySOCController,
       required BehaviorSubject<int?> secondarySOCController,
       required BehaviorSubject<int?> primaryCyclesController,
-      required BehaviorSubject<int?> secondaryCyclesController})
+      required BehaviorSubject<int?> secondaryCyclesController,
+      required void Function() pingFunc})
       : _characteristicRepository = characteristicRepository,
         _stateController = stateController,
         _seatClosedController = seatClosedController,
         _handlebarController = handlebarController,
-        _lastPingController = lastPingController,
         _auxSOCController = auxSOCController,
         _cbbSOCController = cbbSOCController,
         _cbbChargingController = cbbChargingController,
         _primarySOCController = primarySOCController,
         _secondarySOCController = secondarySOCController,
         _primaryCyclesController = primaryCyclesController,
-        _secondaryCyclesController = secondaryCyclesController;
+        _secondaryCyclesController = secondaryCyclesController,
+        ping = pingFunc;
 
   readAndSubscribe() {
     _subscribeState();
@@ -81,6 +82,7 @@ class ScooterReader {
       ScooterState newState =
           ScooterState.fromStateAndPowerState(_state!, powerState);
       _stateController.add(newState);
+      ping();
     }
   }
 
@@ -88,6 +90,7 @@ class ScooterReader {
     StringReader("Seat", _characteristicRepository.seatCharacteristic)
         .readAndSubscribe((String seatState) {
       _seatClosedController.add(seatState != "open");
+      ping();
     });
   }
 
@@ -96,25 +99,23 @@ class ScooterReader {
             "Handlebars", _characteristicRepository.handlebarCharacteristic)
         .readAndSubscribe((String handlebarState) {
       _handlebarController.add(handlebarState != "unlocked");
+      ping();
     });
   }
 
   void _subscribeBatteries() {
-    var auxBatterReader =
-        BatteryReader(ScooterBattery.aux, _lastPingController);
+    var auxBatterReader = BatteryReader(ScooterBattery.aux, ping);
     auxBatterReader.readAndSubscribeSOC(
         _characteristicRepository.auxSOCCharacteristic, _auxSOCController);
 
-    var cbbBatterReader =
-        BatteryReader(ScooterBattery.cbb, _lastPingController);
-    cbbBatterReader.readAndSubscribeSOC(
+    var cbbBatteryReader = BatteryReader(ScooterBattery.cbb, ping);
+    cbbBatteryReader.readAndSubscribeSOC(
         _characteristicRepository.cbbSOCCharacteristic, _cbbSOCController);
-    cbbBatterReader.readAndSubscribeCharging(
+    cbbBatteryReader.readAndSubscribeCharging(
         _characteristicRepository.cbbChargingCharacteristic,
         _cbbChargingController);
 
-    var primaryBatteryReader =
-        BatteryReader(ScooterBattery.primary, _lastPingController);
+    var primaryBatteryReader = BatteryReader(ScooterBattery.primary, ping);
     primaryBatteryReader.readAndSubscribeSOC(
         _characteristicRepository.primarySOCCharacteristic,
         _primarySOCController);
@@ -122,8 +123,7 @@ class ScooterReader {
         _characteristicRepository.primaryCyclesCharacteristic,
         _primaryCyclesController);
 
-    var secondaryBatteryReader =
-        BatteryReader(ScooterBattery.secondary, _lastPingController);
+    var secondaryBatteryReader = BatteryReader(ScooterBattery.secondary, ping);
     secondaryBatteryReader.readAndSubscribeSOC(
         _characteristicRepository.secondarySOCCharacteristic,
         _secondarySOCController);
