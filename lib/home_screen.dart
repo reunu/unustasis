@@ -312,7 +312,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       Expanded(
                         child: ScooterActionButton(
-                            onPressed: !_scanning
+                            onPressed: !_scanning ||
+                                    _scooterState == ScooterState.linking
                                 ? () {
                                     if (!_connected ||
                                         _scooterState ==
