@@ -57,8 +57,6 @@ enum ScooterState {
         return ScooterState.hibernatingImminent;
       case ScooterPowerState.suspendingImminent:
         return ScooterState.shuttingDown;
-      case ScooterPowerState.suspending:
-        return ScooterState.off;
       default:
         return state;
     }
