@@ -81,6 +81,7 @@ class ScooterReader {
     ScooterState? newState =
         ScooterState.fromStateAndPowerState(_state, _powerState);
     _stateController.add(newState);
+    ping();
   }
 
   void _subscribeSeat() {
