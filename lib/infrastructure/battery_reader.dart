@@ -17,9 +17,13 @@ class BatteryReader {
 
   BatteryReader(this._battery, this._lastPingController);
 
-  readAndSubscribeSOC(BluetoothCharacteristic socCharacteristic,
+  void readAndSubscribeSOC(BluetoothCharacteristic socCharacteristic,
       BehaviorSubject<int?> socController) async {
-    var c = Completer();
+    int? cachedSoc = await _readSocFromCache();
+    if (cachedSoc != null) {
+      socController.add(cachedSoc);
+    }
+
     subscribeCharacteristic(socCharacteristic, (value) async {
       int? soc;
       if (_battery == ScooterBattery.cbb) {
@@ -33,19 +37,10 @@ class BatteryReader {
         socController.add(soc);
         await _writeSocToCache(soc);
       }
-      c.complete();
     });
-
-    // wait for written values
-    await c.future;
-
-    int? cachedSoc = await _readSocFromCache();
-    if (cachedSoc != null) {
-      socController.add(cachedSoc);
-    }
   }
 
-  readAndSubscribeCycles(BluetoothCharacteristic cyclesCharacteristic,
+  void readAndSubscribeCycles(BluetoothCharacteristic cyclesCharacteristic,
       BehaviorSubject<int?> cyclesController) async {
     subscribeCharacteristic(cyclesCharacteristic, (value) {
       int? cycles = _convertUint32ToInt(value);
@@ -54,7 +49,7 @@ class BatteryReader {
     });
   }
 
-  readAndSubscribeCharging(BluetoothCharacteristic chargingCharacteristic,
+  void readAndSubscribeCharging(BluetoothCharacteristic chargingCharacteristic,
       BehaviorSubject<bool?> chargingController) {
     StringReader("${_battery.name} charging", chargingCharacteristic)
         .readAndSubscribe((String chargingState) {
