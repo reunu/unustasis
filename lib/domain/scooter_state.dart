@@ -60,6 +60,8 @@ enum ScooterState {
       case ScooterPowerState.suspending:
         if (state != ScooterState.standby) {
           return ScooterState.off;
+        } else {
+          return state;
         }
       default:
         return state;
