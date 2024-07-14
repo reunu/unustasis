@@ -283,17 +283,19 @@ class _ScooterSectionState extends State<ScooterSection> {
                     FlutterI18n.translate(context, "stats_unknown")),
               );
             }),
-        StreamBuilder<int?>(
-          stream: widget.service.rssi,
-          builder: (context, snapshot) {
-            return ListTile(
-              title: Text(FlutterI18n.translate(context, "stats_rssi")),
-              subtitle: Text(snapshot.data != null
-                  ? "${snapshot.data} dBm"
-                  : FlutterI18n.translate(context, "stats_rssi_disconnected")),
-            );
-          },
-        ),
+        if (widget.service.autoUnlock)
+          StreamBuilder<int?>(
+            stream: widget.service.rssi,
+            builder: (context, snapshot) {
+              return ListTile(
+                title: Text(FlutterI18n.translate(context, "stats_rssi")),
+                subtitle: Text(snapshot.data != null
+                    ? "${snapshot.data} dBm"
+                    : FlutterI18n.translate(
+                        context, "stats_rssi_disconnected")),
+              );
+            },
+          ),
         StreamBuilder<LatLng?>(
             stream: widget.service.lastLocation,
             builder: (context, position) {
