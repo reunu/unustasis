@@ -1,0 +1,17 @@
+{
+    "Kurulum": {
+        "Scooter'ım bağlanmıyor": "Scooter'ı Unustasis ile ilk kez eşleştirmek istiyorsanız, scooter'ın açık olduğu zaman yanında durmalısınız. Eşleşme isteği alırsanız ancak scooter henüz bir kod göstermiyorsa, çoğu durumda isteği basitçe reddedip eşleştirme işlemine devam edebilirsiniz. Ancak yakınlarda başka açık unu scooter olmadığından emin olun.\n\nEğer scooter'ınız aniden bağlantıyı keserse, hâlâ anahtar kartıyla açılıp açılamadığını kontrol edin. Eğer açamazsanız, scooter'da bir sorun olabilir.",
+        "Resmi Unu uygulamasını kaldırmalı mıyım?": "Hayır, her iki uygulama da tamamen bağımsız olarak çalışır. Ancak eski uygulamada arka planda bağlantıyı devre dışı bırakmanız gerekebilir. iOS'ta, Unustasis aracılığıyla tekrar eşleştirebilmek için scooter'ı kayıtlı cihazlardan sistem ayarlarında kaldırmanız gerekebilir.",
+        "Aynı scooter'ı birden fazla cihaz kontrol edebilir mi?": "Evet! Scooter'ı aynı anda altı cihaza kadar eşleştirebilirsiniz. Bu, paylaşılan scooter'larda herkesin kendi telefonunu scooter ile eşleştirebileceği anlamına gelir. Ancak bir seferde yalnızca bir uygulama scooter'ı kontrol edebilir. Yani Unustasis açıkken hiçbir başka uygulama (ve hiçbir başka cihaz) scooter'a erişemez."
+    },
+    "Sık Sorulan Sorular": {
+        "Bu uygulama ekranımdaki saati düzeltebilir mi?": "Maalesef hayır. Scooter sadece Unu bulutundan saatini alabilir, ancak bu bulut kapatıldı. Bu uygulama saat ayarını Bluetooth üzerinden scooter'a iletebilir.",
+        "Bu uygulama neden sürüş istatistiklerini göstermiyor?": "Scooter Bluetooth aracılığıyla sürüş istatistikleri hakkında bilgi sağlamaz. Bluetooth üzerinden bazı veriler gönderse de, bunlar kilometre sayacı, hız veya güç gibi bilgileri içermez.",
+        "Bu uygulamayı yükledikten sonra scooter'ım sorun yaşamaya başladı": "Unustasis sadece Bluetooth aracılığıyla scooter ile iletişim kurar. Scooter'ın yapılandırmasını değiştirmez ve scooter'ın davranışı üzerinde herhangi bir etkisi yoktur. Eğer scooter'ınızda sorun yaşıyorsanız, büyük ihtimalle Unustasis ile ilgili değildir. Emin değilseniz, sorunların devam edip etmediğini görmek için uygulamayı her zaman kaldırabilirsiniz."
+    },
+    "Uygulama Hakkında": {
+        "Bu uygulama Unu tarafından mı yapıldı?": "Unustasis başlangıçta bağımsız unu sürücüleri tarafından oluşturuldu. Unu markasının yeni sahipleri olarak, Emco bu uygulamanın sürekli gelişimini desteklemektedir.",
+        "'Unustasis' ne anlama geliyor?": "'Unustasis', eski Yunanca 'anástasis' kelimesinden gelir, bu da felç edici bir durumdan iyileşmeyi ifade eder. Aynı zamanda yeniden doğuş veya diriliş anlamına gelebilir. unu motors'un iflasının ardından, bu uygulama kayıp akıllı özellikleri 'yeniden canlandırmayı' amaçladı.",
+        "Nasıl destek olabilirim?": "Unustasis açık kaynaklı bir projedir. Bu nedenle, GitHub'daki Unustasis'i ziyaret ederek kaynak koduna katkıda bulunmaktan memnuniyet duyarsınız! Herhangi bir sorunla karşılaşırsanız veya herhangi bir öneriniz varsa, GitHub'da bir sorun açmaktan çekinmeyin."
+    }
+}

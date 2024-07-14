@@ -1,0 +1,17 @@
+{
+    "Impostazioni": {
+        "Il mio scooter non si sta connettendo": "Se vuoi collegare lo scooter con Unustasis per la prima volta, devi essere accanto allo scooter quando è acceso. Se ricevi una richiesta di abbinamento ma lo scooter non mostra ancora un codice, nella maggior parte dei casi puoi semplicemente ignorare la richiesta e continuare con il processo di abbinamento. Assicurati però che non ci sia un altro scooter unu acceso nelle vicinanze.\n\nSe il tuo scooter smette improvvisamente di connettersi, verifica se puoi comunque aprirlo con la scheda chiave. Se non riesci, potrebbe esserci un problema con lo scooter.",
+        "Devo disinstallare l'app ufficiale di Unu?": "No, entrambe le app funzionano completamente indipendentemente l'una dall'altra. Tuttavia, dovresti disattivare la connessione in background nella vecchia app. Su iOS potresti anche dover rimuovere lo scooter dai dispositivi salvati nelle impostazioni di sistema per poterlo riassociare tramite Unustasis.",
+        "Più dispositivi possono controllare lo stesso scooter?": "Sì! Puoi collegare lo scooter con un massimo di sei dispositivi contemporaneamente. Ciò significa che con gli scooter condivisi, chiunque può collegare il proprio telefono allo scooter per sbloccarlo. Tuttavia, solo un'app può controllare lo scooter alla volta. Quindi mentre hai Unustasis aperto, nessun'altra app (e nessun altro dispositivo) ha accesso allo scooter."
+    },
+    "Domande frequenti": {
+        "Questa app può sistemare l'orologio nel mio display?": "Purtroppo no. Lo scooter può ottenere l'ora solo dal cloud di Unu, che è stato chiuso. Questa app può solo controllare lo scooter tramite Bluetooth, tramite il quale l'ora non può essere impostata.",
+        "Perché questa app non mostra le statistiche di guida?": "Lo scooter non fornisce informazioni sulle statistiche di guida tramite Bluetooth. Anche se lo scooter invia alcuni dati tramite Bluetooth, essi non includono cose come il contachilometri, la velocità o la potenza.",
+        "Il mio scooter ha avuto problemi da quando ho installato questa app": "Unustasis comunica solo con lo scooter tramite Bluetooth. Non modifica alcuna impostazione dello scooter e non ha alcuna influenza sul comportamento dello scooter. Se stai riscontrando problemi con lo scooter, è probabile che non siano correlati a Unustasis. Se non sei sicuro, puoi sempre disinstallare l'app per vedere se i problemi persistono."
+    },
+    "Informazioni sull'app": {
+        "Questa app è stata fatta da Unu?": "Unustasis è stato creato inizialmente da conducenti indipendenti di unu. Come nuovi proprietari del marchio unu, Emco ha supportato lo sviluppo continuo di questa app.",
+        "Cosa significa 'Unustasis'?": "'Unustasis' deriva dal greco antico 'anástasis', che si riferisce al recupero da una condizione debilitante. Può anche significare rinascita o risurrezione. Dopo il fallimento di unu motors, questa app mirava a 'revivere' le funzionalità intelligenti perdute.",
+        "Come posso supportare?": "Unustasis è un progetto open source. Quindi sei più che benvenuto a contribuire al codice sorgente, basta visitare Unustasis su GitHub! Se incontri problemi o hai suggerimenti, sentiti libero di aprire una segnalazione su GitHub."
+    }
+}
