@@ -314,7 +314,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: ScooterActionButton(
                             onPressed: !_scanning
                                 ? () {
-                                    if (!_connected) {
+                                    if (!_connected ||
+                                        _scooterState ==
+                                            ScooterState.disconnected) {
                                       widget.scooterService.start();
                                     } else {
                                       Navigator.push(
@@ -327,10 +329,18 @@ class _HomeScreenState extends State<HomeScreen> {
                                     }
                                   }
                                 : null,
-                            icon: (!_connected && !_scanning)
+                            icon: ((!_connected ||
+                                        _scooterState ==
+                                            ScooterState.disconnected ||
+                                        _scooterState == null) &&
+                                    !_scanning)
                                 ? Icons.refresh_rounded
                                 : Icons.more_vert_rounded,
-                            label: (!_connected && !_scanning)
+                            label: ((!_connected ||
+                                        _scooterState ==
+                                            ScooterState.disconnected ||
+                                        _scooterState == null) &&
+                                    !_scanning)
                                 ? FlutterI18n.translate(
                                     context, "home_reconnect_button")
                                 : FlutterI18n.translate(

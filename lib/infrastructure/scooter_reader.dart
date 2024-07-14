@@ -10,7 +10,8 @@ import 'package:unustasis/infrastructure/string_reader.dart';
 
 class ScooterReader {
   final CharacteristicRepository _characteristicRepository;
-  String? _state, _powerState;
+  ScooterState? _state;
+  ScooterPowerState? _powerState;
 
   final BehaviorSubject<ScooterState?> _stateController;
   final BehaviorSubject<bool?> _seatClosedController;
@@ -61,7 +62,7 @@ class ScooterReader {
   void _subscribeState() {
     StringReader("State", _characteristicRepository.stateCharacteristic)
         .readAndSubscribe((String value) {
-      _state = value;
+      _state = ScooterState.fromString(value);
       _updateScooterState();
     });
   }
@@ -70,18 +71,15 @@ class ScooterReader {
     StringReader(
             "Power State", _characteristicRepository.powerStateCharacteristic)
         .readAndSubscribe((String value) {
-      _powerState = value;
+      _powerState = ScooterPowerState.fromString(value);
       _updateScooterState();
     });
   }
 
   Future<void> _updateScooterState() async {
-    if (_state != null && _powerState != null) {
-      ScooterPowerState powerState = ScooterPowerState.fromString(_powerState);
-      ScooterState newState =
-          ScooterState.fromStateAndPowerState(_state!, powerState);
-      _stateController.add(newState);
-    }
+    ScooterState? newState =
+        ScooterState.fromStateAndPowerState(_state, _powerState);
+    _stateController.add(newState);
   }
 
   void _subscribeSeat() {

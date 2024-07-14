@@ -50,6 +50,7 @@ class ScooterService {
             as Map<String, dynamic>;
       } else if (prefs.containsKey("savedScooterId")) {
         addSavedScooter(prefs.getString("savedScooterId")!);
+        prefs.remove("savedScooterId");
       }
       if (savedScooters.isNotEmpty) {
         // if we found a saved scooter in the previous step...
@@ -251,18 +252,8 @@ class ScooterService {
     // First, see if the phone is already actively connected to a scooter
     List<BluetoothDevice> systemScooters = await getSystemScooters();
     if (systemScooters.isNotEmpty) {
-      // TODO: this might return multiple scooters in super rare cases
       // get the first one, hook into its connection, and remember the ID for future reference
-      await systemScooters.first.connect(
-          // autoConnect: true,
-          // mtu: null,
-          );
-      // await systemScooters.first.connectionState
-      //     .where((val) => val == BluetoothConnectionState.connected)
-      //     .first;
-      // myScooter = systemScooters.first;
-      // addSavedScooter(systemScooters.first.remoteId.toString());
-      // await setUpCharacteristics(systemScooters.first);
+      await systemScooters.first.connect();
       // save this as the last known location
       _pollLocation();
       _connectedController.add(true);
@@ -285,22 +276,12 @@ class ScooterService {
           // there's one! Attempt to connect to it
           _foundSth = true;
           _stateController.add(ScooterState.linking);
-
           // we could have some race conditions here if we find multiple scooters at once
           // so let's stop scanning immediately to avoid that
           flutterBluePlus.stopScan();
           // attempt to connect to what we found
-          await foundScooter.connect(
-              // autoConnect: true, significantly slows down the connection process
-              // mtu: null,
-              );
+          await foundScooter.connect();
           // wait for the connection to be established
-          // await foundScooter.connectionState
-          //     .where((val) => val == BluetoothConnectionState.connected)
-          //     .first;
-          // if (Platform.isAndroid) {
-          //   await foundScooter.requestMtu(512);
-          // }
           // Set up this scooter as ours
           myScooter = foundScooter;
           addSavedScooter(foundScooter.remoteId.toString());
@@ -381,8 +362,6 @@ class ScooterService {
           }
         }
       });
-    } else {
-      //Auto-restart already on, ignoring to avoid duplicates
     }
   }
 
@@ -694,8 +673,8 @@ class ScooterService {
     _manualRefreshTimer.cancel();
   }
 
-  Future<void> _sleepSeconds(double seconds) async {
-    await Future.delayed(Duration(milliseconds: (seconds * 1000).floor()));
+  Future<void> _sleepSeconds(double seconds) {
+    return Future.delayed(Duration(milliseconds: (seconds * 1000).floor()));
   }
 }
 
