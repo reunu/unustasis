@@ -16,14 +16,9 @@ class BatteryReader {
 
   void readAndSubscribeSOC(BluetoothCharacteristic socCharacteristic,
       BehaviorSubject<int?> socController) async {
-    int? cachedSoc = await _readSocFromCache();
-    if (cachedSoc != null) {
-      socController.add(cachedSoc);
-    }
-
     subscribeCharacteristic(socCharacteristic, (value) async {
       int? soc;
-      if (_battery == ScooterBattery.cbb) {
+      if (_battery == ScooterBattery.cbb && value.length == 1) {
         soc = value[0];
       } else {
         soc = _convertUint32ToInt(value);

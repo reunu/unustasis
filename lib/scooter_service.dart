@@ -53,13 +53,8 @@ class ScooterService {
     SharedPreferences.getInstance().then((prefs) {
       this.prefs = prefs;
 
-      if (prefs.containsKey("savedScooters")) {
-        savedScooters = jsonDecode(prefs.getString("savedScooters")!)
-            as Map<String, dynamic>;
-      } else if (prefs.containsKey("savedScooterId")) {
-        addSavedScooter(prefs.getString("savedScooterId")!);
-        prefs.remove("savedScooterId");
-      }
+      savedScooters = getSavedScooters();
+
       if (savedScooters.isNotEmpty) {
         // if we found a saved scooter in the previous step...
         _scooterNameController.add(savedScooters.values.first[
@@ -601,6 +596,24 @@ class ScooterService {
     });
 
     return completer.future;
+  }
+
+  Map<String, dynamic> getSavedScooters() {
+    Map<String, dynamic> scooters = {};
+    if (prefs!.containsKey("savedScooters")) {
+      scooters = jsonDecode(prefs!.getString("savedScooters")!)
+          as Map<String, dynamic>;
+    }
+    // migrate old format
+    if (prefs!.containsKey("savedScooterId")) {
+      String id = prefs!.getString("savedScooterId")!;
+      addSavedScooter(id);
+      prefs!.remove("savedScooterId");
+      scooters = {
+        id: {"name": "Scooter Pro"}
+      };
+    }
+    return scooters;
   }
 
   Future<List<String>> getSavedScooterIds() async {
