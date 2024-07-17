@@ -14,11 +14,11 @@ class BatteryReader {
 
   BatteryReader(this._battery, this.ping);
 
-  readAndSubscribeSOC(BluetoothCharacteristic socCharacteristic,
+  void readAndSubscribeSOC(BluetoothCharacteristic socCharacteristic,
       BehaviorSubject<int?> socController) async {
     subscribeCharacteristic(socCharacteristic, (value) async {
       int? soc;
-      if (_battery == ScooterBattery.cbb) {
+      if (_battery == ScooterBattery.cbb && value.length == 1) {
         soc = value[0];
       } else {
         soc = _convertUint32ToInt(value);
@@ -33,7 +33,7 @@ class BatteryReader {
     });
   }
 
-  readAndSubscribeCycles(BluetoothCharacteristic cyclesCharacteristic,
+  void readAndSubscribeCycles(BluetoothCharacteristic cyclesCharacteristic,
       BehaviorSubject<int?> cyclesController) async {
     subscribeCharacteristic(cyclesCharacteristic, (value) {
       int? cycles = _convertUint32ToInt(value);
@@ -43,7 +43,7 @@ class BatteryReader {
     });
   }
 
-  readAndSubscribeCharging(BluetoothCharacteristic chargingCharacteristic,
+  void readAndSubscribeCharging(BluetoothCharacteristic chargingCharacteristic,
       BehaviorSubject<bool?> chargingController) {
     StringReader("${_battery.name} charging", chargingCharacteristic)
         .readAndSubscribe((String chargingState) {
