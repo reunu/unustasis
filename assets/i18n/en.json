@@ -38,7 +38,7 @@
     "state_name_shutting_down": "Shutting down...",
     "state_name_ready": "Ready",
     "state_name_hibernating": "Hibernating",
-    "state_name_hibernating_imminent": "Hibernating...",
+    "state_name_hibernating_imminent": "Entering hibernation...",
     "state_name_booting": "Booting...",
     "state_name_unknown": "Connected",
     "state_name_disconnected": "Disconnected",

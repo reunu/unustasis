@@ -1,4 +1,2 @@
 ### Changes:
-- Stability improvements
-- Design improvements
-- New illustrations across the board
+- All changes are under the hood this time, hoping to solve some connection issues

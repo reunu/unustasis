@@ -3,10 +3,12 @@ import 'dart:developer';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:lottie/lottie.dart';
+import 'package:unustasis/domain/theme_helper.dart';
 import 'package:unustasis/home_screen.dart';
 import 'package:unustasis/scooter_service.dart';
 import 'package:unustasis/domain/scooter_state.dart';
@@ -170,6 +172,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
+        systemOverlayStyle: SystemUiOverlayStyle(
+            statusBarBrightness:
+                context.isDarkMode ? Brightness.dark : Brightness.light),
         actions: [
           IconButton(
               onPressed: () {

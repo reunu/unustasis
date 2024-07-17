@@ -80,7 +80,7 @@ class ScooterVisual extends StatelessWidget {
                 ],
               ),
             ),
-            BlinkerWidget(blinkerLeft: blinkerLeft, blinkerRight: blinkerRight),
+            //BlinkerWidget(blinkerLeft: blinkerLeft, blinkerRight: blinkerRight),
           ],
         ),
       ),

@@ -9,7 +9,7 @@ enum ScooterPowerState {
   hibernatingImminent,
   unknown;
 
-  static ScooterPowerState fromString(String? powerState) {
+  static ScooterPowerState? fromString(String? powerState) {
     switch (powerState) {
       case "booting":
         return ScooterPowerState.booting;
@@ -23,6 +23,8 @@ enum ScooterPowerState {
         return ScooterPowerState.hibernating;
       case "hibernating-imminent":
         return ScooterPowerState.hibernatingImminent;
+      case null:
+        return null;
       default:
         log("Unknown state: $powerState");
         return ScooterPowerState.unknown;
