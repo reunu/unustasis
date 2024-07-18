@@ -266,14 +266,24 @@ class ScooterService {
     List<BluetoothDevice> systemScooters = await getSystemScooters();
     if (systemScooters.isNotEmpty) {
       // get the first one, hook into its connection, and remember the ID for future reference
+      // there's one! Attempt to connect to it
+      _foundSth = true;
+      _stateController.add(ScooterState.linking);
+      // attempt to connect to what we found
       await systemScooters.first.connect();
+      // wait for the connection to be established
+      // Set up this scooter as ours
+      myScooter = systemScooters.first;
+      addSavedScooter(myScooter!.remoteId.toString());
+      await setUpCharacteristics(myScooter!);
       // save this as the last known location
       _pollLocation();
+      // Let everybody know
       _connectedController.add(true);
       _scooterNameController
           .add(savedScooters[myScooter!.remoteId.toString()]?["name"]);
-      systemScooters.first.connectionState
-          .listen((BluetoothConnectionState state) async {
+      // listen for disconnects
+      myScooter!.connectionState.listen((BluetoothConnectionState state) async {
         if (state == BluetoothConnectionState.disconnected) {
           _connectedController.add(false);
           _stateController.add(ScooterState.disconnected);
