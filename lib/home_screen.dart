@@ -109,7 +109,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 500),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.onTertiary,
+            color: Theme.of(context).colorScheme.background,
           ),
           child: Stack(
             alignment: Alignment.center,

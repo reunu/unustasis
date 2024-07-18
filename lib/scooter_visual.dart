@@ -37,14 +37,13 @@ class ScooterVisual extends StatelessWidget {
                   AnimatedCrossFade(
                     duration: const Duration(milliseconds: 500),
                     firstChild: Shimmer.fromColors(
-                      baseColor: context.isDarkMode
-                          ? (scanning ? Colors.white12 : Colors.white12)
-                          : Colors.black26,
+                      baseColor:
+                          context.isDarkMode ? Colors.black : Colors.black45,
                       highlightColor: scanning
                           ? Colors.transparent
                           : context.isDarkMode
-                              ? Colors.white12
-                              : Colors.black26,
+                              ? Colors.black
+                              : Colors.black45,
                       enabled: scanning,
                       direction: ShimmerDirection.ltr,
                       period: const Duration(seconds: 2),

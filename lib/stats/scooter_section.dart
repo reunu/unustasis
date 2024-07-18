@@ -112,7 +112,7 @@ class _ScooterSectionState extends State<ScooterSection> {
               contentPadding: EdgeInsets.all(16),
               border: OutlineInputBorder(),
             ),
-            dropdownColor: Theme.of(context).colorScheme.background,
+            dropdownColor: Theme.of(context).colorScheme.surface,
             items: [
               DropdownMenuItem(
                 value: 0,

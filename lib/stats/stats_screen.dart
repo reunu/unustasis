@@ -60,9 +60,7 @@ class _StatsScreenState extends State<StatsScreen> {
         extendBodyBehindAppBar: true,
         appBar: AppBar(
           title: Text(FlutterI18n.translate(context, 'stats_title')),
-          backgroundColor: context.isDarkMode
-              ? Colors.transparent
-              : Theme.of(context).colorScheme.onTertiary,
+          backgroundColor: Theme.of(context).colorScheme.background,
           bottom: PreferredSize(
               preferredSize: const Size.fromHeight(50.0),
               child: TabBar(
@@ -120,7 +118,7 @@ class _StatsScreenState extends State<StatsScreen> {
               radius: 1.3,
               colors: [
                 Theme.of(context).colorScheme.background,
-                Theme.of(context).colorScheme.onTertiary,
+                Theme.of(context).colorScheme.background,
               ],
             ),
           ),
@@ -297,7 +295,7 @@ class _StatsScreenState extends State<StatsScreen> {
                                 border: OutlineInputBorder(),
                               ),
                               dropdownColor:
-                                  Theme.of(context).colorScheme.background,
+                                  Theme.of(context).colorScheme.surface,
                               items: [
                                 DropdownMenuItem<ThemeMode>(
                                   value: ThemeMode.dark,
@@ -335,7 +333,7 @@ class _StatsScreenState extends State<StatsScreen> {
                                 border: OutlineInputBorder(),
                               ),
                               dropdownColor:
-                                  Theme.of(context).colorScheme.background,
+                                  Theme.of(context).colorScheme.surface,
                               items: [
                                 DropdownMenuItem<Locale>(
                                   value: const Locale("en"),

@@ -83,7 +83,7 @@ class RangeSection extends StatelessWidget {
         height: 150,
         padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.background,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16.0),
         ),
         child: Row(
@@ -167,7 +167,7 @@ class RangeSection extends StatelessWidget {
         height: 200,
         padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 16.0),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.background,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16.0),
         ),
         child: Row(
