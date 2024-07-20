@@ -1,10 +1,7 @@
 import 'dart:developer';
 
-import 'package:easy_dynamic_theme/easy_dynamic_theme.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:local_auth/local_auth.dart';
@@ -114,37 +111,10 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              AnimatedScale(
-                duration: const Duration(milliseconds: 800),
-                curve: Curves.easeOutBack,
-                scale: _scanning
-                    ? 1.4
-                    : _connected
-                        ? (_scooterState?.isOn == true ? 1.4 : 1.2)
-                        : 0,
-                child: Container(
-                  width: MediaQuery.of(context).size.width,
-                  height: MediaQuery.of(context).size.width,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(999),
-                    color: _scooterState?.isOn == true
-                        ? HSLColor.fromColor(
-                                Theme.of(context).colorScheme.primary)
-                            .withLightness(context.isDarkMode ? 0.2 : 0.7)
-                            .toColor()
-                        : _connected
-                            ? HSLColor.fromColor(
-                                    Theme.of(context).colorScheme.primary)
-                                .withLightness(context.isDarkMode ? 0.2 : 0.85)
-                                .withSaturation(0.5)
-                                .toColor()
-                            : Theme.of(context)
-                                .colorScheme
-                                .surface
-                                .withOpacity(0.3),
-                  ),
-                ),
-              ),
+              StateCircle(
+                  scanning: _scanning,
+                  connected: _connected,
+                  scooterState: _scooterState),
               SafeArea(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
@@ -487,6 +457,57 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
+class StateCircle extends StatelessWidget {
+  const StateCircle({
+    super.key,
+    required bool scanning,
+    required bool connected,
+    required ScooterState? scooterState,
+  })  : _scanning = scanning,
+        _connected = connected,
+        _scooterState = scooterState;
+
+  final bool _scanning;
+  final bool _connected;
+  final ScooterState? _scooterState;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedScale(
+      duration: const Duration(milliseconds: 800),
+      curve: Curves.easeOutBack,
+      scale: _connected
+          ? _scooterState == ScooterState.parked
+              ? 1.5
+              : (_scooterState == ScooterState.ready)
+                  ? 3
+                  : 1.2
+          : _scanning
+              ? 1.5
+              : 0,
+      child: Container(
+        width: MediaQuery.of(context).size.width,
+        height: MediaQuery.of(context).size.width,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(999),
+          color: _scooterState?.isOn == true
+              ? context.isDarkMode
+                  ? HSLColor.fromColor(Theme.of(context).colorScheme.primary)
+                      .withLightness(0.18)
+                      .toColor()
+                  : HSLColor.fromColor(Theme.of(context).colorScheme.primary)
+                      .withAlpha(0.3)
+                      .toColor()
+              : Theme.of(context)
+                  .colorScheme
+                  .surface
+                  .withOpacity(context.isDarkMode ? 0.5 : 0.7),
+        ),
+      ),
+    );
+  }
+}
+
 class ScooterPowerButton extends StatefulWidget {
   const ScooterPowerButton({
     super.key,
@@ -516,46 +537,61 @@ class _ScooterPowerButtonState extends State<ScooterPowerButton> {
         : Theme.of(context).colorScheme.primary;
     return Column(
       children: [
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-            backgroundColor: mainColor,
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(width: 2, color: mainColor),
+            borderRadius: BorderRadius.circular(999),
           ),
-          onPressed: () {
-            Fluttertoast.showToast(msg: widget._label);
-          },
-          onLongPress: widget._action == null
-              ? null
-              : () {
-                  setState(() {
-                    loading = true;
-                  });
-                  widget._action!();
-                  Future.delayed(const Duration(seconds: 5), () {
-                    setState(() {
-                      loading = false;
-                    });
-                  });
-                },
-          child: loading
-              ? SizedBox(
-                  height: 16,
-                  width: 16,
-                  child: CircularProgressIndicator(
-                    color: Theme.of(context).colorScheme.background,
-                  ),
-                )
-              : Icon(
-                  widget._icon,
-                  color: Theme.of(context).colorScheme.background,
-                ),
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                elevation: 0,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                backgroundColor: loading
+                    ? Theme.of(context).colorScheme.background
+                    : mainColor,
+              ),
+              onPressed: () {
+                Fluttertoast.showToast(msg: widget._label);
+              },
+              onLongPress: widget._action == null
+                  ? null
+                  : () {
+                      setState(() {
+                        loading = true;
+                      });
+                      widget._action!();
+                      Future.delayed(const Duration(seconds: 5), () {
+                        setState(() {
+                          loading = false;
+                        });
+                      });
+                    },
+              child: loading
+                  ? SizedBox(
+                      height: 24,
+                      width: 24,
+                      child: CircularProgressIndicator(
+                        color: mainColor,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Icon(
+                      widget._icon,
+                      color: Theme.of(context).colorScheme.background,
+                    ),
+            ),
+          ),
         ),
         const SizedBox(height: 16),
         Text(
           widget._label,
-          style: TextStyle(
-            color: mainColor,
-          ),
+          style: Theme.of(context)
+              .textTheme
+              .labelLarge
+              ?.copyWith(color: mainColor),
           textAlign: TextAlign.center,
         ),
       ],
@@ -604,9 +640,10 @@ class ScooterActionButton extends StatelessWidget {
         const SizedBox(height: 16),
         Text(
           _label,
-          style: TextStyle(
-            color: mainColor,
-          ),
+          style: Theme.of(context)
+              .textTheme
+              .labelLarge
+              ?.copyWith(color: mainColor),
         ),
       ],
     );

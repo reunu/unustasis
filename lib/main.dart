@@ -6,15 +6,15 @@ import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:easy_dynamic_theme/easy_dynamic_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unustasis/domain/theme_helper.dart';
 import 'package:unustasis/flutter/blue_plus_mockable.dart';
 import 'package:unustasis/home_screen.dart';
 import 'package:unustasis/scooter_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-  ]);
+  SystemChrome.setPreferredOrientations(
+      [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
   Locale? savedLocale;
 
   SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -24,7 +24,6 @@ void main() async {
     savedLocale = Locale(localeString);
   }
   runApp(EasyDynamicThemeWidget(
-    initialThemeMode: ThemeMode.dark,
     child: MyApp(
       savedLocale: savedLocale,
     ),
@@ -82,10 +81,10 @@ class _MyAppState extends State<MyApp> {
           onPrimary: Colors.white,
           secondary: Colors.green,
           onSecondary: Colors.white,
-          background: Colors.grey.shade900,
+          background: const Color.fromARGB(255, 20, 20, 20),
           onTertiary: Colors.black,
           onBackground: Colors.white,
-          surface: Colors.grey.shade800,
+          surface: Colors.grey.shade900,
           onSurface: Colors.white,
           error: Colors.red,
           onError: Colors.white,

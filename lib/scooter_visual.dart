@@ -55,7 +55,7 @@ class ScooterVisual extends StatelessWidget {
                       opacity: 1,
                       child: Image(
                         image: AssetImage(
-                            "images/scooter/base_${color ?? 3}.webp"),
+                            "images/scooter/base_${color ?? 1}.webp"),
                       ),
                     ),
                     crossFadeState: state == ScooterState.disconnected

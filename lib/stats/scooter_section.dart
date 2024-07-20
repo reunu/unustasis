@@ -26,7 +26,7 @@ class ScooterSection extends StatefulWidget {
 }
 
 class _ScooterSectionState extends State<ScooterSection> {
-  int color = 3;
+  int color = 1;
   String? nameCache;
   TextEditingController nameController = TextEditingController();
   FocusNode nameFocusNode = FocusNode();
@@ -42,7 +42,7 @@ class _ScooterSectionState extends State<ScooterSection> {
   void setupInitialColor() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      color = prefs.getInt("color") ?? 3;
+      color = prefs.getInt("color") ?? 1;
     });
   }
 
