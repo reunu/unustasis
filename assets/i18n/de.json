@@ -116,7 +116,7 @@
     "biometrics_message": "Authentifizieren, um fortzufahren",
     "biometrics_failed": "Authentifizierung fehlgeschlagen",
     "settings_auto_unlock": "Keyless Start",
-    "settings_auto_unlock_description": "Automatisch entsperren, wenn die App offen und das Gerät direkt neben dem Roller ist. Warnung: Kann unter iOS die Verbindung zum Roller verlangsamen.",
+    "settings_auto_unlock_description": "Automatisch entsperren, wenn die App offen und das Gerät direkt neben dem Roller ist.",
     "settings_auto_unlock_threshold": "Keyless Start Distanz",
     "auto_unlock_threshold_very_far": "Sehr weit",
     "auto_unlock_threshold_far": "Weit",

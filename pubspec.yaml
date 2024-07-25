@@ -127,6 +127,7 @@ flutter:
     - assets/i18n/pi.json
     - assets/faq_en.json
     - assets/faq_de.json
+    - assets/faq_pi.json
     - assets/anim/scanning.json
     - assets/anim/found.json
 

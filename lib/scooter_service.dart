@@ -71,7 +71,7 @@ class ScooterService {
         _pollLocation();
       }
     });
-    _rssiTimer = Timer.periodic(const Duration(seconds: 2), (timer) async {
+    _rssiTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
       if (myScooter != null && myScooter!.isConnected && _autoUnlock) {
         int? rssi;
         try {

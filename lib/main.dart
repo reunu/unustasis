@@ -7,6 +7,7 @@ import 'package:easy_dynamic_theme/easy_dynamic_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unustasis/domain/analytics.dart';
+import 'package:unustasis/domain/theme_helper.dart';
 import 'package:unustasis/flutter/blue_plus_mockable.dart';
 import 'package:unustasis/home_screen.dart';
 import 'package:unustasis/scooter_service.dart';
@@ -14,9 +15,8 @@ import 'package:firebase_core/firebase_core.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-  ]);
+  SystemChrome.setPreferredOrientations(
+      [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
 
   // LOCALE
   Locale? savedLocale;
@@ -63,14 +63,14 @@ class _MyAppState extends State<MyApp> {
         brightness: Brightness.light,
         useMaterial3: true,
         colorScheme: ColorScheme.light(
-          primary: createMaterialColor(Color.fromARGB(255, 9, 151, 104)),
+          primary: createMaterialColor(const Color(0xFF099768)),
           onPrimary: Colors.black,
           secondary: Colors.green,
           onSecondary: Colors.black,
-          background: Colors.grey.shade300,
+          background: Colors.white,
           onTertiary: Colors.white,
           onBackground: Colors.black,
-          surface: Colors.grey.shade300,
+          surface: Colors.grey.shade200,
           onSurface: Colors.black,
           error: Colors.red,
           onError: Colors.black,
@@ -90,7 +90,7 @@ class _MyAppState extends State<MyApp> {
           onPrimary: Colors.white,
           secondary: Colors.green,
           onSecondary: Colors.white,
-          background: Colors.grey.shade900,
+          background: const Color.fromARGB(255, 20, 20, 20),
           onTertiary: Colors.black,
           onBackground: Colors.white,
           surface: Colors.grey.shade900,
