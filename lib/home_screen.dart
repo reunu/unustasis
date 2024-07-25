@@ -38,7 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool? _seatClosed;
   bool? _handlebarsLocked;
   int? _primarySOC = 53;
-  int? _secondarySOC;
+  int? _secondarySOC = 100;
   int? color;
 
   @override
@@ -104,10 +104,12 @@ class _HomeScreenState extends State<HomeScreen> {
         value: context.isDarkMode
             ? const SystemUiOverlayStyle(
                 statusBarColor: Colors.transparent,
-                statusBarIconBrightness: Brightness.light)
+                statusBarIconBrightness: Brightness.light,
+                systemNavigationBarColor: Color.fromARGB(255, 20, 20, 20))
             : const SystemUiOverlayStyle(
                 statusBarColor: Colors.transparent,
-                statusBarIconBrightness: Brightness.dark),
+                statusBarIconBrightness: Brightness.dark,
+                systemNavigationBarColor: Colors.white),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 500),
           decoration: BoxDecoration(
@@ -154,9 +156,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 stream: widget.scooterService.scooterName,
                                 builder: (context, name) {
                                   return Text(
-                                    name.data ??
-                                        FlutterI18n.translate(
-                                            context, "stats_no_name"),
+                                    "Scooter Pro",
                                     style: Theme.of(context)
                                         .textTheme
                                         .headlineLarge,
@@ -194,13 +194,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         StreamBuilder<DateTime?>(
                             stream: widget.scooterService.lastPing,
                             builder: (context, lastPing) {
-                              bool dataIsOld = !lastPing.hasData ||
-                                  lastPing.hasData &&
-                                      lastPing.data!
-                                              .difference(DateTime.now())
-                                              .inMinutes
-                                              .abs() >
-                                          5;
+                              bool dataIsOld = false;
                               return Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
@@ -263,12 +257,15 @@ class _HomeScreenState extends State<HomeScreen> {
                             }),
                       const SizedBox(height: 16),
                       Expanded(
-                          child: ScooterVisual(
-                              color: color,
-                              state: _scooterState,
-                              scanning: _scanning,
-                              blinkerLeft: _hazards,
-                              blinkerRight: _hazards)),
+                          child: Container(
+                        constraints: BoxConstraints(maxHeight: 500),
+                        child: ScooterVisual(
+                            color: color,
+                            state: _scooterState,
+                            scanning: _scanning,
+                            blinkerLeft: _hazards,
+                            blinkerRight: _hazards),
+                      )),
                       const SizedBox(height: 16),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -276,12 +273,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           Expanded(
                             child: ScooterActionButton(
-                              onPressed: _connected &&
-                                      _scooterState != null &&
-                                      _seatClosed == true &&
-                                      _scanning == false
-                                  ? widget.scooterService.openSeat
-                                  : null,
+                              onPressed: widget.scooterService.openSeat,
                               label: _seatClosed == false
                                   ? FlutterI18n.translate(
                                       context, "home_seat_button_open")

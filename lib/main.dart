@@ -54,7 +54,7 @@ class _MyAppState extends State<MyApp> {
         brightness: Brightness.light,
         useMaterial3: true,
         colorScheme: ColorScheme.light(
-          primary: createMaterialColor(const Color(0xFF099768)),
+          primary: createMaterialColor(const Color(0xFF0395FF)),
           onPrimary: Colors.black,
           secondary: Colors.green,
           onSecondary: Colors.black,
@@ -77,7 +77,7 @@ class _MyAppState extends State<MyApp> {
         brightness: Brightness.dark,
         useMaterial3: true,
         colorScheme: ColorScheme.dark(
-          primary: createMaterialColor(const Color(0xFF3DCC9D)),
+          primary: createMaterialColor(const Color(0xFF0395FF)),
           onPrimary: Colors.white,
           secondary: Colors.green,
           onSecondary: Colors.white,
