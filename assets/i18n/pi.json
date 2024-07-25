@@ -128,6 +128,9 @@
     "settings_hazard_locking_description": "Automatically alert yer crew while boardin' or droppin' anchor.",
     "settings_support": "Sea rescue",
     "settings_licenses": "Licenses",
+    "settings_analytics_title": "Peek in the logbook",
+    "settings_analytics_body": "Cast yer hidden logs into the deep to help us chart a better course for the app.",
+    "settings_privacy_policy": "Code o' Confidentiality",
     "settings_forget": "Abandon yer ship",
     "forget_alert_title": "Really abandon yer trusty ship?",
     "forget_alert_body": "Arrr! To board again, ye'll need to go though the setup process again, me heartie.",
@@ -149,5 +152,9 @@
     "controls_blink_left": "Steerin' left",
     "controls_blink_right": "Steerin' right",
     "controls_blink_hazard": "Alert the crew!",
-    "controls_blink_off": "Stop blinkin'"
+    "controls_blink_off": "Stop blinkin'",
+    "analytics_title": "Submit yer logbook?",
+    "analytics_body": "To better understand how ye scallywags use this app, we be wantin' to collect some anonymous usage tales. This be completely optional, and ye can change yer mind in the settings at any time. Ye can find our Code o' Confidentiality at ",
+    "analytics_yes": "Aye!",
+    "analytics_no": "Nay"
 }

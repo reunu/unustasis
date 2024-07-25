@@ -8,6 +8,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unustasis/domain/analytics.dart';
 import 'package:unustasis/domain/scooter_keyless_distance.dart';
 import 'package:unustasis/domain/theme_helper.dart';
 import 'package:unustasis/onboarding_screen.dart';
@@ -16,6 +17,7 @@ import 'package:unustasis/stats/battery_section.dart';
 import 'package:unustasis/stats/range_section.dart';
 import 'package:unustasis/stats/scooter_section.dart';
 import 'package:unustasis/support_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class StatsScreen extends StatefulWidget {
   const StatsScreen({required this.service, super.key});
@@ -32,6 +34,7 @@ class _StatsScreenState extends State<StatsScreen> {
   ScooterKeylessDistance autoUnlockDistance = ScooterKeylessDistance.regular;
   bool openSeatOnUnlock = false;
   bool hazardLocking = false;
+  bool analyticsConsent = false;
 
   @override
   void initState() {
@@ -49,6 +52,7 @@ class _StatsScreenState extends State<StatsScreen> {
           ScooterKeylessDistance.regular.threshold;
       openSeatOnUnlock = widget.service.openSeatOnUnlock;
       hazardLocking = widget.service.hazardLocking;
+      analyticsConsent = prefs.getBool("analyticsConsentGiven") ?? false;
     });
   }
 
@@ -150,7 +154,7 @@ class _StatsScreenState extends State<StatsScreen> {
                       ListView.separated(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shrinkWrap: true,
-                        itemCount: (autoUnlock ? 11 : 10),
+                        itemCount: (autoUnlock ? 13 : 12),
                         separatorBuilder: (context, index) => Divider(
                           indent: 16,
                           endIndent: 16,
@@ -363,6 +367,20 @@ class _StatsScreenState extends State<StatsScreen> {
                               },
                             ),
                           ),
+                          SwitchListTile(
+                            secondary: const Icon(Icons.analytics_outlined),
+                            title: Text(FlutterI18n.translate(
+                                context, "settings_analytics_title")),
+                            subtitle: Text(FlutterI18n.translate(
+                                context, "settings_analytics_body")),
+                            value: analyticsConsent,
+                            onChanged: (value) async {
+                              Analytics.of(context).setConsent(value);
+                              setState(() {
+                                analyticsConsent = value;
+                              });
+                            },
+                          ),
                           ListTile(
                             leading: const Icon(Icons.help_outline),
                             title: Text(FlutterI18n.translate(
@@ -372,6 +390,23 @@ class _StatsScreenState extends State<StatsScreen> {
                                   builder: (context) => const SupportScreen()));
                             },
                             trailing: const Icon(Icons.chevron_right),
+                          ),
+                          ListTile(
+                            leading: const Icon(Icons.privacy_tip_outlined),
+                            title: Text(FlutterI18n.translate(
+                                context, "settings_privacy_policy")),
+                            onTap: () async {
+                              // TODO: Add link!
+                              Uri url = Uri(
+                                scheme: 'https',
+                                host: 'dart.dev',
+                                path: 'guides/libraries/library-tour',
+                              );
+                              if (await canLaunchUrl(url)) {
+                                await launchUrl(url);
+                              }
+                            },
+                            trailing: const Icon(Icons.open_in_new),
                           ),
                           FutureBuilder(
                               future: PackageInfo.fromPlatform(),

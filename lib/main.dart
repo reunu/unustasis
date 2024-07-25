@@ -6,26 +6,35 @@ import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:easy_dynamic_theme/easy_dynamic_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unustasis/domain/analytics.dart';
 import 'package:unustasis/flutter/blue_plus_mockable.dart';
 import 'package:unustasis/home_screen.dart';
 import 'package:unustasis/scooter_service.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
   ]);
-  Locale? savedLocale;
 
+  // LOCALE
+  Locale? savedLocale;
   SharedPreferences prefs = await SharedPreferences.getInstance();
   final String? localeString = prefs.getString('savedLocale');
   if (localeString != null) {
     log("Saved locale: $localeString");
     savedLocale = Locale(localeString);
   }
-  runApp(EasyDynamicThemeWidget(
-    child: MyApp(
-      savedLocale: savedLocale,
+
+  // FIREBASE
+  // TODO: Initialize Firebase
+
+  runApp(Analytics(
+    child: EasyDynamicThemeWidget(
+      child: MyApp(
+        savedLocale: savedLocale,
+      ),
     ),
   ));
 }

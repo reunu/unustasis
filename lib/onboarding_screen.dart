@@ -8,6 +8,7 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:lottie/lottie.dart';
+import 'package:unustasis/domain/analytics.dart';
 import 'package:unustasis/domain/theme_helper.dart';
 import 'package:unustasis/home_screen.dart';
 import 'package:unustasis/scooter_service.dart';
@@ -157,6 +158,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             btnText: FlutterI18n.translate(context, "onboarding_step5_button"),
             onPressed: () {
               log("Continue");
+              Analytics.of(context).logEvent("onboarding_completed");
               Navigator.of(context).pushReplacement(MaterialPageRoute(
                 builder: (context) =>
                     HomeScreen(scooterService: widget.service),

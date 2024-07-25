@@ -55,6 +55,8 @@ dependencies:
   flutter_native_splash: ^2.4.0
   easy_dynamic_theme: ^2.3.1
   shimmer: ^3.0.0
+  firebase_analytics: ^11.2.0
+  firebase_core: ^3.2.0
 
 dev_dependencies:
   flutter_test:

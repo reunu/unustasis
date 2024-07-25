@@ -128,6 +128,9 @@
     "settings_hazard_locking_description": "Scooter blinkt einmal beim Abschließen und zweimal beim Entriegeln.",
     "settings_support": "Hilfethemen",
     "settings_licenses": "Lizenzen",
+    "settings_analytics_title": "Optionale Nutzungsdaten",
+    "settings_analytics_body": "Anonyme Daten zur Nutzung dieser App übermitteln.",
+    "settings_privacy_policy": "Datenschutzerklärung",
     "settings_forget": "Roller entfernen",
     "forget_alert_title": "Roller entfernen?",
     "forget_alert_body": "Um den Roller wieder zu verbinden und die App zu nutzen, wirst du den Einrichtungsprozess wiederholen müssen. Bist du sicher?",
@@ -149,5 +152,9 @@
     "controls_blink_left": "Links blinken",
     "controls_blink_right": "Rechts blinken",
     "controls_blink_hazard": "Warnblinker",
-    "controls_blink_off": "Blinker aus"
+    "controls_blink_off": "Blinker aus",
+    "analytics_title": "Optionale Nutzungsdaten",
+    "analytics_body": "Um besser zu verstehen, wie diese App genutzt wird, würden wir gerne einige anonyme Nutzungsdaten sammeln. Diese Funktion ist vollkommen optional, und du kannst deine Entscheidung jederzeit in den Einstellunegn ändern. Unsere Datenschutzerklärung findest du unter ",
+    "analytics_yes": "Okay",
+    "analytics_no": "Lieber nicht"
 }

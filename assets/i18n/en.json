@@ -128,6 +128,9 @@
     "settings_hazard_locking_description": "Automatically flash the hazard once on lock and twice on unlock.",
     "settings_support": "Help & Support",
     "settings_licenses": "Licenses",
+    "settings_analytics_title": "Optional analytics",
+    "settings_analytics_body": "Submit anonymous usage data to help improve the app.",
+    "settings_privacy_policy": "Privacy policy",
     "settings_forget": "Forget scooter",
     "forget_alert_title": "Forget scooter?",
     "forget_alert_body": "To reconnect, you'll need to go though the setup process again.",
@@ -149,5 +152,9 @@
     "controls_blink_left": "Blink left",
     "controls_blink_right": "Blink right",
     "controls_blink_hazard": "Hazard lights",
-    "controls_blink_off": "Turn off"
+    "controls_blink_off": "Turn off",
+    "analytics_title": "Optional analytics",
+    "analytics_body": "To better understand how riders use this app, we'd like to collect some anonymous usage data. This function is completely optional, and you can change your decision in the settings at any time. You can find our privacy policy at ",
+    "analytics_yes": "Okay",
+    "analytics_no": "Decline"
 }
