@@ -13,7 +13,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unustasis/domain/scooter_keyless_distance.dart';
 import 'package:unustasis/domain/scooter_state.dart';
 import 'package:unustasis/flutter/blue_plus_mockable.dart';
-import 'package:unustasis/infrastructure/battery_reader.dart';
 import 'package:unustasis/infrastructure/characteristic_repository.dart';
 import 'package:unustasis/infrastructure/scooter_reader.dart';
 
@@ -39,47 +38,40 @@ class ScooterService {
 
   final FlutterBluePlusMockable flutterBluePlus;
 
+  void ping() {
+    try {
+      prefs?.setInt("lastPing", DateTime.now().microsecondsSinceEpoch);
+      _lastPingController.add(DateTime.now());
+    } catch (e) {
+      log("Couldn't save ping");
+    }
+  }
+
   // On initialization...
   ScooterService(this.flutterBluePlus) {
     // Load saved scooter ID and cached values from SharedPrefs
     SharedPreferences.getInstance().then((prefs) {
       this.prefs = prefs;
 
-      if (prefs.containsKey("savedScooters")) {
-        savedScooters = jsonDecode(prefs.getString("savedScooters")!)
-            as Map<String, dynamic>;
-      } else if (prefs.containsKey("savedScooterId")) {
-        addSavedScooter(prefs.getString("savedScooterId")!);
-      }
+      savedScooters = getSavedScooters();
+
       if (savedScooters.isNotEmpty) {
         // if we found a saved scooter in the previous step...
         _scooterNameController.add(savedScooters.values.first[
             "name"]); // TODO: This needs to be fixed for multiple scooters
       }
 
-      int? lastPing = prefs.getInt(BatteryReader.lastPingCacheKey);
-      if (lastPing != null) {
-        double? lastLat = prefs.getDouble("lastLat");
-        double? lastLon = prefs.getDouble("lastLon");
-        _autoUnlock = prefs.getBool("autoUnlock") ?? false;
-        _autoUnlockThreshold = prefs.getInt("autoUnlockThreshold") ??
-            ScooterKeylessDistance.regular.threshold;
-        // if biometrics are disabled, we can treat everything as authenticated
-        optionalAuth = !(prefs.getBool("biometrics") ?? false);
-        _openSeatOnUnlock = prefs.getBool("openSeatOnUnlock") ?? false;
-        _hazardLocking = prefs.getBool("hazardLocking") ?? false;
-        if (lastLat != null && lastLon != null) {
-          _lastLocationController.add(LatLng(lastLat, lastLon));
-        }
-      }
+      restoreCachedData();
+      restoreCachedSettings();
     });
+
     // start the location polling timer
     _locationTimer = Timer.periodic(const Duration(seconds: 20), (timer) {
       if (myScooter != null && myScooter!.isConnected) {
         _pollLocation();
       }
     });
-    _rssiTimer = Timer.periodic(const Duration(seconds: 2), (timer) async {
+    _rssiTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
       if (myScooter != null && myScooter!.isConnected && _autoUnlock) {
         int? rssi;
         try {
@@ -110,8 +102,33 @@ class ScooterService {
     });
   }
 
-  // STATUS STREAMS
+  void restoreCachedSettings() {
+    _autoUnlock = prefs?.getBool("autoUnlock") ?? false;
+    _autoUnlockThreshold = prefs?.getInt("autoUnlockThreshold") ??
+        ScooterKeylessDistance.regular.threshold;
+    optionalAuth = !(prefs?.getBool("biometrics") ?? false);
+    _openSeatOnUnlock = prefs?.getBool("openSeatOnUnlock") ?? false;
+    _hazardLocking = prefs?.getBool("hazardLocking") ?? false;
+  }
 
+  void restoreCachedData() {
+    if (prefs?.getInt("lastPing") != null) {
+      _lastPingController
+          .add(DateTime.fromMicrosecondsSinceEpoch(prefs!.getInt("lastPing")!));
+      // we have connected to a scooter before, fetch cached data and settings
+      double? lastLat = prefs?.getDouble("lastLat");
+      double? lastLon = prefs?.getDouble("lastLon");
+      if (lastLat != null && lastLon != null) {
+        _lastLocationController.add(LatLng(lastLat, lastLon));
+      }
+      _primarySOCController.add(prefs?.getInt("primarySOC"));
+      _secondarySOCController.add(prefs?.getInt("secondarySOC"));
+      _cbbSOCController.add(prefs?.getInt("cbbSOC"));
+      _auxSOCController.add(prefs?.getInt("auxSOC"));
+    }
+  }
+
+  // STATUS STREAMS
   final BehaviorSubject<bool> _connectedController =
       BehaviorSubject<bool>.seeded(false);
   Stream<bool> get connected => _connectedController.stream;
@@ -162,9 +179,6 @@ class ScooterService {
       BehaviorSubject<String?>();
   Stream<String?> get scooterName => _scooterNameController.stream;
 
-  // PINGING
-  // We store the most recent SOC values (and, in the future, location) to SharedPrefs so that we can see the last known state even when disconnected
-  //
   final BehaviorSubject<DateTime?> _lastPingController =
       BehaviorSubject<DateTime?>();
   Stream<DateTime?> get lastPing => _lastPingController.stream;
@@ -251,25 +265,25 @@ class ScooterService {
     // First, see if the phone is already actively connected to a scooter
     List<BluetoothDevice> systemScooters = await getSystemScooters();
     if (systemScooters.isNotEmpty) {
-      // TODO: this might return multiple scooters in super rare cases
       // get the first one, hook into its connection, and remember the ID for future reference
-      await systemScooters.first.connect(
-          // autoConnect: true,
-          // mtu: null,
-          );
-      // await systemScooters.first.connectionState
-      //     .where((val) => val == BluetoothConnectionState.connected)
-      //     .first;
-      // myScooter = systemScooters.first;
-      // addSavedScooter(systemScooters.first.remoteId.toString());
-      // await setUpCharacteristics(systemScooters.first);
+      // there's one! Attempt to connect to it
+      _foundSth = true;
+      _stateController.add(ScooterState.linking);
+      // attempt to connect to what we found
+      await systemScooters.first.connect();
+      // wait for the connection to be established
+      // Set up this scooter as ours
+      myScooter = systemScooters.first;
+      addSavedScooter(myScooter!.remoteId.toString());
+      await setUpCharacteristics(myScooter!);
       // save this as the last known location
       _pollLocation();
+      // Let everybody know
       _connectedController.add(true);
       _scooterNameController
           .add(savedScooters[myScooter!.remoteId.toString()]?["name"]);
-      systemScooters.first.connectionState
-          .listen((BluetoothConnectionState state) async {
+      // listen for disconnects
+      myScooter!.connectionState.listen((BluetoothConnectionState state) async {
         if (state == BluetoothConnectionState.disconnected) {
           _connectedController.add(false);
           _stateController.add(ScooterState.disconnected);
@@ -285,22 +299,12 @@ class ScooterService {
           // there's one! Attempt to connect to it
           _foundSth = true;
           _stateController.add(ScooterState.linking);
-
           // we could have some race conditions here if we find multiple scooters at once
           // so let's stop scanning immediately to avoid that
           flutterBluePlus.stopScan();
           // attempt to connect to what we found
-          await foundScooter.connect(
-              // autoConnect: true, significantly slows down the connection process
-              // mtu: null,
-              );
+          await foundScooter.connect();
           // wait for the connection to be established
-          // await foundScooter.connectionState
-          //     .where((val) => val == BluetoothConnectionState.connected)
-          //     .first;
-          // if (Platform.isAndroid) {
-          //   await foundScooter.requestMtu(512);
-          // }
           // Set up this scooter as ours
           myScooter = foundScooter;
           addSavedScooter(foundScooter.remoteId.toString());
@@ -381,8 +385,6 @@ class ScooterService {
           }
         }
       });
-    } else {
-      //Auto-restart already on, ignoring to avoid duplicates
     }
   }
 
@@ -429,14 +431,14 @@ class ScooterService {
           stateController: _stateController,
           seatClosedController: _seatClosedController,
           handlebarController: _handlebarController,
-          lastPingController: _lastPingController,
           auxSOCController: _auxSOCController,
           cbbSOCController: _cbbSOCController,
           cbbChargingController: _cbbChargingController,
           primarySOCController: _primarySOCController,
           secondarySOCController: _secondarySOCController,
           primaryCyclesController: _primaryCyclesController,
-          secondaryCyclesController: _secondaryCyclesController);
+          secondaryCyclesController: _secondaryCyclesController,
+          pingFunc: ping);
       _scooterReader.readAndSubscribe();
     } catch (e) {
       rethrow;
@@ -530,9 +532,6 @@ class ScooterService {
     // Test if location services are enabled.
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      // Location services are not enabled don't continue
-      // accessing the position and request users of the
-      // App to enable the location services.
       throw "Location services are not enabled";
     }
 
@@ -607,6 +606,24 @@ class ScooterService {
     });
 
     return completer.future;
+  }
+
+  Map<String, dynamic> getSavedScooters() {
+    Map<String, dynamic> scooters = {};
+    if (prefs!.containsKey("savedScooters")) {
+      scooters = jsonDecode(prefs!.getString("savedScooters")!)
+          as Map<String, dynamic>;
+    }
+    // migrate old format
+    if (prefs!.containsKey("savedScooterId")) {
+      String id = prefs!.getString("savedScooterId")!;
+      addSavedScooter(id);
+      prefs!.remove("savedScooterId");
+      scooters = {
+        id: {"name": "Scooter Pro"}
+      };
+    }
+    return scooters;
   }
 
   Future<List<String>> getSavedScooterIds() async {
@@ -694,8 +711,8 @@ class ScooterService {
     _manualRefreshTimer.cancel();
   }
 
-  Future<void> _sleepSeconds(double seconds) async {
-    await Future.delayed(Duration(milliseconds: (seconds * 1000).floor()));
+  Future<void> _sleepSeconds(double seconds) {
+    return Future.delayed(Duration(milliseconds: (seconds * 1000).floor()));
   }
 }
 

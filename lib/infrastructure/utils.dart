@@ -1,8 +1,8 @@
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
-subscribeCharacteristic(
-    BluetoothCharacteristic characteristic, Function(List<int>) callback) {
+void subscribeCharacteristic(
+    BluetoothCharacteristic characteristic, Function(List<int>) onData) async {
   characteristic.setNotifyValue(true);
-  characteristic.lastValueStream.listen(callback);
+  characteristic.lastValueStream.listen(onData);
   characteristic.read();
 }

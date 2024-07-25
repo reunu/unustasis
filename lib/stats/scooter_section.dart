@@ -26,7 +26,7 @@ class ScooterSection extends StatefulWidget {
 }
 
 class _ScooterSectionState extends State<ScooterSection> {
-  int color = 3;
+  int color = 1;
   String? nameCache;
   TextEditingController nameController = TextEditingController();
   FocusNode nameFocusNode = FocusNode();
@@ -42,7 +42,7 @@ class _ScooterSectionState extends State<ScooterSection> {
   void setupInitialColor() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      color = prefs.getInt("color") ?? 3;
+      color = prefs.getInt("color") ?? 1;
     });
   }
 
@@ -112,7 +112,7 @@ class _ScooterSectionState extends State<ScooterSection> {
               contentPadding: EdgeInsets.all(16),
               border: OutlineInputBorder(),
             ),
-            dropdownColor: Theme.of(context).colorScheme.background,
+            dropdownColor: Theme.of(context).colorScheme.surface,
             items: [
               DropdownMenuItem(
                 value: 0,
@@ -283,17 +283,19 @@ class _ScooterSectionState extends State<ScooterSection> {
                     FlutterI18n.translate(context, "stats_unknown")),
               );
             }),
-        StreamBuilder<int?>(
-          stream: widget.service.rssi,
-          builder: (context, snapshot) {
-            return ListTile(
-              title: Text(FlutterI18n.translate(context, "stats_rssi")),
-              subtitle: Text(snapshot.data != null
-                  ? "${snapshot.data} dBm"
-                  : FlutterI18n.translate(context, "stats_rssi_disconnected")),
-            );
-          },
-        ),
+        if (widget.service.autoUnlock)
+          StreamBuilder<int?>(
+            stream: widget.service.rssi,
+            builder: (context, snapshot) {
+              return ListTile(
+                title: Text(FlutterI18n.translate(context, "stats_rssi")),
+                subtitle: Text(snapshot.data != null
+                    ? "${snapshot.data} dBm"
+                    : FlutterI18n.translate(
+                        context, "stats_rssi_disconnected")),
+              );
+            },
+          ),
         StreamBuilder<LatLng?>(
             stream: widget.service.lastLocation,
             builder: (context, position) {

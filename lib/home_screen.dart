@@ -34,6 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
   ScooterState? _scooterState = ScooterState.parked;
   bool _connected = true;
   bool _scanning = false;
+  bool _hazards = false;
   bool? _seatClosed;
   bool? _handlebarsLocked;
   int? _primarySOC = 53;
@@ -86,256 +87,294 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void _flashHazards(int times) async {
+    setState(() {
+      _hazards = true;
+    });
+    await Future.delayed(Duration(milliseconds: 600 * times));
+    setState(() {
+      _hazards = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: AnnotatedRegion<SystemUiOverlayStyle>(
         value: context.isDarkMode
-            ? SystemUiOverlayStyle.light
-            : SystemUiOverlayStyle.dark,
+            ? const SystemUiOverlayStyle(
+                statusBarColor: Colors.transparent,
+                statusBarIconBrightness: Brightness.light)
+            : const SystemUiOverlayStyle(
+                statusBarColor: Colors.transparent,
+                statusBarIconBrightness: Brightness.dark),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 500),
           decoration: BoxDecoration(
-            gradient: RadialGradient(
-              center: Alignment.center,
-              radius: 1.3,
-              colors: [
-                _scooterState?.isOn == true
-                    ? HSLColor.fromColor(Theme.of(context).colorScheme.primary)
-                        .withLightness(context.isDarkMode ? 0.3 : 0.7)
-                        .toColor()
-                    : _connected
-                        ? HSLColor.fromColor(
-                                Theme.of(context).colorScheme.primary)
-                            .withLightness(context.isDarkMode ? 0.2 : 0.85)
-                            .withSaturation(0.5)
-                            .toColor()
-                        : Theme.of(context).colorScheme.surface,
-                Theme.of(context).colorScheme.onTertiary,
-              ],
-            ),
+            color: Theme.of(context).colorScheme.background,
           ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: 40,
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.max,
-                children: [
-                  InkWell(
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => StatsScreen(
-                          service: widget.scooterService,
-                        ),
-                      ),
-                    ),
-                    onLongPress: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => DrivingScreen(
-                          service: widget.scooterService,
-                        ),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(width: _connected ? 32 : 0),
-                        StreamBuilder<String?>(
-                            stream: widget.scooterService.scooterName,
-                            builder: (context, name) {
-                              return Text(
-                                name.data ??
-                                    FlutterI18n.translate(
-                                        context, "stats_no_name"),
-                                style:
-                                    Theme.of(context).textTheme.headlineLarge,
-                              );
-                            }),
-                        const SizedBox(width: 16),
-                        const Icon(
-                          Icons.arrow_forward_ios_rounded,
-                          size: 16,
-                        ),
-                      ],
-                    ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              StateCircle(
+                  scanning: _scanning,
+                  connected: _connected,
+                  scooterState: _scooterState),
+              SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 40,
                   ),
-                  Text(
-                    _scanning &&
-                            (_scooterState == null ||
-                                _scooterState! == ScooterState.disconnected)
-                        ? (widget.scooterService.savedScooters.isNotEmpty
-                            ? FlutterI18n.translate(
-                                context, "home_scanning_known")
-                            : FlutterI18n.translate(context, "home_scanning"))
-                        : ((_scooterState != null
-                                ? _scooterState!.name(context)
-                                : FlutterI18n.translate(
-                                    context, "home_loading_state")) +
-                            (_connected && _handlebarsLocked == false
-                                ? FlutterI18n.translate(
-                                    context, "home_unlocked")
-                                : "")),
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 16),
-                  if (_primarySOC != null)
-                    StreamBuilder<DateTime?>(
-                        stream: widget.scooterService.lastPing,
-                        builder: (context, lastPing) {
-                          bool dataIsOld = false;
-                          return Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SizedBox(
-                                  width: MediaQuery.of(context).size.width / 6,
-                                  child: LinearProgressIndicator(
-                                    minHeight: 8,
-                                    borderRadius: BorderRadius.circular(8),
-                                    value: _primarySOC! / 100.0,
-                                    color: dataIsOld
-                                        ? Theme.of(context)
-                                            .colorScheme
-                                            .onSurface
-                                            .withOpacity(0.4)
-                                        : _primarySOC! < 15
-                                            ? Theme.of(context)
-                                                .colorScheme
-                                                .error
-                                            : Theme.of(context)
-                                                .colorScheme
-                                                .primary,
-                                  )),
-                              const SizedBox(width: 8),
-                              Text("$_primarySOC%"),
-                              if (_secondarySOC != null && _secondarySOC! > 0)
-                                const VerticalDivider(),
-                              if (_secondarySOC != null && _secondarySOC! > 0)
-                                SizedBox(
-                                    width:
-                                        MediaQuery.of(context).size.width / 6,
-                                    child: LinearProgressIndicator(
-                                      minHeight: 8,
-                                      borderRadius: BorderRadius.circular(8),
-                                      value: _secondarySOC! / 100.0,
-                                      color: dataIsOld
-                                          ? Theme.of(context)
-                                              .colorScheme
-                                              .onBackground
-                                          : _primarySOC! < 15
-                                              ? Theme.of(context)
-                                                  .colorScheme
-                                                  .error
-                                              : Theme.of(context)
-                                                  .colorScheme
-                                                  .primary,
-                                    )),
-                              if (_secondarySOC != null && _secondarySOC! > 0)
-                                const SizedBox(width: 8),
-                              if (_secondarySOC != null && _secondarySOC! > 0)
-                                Text("$_secondarySOC%"),
-                            ],
-                          );
-                        }),
-                  const SizedBox(height: 16),
-                  Expanded(
-                      child: ScooterVisual(
-                          color: color,
-                          state: _scooterState,
-                          scanning: _scanning,
-                          blinkerLeft:
-                              false, // TODO: extract ScooterBlinkerState
-                          blinkerRight: false)),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     mainAxisSize: MainAxisSize.max,
                     children: [
-                      Expanded(
-                        child: ScooterActionButton(
-                          onPressed: _connected &&
-                                  _scooterState != null &&
-                                  _seatClosed == true &&
-                                  _scanning == false
-                              ? widget.scooterService.openSeat
-                              : null,
-                          label: _seatClosed == false
-                              ? FlutterI18n.translate(
-                                  context, "home_seat_button_open")
-                              : FlutterI18n.translate(
-                                  context, "home_seat_button_closed"),
-                          icon: _seatClosed == false
-                              ? Icomoon.seat_open
-                              : Icomoon.seat_closed,
-                          iconColor: _seatClosed == false
-                              ? Theme.of(context).colorScheme.error
-                              : null,
+                      InkWell(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => StatsScreen(
+                              service: widget.scooterService,
+                            ),
+                          ),
+                        ),
+                        onLongPress: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DrivingScreen(
+                              service: widget.scooterService,
+                            ),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(width: _connected ? 32 : 0),
+                            StreamBuilder<String?>(
+                                stream: widget.scooterService.scooterName,
+                                builder: (context, name) {
+                                  return Text(
+                                    name.data ??
+                                        FlutterI18n.translate(
+                                            context, "stats_no_name"),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .headlineLarge,
+                                  );
+                                }),
+                            const SizedBox(width: 16),
+                            const Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              size: 16,
+                            ),
+                          ],
                         ),
                       ),
+                      Text(
+                        _scanning &&
+                                (_scooterState == null ||
+                                    _scooterState! == ScooterState.disconnected)
+                            ? (widget.scooterService.savedScooters.isNotEmpty
+                                ? FlutterI18n.translate(
+                                    context, "home_scanning_known")
+                                : FlutterI18n.translate(
+                                    context, "home_scanning"))
+                            : ((_scooterState != null
+                                    ? _scooterState!.name(context)
+                                    : FlutterI18n.translate(
+                                        context, "home_loading_state")) +
+                                (_connected && _handlebarsLocked == false
+                                    ? FlutterI18n.translate(
+                                        context, "home_unlocked")
+                                    : "")),
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 16),
+                      if (_primarySOC != null)
+                        StreamBuilder<DateTime?>(
+                            stream: widget.scooterService.lastPing,
+                            builder: (context, lastPing) {
+                              bool dataIsOld = !lastPing.hasData ||
+                                  lastPing.hasData &&
+                                      lastPing.data!
+                                              .difference(DateTime.now())
+                                              .inMinutes
+                                              .abs() >
+                                          5;
+                              return Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SizedBox(
+                                      width:
+                                          MediaQuery.of(context).size.width / 6,
+                                      child: LinearProgressIndicator(
+                                        minHeight: 8,
+                                        borderRadius: BorderRadius.circular(8),
+                                        value: _primarySOC! / 100.0,
+                                        color: dataIsOld
+                                            ? Theme.of(context)
+                                                .colorScheme
+                                                .onSurface
+                                                .withOpacity(0.4)
+                                            : _primarySOC! < 15
+                                                ? Theme.of(context)
+                                                    .colorScheme
+                                                    .error
+                                                : Theme.of(context)
+                                                    .colorScheme
+                                                    .primary,
+                                      )),
+                                  const SizedBox(width: 8),
+                                  Text("$_primarySOC%"),
+                                  if (_secondarySOC != null &&
+                                      _secondarySOC! > 0)
+                                    const VerticalDivider(),
+                                  if (_secondarySOC != null &&
+                                      _secondarySOC! > 0)
+                                    SizedBox(
+                                        width:
+                                            MediaQuery.of(context).size.width /
+                                                6,
+                                        child: LinearProgressIndicator(
+                                          minHeight: 8,
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                          value: _secondarySOC! / 100.0,
+                                          color: dataIsOld
+                                              ? Theme.of(context)
+                                                  .colorScheme
+                                                  .onBackground
+                                              : _primarySOC! < 15
+                                                  ? Theme.of(context)
+                                                      .colorScheme
+                                                      .error
+                                                  : Theme.of(context)
+                                                      .colorScheme
+                                                      .primary,
+                                        )),
+                                  if (_secondarySOC != null &&
+                                      _secondarySOC! > 0)
+                                    const SizedBox(width: 8),
+                                  if (_secondarySOC != null &&
+                                      _secondarySOC! > 0)
+                                    Text("$_secondarySOC%"),
+                                ],
+                              );
+                            }),
+                      const SizedBox(height: 16),
                       Expanded(
-                        child: ScooterPowerButton(
-                            action: _scooterState != null &&
-                                    _scooterState!.isReadyForLockChange
-                                ? (_scooterState!.isOn
-                                    ? () async {
-                                        try {
-                                          await widget.scooterService.lock();
-                                        } on SeatOpenException {
-                                          showSeatWarning();
-                                        } catch (e) {
-                                          Fluttertoast.showToast(
-                                              msg: e.toString());
+                          child: ScooterVisual(
+                              color: color,
+                              state: _scooterState,
+                              scanning: _scanning,
+                              blinkerLeft: _hazards,
+                              blinkerRight: _hazards)),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        mainAxisSize: MainAxisSize.max,
+                        children: [
+                          Expanded(
+                            child: ScooterActionButton(
+                              onPressed: _connected &&
+                                      _scooterState != null &&
+                                      _seatClosed == true &&
+                                      _scanning == false
+                                  ? widget.scooterService.openSeat
+                                  : null,
+                              label: _seatClosed == false
+                                  ? FlutterI18n.translate(
+                                      context, "home_seat_button_open")
+                                  : FlutterI18n.translate(
+                                      context, "home_seat_button_closed"),
+                              icon: _seatClosed == false
+                                  ? Icomoon.seat_open
+                                  : Icomoon.seat_closed,
+                              iconColor: _seatClosed == false
+                                  ? Theme.of(context).colorScheme.error
+                                  : null,
+                            ),
+                          ),
+                          Expanded(
+                            child: ScooterPowerButton(
+                                action: _scooterState != null &&
+                                        _scooterState!.isReadyForLockChange
+                                    ? (_scooterState!.isOn
+                                        ? () {
+                                            try {
+                                              widget.scooterService.lock();
+                                              if (widget.scooterService
+                                                  .hazardLocking) {
+                                                _flashHazards(1);
+                                              }
+                                            } catch (e) {
+                                              if (e
+                                                  .toString()
+                                                  .contains("SEAT_OPEN")) {
+                                                showSeatWarning();
+                                              } else {
+                                                Fluttertoast.showToast(
+                                                    msg: e.toString());
+                                              }
+                                            }
+                                          }
+                                        : (_scooterState == ScooterState.standby
+                                            ? () {
+                                                widget.scooterService.unlock();
+                                                if (widget.scooterService
+                                                    .hazardLocking) {
+                                                  _flashHazards(2);
+                                                }
+                                              }
+                                            : widget.scooterService
+                                                .wakeUpAndUnlock))
+                                    : null,
+                                icon:
+                                    _scooterState != null && _scooterState!.isOn
+                                        ? Icons.lock_open
+                                        : Icons.lock_outline,
+                                label: _scooterState != null &&
+                                        _scooterState!.isOn
+                                    ? FlutterI18n.translate(
+                                        context, "home_lock_button")
+                                    : FlutterI18n.translate(
+                                        context, "home_unlock_button")),
+                          ),
+                          Expanded(
+                            child: ScooterActionButton(
+                                onPressed: !_scanning
+                                    ? () {
+                                        if (!_connected) {
+                                          widget.scooterService.start();
+                                        } else {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  ControlScreen(
+                                                      service: widget
+                                                          .scooterService),
+                                            ),
+                                          );
                                         }
                                       }
-                                    : (_scooterState == ScooterState.standby
-                                        ? widget.scooterService.unlock
-                                        : widget
-                                            .scooterService.wakeUpAndUnlock))
-                                : null,
-                            icon: _scooterState != null && _scooterState!.isOn
-                                ? Icons.lock_open
-                                : Icons.lock_outline,
-                            label: _scooterState != null && _scooterState!.isOn
-                                ? FlutterI18n.translate(
-                                    context, "home_lock_button")
-                                : FlutterI18n.translate(
-                                    context, "home_unlock_button")),
-                      ),
-                      Expanded(
-                        child: ScooterActionButton(
-                            onPressed: !_scanning
-                                ? () {
-                                    if (!_connected) {
-                                      widget.scooterService.start();
-                                    } else {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => ControlScreen(
-                                              service: widget.scooterService),
-                                        ),
-                                      );
-                                    }
-                                  }
-                                : null,
-                            icon: (!_connected && !_scanning)
-                                ? Icons.refresh_rounded
-                                : Icons.more_vert_rounded,
-                            label: (!_connected && !_scanning)
-                                ? FlutterI18n.translate(
-                                    context, "home_reconnect_button")
-                                : FlutterI18n.translate(
-                                    context, "home_controls_button")),
-                      ),
+                                    : null,
+                                icon: (!_connected && !_scanning)
+                                    ? Icons.refresh_rounded
+                                    : Icons.more_vert_rounded,
+                                label: (!_connected && !_scanning)
+                                    ? FlutterI18n.translate(
+                                        context, "home_reconnect_button")
+                                    : FlutterI18n.translate(
+                                        context, "home_controls_button")),
+                          ),
+                        ],
+                      )
                     ],
-                  )
-                ],
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),
@@ -423,6 +462,57 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
+class StateCircle extends StatelessWidget {
+  const StateCircle({
+    super.key,
+    required bool scanning,
+    required bool connected,
+    required ScooterState? scooterState,
+  })  : _scanning = scanning,
+        _connected = connected,
+        _scooterState = scooterState;
+
+  final bool _scanning;
+  final bool _connected;
+  final ScooterState? _scooterState;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedScale(
+      duration: const Duration(milliseconds: 800),
+      curve: Curves.easeOutBack,
+      scale: _connected
+          ? _scooterState == ScooterState.parked
+              ? 1.5
+              : (_scooterState == ScooterState.ready)
+                  ? 3
+                  : 1.2
+          : _scanning
+              ? 1.5
+              : 0,
+      child: Container(
+        width: MediaQuery.of(context).size.width,
+        height: MediaQuery.of(context).size.width,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(999),
+          color: _scooterState?.isOn == true
+              ? context.isDarkMode
+                  ? HSLColor.fromColor(Theme.of(context).colorScheme.primary)
+                      .withLightness(0.18)
+                      .toColor()
+                  : HSLColor.fromColor(Theme.of(context).colorScheme.primary)
+                      .withAlpha(0.3)
+                      .toColor()
+              : Theme.of(context)
+                  .colorScheme
+                  .surface
+                  .withOpacity(context.isDarkMode ? 0.5 : 0.7),
+        ),
+      ),
+    );
+  }
+}
+
 class ScooterPowerButton extends StatefulWidget {
   const ScooterPowerButton({
     super.key,
@@ -449,49 +539,64 @@ class _ScooterPowerButtonState extends State<ScooterPowerButton> {
   Widget build(BuildContext context) {
     Color mainColor = widget._action == null
         ? Theme.of(context).colorScheme.onSurface.withOpacity(0.2)
-        : Theme.of(context).colorScheme.onSurface;
+        : Theme.of(context).colorScheme.primary;
     return Column(
       children: [
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-            backgroundColor: mainColor,
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(width: 2, color: mainColor),
+            borderRadius: BorderRadius.circular(999),
           ),
-          onPressed: () {
-            Fluttertoast.showToast(msg: widget._label);
-          },
-          onLongPress: widget._action == null
-              ? null
-              : () {
-                  setState(() {
-                    loading = true;
-                  });
-                  widget._action!();
-                  Future.delayed(const Duration(seconds: 5), () {
-                    setState(() {
-                      loading = false;
-                    });
-                  });
-                },
-          child: loading
-              ? SizedBox(
-                  height: 16,
-                  width: 16,
-                  child: CircularProgressIndicator(
-                    color: Theme.of(context).colorScheme.background,
-                  ),
-                )
-              : Icon(
-                  widget._icon,
-                  color: Theme.of(context).colorScheme.background,
-                ),
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                elevation: 0,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                backgroundColor: loading
+                    ? Theme.of(context).colorScheme.background
+                    : mainColor,
+              ),
+              onPressed: () {
+                Fluttertoast.showToast(msg: widget._label);
+              },
+              onLongPress: widget._action == null
+                  ? null
+                  : () {
+                      setState(() {
+                        loading = true;
+                      });
+                      widget._action!();
+                      Future.delayed(const Duration(seconds: 5), () {
+                        setState(() {
+                          loading = false;
+                        });
+                      });
+                    },
+              child: loading
+                  ? SizedBox(
+                      height: 24,
+                      width: 24,
+                      child: CircularProgressIndicator(
+                        color: mainColor,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Icon(
+                      widget._icon,
+                      color: Theme.of(context).colorScheme.background,
+                    ),
+            ),
+          ),
         ),
         const SizedBox(height: 16),
         Text(
           widget._label,
-          style: TextStyle(
-            color: mainColor,
-          ),
+          style: Theme.of(context)
+              .textTheme
+              .labelLarge
+              ?.copyWith(color: mainColor),
           textAlign: TextAlign.center,
         ),
       ],
@@ -540,9 +645,10 @@ class ScooterActionButton extends StatelessWidget {
         const SizedBox(height: 16),
         Text(
           _label,
-          style: TextStyle(
-            color: mainColor,
-          ),
+          style: Theme.of(context)
+              .textTheme
+              .labelLarge
+              ?.copyWith(color: mainColor),
         ),
       ],
     );
