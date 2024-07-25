@@ -60,9 +60,7 @@ class _StatsScreenState extends State<StatsScreen> {
         extendBodyBehindAppBar: true,
         appBar: AppBar(
           title: Text(FlutterI18n.translate(context, 'stats_title')),
-          backgroundColor: context.isDarkMode
-              ? Colors.transparent
-              : Theme.of(context).colorScheme.onTertiary,
+          backgroundColor: Theme.of(context).colorScheme.background,
           bottom: PreferredSize(
               preferredSize: const Size.fromHeight(50.0),
               child: TabBar(
@@ -120,7 +118,7 @@ class _StatsScreenState extends State<StatsScreen> {
               radius: 1.3,
               colors: [
                 Theme.of(context).colorScheme.background,
-                Theme.of(context).colorScheme.onTertiary,
+                Theme.of(context).colorScheme.background,
               ],
             ),
           ),
@@ -285,42 +283,62 @@ class _StatsScreenState extends State<StatsScreen> {
                             },
                           ),
                           ListTile(
-                            leading: const Icon(Icons.wb_sunny_outlined),
-                            title: Text(FlutterI18n.translate(
-                                context, "settings_theme")),
-                            subtitle: DropdownButtonFormField(
-                              padding: const EdgeInsets.only(top: 8),
-                              value: EasyDynamicTheme.of(context).themeMode,
-                              isExpanded: true,
-                              decoration: const InputDecoration(
-                                contentPadding: EdgeInsets.all(16),
-                                border: OutlineInputBorder(),
-                              ),
-                              dropdownColor:
-                                  Theme.of(context).colorScheme.background,
-                              items: [
-                                DropdownMenuItem<ThemeMode>(
-                                  value: ThemeMode.dark,
-                                  child: Text(FlutterI18n.translate(
-                                      context, "theme_dark")),
+                              leading: const Icon(Icons.wb_sunny_outlined),
+                              title: Text(FlutterI18n.translate(
+                                  context, "settings_theme")),
+                              subtitle: Padding(
+                                padding: const EdgeInsets.only(top: 12.0),
+                                child: SegmentedButton<ThemeMode>(
+                                  onSelectionChanged: (newTheme) {
+                                    context.setThemeMode(newTheme.first);
+                                  },
+                                  selected: {
+                                    EasyDynamicTheme.of(context).themeMode!
+                                  },
+                                  style: ButtonStyle(
+                                    foregroundColor: MaterialStateProperty
+                                        .resolveWith<Color>((states) {
+                                      if (states
+                                          .contains(MaterialState.selected)) {
+                                        return Theme.of(context)
+                                            .colorScheme
+                                            .onTertiary;
+                                      }
+                                      return Theme.of(context)
+                                          .colorScheme
+                                          .onBackground;
+                                      ;
+                                    }),
+                                    backgroundColor: MaterialStateProperty
+                                        .resolveWith<Color>((states) {
+                                      if (states
+                                          .contains(MaterialState.selected)) {
+                                        return Theme.of(context)
+                                            .colorScheme
+                                            .primary;
+                                      }
+                                      return Colors.transparent;
+                                    }),
+                                  ),
+                                  segments: [
+                                    ButtonSegment(
+                                      value: ThemeMode.light,
+                                      label: Text(FlutterI18n.translate(
+                                          context, "theme_light")),
+                                    ),
+                                    ButtonSegment(
+                                      value: ThemeMode.dark,
+                                      label: Text(FlutterI18n.translate(
+                                          context, "theme_dark")),
+                                    ),
+                                    ButtonSegment(
+                                      value: ThemeMode.system,
+                                      label: Text(FlutterI18n.translate(
+                                          context, "theme_system")),
+                                    ),
+                                  ],
                                 ),
-                                DropdownMenuItem<ThemeMode>(
-                                  value: ThemeMode.light,
-                                  child: Text(FlutterI18n.translate(
-                                      context, "theme_light")),
-                                ),
-                                DropdownMenuItem<ThemeMode>(
-                                  value: ThemeMode.system,
-                                  child: Text(FlutterI18n.translate(
-                                      context, "theme_system")),
-                                ),
-                              ],
-                              onChanged: (newTheme) async {
-                                context.setThemeMode(newTheme!);
-                                // TODO: If the language was changed during runtime, changing the theme resets it again
-                              },
-                            ),
-                          ),
+                              )),
                           ListTile(
                             leading: const Icon(Icons.language_outlined),
                             title: Text(FlutterI18n.translate(
@@ -335,7 +353,7 @@ class _StatsScreenState extends State<StatsScreen> {
                                 border: OutlineInputBorder(),
                               ),
                               dropdownColor:
-                                  Theme.of(context).colorScheme.background,
+                                  Theme.of(context).colorScheme.surface,
                               items: [
                                 DropdownMenuItem<Locale>(
                                   value: const Locale("en"),

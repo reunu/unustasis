@@ -37,14 +37,13 @@ class ScooterVisual extends StatelessWidget {
                   AnimatedCrossFade(
                     duration: const Duration(milliseconds: 500),
                     firstChild: Shimmer.fromColors(
-                      baseColor: context.isDarkMode
-                          ? (scanning ? Colors.black54 : Colors.black)
-                          : Colors.black26,
+                      baseColor:
+                          context.isDarkMode ? Colors.black : Colors.black45,
                       highlightColor: scanning
                           ? Colors.transparent
                           : context.isDarkMode
                               ? Colors.black
-                              : Colors.black26,
+                              : Colors.black45,
                       enabled: scanning,
                       direction: ShimmerDirection.ltr,
                       period: const Duration(seconds: 2),
@@ -56,7 +55,7 @@ class ScooterVisual extends StatelessWidget {
                       opacity: 1,
                       child: Image(
                         image: AssetImage(
-                            "images/scooter/base_${color ?? 3}.webp"),
+                            "images/scooter/base_${color ?? 1}.webp"),
                       ),
                     ),
                     crossFadeState: state == ScooterState.disconnected
@@ -134,7 +133,7 @@ class _BlinkerWidgetState extends State<BlinkerWidget> {
     var anyBlinker = widget.blinkerLeft || widget.blinkerRight;
 
     if (anyBlinker) {
-      _timer = Timer.periodic(const Duration(seconds: 1), (Timer t) {
+      _timer = Timer.periodic(const Duration(milliseconds: 600), (Timer t) {
         setState(() => _showBlinker = !_showBlinker);
       });
     }
