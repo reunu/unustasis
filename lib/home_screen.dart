@@ -103,10 +103,12 @@ class _HomeScreenState extends State<HomeScreen> {
         value: context.isDarkMode
             ? const SystemUiOverlayStyle(
                 statusBarColor: Colors.transparent,
-                statusBarIconBrightness: Brightness.light)
+                statusBarIconBrightness: Brightness.light,
+                systemNavigationBarColor: Color.fromARGB(255, 20, 20, 20))
             : const SystemUiOverlayStyle(
                 statusBarColor: Colors.transparent,
-                statusBarIconBrightness: Brightness.dark),
+                statusBarIconBrightness: Brightness.dark,
+                systemNavigationBarColor: Colors.white),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 500),
           decoration: BoxDecoration(
