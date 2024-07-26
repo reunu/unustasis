@@ -79,7 +79,7 @@ flutter_launcher_icons:
   image_path: "icon/icon.png"
   adaptive_icon_background: "icon/icon_background.png" # only available for Android 8.0 devices and above
   adaptive_icon_foreground: "icon/icon_foreground.png" # only available for Android 8.0 devices and above
-  adaptive_icon_monochrome: "icon/icon_monochrome.png" # only available for Android 13 devices and above
+  adaptive_icon_monochrome: "icon/icon_foreground.png" # only available for Android 13 devices and above
   min_sdk_android: 21 # android min sdk min:16, default 21
   ios: true
   remove_alpha_ios: true

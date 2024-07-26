@@ -362,7 +362,7 @@ class _ScooterSectionState extends State<ScooterSection> {
                           retinaMode: true,
                           urlTemplate:
                               'https://tiles-eu.stadiamaps.com/tiles/alidade_smooth${context.isDarkMode ? "_dark" : ""}/{z}/{x}/{y}{r}.png?api_key=${const String.fromEnvironment("STADIA_TOKEN")}',
-                          userAgentPackageName: 'com.unumotors.ossapp',
+                          userAgentPackageName: 'de.freal.unustasis',
                         ),
                         MarkerLayer(
                           markers: [
@@ -373,7 +373,7 @@ class _ScooterSectionState extends State<ScooterSection> {
                               child: Container(
                                 decoration: BoxDecoration(
                                   color: widget.dataIsOld
-                                      ? Colors.grey
+                                      ? Colors.grey[800]
                                       : (Theme.of(context).colorScheme.primary
                                               as MaterialColor)
                                           .shade600,
@@ -381,6 +381,7 @@ class _ScooterSectionState extends State<ScooterSection> {
                                 ),
                                 child: const Icon(
                                   Icons.moped_rounded,
+                                  color: Colors.white,
                                 ),
                               ),
                             ),
