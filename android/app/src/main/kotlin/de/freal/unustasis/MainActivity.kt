@@ -1,4 +1,4 @@
-package de.freal.unustasis
+package com.unumotors.ossapp
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 

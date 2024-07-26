@@ -362,7 +362,7 @@ class _ScooterSectionState extends State<ScooterSection> {
                           retinaMode: true,
                           urlTemplate:
                               'https://tiles-eu.stadiamaps.com/tiles/alidade_smooth${context.isDarkMode ? "_dark" : ""}/{z}/{x}/{y}{r}.png?api_key=${const String.fromEnvironment("STADIA_TOKEN")}',
-                          userAgentPackageName: 'de.freal.unustasis',
+                          userAgentPackageName: 'com.unumotors.ossapp',
                         ),
                         MarkerLayer(
                           markers: [
