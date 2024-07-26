@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:unustasis/scooter_service.dart';
-import 'package:unustasis/stats/battery_section.dart';
+import 'package:unu_app/scooter_service.dart';
+import 'package:unu_app/stats/battery_section.dart';
 
 class RangeSection extends StatelessWidget {
   const RangeSection({

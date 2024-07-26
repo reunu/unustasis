@@ -8,14 +8,14 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:unustasis/domain/scooter_keyless_distance.dart';
-import 'package:unustasis/domain/theme_helper.dart';
-import 'package:unustasis/onboarding_screen.dart';
-import 'package:unustasis/scooter_service.dart';
-import 'package:unustasis/stats/battery_section.dart';
-import 'package:unustasis/stats/range_section.dart';
-import 'package:unustasis/stats/scooter_section.dart';
-import 'package:unustasis/support_screen.dart';
+import 'package:unu_app/domain/scooter_keyless_distance.dart';
+import 'package:unu_app/domain/theme_helper.dart';
+import 'package:unu_app/onboarding_screen.dart';
+import 'package:unu_app/scooter_service.dart';
+import 'package:unu_app/stats/battery_section.dart';
+import 'package:unu_app/stats/range_section.dart';
+import 'package:unu_app/stats/scooter_section.dart';
+import 'package:unu_app/support_screen.dart';
 
 class StatsScreen extends StatefulWidget {
   const StatsScreen({required this.service, super.key});
@@ -416,7 +416,7 @@ class _StatsScreenState extends State<StatsScreen> {
                                       context: context,
                                       applicationName: packageInfo.hasData
                                           ? packageInfo.data!.appName
-                                          : "Unustasis",
+                                          : "unu App",
                                       applicationVersion: packageInfo.hasData
                                           ? packageInfo.data!.version
                                           : "?.?.?",

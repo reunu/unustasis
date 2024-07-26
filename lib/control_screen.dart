@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
-import 'package:unustasis/home_screen.dart';
-import 'package:unustasis/scooter_service.dart';
+import 'package:unu_app/home_screen.dart';
+import 'package:unu_app/scooter_service.dart';
 
 class ControlScreen extends StatefulWidget {
   const ControlScreen({required ScooterService service, super.key})

@@ -5,8 +5,8 @@ import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:unustasis/domain/scooter_battery.dart';
-import 'package:unustasis/infrastructure/battery_reader.dart';
+import 'package:unu_app/domain/scooter_battery.dart';
+import 'package:unu_app/infrastructure/battery_reader.dart';
 
 import 'battery_reader_test.mocks.dart';
 

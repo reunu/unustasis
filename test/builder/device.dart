@@ -1,7 +1,7 @@
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-import 'package:unustasis/flutter/blue_plus_mockable.dart';
+import 'package:unu_app/flutter/blue_plus_mockable.dart';
 
 import 'device.mocks.dart';
 import 'service.dart';

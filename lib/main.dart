@@ -6,10 +6,10 @@ import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:easy_dynamic_theme/easy_dynamic_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:unustasis/domain/theme_helper.dart';
-import 'package:unustasis/flutter/blue_plus_mockable.dart';
-import 'package:unustasis/home_screen.dart';
-import 'package:unustasis/scooter_service.dart';
+import 'package:unu_app/domain/theme_helper.dart';
+import 'package:unu_app/flutter/blue_plus_mockable.dart';
+import 'package:unu_app/home_screen.dart';
+import 'package:unu_app/scooter_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,7 +44,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Unustasis',
+      title: 'unu',
       theme: ThemeData(
         appBarTheme: const AppBarTheme(
           centerTitle: true,
@@ -54,7 +54,7 @@ class _MyAppState extends State<MyApp> {
         brightness: Brightness.light,
         useMaterial3: true,
         colorScheme: ColorScheme.light(
-          primary: createMaterialColor(const Color(0xFF099768)),
+          primary: createMaterialColor(const Color(0xFF0395FF)),
           onPrimary: Colors.black,
           secondary: Colors.green,
           onSecondary: Colors.black,
@@ -63,8 +63,8 @@ class _MyAppState extends State<MyApp> {
           onBackground: Colors.black,
           surface: Colors.grey.shade200,
           onSurface: Colors.black,
-          error: Colors.red,
-          onError: Colors.black,
+          error: createMaterialColor(const Color(0xFFFF554C)),
+          onError: Colors.white,
         ),
         /* dark theme settings */
       ),
@@ -77,7 +77,7 @@ class _MyAppState extends State<MyApp> {
         brightness: Brightness.dark,
         useMaterial3: true,
         colorScheme: ColorScheme.dark(
-          primary: createMaterialColor(const Color(0xFF3DCC9D)),
+          primary: createMaterialColor(const Color(0xFF0395FF)),
           onPrimary: Colors.white,
           secondary: Colors.green,
           onSecondary: Colors.white,
@@ -86,7 +86,7 @@ class _MyAppState extends State<MyApp> {
           onBackground: Colors.white,
           surface: Colors.grey.shade900,
           onSurface: Colors.white,
-          error: Colors.red,
+          error: createMaterialColor(const Color(0xFFFF554C)),
           onError: Colors.white,
         ),
         /* dark theme settings */

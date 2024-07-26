@@ -8,12 +8,12 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:lottie/lottie.dart';
-import 'package:unustasis/domain/theme_helper.dart';
-import 'package:unustasis/home_screen.dart';
-import 'package:unustasis/scooter_service.dart';
-import 'package:unustasis/domain/scooter_state.dart';
-import 'package:unustasis/scooter_visual.dart';
-import 'package:unustasis/support_screen.dart';
+import 'package:unu_app/domain/theme_helper.dart';
+import 'package:unu_app/home_screen.dart';
+import 'package:unu_app/scooter_service.dart';
+import 'package:unu_app/domain/scooter_state.dart';
+import 'package:unu_app/scooter_visual.dart';
+import 'package:unu_app/support_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({

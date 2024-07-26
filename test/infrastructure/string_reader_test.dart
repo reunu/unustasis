@@ -2,7 +2,7 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-import 'package:unustasis/infrastructure/string_reader.dart';
+import 'package:unu_app/infrastructure/string_reader.dart';
 
 import '../builder/service.mocks.dart';
 

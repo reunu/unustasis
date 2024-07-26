@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:unustasis/domain/scooter_power_state.dart';
-import 'package:unustasis/domain/scooter_state.dart';
+import 'package:unu_app/domain/scooter_power_state.dart';
+import 'package:unu_app/domain/scooter_state.dart';
 
 void main() {
   group('ScooterState', () {

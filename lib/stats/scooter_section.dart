@@ -6,10 +6,10 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:maps_launcher/maps_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:unustasis/domain/scooter_state.dart';
-import 'package:unustasis/domain/theme_helper.dart';
-import 'package:unustasis/geo_helper.dart';
-import 'package:unustasis/scooter_service.dart';
+import 'package:unu_app/domain/scooter_state.dart';
+import 'package:unu_app/domain/theme_helper.dart';
+import 'package:unu_app/geo_helper.dart';
+import 'package:unu_app/scooter_service.dart';
 
 class ScooterSection extends StatefulWidget {
   const ScooterSection({

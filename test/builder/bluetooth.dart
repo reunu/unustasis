@@ -1,6 +1,6 @@
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-import 'package:unustasis/flutter/blue_plus_mockable.dart';
+import 'package:unu_app/flutter/blue_plus_mockable.dart';
 
 import 'bluetooth.mocks.dart';
 import 'device.dart';
