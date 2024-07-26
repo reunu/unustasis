@@ -72,7 +72,7 @@ class _StatsScreenState extends State<StatsScreen> {
                       .onBackground
                       .withOpacity(0.3),
                   labelColor: Theme.of(context).colorScheme.onBackground,
-                  indicatorColor: Theme.of(context).colorScheme.onBackground,
+                  indicatorColor: Theme.of(context).colorScheme.primary,
                   tabs: [
                     Tab(
                       child: Text(
