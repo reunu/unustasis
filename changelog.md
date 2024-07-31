@@ -1,2 +1,3 @@
 ### Changes:
-- All changes are under the hood this time, hoping to solve some connection issues
+- Interface polishing for the most part
+- Big things coming!
