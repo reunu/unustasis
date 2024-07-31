@@ -135,6 +135,8 @@
     "forget_alert_confirm": "Reset now",
     "settings_app_version": "App version",
     "stats_last_ping_toast": "Last updated {time} ago",
+    "stats_last_ping_toast_now": "Last updated just now",
+    "stats_last_ping_now": "NOW",
     "stats_no_location": "Scooter location unknown",
     "stats_total_range": "Total range",
     "stats_range_until_throttled": "{range} until throttled",

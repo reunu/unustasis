@@ -135,6 +135,8 @@
     "forget_alert_confirm": "Entfernen",
     "settings_app_version": "App Version",
     "stats_last_ping_toast": "Zuletzt aktualisiert vor {time}",
+    "stats_last_ping_toast_now": "Kürzlich zuletzt aktualisiert",
+    "stats_last_ping_now": "JETZT",
     "stats_no_location": "Rollerstandort unbekannt",
     "stats_total_range": "Gesamtreichweite",
     "stats_range_until_throttled": "{range} bis Drosslung",

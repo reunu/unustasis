@@ -522,21 +522,27 @@ class LastPingInfo extends StatelessWidget {
           }
           return InkWell(
             onTap: () {
-              Fluttertoast.showToast(
-                msg: FlutterI18n.translate(context, "stats_last_ping_toast",
-                    translationParams: {
-                      "time": snapshot.data!
-                          .calculateTimeDifferenceInShort()
-                          .toLowerCase()
-                    }),
-              );
+              String timeDiff =
+                  snapshot.data!.calculateTimeDifferenceInShort(context);
+              if (timeDiff ==
+                  FlutterI18n.translate(context, "stats_last_ping_now")) {
+                Fluttertoast.showToast(
+                  msg: FlutterI18n.translate(
+                      context, "stats_last_ping_toast_now"),
+                );
+              } else {
+                Fluttertoast.showToast(
+                  msg: FlutterI18n.translate(context, "stats_last_ping_toast",
+                      translationParams: {"time": timeDiff.toLowerCase()}),
+                );
+              }
             },
             child: Row(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  snapshot.data!.calculateTimeDifferenceInShort(),
+                  snapshot.data!.calculateTimeDifferenceInShort(context),
                   style: TextStyle(
                     fontWeight: FontWeight.w900,
                     fontSize: 12,
@@ -568,7 +574,7 @@ class LastPingInfo extends StatelessWidget {
 }
 
 extension DateTimeExtension on DateTime {
-  String calculateTimeDifferenceInShort() {
+  String calculateTimeDifferenceInShort(BuildContext context) {
     final originalDate = DateTime.now();
     final difference = originalDate.difference(this);
 
@@ -587,7 +593,7 @@ extension DateTimeExtension on DateTime {
     } else if (difference.inMinutes >= 1) {
       return '1M';
     } else {
-      return 'NOW';
+      return FlutterI18n.translate(context, "stats_last_ping_now");
     }
   }
 }
