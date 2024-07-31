@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
@@ -250,6 +251,10 @@ class ScooterService {
 
   // spins up the whole connection process, and connects/bonds with the nearest scooter
   void start({bool restart = true}) async {
+    // Remove the splash screen
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      FlutterNativeSplash.remove();
+    });
     if (Platform.isAndroid) {
       await flutterBluePlus.turnOn();
     }
@@ -262,6 +267,7 @@ class ScooterService {
     if (myScooter != null) {
       myScooter!.disconnect();
     }
+
     // First, see if the phone is already actively connected to a scooter
     List<BluetoothDevice> systemScooters = await getSystemScooters();
     if (systemScooters.isNotEmpty) {

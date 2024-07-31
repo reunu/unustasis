@@ -4,15 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:easy_dynamic_theme/easy_dynamic_theme.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:unustasis/domain/theme_helper.dart';
 import 'package:unustasis/flutter/blue_plus_mockable.dart';
 import 'package:unustasis/home_screen.dart';
 import 'package:unustasis/scooter_service.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   SystemChrome.setPreferredOrientations(
       [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
   Locale? savedLocale;

@@ -37,10 +37,10 @@ packages:
     dependency: transitive
     description:
       name: args
-      sha256: "7cf60b9f0cc88203c5a190b4cd62a99feea42759a7fa695010eb5de1c0b2252a"
+      sha256: eef6c46b622e0494a36c5a12d10d77fb4e855501a91c1b9ef9339326e58f0596
       url: "https://pub.dev"
     source: hosted
-    version: "2.5.0"
+    version: "2.4.2"
   async:
     dependency: transitive
     description:
@@ -312,10 +312,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_native_splash
-      sha256: aa06fec78de2190f3db4319dd60fdc8d12b2626e93ef9828633928c2dcaea840
+      sha256: edf39bcf4d74aca1eb2c1e43c3e445fd9f494013df7f0da752fefe72020eedc0
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.1"
+    version: "2.4.0"
   flutter_plugin_android_lifecycle:
     dependency: transitive
     description:
@@ -466,10 +466,10 @@ packages:
     dependency: transitive
     description:
       name: image
-      sha256: "2237616a36c0d69aef7549ab439b833fb7f9fb9fc861af2cc9ac3eedddd69ca8"
+      sha256: "4c68bfd5ae83e700b5204c1e74451e7bf3cf750e6843c6e158289cf56bda018e"
       url: "https://pub.dev"
     source: hosted
-    version: "4.2.0"
+    version: "4.1.7"
   intl:
     dependency: transitive
     description:
@@ -1197,4 +1197,4 @@ packages:
     version: "3.1.2"
 sdks:
   dart: ">=3.3.2 <4.0.0"
-  flutter: ">=3.22.3"
+  flutter: ">=3.19.5"
