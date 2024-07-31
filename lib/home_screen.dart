@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -421,6 +422,7 @@ class _HomeScreenState extends State<HomeScreen> {
     List<String> ids = await widget.scooterService.getSavedScooterIds();
     log("Saved scooters: $ids");
     if ((await widget.scooterService.getSavedScooterIds()).isEmpty) {
+      FlutterNativeSplash.remove();
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
