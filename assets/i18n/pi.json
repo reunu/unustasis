@@ -135,6 +135,8 @@
     "forget_alert_confirm": "Reset now",
     "settings_app_version": "App version",
     "stats_last_ping_toast": "Ship last seen {time} ago",
+    "stats_last_ping_toast_now": "Ship last seen just now",
+    "stats_last_ping_now": "NOW",
     "stats_no_location": "Ship location unknown",
     "stats_total_range": "Total range",
     "stats_range_until_throttled": "{range} until throttled",
