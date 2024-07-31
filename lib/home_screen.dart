@@ -110,8 +110,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 statusBarColor: Colors.transparent,
                 statusBarIconBrightness: Brightness.dark,
                 systemNavigationBarColor: Colors.white),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 500),
+        child: Container(
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.background,
           ),
@@ -245,8 +244,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                           color: dataIsOld
                                               ? Theme.of(context)
                                                   .colorScheme
-                                                  .onBackground
-                                              : _primarySOC! < 15
+                                                  .onSurface
+                                                  .withOpacity(0.4)
+                                              : _secondarySOC! < 15
                                                   ? Theme.of(context)
                                                       .colorScheme
                                                       .error
