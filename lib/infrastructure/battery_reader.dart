@@ -4,9 +4,9 @@ import 'dart:developer';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:unustasis/domain/scooter_battery.dart';
-import 'package:unustasis/infrastructure/string_reader.dart';
-import 'package:unustasis/infrastructure/utils.dart';
+import '../domain/scooter_battery.dart';
+import '../infrastructure/string_reader.dart';
+import '../infrastructure/utils.dart';
 
 class BatteryReader {
   final ScooterBattery _battery;

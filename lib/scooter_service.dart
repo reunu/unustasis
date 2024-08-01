@@ -11,11 +11,11 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:unustasis/domain/scooter_keyless_distance.dart';
-import 'package:unustasis/domain/scooter_state.dart';
-import 'package:unustasis/flutter/blue_plus_mockable.dart';
-import 'package:unustasis/infrastructure/characteristic_repository.dart';
-import 'package:unustasis/infrastructure/scooter_reader.dart';
+import '../domain/scooter_keyless_distance.dart';
+import '../domain/scooter_state.dart';
+import '../flutter/blue_plus_mockable.dart';
+import '../infrastructure/characteristic_repository.dart';
+import '../infrastructure/scooter_reader.dart';
 
 const bootingTimeSeconds = 25;
 const keylessCooldownSeconds = 60;

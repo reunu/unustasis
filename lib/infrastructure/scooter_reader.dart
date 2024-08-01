@@ -1,12 +1,10 @@
-import 'dart:developer';
-
 import 'package:rxdart/rxdart.dart';
-import 'package:unustasis/domain/scooter_battery.dart';
-import 'package:unustasis/domain/scooter_power_state.dart';
-import 'package:unustasis/domain/scooter_state.dart';
-import 'package:unustasis/infrastructure/battery_reader.dart';
-import 'package:unustasis/infrastructure/characteristic_repository.dart';
-import 'package:unustasis/infrastructure/string_reader.dart';
+import '../domain/scooter_battery.dart';
+import '../domain/scooter_power_state.dart';
+import '../domain/scooter_state.dart';
+import '../infrastructure/battery_reader.dart';
+import '../infrastructure/characteristic_repository.dart';
+import '../infrastructure/string_reader.dart';
 
 class ScooterReader {
   final CharacteristicRepository _characteristicRepository;
