@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
@@ -39,48 +40,58 @@ class _HomeScreenState extends State<HomeScreen> {
   bool? _handlebarsLocked;
   int? _primarySOC;
   int? _secondarySOC;
-  int? color;
+
+  StreamSubscription? _stateSubscription;
+  StreamSubscription? _connectedSubscription;
+  StreamSubscription? _scanningSubscription;
+  StreamSubscription? _seatClosedSubscription;
+  StreamSubscription? _handlebarsLockedSubscription;
+  StreamSubscription? _primarySOCSubscription;
+  StreamSubscription? _secondarySOCSubscription;
 
   @override
   void initState() {
     super.initState();
-    setupColor();
     if (widget.forceOpen != true) {
       log("Redirecting or starting");
       redirectOrStart();
     }
-    widget.scooterService.state.listen((state) {
+    _stateSubscription = widget.scooterService.state.listen((state) {
       setState(() {
         _scooterState = state;
       });
     });
-    widget.scooterService.connected.listen((isConnected) {
+    _connectedSubscription =
+        widget.scooterService.connected.listen((isConnected) {
       setState(() {
         _connected = isConnected;
       });
     });
-    widget.scooterService.scanning.listen((isScanning) {
+    _scanningSubscription = widget.scooterService.scanning.listen((isScanning) {
       setState(() {
         _scanning = isScanning;
       });
       log("Scanning: $isScanning");
     });
-    widget.scooterService.seatClosed.listen((isClosed) {
+    _seatClosedSubscription =
+        widget.scooterService.seatClosed.listen((isClosed) {
       setState(() {
         _seatClosed = isClosed;
       });
     });
-    widget.scooterService.handlebarsLocked.listen((isLocked) {
+    _handlebarsLockedSubscription =
+        widget.scooterService.handlebarsLocked.listen((isLocked) {
       setState(() {
         _handlebarsLocked = isLocked;
       });
     });
-    widget.scooterService.primarySOC.listen((soc) {
+    _primarySOCSubscription = widget.scooterService.primarySOC.listen((soc) {
       setState(() {
         _primarySOC = soc;
       });
     });
-    widget.scooterService.secondarySOC.listen((soc) {
+    _secondarySOCSubscription =
+        widget.scooterService.secondarySOC.listen((soc) {
       setState(() {
         _secondarySOC = soc;
       });
@@ -217,7 +228,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 .colorScheme
                                                 .onSurface
                                                 .withOpacity(0.4)
-                                            : _primarySOC! < 15
+                                            : _primarySOC! <= 15
                                                 ? Theme.of(context)
                                                     .colorScheme
                                                     .error
@@ -246,7 +257,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                   .colorScheme
                                                   .onSurface
                                                   .withOpacity(0.4)
-                                              : _secondarySOC! < 15
+                                              : _secondarySOC! <= 15
                                                   ? Theme.of(context)
                                                       .colorScheme
                                                       .error
@@ -265,12 +276,16 @@ class _HomeScreenState extends State<HomeScreen> {
                             }),
                       const SizedBox(height: 16),
                       Expanded(
-                          child: ScooterVisual(
-                              color: color,
-                              state: _scooterState,
-                              scanning: _scanning,
-                              blinkerLeft: _hazards,
-                              blinkerRight: _hazards)),
+                          child: StreamBuilder<int?>(
+                              stream: widget.scooterService.scooterColor,
+                              builder: (context, colorSnap) {
+                                return ScooterVisual(
+                                    color: colorSnap.data ?? 1,
+                                    state: _scooterState,
+                                    scanning: _scanning,
+                                    blinkerLeft: _hazards,
+                                    blinkerRight: _hazards);
+                              })),
                       const SizedBox(height: 16),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -383,12 +398,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void setupColor() {
-    SharedPreferences.getInstance().then((prefs) {
-      setState(() {
-        color = prefs.getInt("color");
-      });
-    });
+  @override
+  void dispose() {
+    _stateSubscription?.cancel();
+    _connectedSubscription?.cancel();
+    _scanningSubscription?.cancel();
+    _seatClosedSubscription?.cancel();
+    _handlebarsLockedSubscription?.cancel();
+    _primarySOCSubscription?.cancel();
+    _secondarySOCSubscription?.cancel();
+    super.dispose();
   }
 
   void showSeatWarning() {

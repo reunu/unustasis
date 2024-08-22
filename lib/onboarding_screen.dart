@@ -18,9 +18,13 @@ import '../support_screen.dart';
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({
     required this.service,
+    this.excludedScooterIds,
+    this.skipWelcome = false,
     super.key,
   });
   final ScooterService service;
+  final List<String>? excludedScooterIds;
+  final bool skipWelcome;
 
   @override
   State<OnboardingScreen> createState() => _OnboardingScreenState();
@@ -44,6 +48,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   @override
   void initState() {
+    if (widget.skipWelcome) {
+      setState(() {
+        _step = 1;
+      });
+    }
     _scanningController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
@@ -171,7 +180,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: false,
+        // only show back button if this is not initial onboarding
+        automaticallyImplyLeading: widget.skipWelcome ? true : false,
         systemOverlayStyle: SystemUiOverlayStyle(
             statusBarBrightness:
                 context.isDarkMode ? Brightness.dark : Brightness.light),
@@ -229,7 +239,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   void _startSearch() async {
     try {
-      _foundScooter = await widget.service.findEligibleScooter();
+      _foundScooter = await widget.service.findEligibleScooter(
+          excludedScooterIds: widget.excludedScooterIds ?? []);
       if (_foundScooter != null) {
         setState(() {
           _step = 3;

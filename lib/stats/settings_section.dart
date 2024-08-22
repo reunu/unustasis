@@ -7,6 +7,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unustasis/control_screen.dart';
 
 import '../domain/theme_helper.dart';
 import '../domain/scooter_keyless_distance.dart';
@@ -54,7 +55,7 @@ class _SettingsSectionState extends State<SettingsSection> {
     return ListView.separated(
       padding: const EdgeInsets.symmetric(vertical: 16),
       shrinkWrap: true,
-      itemCount: (autoUnlock ? 11 : 10),
+      itemCount: (autoUnlock ? 13 : 12),
       separatorBuilder: (context, index) => Divider(
         indent: 16,
         endIndent: 16,
@@ -62,6 +63,8 @@ class _SettingsSectionState extends State<SettingsSection> {
         color: Theme.of(context).colorScheme.onBackground.withOpacity(0.1),
       ),
       itemBuilder: (context, index) => [
+        Header(
+            FlutterI18n.translate(context, "stats_settings_section_scooter")),
         FutureBuilder<List<BiometricType>>(
             future: LocalAuthentication().getAvailableBiometrics(),
             builder: (context, biometricsOptionsSnap) {
@@ -171,6 +174,7 @@ class _SettingsSectionState extends State<SettingsSection> {
             });
           },
         ),
+        Header(FlutterI18n.translate(context, "stats_settings_section_app")),
         ListTile(
             leading: const Icon(Icons.wb_sunny_outlined),
             title: Text(FlutterI18n.translate(context, "settings_theme")),
@@ -248,6 +252,7 @@ class _SettingsSectionState extends State<SettingsSection> {
             },
           ),
         ),
+        Header(FlutterI18n.translate(context, "stats_settings_section_about")),
         ListTile(
           leading: const Icon(Icons.help_outline),
           title: Text(FlutterI18n.translate(context, "settings_support")),
@@ -290,68 +295,6 @@ class _SettingsSectionState extends State<SettingsSection> {
                 },
               );
             }),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
-          child: OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(60),
-              backgroundColor: Colors.red.withOpacity(0.1),
-              side: const BorderSide(
-                color: Colors.red,
-              ),
-            ),
-            onPressed: () async {
-              showDialog(
-                  context: context,
-                  barrierDismissible: true,
-                  builder: (context) {
-                    return AlertDialog(
-                      title: Text(
-                          FlutterI18n.translate(context, "forget_alert_title")),
-                      content: Text(
-                          FlutterI18n.translate(context, "forget_alert_body")),
-                      actions: [
-                        TextButton(
-                          onPressed: () {
-                            Navigator.of(context).pop(false);
-                          },
-                          child: Text(FlutterI18n.translate(
-                              context, "forget_alert_cancel")),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.of(context).pop(true);
-                          },
-                          child: Text(FlutterI18n.translate(
-                              context, "forget_alert_confirm")),
-                        ),
-                      ],
-                    );
-                  }).then((reset) {
-                if (reset == true) {
-                  widget.service.forgetSavedScooter(null);
-                  Navigator.of(context).pop();
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(
-                      builder: (context) => OnboardingScreen(
-                        service: widget.service,
-                      ),
-                    ),
-                  );
-                }
-              });
-            },
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                FlutterI18n.translate(context, "settings_forget"),
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onBackground,
-                ),
-              ),
-            ),
-          ),
-        ),
       ][index],
     );
   }
