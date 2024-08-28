@@ -4,10 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+
 import '../stats/settings_section.dart';
 import '../scooter_service.dart';
 import '../stats/battery_section.dart';
-import '../stats/range_section.dart';
 import '../stats/scooter_section.dart';
 
 class StatsScreen extends StatefulWidget {

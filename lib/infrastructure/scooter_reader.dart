@@ -1,5 +1,6 @@
 import 'package:rxdart/rxdart.dart';
-import 'package:unustasis/scooter_service.dart';
+
+import '../scooter_service.dart';
 import '../domain/scooter_battery.dart';
 import '../domain/scooter_power_state.dart';
 import '../domain/scooter_state.dart';

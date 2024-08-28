@@ -3,8 +3,8 @@ import 'dart:developer';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:unustasis/scooter_service.dart';
+
+import '../scooter_service.dart';
 import '../domain/scooter_battery.dart';
 import '../infrastructure/string_reader.dart';
 import '../infrastructure/utils.dart';

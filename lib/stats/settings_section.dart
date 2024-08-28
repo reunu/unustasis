@@ -7,11 +7,10 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:unustasis/control_screen.dart';
 
+import '../control_screen.dart';
 import '../domain/theme_helper.dart';
 import '../domain/scooter_keyless_distance.dart';
-import '../onboarding_screen.dart';
 import '../scooter_service.dart';
 import '../support_screen.dart';
 
