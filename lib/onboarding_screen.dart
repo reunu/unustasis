@@ -139,7 +139,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             onPressed: () {
               log("Pairing");
               try {
-                widget.service.startWithFoundDevice(device: _foundScooter!);
+                widget.service
+                    .connectToScooterId(_foundScooter!.remoteId.toString());
               } catch (e) {
                 log("Error: $e");
                 Fluttertoast.showToast(

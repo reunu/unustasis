@@ -112,7 +112,7 @@ class ScooterService {
     SavedScooter? mostRecentScooter;
     for (var scooter in savedScooters.values) {
       if (mostRecentScooter == null ||
-          mostRecentScooter.lastPing.isAfter(mostRecentScooter.lastPing)) {
+          scooter.lastPing.isAfter(mostRecentScooter.lastPing)) {
         mostRecentScooter = scooter;
       }
     }
@@ -237,21 +237,38 @@ class ScooterService {
 
   Future<BluetoothDevice?> findEligibleScooter({
     List<String> excludedScooterIds = const [],
+    bool includeSystemScooters = true,
   }) async {
-    List<BluetoothDevice> foundScooters = await getSystemScooters();
-    if (foundScooters.isNotEmpty) {
-      return foundScooters.firstWhere(
-        (foundScooter) {
-          return !excludedScooterIds.contains(foundScooter.remoteId.toString());
-        },
-      );
+    stopAutoRestart();
+    log("Auto-restart stopped");
+    if (includeSystemScooters) {
+      log("Searching system devices");
+      List<BluetoothDevice> foundScooters = await getSystemScooters();
+      if (foundScooters.isNotEmpty) {
+        log("Found system scooter");
+        foundScooters = foundScooters.where(
+          (foundScooter) {
+            return !excludedScooterIds
+                .contains(foundScooter.remoteId.toString());
+          },
+        ).toList();
+        if (foundScooters.isNotEmpty) {
+          log("System scooter is not excluded from search, returning!");
+          return foundScooters.first;
+        }
+      }
     }
-    await for (BluetoothDevice foundScooter in getNearbyScooters()) {
+    log("Searching nearby devices");
+    await for (BluetoothDevice foundScooter
+        in getNearbyScooters(preferSavedScooters: excludedScooterIds.isEmpty)) {
+      log("Found scooter: ${foundScooter.remoteId.toString()}");
       if (!excludedScooterIds.contains(foundScooter.remoteId.toString())) {
+        log("Scooter's ID is not excluded, stopping scan and returning!");
         flutterBluePlus.stopScan();
         return foundScooter;
       }
     }
+    log("Scan over, nothing found");
     return null;
   }
 
@@ -271,10 +288,11 @@ class ScooterService {
     return systemScooters;
   }
 
-  Stream<BluetoothDevice> getNearbyScooters() async* {
+  Stream<BluetoothDevice> getNearbyScooters(
+      {bool preferSavedScooters = true}) async* {
     List<BluetoothDevice> foundScooterCache = [];
     List<String> savedScooterIds = await getSavedScooterIds();
-    if (savedScooterIds.isNotEmpty) {
+    if (savedScooterIds.isNotEmpty && preferSavedScooters) {
       flutterBluePlus.startScan(
         withRemoteIds: savedScooterIds, // look for OUR scooter
         timeout: const Duration(seconds: 30),
@@ -298,6 +316,44 @@ class ScooterService {
     }
   }
 
+  Future<void> connectToScooterId(String id) async {
+    _foundSth = true;
+    _stateController.add(ScooterState.linking);
+    try {
+      // attempt to connect to what we found
+      BluetoothDevice attemptedScooter = BluetoothDevice.fromId(id);
+      // wait for the connection to be established
+      await attemptedScooter.connect();
+      // Set up this scooter as ours
+      myScooter = attemptedScooter;
+      addSavedScooter(myScooter!.remoteId.toString());
+      await setUpCharacteristics(myScooter!);
+      // save this as the last known location
+      _pollLocation();
+      // Let everybody know
+      _connectedController.add(true);
+      _scooterNameController
+          .add(savedScooters[myScooter!.remoteId.toString()]?.name);
+      _scooterColorController
+          .add(savedScooters[myScooter!.remoteId.toString()]?.color);
+      // listen for disconnects
+      myScooter!.connectionState.listen((BluetoothConnectionState state) async {
+        if (state == BluetoothConnectionState.disconnected) {
+          _connectedController.add(false);
+          _stateController.add(ScooterState.disconnected);
+          log("Lost connection to scooter! :(");
+          // Restart the process if we're not already doing so
+          // start(); // this leads to some conflicts right now if the phone auto-connects, so we're not doing it
+        }
+      });
+    } catch (e) {
+      // something went wrong, roll back!
+      _foundSth = false;
+      _stateController.add(ScooterState.disconnected);
+      rethrow;
+    }
+  }
+
   // spins up the whole connection process, and connects/bonds with the nearest scooter
   void start({bool restart = true}) async {
     // Remove the splash screen
@@ -317,70 +373,20 @@ class ScooterService {
       myScooter!.disconnect();
     }
 
+    // TODO: replace with getEligibleScooters, why do we still have this duplicated?!
+
     // First, see if the phone is already actively connected to a scooter
     List<BluetoothDevice> systemScooters = await getSystemScooters();
     if (systemScooters.isNotEmpty) {
       // get the first one, hook into its connection, and remember the ID for future reference
-      // there's one! Attempt to connect to it
-      _foundSth = true;
-      _stateController.add(ScooterState.linking);
-      // attempt to connect to what we found
-      await systemScooters.first.connect();
-      // wait for the connection to be established
-      // Set up this scooter as ours
-      myScooter = systemScooters.first;
-      addSavedScooter(myScooter!.remoteId.toString());
-      await setUpCharacteristics(myScooter!);
-      // save this as the last known location
-      _pollLocation();
-      // Let everybody know
-      _connectedController.add(true);
-      _scooterNameController
-          .add(savedScooters[myScooter!.remoteId.toString()]?.name);
-      // listen for disconnects
-      myScooter!.connectionState.listen((BluetoothConnectionState state) async {
-        if (state == BluetoothConnectionState.disconnected) {
-          _connectedController.add(false);
-          _stateController.add(ScooterState.disconnected);
-          log("Lost connection to scooter! :(");
-          // Restart the process if we're not already doing so
-          // start(); // this leads to some conflicts right now if the phone auto-connects, so we're not doing it
-        }
-      });
+      connectToScooterId(systemScooters.first.remoteId.toString());
     } else {
       try {
         // If not, start scanning for nearby scooters
         getNearbyScooters().listen((foundScooter) async {
           // there's one! Attempt to connect to it
-          _foundSth = true;
-          _stateController.add(ScooterState.linking);
-          // we could have some race conditions here if we find multiple scooters at once
-          // so let's stop scanning immediately to avoid that
           flutterBluePlus.stopScan();
-          // attempt to connect to what we found
-          await foundScooter.connect();
-          // wait for the connection to be established
-          // Set up this scooter as ours
-          myScooter = foundScooter;
-          addSavedScooter(foundScooter.remoteId.toString());
-          await setUpCharacteristics(foundScooter);
-          // save this as the last known location
-          _pollLocation();
-          // Let everybody know
-          _connectedController.add(true);
-          _scooterNameController
-              .add(savedScooters[myScooter!.remoteId.toString()]?.name);
-          // listen for disconnects
-          foundScooter.connectionState
-              .listen((BluetoothConnectionState state) async {
-            if (state == BluetoothConnectionState.disconnected) {
-              _connectedController.add(false);
-              _stateController.add(ScooterState.disconnected);
-              log("Lost connection to scooter! :(");
-              // Restart the process if we're not already doing so
-              // start(); // this leads to some conflicts right now if the phone auto-connects, so we're not doing it
-            }
-          });
+          connectToScooterId(foundScooter.remoteId.toString());
         });
       } catch (e) {
         // Guess this one is not happy with us
@@ -396,33 +402,6 @@ class ScooterService {
     }
   }
 
-  void startWithFoundDevice({required BluetoothDevice device}) async {
-    try {
-      log("Connecting...");
-      await device.connect();
-      if (Platform.isAndroid) {
-        log("Bonding...");
-        await device.createBond();
-      }
-      myScooter = device;
-      addSavedScooter(device.remoteId.toString());
-      await setUpCharacteristics(device);
-      // save this as the last known location
-      _pollLocation();
-      _connectedController.add(true);
-      device.connectionState.listen((BluetoothConnectionState state) async {
-        if (state == BluetoothConnectionState.disconnected) {
-          _connectedController.add(false);
-          _stateController.add(ScooterState.disconnected);
-          log("Lost connection to scooter! :(");
-        }
-      });
-    } catch (e) {
-      log("Error in startWithFoundDevice: $e");
-      throw "Failed to connect to scooter!";
-    }
-  }
-
   late StreamSubscription<bool> _autoRestartSubscription;
   void startAutoRestart() async {
     if (!_autoRestarting) {
@@ -433,7 +412,7 @@ class ScooterService {
         // retry if we stop scanning without having found anything
         if (_scanning == false && !_foundSth) {
           await Future.delayed(const Duration(seconds: 3));
-          if (!_foundSth && !_scanning) {
+          if (!_foundSth && !_scanning && _autoRestarting) {
             // make sure nothing happened in these few seconds
             log("Auto-restarting...");
             start();
