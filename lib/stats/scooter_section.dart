@@ -55,10 +55,6 @@ class _ScooterSectionState extends State<ScooterSection> {
   }
 
   List<SavedScooter> sortedScooters() {
-    if (widget.service.myScooter == null) {
-      // no sorting necessary
-      return widget.service.savedScooters.values.toList();
-    }
     List<SavedScooter> scooters = widget.service.savedScooters.values.toList();
     scooters.sort((a, b) {
       // Check if either scooter is the connected one
@@ -66,8 +62,10 @@ class _ScooterSectionState extends State<ScooterSection> {
       if (b.id == widget.service.myScooter?.remoteId.toString()) return 1;
 
       // If neither is the connected scooter, sort by lastPing
+      print("Neither are currently connected");
       return b.lastPing.compareTo(a.lastPing);
     });
+    print(scooters.map((scooters) => scooters.name).toString());
     return scooters;
   }
 
