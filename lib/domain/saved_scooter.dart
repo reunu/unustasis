@@ -107,7 +107,11 @@ class SavedScooter {
         lastPing: map.containsKey('lastPing')
             ? DateTime.fromMicrosecondsSinceEpoch(map['lastPing'])
             : DateTime.now(),
-        lastLocation: LatLng.fromJson(map['lastLocation']));
+        lastLocation: LatLng.fromJson(map['lastLocation']),
+        lastPrimarySOC: map['lastPrimarySOC'],
+        lastSecondarySOC: map['lastSecondarySOC'],
+        lastCbbSOC: map['lastCbbSOC'],
+        lastAuxSOC: map['lastAuxSOC']);
   }
 
   void updateSharedPreferences() async {
