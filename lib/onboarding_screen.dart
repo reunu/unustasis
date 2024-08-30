@@ -241,7 +241,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   void _startSearch() async {
     try {
       _foundScooter = await widget.service.findEligibleScooter(
-          excludedScooterIds: widget.excludedScooterIds ?? []);
+          excludedScooterIds: widget.excludedScooterIds ?? [],
+          includeSystemScooters: false);
       if (_foundScooter != null) {
         setState(() {
           _step = 3;

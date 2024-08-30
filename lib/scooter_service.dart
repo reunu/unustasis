@@ -239,8 +239,13 @@ class ScooterService {
     List<String> excludedScooterIds = const [],
     bool includeSystemScooters = true,
   }) async {
-    stopAutoRestart();
-    log("Auto-restart stopped");
+    try {
+      stopAutoRestart();
+      log("Auto-restart stopped");
+    } catch (e) {
+      log("Didn't stop auto-restart, might not have been running yet");
+    }
+
     if (includeSystemScooters) {
       log("Searching system devices");
       List<BluetoothDevice> foundScooters = await getSystemScooters();
