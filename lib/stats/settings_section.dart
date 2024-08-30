@@ -1,12 +1,15 @@
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:easy_dynamic_theme/easy_dynamic_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unustasis/domain/log_helper.dart';
 
 import '../control_screen.dart';
 import '../domain/theme_helper.dart';
@@ -54,7 +57,7 @@ class _SettingsSectionState extends State<SettingsSection> {
     return ListView.separated(
       padding: const EdgeInsets.symmetric(vertical: 16),
       shrinkWrap: true,
-      itemCount: (autoUnlock ? 13 : 12),
+      itemCount: (autoUnlock ? 14 : 13),
       separatorBuilder: (context, index) => Divider(
         indent: 16,
         endIndent: 16,
@@ -258,6 +261,45 @@ class _SettingsSectionState extends State<SettingsSection> {
           onTap: () {
             Navigator.of(context).push(
                 MaterialPageRoute(builder: (context) => const SupportScreen()));
+          },
+          trailing: const Icon(Icons.chevron_right),
+        ),
+        ListTile(
+          leading: const Icon(Icons.bug_report_outlined),
+          title: Text(FlutterI18n.translate(context, "settings_report")),
+          onTap: () {
+            showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                      title: const Text("Report an issue"),
+                      content: const Text(
+                          "If you think you've found a bug, please report it here."),
+                      actions: [
+                        TextButton(
+                            onPressed: () => Navigator.of(context).pop(false),
+                            child: const Text("Close")),
+                        TextButton(
+                            onPressed: () => Navigator.of(context).pop(true),
+                            child: const Text("Continue")),
+                      ],
+                    )).then((confirmed) async {
+              if (confirmed) {
+                // write log file
+                File logFile = await LogHelper().saveLogsToFile();
+                // TODO get some more device info to add to the body
+
+                final Email email = Email(
+                  body:
+                      'Hello\n\nThis is a bug report, add your info here\n\nGoodbye',
+                  subject: 'Email subject',
+                  recipients: ['unu@freal.de'],
+                  attachmentPaths: [logFile.path],
+                  isHTML: false,
+                );
+
+                await FlutterEmailSender.send(email);
+              }
+            });
           },
           trailing: const Icon(Icons.chevron_right),
         ),

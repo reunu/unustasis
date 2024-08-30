@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
@@ -9,6 +8,7 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:logging/logging.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../domain/saved_scooter.dart';
@@ -22,6 +22,7 @@ const bootingTimeSeconds = 25;
 const keylessCooldownSeconds = 60;
 
 class ScooterService {
+  final log = Logger('ScooterService');
   Map<String, SavedScooter> savedScooters = {};
   BluetoothDevice? myScooter; // reserved for a connected scooter!
   bool _foundSth = false; // whether we've found a scooter yet
@@ -45,7 +46,7 @@ class ScooterService {
       savedScooters[myScooter!.remoteId.toString()]!.lastPing = DateTime.now();
       _lastPingController.add(DateTime.now());
     } catch (e) {
-      log("Couldn't save ping");
+      log.severe("Couldn't save ping");
     }
   }
 
@@ -91,7 +92,7 @@ class ScooterService {
     _manualRefreshTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
       if (myScooter != null && myScooter!.isConnected) {
         // only refresh state and seatbox, for now
-        log("Auto-refresh...");
+        log.info("Auto-refresh...");
         characteristicRepository.stateCharacteristic.read();
         characteristicRepository.seatCharacteristic.read();
       }
@@ -226,7 +227,6 @@ class ScooterService {
   Stream<bool> get scanning => flutterBluePlus.isScanning;
 
   Stream<int?> get rssi => flutterBluePlus.events.onReadRssi.asyncMap((event) {
-        log("RSSI: ${event.rssi}, device: ${event.device.remoteId}");
         if (event.device.remoteId == myScooter?.remoteId) {
           return event.rssi;
         }
@@ -241,16 +241,16 @@ class ScooterService {
   }) async {
     try {
       stopAutoRestart();
-      log("Auto-restart stopped");
+      log.fine("Auto-restart stopped");
     } catch (e) {
-      log("Didn't stop auto-restart, might not have been running yet");
+      log.info("Didn't stop auto-restart, might not have been running yet");
     }
 
     if (includeSystemScooters) {
-      log("Searching system devices");
+      log.fine("Searching system devices");
       List<BluetoothDevice> foundScooters = await getSystemScooters();
       if (foundScooters.isNotEmpty) {
-        log("Found system scooter");
+        log.fine("Found system scooter");
         foundScooters = foundScooters.where(
           (foundScooter) {
             return !excludedScooterIds
@@ -258,22 +258,22 @@ class ScooterService {
           },
         ).toList();
         if (foundScooters.isNotEmpty) {
-          log("System scooter is not excluded from search, returning!");
+          log.fine("System scooter is not excluded from search, returning!");
           return foundScooters.first;
         }
       }
     }
-    log("Searching nearby devices");
+    log.info("Searching nearby devices");
     await for (BluetoothDevice foundScooter
         in getNearbyScooters(preferSavedScooters: excludedScooterIds.isEmpty)) {
-      log("Found scooter: ${foundScooter.remoteId.toString()}");
+      log.fine("Found scooter: ${foundScooter.remoteId.toString()}");
       if (!excludedScooterIds.contains(foundScooter.remoteId.toString())) {
-        log("Scooter's ID is not excluded, stopping scan and returning!");
+        log.fine("Scooter's ID is not excluded, stopping scan and returning!");
         flutterBluePlus.stopScan();
         return foundScooter;
       }
     }
-    log("Scan over, nothing found");
+    log.info("Scan over, nothing found");
     return null;
   }
 
@@ -346,7 +346,7 @@ class ScooterService {
         if (state == BluetoothConnectionState.disconnected) {
           _connectedController.add(false);
           _stateController.add(ScooterState.disconnected);
-          log("Lost connection to scooter! :(");
+          log.info("Lost connection to scooter! :(");
           // Restart the process if we're not already doing so
           // start(); // this leads to some conflicts right now if the phone auto-connects, so we're not doing it
         }
@@ -369,7 +369,7 @@ class ScooterService {
       await flutterBluePlus.turnOn();
     }
     // TODO: prompt the user to turn it on manually on iOS
-    log("Starting connection process...");
+    log.fine("Starting connection process...");
     _foundSth = false;
     // Cleanup in case this is a restart
     _connectedController.add(false);
@@ -396,8 +396,7 @@ class ScooterService {
       } catch (e) {
         // Guess this one is not happy with us
         // TODO: Handle errors more elegantly
-        print("Error during search or connect!");
-        print(e.toString());
+        log.severe("Error during search or connect!", e);
         Fluttertoast.showToast(
             msg: "Error during search or connect!"); // TODO: Localize
       }
@@ -419,7 +418,7 @@ class ScooterService {
           await Future.delayed(const Duration(seconds: 3));
           if (!_foundSth && !_scanning && _autoRestarting) {
             // make sure nothing happened in these few seconds
-            log("Auto-restarting...");
+            log.fine("Auto-restarting...");
             start();
           }
         }
@@ -512,11 +511,11 @@ class ScooterService {
 
   Future<void> lock() async {
     if (_seatClosedController.value == false) {
-      log("Seat seems to be open, checking again...");
+      log.info("Seat seems to be open, checking again...");
       // make really sure nothing has changed
       await characteristicRepository.seatCharacteristic.read();
       if (_seatClosedController.value == false) {
-        log("Locking aborted, because seat is open!");
+        log.info("Locking aborted, because seat is open!");
         throw SeatOpenException();
       }
     }
@@ -597,7 +596,7 @@ class ScooterService {
   // HELPER FUNCTIONS
 
   void _sendCommand(String command, {BluetoothCharacteristic? characteristic}) {
-    log("Sending command: $command");
+    log.fine("Sending command: $command");
     if (myScooter == null) {
       throw "Scooter not found!";
     }
@@ -624,9 +623,9 @@ class ScooterService {
     // Check new state every 2s
     var timer = Timer.periodic(const Duration(seconds: 2), (timer) {
       ScooterState? scooterState = _stateController.value;
-      log("Waiting for $expectedScooterState, and got: $scooterState...");
+      log.info("Waiting for $expectedScooterState, and got: $scooterState...");
       if (scooterState == expectedScooterState) {
-        log("Found $expectedScooterState, cancel timer...");
+        log.info("Found $expectedScooterState, cancel timer...");
         timer.cancel();
         completer.complete();
       }
@@ -634,7 +633,7 @@ class ScooterService {
 
     // Clean up
     Future.delayed(limit, () {
-      log("Timer limit reached after $limit");
+      log.info("Timer limit reached after $limit");
       timer.cancel();
       if (!completer.isCompleted) {
         completer.complete();
@@ -726,7 +725,7 @@ class ScooterService {
       }
     } catch (e) {
       // Handle potential errors gracefully
-      log("Error fetching saved scooters: $e");
+      log.severe("Error fetching saved scooters", e);
     }
 
     return scooters;
@@ -761,7 +760,7 @@ class ScooterService {
       try {
         await BluetoothDevice.fromId(id).removeBond();
       } catch (e) {
-        log(e.toString());
+        log.severe("Couldn't forget scooter", e);
       }
     }
 
@@ -778,7 +777,8 @@ class ScooterService {
   void renameSavedScooter({String? id, required String name}) async {
     id ??= myScooter?.remoteId.toString();
     if (id == null) {
-      log("Attempted to rename scooter, but no ID was given and we're not connected to anything!");
+      log.warning(
+          "Attempted to rename scooter, but no ID was given and we're not connected to anything!");
       return;
     }
     if (savedScooters[id] == null) {
