@@ -2,7 +2,7 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
-import 'package:unustasis/domain/scooter_power_state.dart';
+import '../domain/scooter_power_state.dart';
 
 enum ScooterState {
   standby,

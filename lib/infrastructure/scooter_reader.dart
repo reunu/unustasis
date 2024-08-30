@@ -1,12 +1,12 @@
-import 'dart:developer';
-
 import 'package:rxdart/rxdart.dart';
-import 'package:unustasis/domain/scooter_battery.dart';
-import 'package:unustasis/domain/scooter_power_state.dart';
-import 'package:unustasis/domain/scooter_state.dart';
-import 'package:unustasis/infrastructure/battery_reader.dart';
-import 'package:unustasis/infrastructure/characteristic_repository.dart';
-import 'package:unustasis/infrastructure/string_reader.dart';
+
+import '../scooter_service.dart';
+import '../domain/scooter_battery.dart';
+import '../domain/scooter_power_state.dart';
+import '../domain/scooter_state.dart';
+import '../infrastructure/battery_reader.dart';
+import '../infrastructure/characteristic_repository.dart';
+import '../infrastructure/string_reader.dart';
 
 class ScooterReader {
   final CharacteristicRepository _characteristicRepository;
@@ -24,7 +24,7 @@ class ScooterReader {
   final BehaviorSubject<int?> _primaryCyclesController;
   final BehaviorSubject<int?> _secondaryCyclesController;
 
-  final void Function() ping;
+  final ScooterService _service;
 
   ScooterReader(
       {required CharacteristicRepository characteristicRepository,
@@ -38,7 +38,7 @@ class ScooterReader {
       required BehaviorSubject<int?> secondarySOCController,
       required BehaviorSubject<int?> primaryCyclesController,
       required BehaviorSubject<int?> secondaryCyclesController,
-      required void Function() pingFunc})
+      required ScooterService service})
       : _characteristicRepository = characteristicRepository,
         _stateController = stateController,
         _seatClosedController = seatClosedController,
@@ -50,7 +50,7 @@ class ScooterReader {
         _secondarySOCController = secondarySOCController,
         _primaryCyclesController = primaryCyclesController,
         _secondaryCyclesController = secondaryCyclesController,
-        ping = pingFunc;
+        _service = service;
 
   readAndSubscribe() {
     _subscribeState();
@@ -81,14 +81,14 @@ class ScooterReader {
     ScooterState? newState =
         ScooterState.fromStateAndPowerState(_state, _powerState);
     _stateController.add(newState);
-    ping();
+    _service.ping();
   }
 
   void _subscribeSeat() {
     StringReader("Seat", _characteristicRepository.seatCharacteristic)
         .readAndSubscribe((String seatState) {
       _seatClosedController.add(seatState != "open");
-      ping();
+      _service.ping();
     });
   }
 
@@ -97,23 +97,23 @@ class ScooterReader {
             "Handlebars", _characteristicRepository.handlebarCharacteristic)
         .readAndSubscribe((String handlebarState) {
       _handlebarController.add(handlebarState != "unlocked");
-      ping();
+      _service.ping();
     });
   }
 
   void _subscribeBatteries() {
-    var auxBatterReader = BatteryReader(ScooterBattery.aux, ping);
+    var auxBatterReader = BatteryReader(ScooterBattery.aux, _service);
     auxBatterReader.readAndSubscribeSOC(
         _characteristicRepository.auxSOCCharacteristic, _auxSOCController);
 
-    var cbbBatteryReader = BatteryReader(ScooterBattery.cbb, ping);
+    var cbbBatteryReader = BatteryReader(ScooterBattery.cbb, _service);
     cbbBatteryReader.readAndSubscribeSOC(
         _characteristicRepository.cbbSOCCharacteristic, _cbbSOCController);
     cbbBatteryReader.readAndSubscribeCharging(
         _characteristicRepository.cbbChargingCharacteristic,
         _cbbChargingController);
 
-    var primaryBatteryReader = BatteryReader(ScooterBattery.primary, ping);
+    var primaryBatteryReader = BatteryReader(ScooterBattery.primary, _service);
     primaryBatteryReader.readAndSubscribeSOC(
         _characteristicRepository.primarySOCCharacteristic,
         _primarySOCController);
@@ -121,7 +121,8 @@ class ScooterReader {
         _characteristicRepository.primaryCyclesCharacteristic,
         _primaryCyclesController);
 
-    var secondaryBatteryReader = BatteryReader(ScooterBattery.secondary, ping);
+    var secondaryBatteryReader =
+        BatteryReader(ScooterBattery.secondary, _service);
     secondaryBatteryReader.readAndSubscribeSOC(
         _characteristicRepository.secondarySOCCharacteristic,
         _secondarySOCController);

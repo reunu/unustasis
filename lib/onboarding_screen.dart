@@ -8,19 +8,23 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:lottie/lottie.dart';
-import 'package:unustasis/domain/theme_helper.dart';
-import 'package:unustasis/home_screen.dart';
-import 'package:unustasis/scooter_service.dart';
-import 'package:unustasis/domain/scooter_state.dart';
-import 'package:unustasis/scooter_visual.dart';
-import 'package:unustasis/support_screen.dart';
+import '../domain/theme_helper.dart';
+import '../home_screen.dart';
+import '../scooter_service.dart';
+import '../domain/scooter_state.dart';
+import '../scooter_visual.dart';
+import '../support_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({
     required this.service,
+    this.excludedScooterIds,
+    this.skipWelcome = false,
     super.key,
   });
   final ScooterService service;
+  final List<String>? excludedScooterIds;
+  final bool skipWelcome;
 
   @override
   State<OnboardingScreen> createState() => _OnboardingScreenState();
@@ -44,6 +48,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   @override
   void initState() {
+    if (widget.skipWelcome) {
+      setState(() {
+        _step = 1;
+      });
+    }
     _scanningController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
@@ -130,7 +139,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             onPressed: () {
               log("Pairing");
               try {
-                widget.service.startWithFoundDevice(device: _foundScooter!);
+                widget.service
+                    .connectToScooterId(_foundScooter!.remoteId.toString());
               } catch (e) {
                 log("Error: $e");
                 Fluttertoast.showToast(
@@ -171,7 +181,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: false,
+        // only show back button if this is not initial onboarding
+        automaticallyImplyLeading: widget.skipWelcome ? true : false,
         systemOverlayStyle: SystemUiOverlayStyle(
             statusBarBrightness:
                 context.isDarkMode ? Brightness.dark : Brightness.light),
@@ -229,7 +240,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   void _startSearch() async {
     try {
-      _foundScooter = await widget.service.findEligibleScooter();
+      _foundScooter = await widget.service.findEligibleScooter(
+          excludedScooterIds: widget.excludedScooterIds ?? [],
+          includeSystemScooters: false);
       if (_foundScooter != null) {
         setState(() {
           _step = 3;

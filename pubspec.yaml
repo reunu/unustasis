@@ -120,6 +120,7 @@ flutter:
     - images/battery/batt_empty.webp
     - images/battery/batt_cbb.webp
     - images/battery/batt_aux.webp
+    - images/battery/batt_internal.webp
     - assets/i18n/en.json
     - assets/i18n/de.json
     - assets/i18n/pi.json
