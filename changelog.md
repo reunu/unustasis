@@ -1,3 +1,4 @@
 ### Changes:
-- Interface polishing for the most part
-- Big things coming!
+- Redesigned and simplified stats section
+- Support for connecting multiple scooters
+- Stability fixes
