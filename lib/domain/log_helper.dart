@@ -17,11 +17,16 @@ class LogHelper {
     return _instance;
   }
 
+  final int maxBufferSize = 500; // Set a maximum number of log entries
   final List<Map<String, String>> _logBuffer = [];
   Timer? _cleanupTimer;
 
   void initialize() {
     Logger.root.onRecord.listen((record) {
+      // Ensure the buffer doesn't exceed the max size
+      if (_logBuffer.length >= maxBufferSize) {
+        _logBuffer.removeAt(0); // Remove the oldest log entry
+      }
       _logBuffer.add({
         'time': record.time.toIso8601String(),
         'level': record.level.name,
