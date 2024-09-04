@@ -353,6 +353,7 @@ class ScooterService {
       });
     } catch (e) {
       // something went wrong, roll back!
+      log.shout("Couldn't connect to scooter!", e);
       _foundSth = false;
       _stateController.add(ScooterState.disconnected);
       rethrow;

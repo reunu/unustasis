@@ -7,6 +7,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:logging/logging.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:nfc_manager/platform_tags.dart';
 import '../scooter_service.dart';
@@ -22,6 +23,7 @@ class BatterySection extends StatefulWidget {
 }
 
 class _BatterySectionState extends State<BatterySection> {
+  final log = Logger("BatterySection");
   bool nfcScanning = false;
   int? nfcBattery;
   int? nfcCycles;
@@ -260,7 +262,7 @@ class _BatterySectionState extends State<BatterySection> {
                                     // Start Session
                                     NfcManager.instance.startSession(
                                       onError: (error) {
-                                        log("NFC Error: ${error.message}");
+                                        log.severe("NFC Error!", error);
                                         Fluttertoast.showToast(
                                           msg: FlutterI18n.translate(
                                               context, "stats_nfc_error"),
@@ -303,15 +305,16 @@ class _BatterySectionState extends State<BatterySection> {
                                           }
 
                                           // Parse data
-                                          log("SOC Hex: ${socData.map((e) => e.toRadixString(16))}");
+                                          log.info(
+                                              "SOC Hex: ${socData.map((e) => e.toRadixString(16))}");
                                           int fullCap =
                                               33000; //(socData[5] << 8) + socData[4];
                                           int remainingCap =
                                               (socData[3] << 8) + socData[1];
                                           int cycles = cycleData[0] - 1;
-                                          log("Remaining: $remainingCap");
-                                          log("Full: $fullCap");
-                                          log("Cycles: $cycles");
+                                          log.info("Remaining: $remainingCap");
+                                          log.info("Full: $fullCap");
+                                          log.info("Cycles: $cycles");
                                           setState(() {
                                             nfcBattery =
                                                 (remainingCap / fullCap * 100)
@@ -319,7 +322,7 @@ class _BatterySectionState extends State<BatterySection> {
                                             nfcCycles = cycles;
                                           });
                                         } catch (e) {
-                                          log("Error reading NFC: $e");
+                                          log.severe("Error reading NFC", e);
                                           Fluttertoast.showToast(
                                             msg: "Error reading NFC",
                                           );

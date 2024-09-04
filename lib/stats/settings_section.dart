@@ -1,16 +1,18 @@
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:easy_dynamic_theme/easy_dynamic_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:logging/logging.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:unustasis/domain/log_helper.dart';
 
+import '../domain/log_helper.dart';
 import '../control_screen.dart';
 import '../domain/theme_helper.dart';
 import '../domain/scooter_keyless_distance.dart';
@@ -27,6 +29,7 @@ class SettingsSection extends StatefulWidget {
 }
 
 class _SettingsSectionState extends State<SettingsSection> {
+  final log = Logger('SettingsSection');
   bool biometrics = false;
   bool autoUnlock = false;
   ScooterKeylessDistance autoUnlockDistance = ScooterKeylessDistance.regular;
@@ -99,11 +102,11 @@ class _SettingsSectionState extends State<SettingsSection> {
                         );
                       }
                     } catch (e) {
+                      log.warning("Biometrics error", e);
                       Fluttertoast.showToast(
                         msg:
                             FlutterI18n.translate(context, "biometrics_failed"),
                       );
-                      log(e.toString());
                     }
                   },
                 );
@@ -271,27 +274,49 @@ class _SettingsSectionState extends State<SettingsSection> {
             showDialog(
                 context: context,
                 builder: (context) => AlertDialog(
-                      title: const Text("Report an issue"),
-                      content: const Text(
-                          "If you think you've found a bug, please report it here."),
+                      title: Text(
+                          FlutterI18n.translate(context, "settings_report")),
+                      content: Text(FlutterI18n.translate(
+                          context, "settings_report_description")),
                       actions: [
                         TextButton(
                             onPressed: () => Navigator.of(context).pop(false),
-                            child: const Text("Close")),
+                            child: Text(FlutterI18n.translate(
+                                context, "settings_report_cancel"))),
                         TextButton(
                             onPressed: () => Navigator.of(context).pop(true),
-                            child: const Text("Continue")),
+                            child: Text(FlutterI18n.translate(
+                                context, "settings_report_proceed"))),
                       ],
                     )).then((confirmed) async {
-              if (confirmed) {
+              if (confirmed == true) {
                 // write log file
                 File logFile = await LogHelper().saveLogsToFile();
-                // TODO get some more device info to add to the body
+
+                // get some more device info to add to the body
+                DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+                String device, os;
+                if (Platform.isIOS) {
+                  IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
+                  device = iosInfo.utsname.machine;
+                  os = iosInfo.systemVersion;
+                } else if (Platform.isAndroid) {
+                  AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+                  device = "${androidInfo.brand} ${androidInfo.model}";
+                  os = androidInfo.version.release;
+                } else {
+                  device = "unknown";
+                  os = "unsupported";
+                }
 
                 final Email email = Email(
                   body:
-                      'Hello\n\nThis is a bug report, add your info here\n\nGoodbye',
-                  subject: 'Email subject',
+                      '''${FlutterI18n.translate(context, "report_placeholder")}
+
+-------------------------------
+Device: $device
+OS: $os''',
+                  subject: FlutterI18n.translate(context, "report_subject"),
                   recipients: ['unu@freal.de'],
                   attachmentPaths: [logFile.path],
                   isHTML: false,
