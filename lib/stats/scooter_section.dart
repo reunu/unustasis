@@ -570,30 +570,32 @@ class SavedScooterCard extends StatelessWidget {
                     },
                     context: context,
                   ),
-                  _colorRadioTile(
-                    colorName: "eclipse",
-                    colorValue: 7,
-                    color: Colors.grey.shade800,
-                    selectedValue: selectedValue,
-                    onChanged: (value) {
-                      setState(() {
-                        selectedValue = value!;
-                      });
-                    },
-                    context: context,
-                  ),
-                  _colorRadioTile(
-                    colorName: "idioteque",
-                    colorValue: 8,
-                    color: Colors.teal.shade200,
-                    selectedValue: selectedValue,
-                    onChanged: (value) {
-                      setState(() {
-                        selectedValue = value!;
-                      });
-                    },
-                    context: context,
-                  ),
+                  if (scooterName == "Eclipse")
+                    _colorRadioTile(
+                      colorName: "eclipse",
+                      colorValue: 7,
+                      color: Colors.grey.shade800,
+                      selectedValue: selectedValue,
+                      onChanged: (value) {
+                        setState(() {
+                          selectedValue = value!;
+                        });
+                      },
+                      context: context,
+                    ),
+                  if (scooterName == "Kori")
+                    _colorRadioTile(
+                      colorName: "idioteque",
+                      colorValue: 8,
+                      color: Colors.teal.shade200,
+                      selectedValue: selectedValue,
+                      onChanged: (value) {
+                        setState(() {
+                          selectedValue = value!;
+                        });
+                      },
+                      context: context,
+                    ),
                   if (scooterName == "Hover")
                     _colorRadioTile(
                       colorName: "hover",
