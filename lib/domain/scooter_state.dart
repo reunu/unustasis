@@ -172,4 +172,14 @@ extension StateExtension on ScooterState {
         return false;
     }
   }
+
+  bool get isReadyForSeatOpen {
+    switch (this) {
+      case ScooterState.hibernating:
+      case ScooterState.hibernatingImminent:
+        return false;
+      default:
+        return true;
+    }
+  }
 }
