@@ -7,15 +7,16 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:unu_app/control_screen.dart';
-import 'package:unu_app/domain/icomoon.dart';
-import 'package:unu_app/domain/theme_helper.dart';
-import 'package:unu_app/driving_screen.dart';
-import 'package:unu_app/onboarding_screen.dart';
-import 'package:unu_app/scooter_service.dart';
-import 'package:unu_app/domain/scooter_state.dart';
-import 'package:unu_app/scooter_visual.dart';
-import 'package:unu_app/stats/stats_screen.dart';
+
+import '../control_screen.dart';
+import '../domain/icomoon.dart';
+import '../domain/theme_helper.dart';
+import '../driving_screen.dart';
+import '../onboarding_screen.dart';
+import '../scooter_service.dart';
+import '../domain/scooter_state.dart';
+import '../scooter_visual.dart';
+import '../stats/stats_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final ScooterService scooterService;

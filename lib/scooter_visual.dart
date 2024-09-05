@@ -2,8 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:unu_app/domain/scooter_state.dart';
-import 'package:unu_app/domain/theme_helper.dart';
+
+import '../domain/scooter_state.dart';
+import '../domain/theme_helper.dart';
 
 class ScooterVisual extends StatelessWidget {
   final ScooterState? state;

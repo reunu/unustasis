@@ -8,7 +8,8 @@ import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:nfc_manager/platform_tags.dart';
-import 'package:unu_app/scooter_service.dart';
+
+import '../scooter_service.dart';
 
 class BatterySection extends StatefulWidget {
   const BatterySection(

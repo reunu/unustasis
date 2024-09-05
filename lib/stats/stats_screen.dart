@@ -8,14 +8,15 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:unu_app/domain/scooter_keyless_distance.dart';
-import 'package:unu_app/domain/theme_helper.dart';
-import 'package:unu_app/onboarding_screen.dart';
-import 'package:unu_app/scooter_service.dart';
-import 'package:unu_app/stats/battery_section.dart';
-import 'package:unu_app/stats/range_section.dart';
-import 'package:unu_app/stats/scooter_section.dart';
-import 'package:unu_app/support_screen.dart';
+
+import '../domain/scooter_keyless_distance.dart';
+import '../domain/theme_helper.dart';
+import '../onboarding_screen.dart';
+import '../scooter_service.dart';
+import '../stats/battery_section.dart';
+import '../stats/range_section.dart';
+import '../stats/scooter_section.dart';
+import '../support_screen.dart';
 
 class StatsScreen extends StatefulWidget {
   const StatsScreen({required this.service, super.key});

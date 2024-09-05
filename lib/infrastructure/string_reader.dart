@@ -2,7 +2,8 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
-import 'package:unu_app/infrastructure/utils.dart';
+
+import '../infrastructure/utils.dart';
 
 class StringReader {
   final String _name;

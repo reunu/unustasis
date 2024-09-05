@@ -11,11 +11,12 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:unu_app/domain/scooter_keyless_distance.dart';
-import 'package:unu_app/domain/scooter_state.dart';
-import 'package:unu_app/flutter/blue_plus_mockable.dart';
-import 'package:unu_app/infrastructure/characteristic_repository.dart';
-import 'package:unu_app/infrastructure/scooter_reader.dart';
+
+import '../domain/scooter_keyless_distance.dart';
+import '../domain/scooter_state.dart';
+import '../flutter/blue_plus_mockable.dart';
+import '../infrastructure/characteristic_repository.dart';
+import '../infrastructure/scooter_reader.dart';
 
 const bootingTimeSeconds = 25;
 const keylessCooldownSeconds = 60;
