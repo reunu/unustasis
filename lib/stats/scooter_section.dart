@@ -182,6 +182,7 @@ class SavedScooterCard extends StatelessWidget {
                   savedScooter.color, savedScooter.name, context);
               if (newColor != null) {
                 savedScooter.color = newColor;
+                rebuild();
               }
             },
           ),
@@ -566,7 +567,7 @@ class SavedScooterCard extends StatelessWidget {
                     context: context,
                   ),
                   _colorRadioTile(
-                    colorName: "Dark Eclipse",
+                    colorName: "eclipse",
                     colorValue: 7,
                     color: Colors.grey.shade800,
                     selectedValue: selectedValue,
@@ -578,7 +579,7 @@ class SavedScooterCard extends StatelessWidget {
                     context: context,
                   ),
                   _colorRadioTile(
-                    colorName: "Idioteque",
+                    colorName: "idioteque",
                     colorValue: 8,
                     color: Colors.teal.shade200,
                     selectedValue: selectedValue,
@@ -591,7 +592,7 @@ class SavedScooterCard extends StatelessWidget {
                   ),
                   if (scooterName == "Hover")
                     _colorRadioTile(
-                      colorName: "Hover",
+                      colorName: "hover",
                       colorValue: 9,
                       color: Colors.lightBlue,
                       selectedValue: selectedValue,
