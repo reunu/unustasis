@@ -178,8 +178,8 @@ class SavedScooterCard extends StatelessWidget {
               height: 160,
             ),
             onTap: () async {
-              int? newColor =
-                  await showColorDialog(savedScooter.color, context);
+              int? newColor = await showColorDialog(
+                  savedScooter.color, savedScooter.name, context);
               if (newColor != null) {
                 savedScooter.color = newColor;
               }
@@ -457,7 +457,8 @@ class SavedScooterCard extends StatelessWidget {
     );
   }
 
-  Future<int?> showColorDialog(int initialValue, BuildContext context) {
+  Future<int?> showColorDialog(
+      int initialValue, String scooterName, BuildContext context) {
     int selectedValue = initialValue;
 
     return showDialog<int>(
@@ -564,6 +565,43 @@ class SavedScooterCard extends StatelessWidget {
                     },
                     context: context,
                   ),
+                  _colorRadioTile(
+                    colorName: "Dark Eclipse",
+                    colorValue: 7,
+                    color: Colors.grey.shade800,
+                    selectedValue: selectedValue,
+                    onChanged: (value) {
+                      setState(() {
+                        selectedValue = value!;
+                      });
+                    },
+                    context: context,
+                  ),
+                  _colorRadioTile(
+                    colorName: "Idioteque",
+                    colorValue: 8,
+                    color: Colors.teal.shade200,
+                    selectedValue: selectedValue,
+                    onChanged: (value) {
+                      setState(() {
+                        selectedValue = value!;
+                      });
+                    },
+                    context: context,
+                  ),
+                  if (scooterName == "Hover")
+                    _colorRadioTile(
+                      colorName: "Hover",
+                      colorValue: 9,
+                      color: Colors.lightBlue,
+                      selectedValue: selectedValue,
+                      onChanged: (value) {
+                        setState(() {
+                          selectedValue = value!;
+                        });
+                      },
+                      context: context,
+                    )
                 ],
               );
             });
