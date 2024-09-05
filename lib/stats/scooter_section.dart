@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
@@ -571,7 +569,7 @@ class SavedScooterCard extends StatelessWidget {
                     },
                     context: context,
                   ),
-                  if (scooterName == "Eclipse")
+                  if (scooterName == magic("Rpyvcfr"))
                     _colorRadioTile(
                       colorName: "eclipse",
                       colorValue: 7,
@@ -584,7 +582,7 @@ class SavedScooterCard extends StatelessWidget {
                       },
                       context: context,
                     ),
-                  if (scooterName == "Kori")
+                  if (scooterName == magic("Xbev"))
                     _colorRadioTile(
                       colorName: "idioteque",
                       colorValue: 8,
@@ -597,7 +595,7 @@ class SavedScooterCard extends StatelessWidget {
                       },
                       context: context,
                     ),
-                  if (scooterName == "Hover")
+                  if (scooterName == magic("Ubire"))
                     _colorRadioTile(
                       colorName: "hover",
                       colorValue: 9,
@@ -690,4 +688,16 @@ class SavedScooterCard extends StatelessWidget {
           ),
         ),
       );
+
+  String magic(String input) {
+    return input.split('').map((char) {
+      if (RegExp(r'[a-z]').hasMatch(char)) {
+        return String.fromCharCode(((char.codeUnitAt(0) - 97 + 13) % 26) + 97);
+      } else if (RegExp(r'[A-Z]').hasMatch(char)) {
+        return String.fromCharCode(((char.codeUnitAt(0) - 65 + 13) % 26) + 65);
+      } else {
+        return char;
+      }
+    }).join('');
+  }
 }

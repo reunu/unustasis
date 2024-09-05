@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:logging/logging.dart';
 
 enum ScooterPowerState {
