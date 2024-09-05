@@ -139,8 +139,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               try {
                 widget.service
                     .connectToScooterId(_foundScooter!.remoteId.toString());
-              } catch (e) {
-                log.severe("Error connecting to scooter!", e);
+              } catch (e, stack) {
+                log.severe("Error connecting to scooter!", e, stack);
                 Fluttertoast.showToast(
                     msg: FlutterI18n.translate(
                         context, "onboarding_step4_error"),
@@ -245,8 +245,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
           _step = 3;
         });
       }
-    } catch (e) {
-      log.severe("Error finding scooters!", e);
+    } catch (e, stack) {
+      log.severe("Error finding scooters!", e, stack);
     }
   }
 

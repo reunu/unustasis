@@ -326,7 +326,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                   .hazardLocking) {
                                                 _flashHazards(1);
                                               }
-                                            } catch (e) {
+                                            } catch (e, stack) {
                                               if (e
                                                   .toString()
                                                   .contains("SEAT_OPEN")) {
@@ -334,7 +334,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                               } else {
                                                 log.severe(
                                                     "Problem opening the seat",
-                                                    e);
+                                                    e,
+                                                    stack);
                                                 Fluttertoast.showToast(
                                                     msg: e.toString());
                                               }
@@ -477,8 +478,8 @@ class _HomeScreenState extends State<HomeScreen> {
         } else {
           widget.scooterService.optionalAuth = true;
         }
-      } catch (e) {
-        log.info("Biometrics failed", e);
+      } catch (e, stack) {
+        log.info("Biometrics failed", e, stack);
         Fluttertoast.showToast(
             msg: FlutterI18n.translate(context, "biometrics_failed"));
         Navigator.of(context).pop();

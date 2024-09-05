@@ -101,8 +101,8 @@ class _SettingsSectionState extends State<SettingsSection> {
                               context, "biometrics_failed"),
                         );
                       }
-                    } catch (e) {
-                      log.warning("Biometrics error", e);
+                    } catch (e, stack) {
+                      log.warning("Biometrics error", e, stack);
                       Fluttertoast.showToast(
                         msg:
                             FlutterI18n.translate(context, "biometrics_failed"),

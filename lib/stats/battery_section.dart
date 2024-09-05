@@ -262,7 +262,7 @@ class _BatterySectionState extends State<BatterySection> {
                                     // Start Session
                                     NfcManager.instance.startSession(
                                       onError: (error) {
-                                        log.severe("NFC Error!", error);
+                                        log.severe("NFC Error!", error.message);
                                         Fluttertoast.showToast(
                                           msg: FlutterI18n.translate(
                                               context, "stats_nfc_error"),
@@ -321,8 +321,9 @@ class _BatterySectionState extends State<BatterySection> {
                                                     .round();
                                             nfcCycles = cycles;
                                           });
-                                        } catch (e) {
-                                          log.severe("Error reading NFC", e);
+                                        } catch (e, stack) {
+                                          log.severe(
+                                              "Error reading NFC", e, stack);
                                           Fluttertoast.showToast(
                                             msg: "Error reading NFC",
                                           );

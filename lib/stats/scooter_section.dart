@@ -357,8 +357,9 @@ class SavedScooterCard extends StatelessWidget {
                         await service.connectToScooterId(savedScooter.id);
                         service.startAutoRestart();
                         rebuild();
-                      } catch (e) {
-                        log.severe("Couldn't connect to ${savedScooter.id}", e);
+                      } catch (e, stack) {
+                        log.severe(
+                            "Couldn't connect to ${savedScooter.id}", e, stack);
                         Fluttertoast.showToast(
                             msg: FlutterI18n.translate(
                                 context, "settings_connect_failed",

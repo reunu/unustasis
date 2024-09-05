@@ -45,8 +45,8 @@ class ScooterService {
     try {
       savedScooters[myScooter!.remoteId.toString()]!.lastPing = DateTime.now();
       _lastPingController.add(DateTime.now());
-    } catch (e) {
-      log.severe("Couldn't save ping");
+    } catch (e, stack) {
+      log.severe("Couldn't save ping", e, stack);
     }
   }
 
@@ -351,9 +351,9 @@ class ScooterService {
           // start(); // this leads to some conflicts right now if the phone auto-connects, so we're not doing it
         }
       });
-    } catch (e) {
+    } catch (e, stack) {
       // something went wrong, roll back!
-      log.shout("Couldn't connect to scooter!", e);
+      log.shout("Couldn't connect to scooter!", e, stack);
       _foundSth = false;
       _stateController.add(ScooterState.disconnected);
       rethrow;
@@ -394,10 +394,10 @@ class ScooterService {
           flutterBluePlus.stopScan();
           connectToScooterId(foundScooter.remoteId.toString());
         });
-      } catch (e) {
+      } catch (e, stack) {
         // Guess this one is not happy with us
         // TODO: Handle errors more elegantly
-        log.severe("Error during search or connect!", e);
+        log.severe("Error during search or connect!", e, stack);
         Fluttertoast.showToast(
             msg: "Error during search or connect!"); // TODO: Localize
       }
@@ -724,9 +724,9 @@ class ScooterService {
         // Remove old format
         prefs!.remove("savedScooterId");
       }
-    } catch (e) {
+    } catch (e, stack) {
       // Handle potential errors gracefully
-      log.severe("Error fetching saved scooters", e);
+      log.severe("Error fetching saved scooters", e, stack);
     }
 
     return scooters;
@@ -760,8 +760,8 @@ class ScooterService {
       // we're not currently connected to this scooter
       try {
         await BluetoothDevice.fromId(id).removeBond();
-      } catch (e) {
-        log.severe("Couldn't forget scooter", e);
+      } catch (e, stack) {
+        log.severe("Couldn't forget scooter", e, stack);
       }
     }
 
