@@ -1,19 +1,20 @@
 import 'dart:async';
-import 'dart:developer';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:logging/logging.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
+import '../scooter_service.dart';
 import '../domain/scooter_battery.dart';
 import '../infrastructure/string_reader.dart';
 import '../infrastructure/utils.dart';
 
 class BatteryReader {
+  final log = Logger("BatteryReader");
   final ScooterBattery _battery;
-  final void Function() ping;
+  final ScooterService _service;
 
-  BatteryReader(this._battery, this.ping);
+  BatteryReader(this._battery, this._service);
 
   void readAndSubscribeSOC(BluetoothCharacteristic socCharacteristic,
       BehaviorSubject<int?> socController) async {
@@ -24,12 +25,12 @@ class BatteryReader {
       } else {
         soc = _convertUint32ToInt(value);
       }
-      log("$_battery SOC received: $soc");
+      log.info("$_battery SOC received: $soc");
       // sometimes the scooter sends null. Ignoring those values...
       if (soc != null) {
         socController.add(soc);
         _writeSocToCache(soc);
-        ping();
+        _service.ping();
       }
     });
   }
@@ -38,9 +39,9 @@ class BatteryReader {
       BehaviorSubject<int?> cyclesController) async {
     subscribeCharacteristic(cyclesCharacteristic, (value) {
       int? cycles = _convertUint32ToInt(value);
-      log("$_battery battery cycles received: $cycles");
+      log.info("$_battery battery cycles received: $cycles");
       cyclesController.add(cycles);
-      ping();
+      _service.ping();
     });
   }
 
@@ -50,25 +51,35 @@ class BatteryReader {
         .readAndSubscribe((String chargingState) {
       if (chargingState == "charging") {
         chargingController.add(true);
-        ping();
+        _service.ping();
       } else if (chargingState == "not-charging") {
         chargingController.add(false);
-        ping();
+        _service.ping();
       }
     });
   }
 
   Future<void> _writeSocToCache(int soc) async {
-    var sharedPrefs = await SharedPreferences.getInstance();
-    await sharedPrefs.setInt(_getSocCacheKey(_battery), soc);
+    switch (_battery) {
+      case ScooterBattery.primary:
+        _service.savedScooters[_service.myScooter!.remoteId.toString()]!
+            .lastPrimarySOC = soc;
+      case ScooterBattery.secondary:
+        _service.savedScooters[_service.myScooter!.remoteId.toString()]!
+            .lastSecondarySOC = soc;
+      case ScooterBattery.cbb:
+        _service.savedScooters[_service.myScooter!.remoteId.toString()]!
+            .lastCbbSOC = soc;
+      case ScooterBattery.aux:
+        _service.savedScooters[_service.myScooter!.remoteId.toString()]!
+            .lastAuxSOC = soc;
+    }
   }
 
-  String _getSocCacheKey(ScooterBattery battery) => "${battery.name}SOC";
-
   int? _convertUint32ToInt(List<int> uint32data) {
-    log("Converting $uint32data to int.");
+    log.fine("Converting $uint32data to int.");
     if (uint32data.length != 4) {
-      log("Received empty data for uint32 conversion. Ignoring.");
+      log.info("Received empty data for uint32 conversion. Ignoring.");
       return null;
     }
 

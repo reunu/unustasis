@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
@@ -9,9 +8,11 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:logging/logging.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../domain/saved_scooter.dart';
 import '../domain/scooter_keyless_distance.dart';
 import '../domain/scooter_state.dart';
 import '../flutter/blue_plus_mockable.dart';
@@ -22,7 +23,8 @@ const bootingTimeSeconds = 25;
 const keylessCooldownSeconds = 60;
 
 class ScooterService {
-  Map<String, dynamic> savedScooters = {};
+  final log = Logger('ScooterService');
+  Map<String, SavedScooter> savedScooters = {};
   BluetoothDevice? myScooter; // reserved for a connected scooter!
   bool _foundSth = false; // whether we've found a scooter yet
   bool _autoRestarting = false;
@@ -42,10 +44,10 @@ class ScooterService {
 
   void ping() {
     try {
-      prefs?.setInt("lastPing", DateTime.now().microsecondsSinceEpoch);
+      savedScooters[myScooter!.remoteId.toString()]!.lastPing = DateTime.now();
       _lastPingController.add(DateTime.now());
-    } catch (e) {
-      log("Couldn't save ping");
+    } catch (e, stack) {
+      log.severe("Couldn't save ping", e, stack);
     }
   }
 
@@ -57,13 +59,7 @@ class ScooterService {
 
       savedScooters = getSavedScooters();
 
-      if (savedScooters.isNotEmpty) {
-        // if we found a saved scooter in the previous step...
-        _scooterNameController.add(savedScooters.values.first[
-            "name"]); // TODO: This needs to be fixed for multiple scooters
-      }
-
-      restoreCachedData();
+      seedStreamsWithCache();
       restoreCachedSettings();
     });
 
@@ -97,7 +93,7 @@ class ScooterService {
     _manualRefreshTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
       if (myScooter != null && myScooter!.isConnected) {
         // only refresh state and seatbox, for now
-        log("Auto-refresh...");
+        log.info("Auto-refresh...");
         characteristicRepository.stateCharacteristic.read();
         characteristicRepository.seatCharacteristic.read();
       }
@@ -113,21 +109,66 @@ class ScooterService {
     _hazardLocking = prefs?.getBool("hazardLocking") ?? false;
   }
 
-  void restoreCachedData() {
-    if (prefs?.getInt("lastPing") != null) {
-      _lastPingController
-          .add(DateTime.fromMicrosecondsSinceEpoch(prefs!.getInt("lastPing")!));
-      // we have connected to a scooter before, fetch cached data and settings
-      double? lastLat = prefs?.getDouble("lastLat");
-      double? lastLon = prefs?.getDouble("lastLon");
-      if (lastLat != null && lastLon != null) {
-        _lastLocationController.add(LatLng(lastLat, lastLon));
+  void seedStreamsWithCache() {
+    // get the saved scooter with the most recent ping
+    SavedScooter? mostRecentScooter;
+    for (var scooter in savedScooters.values) {
+      if (mostRecentScooter == null ||
+          scooter.lastPing.isAfter(mostRecentScooter.lastPing)) {
+        mostRecentScooter = scooter;
       }
-      _primarySOCController.add(prefs?.getInt("primarySOC"));
-      _secondarySOCController.add(prefs?.getInt("secondarySOC"));
-      _cbbSOCController.add(prefs?.getInt("cbbSOC"));
-      _auxSOCController.add(prefs?.getInt("auxSOC"));
     }
+
+    _lastPingController.add(mostRecentScooter?.lastPing);
+    _primarySOCController.add(mostRecentScooter?.lastPrimarySOC);
+    _secondarySOCController.add(mostRecentScooter?.lastSecondarySOC);
+    _cbbSOCController.add(mostRecentScooter?.lastCbbSOC);
+    _auxSOCController.add(mostRecentScooter?.lastAuxSOC);
+    _scooterNameController.add(mostRecentScooter?.name);
+    _scooterColorController.add(mostRecentScooter?.color);
+  }
+
+  void addDemoData() {
+    savedScooters = {
+      "12345": SavedScooter(
+        name: "Demo Scooter",
+        id: "12345",
+        color: 1,
+        lastPing: DateTime.now(),
+        lastLocation: const LatLng(0, 0),
+        lastPrimarySOC: 53,
+        lastSecondarySOC: 100,
+        lastCbbSOC: 98,
+        lastAuxSOC: 100,
+      ),
+      "678910": SavedScooter(
+        name: "Demo Scooter 2",
+        id: "678910",
+        color: 2,
+        lastPing: DateTime.now(),
+        lastLocation: const LatLng(0, 0),
+        lastPrimarySOC: 53,
+        lastSecondarySOC: 100,
+        lastCbbSOC: 98,
+        lastAuxSOC: 100,
+      ),
+    };
+
+    myScooter = BluetoothDevice(remoteId: const DeviceIdentifier("12345"));
+
+    _primarySOCController.add(53);
+    _secondarySOCController.add(100);
+    _cbbSOCController.add(98);
+    _auxSOCController.add(100);
+    _primaryCyclesController.add(190);
+    _secondaryCyclesController.add(75);
+    _connectedController.add(true);
+    _stateController.add(ScooterState.standby);
+    _seatClosedController.add(true);
+    _handlebarController.add(false);
+    _cbbChargingController.add(false);
+    _lastPingController.add(DateTime.now());
+    _scooterNameController.add("Demo Scooter");
   }
 
   // STATUS STREAMS
@@ -173,10 +214,6 @@ class ScooterService {
   final BehaviorSubject<int?> _secondarySOCController = BehaviorSubject<int?>();
   Stream<int?> get secondarySOC => _secondarySOCController.stream;
 
-  final BehaviorSubject<LatLng?> _lastLocationController =
-      BehaviorSubject<LatLng?>();
-  Stream<LatLng?> get lastLocation => _lastLocationController.stream;
-
   final BehaviorSubject<String?> _scooterNameController =
       BehaviorSubject<String?>();
   Stream<String?> get scooterName => _scooterNameController.stream;
@@ -185,10 +222,12 @@ class ScooterService {
       BehaviorSubject<DateTime?>();
   Stream<DateTime?> get lastPing => _lastPingController.stream;
 
+  final BehaviorSubject<int?> _scooterColorController = BehaviorSubject<int?>();
+  Stream<int?> get scooterColor => _scooterColorController.stream;
+
   Stream<bool> get scanning => flutterBluePlus.isScanning;
 
   Stream<int?> get rssi => flutterBluePlus.events.onReadRssi.asyncMap((event) {
-        log("RSSI: ${event.rssi}, device: ${event.device.remoteId}");
         if (event.device.remoteId == myScooter?.remoteId) {
           return event.rssi;
         }
@@ -197,14 +236,46 @@ class ScooterService {
 
   // MAIN FUNCTIONS
 
-  Future<BluetoothDevice> findEligibleScooter() async {
-    List<BluetoothDevice> foundScooters = await getSystemScooters();
-    if (foundScooters.isNotEmpty) {
-      return foundScooters.first;
+  Future<BluetoothDevice?> findEligibleScooter({
+    List<String> excludedScooterIds = const [],
+    bool includeSystemScooters = true,
+  }) async {
+    try {
+      stopAutoRestart();
+      log.fine("Auto-restart stopped");
+    } catch (e) {
+      log.info("Didn't stop auto-restart, might not have been running yet");
     }
-    BluetoothDevice found = await getNearbyScooters().first;
-    flutterBluePlus.stopScan();
-    return found;
+
+    if (includeSystemScooters) {
+      log.fine("Searching system devices");
+      List<BluetoothDevice> foundScooters = await getSystemScooters();
+      if (foundScooters.isNotEmpty) {
+        log.fine("Found system scooter");
+        foundScooters = foundScooters.where(
+          (foundScooter) {
+            return !excludedScooterIds
+                .contains(foundScooter.remoteId.toString());
+          },
+        ).toList();
+        if (foundScooters.isNotEmpty) {
+          log.fine("System scooter is not excluded from search, returning!");
+          return foundScooters.first;
+        }
+      }
+    }
+    log.info("Searching nearby devices");
+    await for (BluetoothDevice foundScooter
+        in getNearbyScooters(preferSavedScooters: excludedScooterIds.isEmpty)) {
+      log.fine("Found scooter: ${foundScooter.remoteId.toString()}");
+      if (!excludedScooterIds.contains(foundScooter.remoteId.toString())) {
+        log.fine("Scooter's ID is not excluded, stopping scan and returning!");
+        flutterBluePlus.stopScan();
+        return foundScooter;
+      }
+    }
+    log.info("Scan over, nothing found");
+    return null;
   }
 
   Future<List<BluetoothDevice>> getSystemScooters() async {
@@ -223,10 +294,11 @@ class ScooterService {
     return systemScooters;
   }
 
-  Stream<BluetoothDevice> getNearbyScooters() async* {
+  Stream<BluetoothDevice> getNearbyScooters(
+      {bool preferSavedScooters = true}) async* {
     List<BluetoothDevice> foundScooterCache = [];
     List<String> savedScooterIds = await getSavedScooterIds();
-    if (savedScooterIds.isNotEmpty) {
+    if (savedScooterIds.isNotEmpty && preferSavedScooters) {
       flutterBluePlus.startScan(
         withRemoteIds: savedScooterIds, // look for OUR scooter
         timeout: const Duration(seconds: 30),
@@ -234,7 +306,7 @@ class ScooterService {
     } else {
       flutterBluePlus.startScan(
         withNames: [
-          "unu Scooter"
+          "unu Scooter",
         ], // if we don't have a saved scooter, look for ANY scooter
         timeout: const Duration(seconds: 30),
       );
@@ -250,6 +322,45 @@ class ScooterService {
     }
   }
 
+  Future<void> connectToScooterId(String id) async {
+    _foundSth = true;
+    _stateController.add(ScooterState.linking);
+    try {
+      // attempt to connect to what we found
+      BluetoothDevice attemptedScooter = BluetoothDevice.fromId(id);
+      // wait for the connection to be established
+      await attemptedScooter.connect();
+      // Set up this scooter as ours
+      myScooter = attemptedScooter;
+      addSavedScooter(myScooter!.remoteId.toString());
+      await setUpCharacteristics(myScooter!);
+      // save this as the last known location
+      _pollLocation();
+      // Let everybody know
+      _connectedController.add(true);
+      _scooterNameController
+          .add(savedScooters[myScooter!.remoteId.toString()]?.name);
+      _scooterColorController
+          .add(savedScooters[myScooter!.remoteId.toString()]?.color);
+      // listen for disconnects
+      myScooter!.connectionState.listen((BluetoothConnectionState state) async {
+        if (state == BluetoothConnectionState.disconnected) {
+          _connectedController.add(false);
+          _stateController.add(ScooterState.disconnected);
+          log.info("Lost connection to scooter! :(");
+          // Restart the process if we're not already doing so
+          // start(); // this leads to some conflicts right now if the phone auto-connects, so we're not doing it
+        }
+      });
+    } catch (e, stack) {
+      // something went wrong, roll back!
+      log.shout("Couldn't connect to scooter!", e, stack);
+      _foundSth = false;
+      _stateController.add(ScooterState.disconnected);
+      rethrow;
+    }
+  }
+
   // spins up the whole connection process, and connects/bonds with the nearest scooter
   void start({bool restart = true}) async {
     // Remove the splash screen
@@ -260,7 +371,7 @@ class ScooterService {
       await flutterBluePlus.turnOn();
     }
     // TODO: prompt the user to turn it on manually on iOS
-    log("Starting connection process...");
+    log.fine("Starting connection process...");
     _foundSth = false;
     // Cleanup in case this is a restart
     _connectedController.add(false);
@@ -269,109 +380,31 @@ class ScooterService {
       myScooter!.disconnect();
     }
 
+    // TODO: replace with getEligibleScooters, why do we still have this duplicated?!
+
     // First, see if the phone is already actively connected to a scooter
     List<BluetoothDevice> systemScooters = await getSystemScooters();
     if (systemScooters.isNotEmpty) {
       // get the first one, hook into its connection, and remember the ID for future reference
-      // there's one! Attempt to connect to it
-      _foundSth = true;
-      _stateController.add(ScooterState.linking);
-      // attempt to connect to what we found
-      await systemScooters.first.connect();
-      // wait for the connection to be established
-      // Set up this scooter as ours
-      myScooter = systemScooters.first;
-      addSavedScooter(myScooter!.remoteId.toString());
-      await setUpCharacteristics(myScooter!);
-      // save this as the last known location
-      _pollLocation();
-      // Let everybody know
-      _connectedController.add(true);
-      _scooterNameController
-          .add(savedScooters[myScooter!.remoteId.toString()]?["name"]);
-      // listen for disconnects
-      myScooter!.connectionState.listen((BluetoothConnectionState state) async {
-        if (state == BluetoothConnectionState.disconnected) {
-          _connectedController.add(false);
-          _stateController.add(ScooterState.disconnected);
-          log("Lost connection to scooter! :(");
-          // Restart the process if we're not already doing so
-          // start(); // this leads to some conflicts right now if the phone auto-connects, so we're not doing it
-        }
-      });
+      connectToScooterId(systemScooters.first.remoteId.toString());
     } else {
       try {
         // If not, start scanning for nearby scooters
         getNearbyScooters().listen((foundScooter) async {
           // there's one! Attempt to connect to it
-          _foundSth = true;
-          _stateController.add(ScooterState.linking);
-          // we could have some race conditions here if we find multiple scooters at once
-          // so let's stop scanning immediately to avoid that
           flutterBluePlus.stopScan();
-          // attempt to connect to what we found
-          await foundScooter.connect();
-          // wait for the connection to be established
-          // Set up this scooter as ours
-          myScooter = foundScooter;
-          addSavedScooter(foundScooter.remoteId.toString());
-          await setUpCharacteristics(foundScooter);
-          // save this as the last known location
-          _pollLocation();
-          // Let everybody know
-          _connectedController.add(true);
-          _scooterNameController
-              .add(savedScooters[myScooter!.remoteId.toString()]?["name"]);
-          // listen for disconnects
-          foundScooter.connectionState
-              .listen((BluetoothConnectionState state) async {
-            if (state == BluetoothConnectionState.disconnected) {
-              _connectedController.add(false);
-              _stateController.add(ScooterState.disconnected);
-              log("Lost connection to scooter! :(");
-              // Restart the process if we're not already doing so
-              // start(); // this leads to some conflicts right now if the phone auto-connects, so we're not doing it
-            }
-          });
+          connectToScooterId(foundScooter.remoteId.toString());
         });
-      } catch (e) {
+      } catch (e, stack) {
         // Guess this one is not happy with us
         // TODO: Handle errors more elegantly
-        print("Error during search or connect!");
-        print(e.toString());
+        log.severe("Error during search or connect!", e, stack);
         Fluttertoast.showToast(
             msg: "Error during search or connect!"); // TODO: Localize
       }
     }
     if (restart) {
       startAutoRestart();
-    }
-  }
-
-  void startWithFoundDevice({required BluetoothDevice device}) async {
-    try {
-      log("Connecting...");
-      await device.connect();
-      if (Platform.isAndroid) {
-        log("Bonding...");
-        await device.createBond();
-      }
-      myScooter = device;
-      addSavedScooter(device.remoteId.toString());
-      await setUpCharacteristics(device);
-      // save this as the last known location
-      _pollLocation();
-      _connectedController.add(true);
-      device.connectionState.listen((BluetoothConnectionState state) async {
-        if (state == BluetoothConnectionState.disconnected) {
-          _connectedController.add(false);
-          _stateController.add(ScooterState.disconnected);
-          log("Lost connection to scooter! :(");
-        }
-      });
-    } catch (e) {
-      log("Error in startWithFoundDevice: $e");
-      throw "Failed to connect to scooter!";
     }
   }
 
@@ -385,9 +418,9 @@ class ScooterService {
         // retry if we stop scanning without having found anything
         if (_scanning == false && !_foundSth) {
           await Future.delayed(const Duration(seconds: 3));
-          if (!_foundSth && !_scanning) {
+          if (!_foundSth && !_scanning && _autoRestarting) {
             // make sure nothing happened in these few seconds
-            log("Auto-restarting...");
+            log.fine("Auto-restarting...");
             start();
           }
         }
@@ -445,7 +478,7 @@ class ScooterService {
           secondarySOCController: _secondarySOCController,
           primaryCyclesController: _primaryCyclesController,
           secondaryCyclesController: _secondaryCyclesController,
-          pingFunc: ping);
+          service: this);
       _scooterReader.readAndSubscribe();
     } catch (e) {
       rethrow;
@@ -480,11 +513,11 @@ class ScooterService {
 
   Future<void> lock() async {
     if (_seatClosedController.value == false) {
-      log("Seat seems to be open, checking again...");
+      log.info("Seat seems to be open, checking again...");
       // make really sure nothing has changed
       await characteristicRepository.seatCharacteristic.read();
       if (_seatClosedController.value == false) {
-        log("Locking aborted, because seat is open!");
+        log.info("Locking aborted, because seat is open!");
         throw SeatOpenException();
       }
     }
@@ -558,17 +591,14 @@ class ScooterService {
     // When we reach here, permissions are granted and we can
     // continue accessing the position of the device.
     Position position = await Geolocator.getCurrentPosition();
-    _lastLocationController.add(LatLng(position.latitude, position.longitude));
-    if (prefs != null) {
-      prefs!.setDouble("lastLat", position.latitude);
-      prefs!.setDouble("lastLon", position.longitude);
-    }
+    savedScooters[myScooter!.remoteId.toString()]!.lastLocation =
+        LatLng(position.latitude, position.longitude);
   }
 
   // HELPER FUNCTIONS
 
   void _sendCommand(String command, {BluetoothCharacteristic? characteristic}) {
-    log("Sending command: $command");
+    log.fine("Sending command: $command");
     if (myScooter == null) {
       throw "Scooter not found!";
     }
@@ -595,9 +625,9 @@ class ScooterService {
     // Check new state every 2s
     var timer = Timer.periodic(const Duration(seconds: 2), (timer) {
       ScooterState? scooterState = _stateController.value;
-      log("Waiting for $expectedScooterState, and got: $scooterState...");
+      log.info("Waiting for $expectedScooterState, and got: $scooterState...");
       if (scooterState == expectedScooterState) {
-        log("Found $expectedScooterState, cancel timer...");
+        log.info("Found $expectedScooterState, cancel timer...");
         timer.cancel();
         completer.complete();
       }
@@ -605,7 +635,7 @@ class ScooterService {
 
     // Clean up
     Future.delayed(limit, () {
-      log("Timer limit reached after $limit");
+      log.info("Timer limit reached after $limit");
       timer.cancel();
       if (!completer.isCompleted) {
         completer.complete();
@@ -615,21 +645,91 @@ class ScooterService {
     return completer.future;
   }
 
-  Map<String, dynamic> getSavedScooters() {
-    Map<String, dynamic> scooters = {};
-    if (prefs!.containsKey("savedScooters")) {
-      scooters = jsonDecode(prefs!.getString("savedScooters")!)
-          as Map<String, dynamic>;
+  Map<String, SavedScooter> getSavedScooters() {
+    Map<String, SavedScooter> scooters = {};
+
+    try {
+      if (prefs!.containsKey("savedScooters")) {
+        Map<String, dynamic> savedScooterData =
+            jsonDecode(prefs!.getString("savedScooters")!)
+                as Map<String, dynamic>;
+
+        for (String id in savedScooterData.keys) {
+          if (savedScooterData[id] is Map<String, dynamic>) {
+            scooters[id] = SavedScooter.fromJson(id, savedScooterData[id]);
+
+            // Migration stuff
+            if (prefs!.containsKey("lastPing")) {
+              scooters[id]!.lastPing = DateTime.fromMicrosecondsSinceEpoch(
+                  prefs!.getInt("lastPing")!);
+            }
+            if (prefs!.containsKey("lastLat") &&
+                prefs!.containsKey("lastLng")) {
+              scooters[id]!.lastLocation = LatLng(
+                  prefs!.getDouble("lastLat")!, prefs!.getDouble("lastLng")!);
+            }
+            if (prefs!.containsKey("color")) {
+              scooters[id]!.color = prefs!.getInt("color")!;
+            }
+            if (prefs!.containsKey("primarySOC")) {
+              scooters[id]!.lastPrimarySOC = prefs!.getInt("primarySOC");
+            }
+            if (prefs!.containsKey("secondarySOC")) {
+              scooters[id]!.lastSecondarySOC = prefs!.getInt("secondarySOC");
+            }
+            if (prefs!.containsKey("cbbSOC")) {
+              scooters[id]!.lastCbbSOC = prefs!.getInt("cbbSOC");
+            }
+            if (prefs!.containsKey("auxSOC")) {
+              scooters[id]!.lastAuxSOC = prefs!.getInt("auxSOC");
+            }
+
+            // Remove old format
+            prefs!.remove("lastPing");
+            prefs!.remove("lastLat");
+            prefs!.remove("lastLng");
+            prefs!.remove("color");
+            prefs!.remove("primarySOC");
+            prefs!.remove("secondarySOC");
+            prefs!.remove("cbbSOC");
+            prefs!.remove("auxSOC");
+          }
+        }
+      } else if (prefs!.containsKey("savedScooterId")) {
+        // Migrate old caching scheme for the scooter ID
+        String id = prefs!.getString("savedScooterId")!;
+
+        SavedScooter newScooter = SavedScooter(
+          name: "Scooter Pro",
+          id: id,
+          color: prefs?.getInt("color"),
+          lastPing: prefs!.containsKey("lastPing")
+              ? DateTime.fromMicrosecondsSinceEpoch(prefs!.getInt("lastPing")!)
+              : null,
+          lastLocation: prefs!.containsKey("lastLat")
+              ? LatLng(
+                  prefs!.getDouble("lastLat")!, prefs!.getDouble("lastLng")!)
+              : null,
+          lastPrimarySOC: prefs?.getInt("primarySOC"),
+          lastSecondarySOC: prefs?.getInt("secondarySOC"),
+          lastCbbSOC: prefs?.getInt("cbbSOC"),
+          lastAuxSOC: prefs?.getInt("auxSOC"),
+        );
+
+        // Merge with existing scooters
+        scooters[id] = newScooter;
+
+        // Update the preference storage with the merged data
+        prefs!.setString("savedScooters", jsonEncode(scooters));
+
+        // Remove old format
+        prefs!.remove("savedScooterId");
+      }
+    } catch (e, stack) {
+      // Handle potential errors gracefully
+      log.severe("Error fetching saved scooters", e, stack);
     }
-    // migrate old format
-    if (prefs!.containsKey("savedScooterId")) {
-      String id = prefs!.getString("savedScooterId")!;
-      addSavedScooter(id);
-      prefs!.remove("savedScooterId");
-      scooters = {
-        id: {"name": "Scooter Pro"}
-      };
-    }
+
     return scooters;
   }
 
@@ -640,8 +740,7 @@ class ScooterService {
       // nothing saved locally yet, check prefs
       prefs ??= await SharedPreferences.getInstance();
       if (prefs!.containsKey("savedScooters")) {
-        savedScooters = jsonDecode(prefs!.getString("savedScooters")!)
-            as Map<String, dynamic>;
+        savedScooters = getSavedScooters();
         return savedScooters.keys.toList();
       } else if (prefs!.containsKey("savedScooterId")) {
         return [prefs!.getString("savedScooterId")!];
@@ -651,38 +750,46 @@ class ScooterService {
     }
   }
 
-  void forgetSavedScooter([String? id]) async {
-    stopAutoRestart();
-    // if the ID is not specified, we're forgetting the currently connected scooter
-    id ??= myScooter?.remoteId.toString();
-    if (id == null) {
-      // this means we're not connected to anything either
-      log("Attempted to forget scooter, but no ID was given and we're not connected to anything!");
-      return;
+  void forgetSavedScooter(String id) async {
+    if (myScooter?.remoteId.toString() == id) {
+      // this is the currently connected scooter
+      stopAutoRestart();
+      await myScooter?.disconnect();
+      myScooter?.removeBond();
+      myScooter = null;
+    } else {
+      // we're not currently connected to this scooter
+      try {
+        await BluetoothDevice.fromId(id).removeBond();
+      } catch (e, stack) {
+        log.severe("Couldn't forget scooter", e, stack);
+      }
     }
+
+    // if the ID is not specified, we're forgetting the currently connected scooter
     if (savedScooters.isNotEmpty) {
       savedScooters.remove(id);
       prefs ??= await SharedPreferences.getInstance();
       prefs!.setString("savedScooters", jsonEncode(savedScooters));
     }
     _connectedController.add(false);
-    prefs ??= await SharedPreferences.getInstance();
-    prefs!.remove("savedScooterId");
-    if (Platform.isAndroid) {
-      myScooter?.removeBond();
-    }
+    if (Platform.isAndroid) {}
   }
 
   void renameSavedScooter({String? id, required String name}) async {
     id ??= myScooter?.remoteId.toString();
     if (id == null) {
-      log("Attempted to rename scooter, but no ID was given and we're not connected to anything!");
+      log.warning(
+          "Attempted to rename scooter, but no ID was given and we're not connected to anything!");
       return;
     }
     if (savedScooters[id] == null) {
-      savedScooters[id] = {"name": name}; // TODO: MOVE COLOR HERE
+      savedScooters[id] = SavedScooter(
+        name: name,
+        id: id,
+      );
     } else {
-      savedScooters[id]!["name"] = name;
+      savedScooters[id]!.name = name;
     }
 
     prefs ??= await SharedPreferences.getInstance();
@@ -695,7 +802,12 @@ class ScooterService {
       // we already know this scooter!
       return;
     }
-    savedScooters[id] = {"name": "Scooter Pro"}; // TODO: MOVE COLOR HERE
+    savedScooters[id] = SavedScooter(
+      name: "Scooter Pro",
+      id: id,
+      color: 1,
+      lastPing: DateTime.now(),
+    );
     prefs ??= await SharedPreferences.getInstance();
     prefs!.setString("savedScooters", jsonEncode(savedScooters));
     _scooterNameController.add("Scooter Pro");

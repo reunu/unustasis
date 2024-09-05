@@ -1,8 +1,7 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 
+import 'package:logging/logging.dart';
 import '../domain/scooter_power_state.dart';
 
 enum ScooterState {
@@ -19,6 +18,7 @@ enum ScooterState {
   disconnected;
 
   static ScooterState? fromString(String? state) {
+    final log = Logger("ScooterState.fromStateString");
     switch (state) {
       case "stand-by":
         return ScooterState.standby;
@@ -42,7 +42,7 @@ enum ScooterState {
       case null:
         return null;
       default:
-        log("Unknown state: $state");
+        log.warning("Unknown state: $state");
         return ScooterState.unknown;
     }
   }
@@ -169,6 +169,16 @@ extension StateExtension on ScooterState {
         return true;
       default:
         return false;
+    }
+  }
+
+  bool get isReadyForSeatOpen {
+    switch (this) {
+      case ScooterState.hibernating:
+      case ScooterState.hibernatingImminent:
+        return false;
+      default:
+        return true;
     }
   }
 }

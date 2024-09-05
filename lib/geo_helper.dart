@@ -1,10 +1,12 @@
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart';
 
 class GeoHelper {
-  static Future<String?> getAddress(LatLng? position) async {
+  static Future<String?> getAddress(
+      LatLng? position, BuildContext context) async {
     if (position == null) {
       return null;
     }
@@ -14,6 +16,22 @@ class GeoHelper {
       return null;
     }
     Map<String, dynamic> json = jsonDecode(response.body);
-    return "${json['address']['road']} ${json['address']['house_number'] ?? ""}, ${json['address']['city']}";
+    String? street = json['address']['road'];
+    String? streetNumber = json['address']['house_number'];
+    String? city = json['address']['city'];
+
+    if (street != null && streetNumber != null && city != null) {
+      return '$street $streetNumber, $city';
+    } else if (street != null && city != null) {
+      return '$street, $city';
+    } else if (street != null && streetNumber != null) {
+      return '$street $streetNumber';
+    } else if (street != null) {
+      return street;
+    } else if (city != null) {
+      return city;
+    } else {
+      return null;
+    }
   }
 }

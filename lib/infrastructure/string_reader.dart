@@ -1,11 +1,12 @@
 import 'dart:convert';
-import 'dart:developer';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:logging/logging.dart';
 
 import '../infrastructure/utils.dart';
 
 class StringReader {
+  final log = Logger("StringReader");
   final String _name;
   final BluetoothCharacteristic _characteristic;
 
@@ -13,7 +14,7 @@ class StringReader {
 
   readAndSubscribe(Function(String) callback) {
     subscribeCharacteristic(_characteristic, (value) {
-      log("$_name received: ${ascii.decode(value)}");
+      log.info("$_name received: ${ascii.decode(value)}");
       String state = _convertBytesToString(value);
       callback(state);
     });
