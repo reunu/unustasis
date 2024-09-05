@@ -55,6 +55,10 @@ dependencies:
   flutter_native_splash: ^2.4.1
   easy_dynamic_theme: ^2.3.1
   shimmer: ^3.0.0
+  logging: ^1.2.0
+  path_provider: ^2.1.4
+  flutter_email_sender: ^6.0.3
+  device_info_plus: ^10.1.2
 
 dev_dependencies:
   flutter_test:

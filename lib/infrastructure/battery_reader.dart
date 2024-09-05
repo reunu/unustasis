@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:logging/logging.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../scooter_service.dart';
@@ -10,6 +11,7 @@ import '../infrastructure/string_reader.dart';
 import '../infrastructure/utils.dart';
 
 class BatteryReader {
+  final log = Logger("BatteryReader");
   final ScooterBattery _battery;
   final ScooterService _service;
 
@@ -24,7 +26,7 @@ class BatteryReader {
       } else {
         soc = _convertUint32ToInt(value);
       }
-      log("$_battery SOC received: $soc");
+      log.info("$_battery SOC received: $soc");
       // sometimes the scooter sends null. Ignoring those values...
       if (soc != null) {
         socController.add(soc);
@@ -38,7 +40,7 @@ class BatteryReader {
       BehaviorSubject<int?> cyclesController) async {
     subscribeCharacteristic(cyclesCharacteristic, (value) {
       int? cycles = _convertUint32ToInt(value);
-      log("$_battery battery cycles received: $cycles");
+      log.info("$_battery battery cycles received: $cycles");
       cyclesController.add(cycles);
       _service.ping();
     });
@@ -76,9 +78,9 @@ class BatteryReader {
   }
 
   int? _convertUint32ToInt(List<int> uint32data) {
-    log("Converting $uint32data to int.");
+    log.fine("Converting $uint32data to int.");
     if (uint32data.length != 4) {
-      log("Received empty data for uint32 conversion. Ignoring.");
+      log.info("Received empty data for uint32 conversion. Ignoring.");
       return null;
     }
 

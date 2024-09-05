@@ -165,5 +165,11 @@
     "controls_blink_left": "Links blinken",
     "controls_blink_right": "Rechts blinken",
     "controls_blink_hazard": "Warnblinker",
-    "controls_blink_off": "Blinker aus"
+    "controls_blink_off": "Blinker aus",
+    "settings_report": "Fehler melden",
+    "settings_report_description": "Wenn die App nicht wie erwartet funktioniert, kannst du dies den Entwicklern melden.\n\nDer Bericht enthält Nutzungsdaten der letzten paar Minuten, also nutze diese Funktion bitte unmittelbar nachdem ein Fehler auftritt.",
+    "settings_report_proceed": "Fortsetzen",
+    "settings_report_cancel": "Abbrechen",
+    "report_subject": "Fehlerbericht",
+    "report_placeholder": "Bitte beschreibe über den Linie den Fehler, den du hast, und wie man ihn reproduzieren kann:"
 }

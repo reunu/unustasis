@@ -165,5 +165,11 @@
     "controls_blink_left": "Blink left",
     "controls_blink_right": "Blink right",
     "controls_blink_hazard": "Hazard lights",
-    "controls_blink_off": "Turn off"
+    "controls_blink_off": "Turn off",
+    "settings_report": "Report an issue",
+    "settings_report_description": "If the app doesn't work as expected, you can send a report to the developers.\n\nThe report will include error logs from the last few minutes, so please use this feature directly after the error occurs.",
+    "settings_report_proceed": "Continue",
+    "settings_report_cancel": "Cancel",
+    "report_subject": "Issue report",
+    "report_placeholder": "Please describe the issue you're having, and how to reproduce it, above the line:"
 }

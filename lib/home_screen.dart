@@ -7,6 +7,7 @@ import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:logging/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../control_screen.dart';
 import '../domain/icomoon.dart';
@@ -32,6 +33,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final log = Logger('HomeScreen');
   ScooterState? _scooterState = ScooterState.disconnected;
   bool _connected = false;
   bool _scanning = false;
@@ -53,7 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     if (widget.forceOpen != true) {
-      log("Redirecting or starting");
+      log.fine("Redirecting or starting");
       redirectOrStart();
     }
     _stateSubscription = widget.scooterService.state.listen((state) {
@@ -71,7 +73,7 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _scanning = isScanning;
       });
-      log("Scanning: $isScanning");
+      log.fine("Scanning: $isScanning");
     });
     _seatClosedSubscription =
         widget.scooterService.seatClosed.listen((isClosed) {
@@ -324,12 +326,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                                   .hazardLocking) {
                                                 _flashHazards(1);
                                               }
-                                            } catch (e) {
+                                            } catch (e, stack) {
                                               if (e
                                                   .toString()
                                                   .contains("SEAT_OPEN")) {
                                                 showSeatWarning();
                                               } else {
+                                                log.severe(
+                                                    "Problem opening the seat",
+                                                    e,
+                                                    stack);
                                                 Fluttertoast.showToast(
                                                     msg: e.toString());
                                               }
@@ -439,7 +445,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void redirectOrStart() async {
     List<String> ids = await widget.scooterService.getSavedScooterIds();
-    log("Saved scooters: $ids");
+    log.info("Saved scooters: $ids");
     if ((await widget.scooterService.getSavedScooterIds()).isEmpty) {
       FlutterNativeSplash.remove();
       Navigator.pushReplacement(
@@ -472,7 +478,8 @@ class _HomeScreenState extends State<HomeScreen> {
         } else {
           widget.scooterService.optionalAuth = true;
         }
-      } catch (e) {
+      } catch (e, stack) {
+        log.info("Biometrics failed", e, stack);
         Fluttertoast.showToast(
             msg: FlutterI18n.translate(context, "biometrics_failed"));
         Navigator.of(context).pop();

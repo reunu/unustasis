@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:logging/logging.dart';
 import 'package:maps_launcher/maps_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../stats/stats_screen.dart';
@@ -149,11 +150,12 @@ class _ScooterSectionState extends State<ScooterSection> {
 }
 
 class SavedScooterCard extends StatelessWidget {
+  final log = Logger("ScooterSection");
   final bool connected;
   final SavedScooter savedScooter;
   final ScooterService service;
   final void Function() rebuild;
-  const SavedScooterCard({
+  SavedScooterCard({
     super.key,
     required this.savedScooter,
     required this.connected,
@@ -351,12 +353,13 @@ class SavedScooterCard extends StatelessWidget {
                     ),
                     onPressed: () async {
                       try {
-                        log("Trying to connect to ${savedScooter.id}");
+                        log.info("Trying to connect to ${savedScooter.id}");
                         await service.connectToScooterId(savedScooter.id);
                         service.startAutoRestart();
                         rebuild();
-                      } catch (e) {
-                        log("Couldn't connect to ${savedScooter.id}");
+                      } catch (e, stack) {
+                        log.severe(
+                            "Couldn't connect to ${savedScooter.id}", e, stack);
                         Fluttertoast.showToast(
                             msg: FlutterI18n.translate(
                                 context, "settings_connect_failed",
