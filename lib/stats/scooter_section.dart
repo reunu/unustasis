@@ -276,7 +276,8 @@ class SavedScooterCard extends StatelessWidget {
                 FlutterI18n.translate(context, "stats_last_seen_near"),
               ),
               subtitle: FutureBuilder<String?>(
-                future: GeoHelper.getAddress(savedScooter.lastLocation!),
+                future:
+                    GeoHelper.getAddress(savedScooter.lastLocation!, context),
                 builder: (context, snapshot) {
                   if (snapshot.hasData) {
                     return Text(snapshot.data!);
