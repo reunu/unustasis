@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:logging/logging.dart';
+
 import '../infrastructure/utils.dart';
 
 class StringReader {

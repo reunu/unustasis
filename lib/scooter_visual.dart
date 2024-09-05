@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
+
 import '../domain/scooter_state.dart';
 import '../domain/theme_helper.dart';
 

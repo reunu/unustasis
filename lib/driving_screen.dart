@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+
 import '../scooter_service.dart';
 
 class DrivingScreen extends StatefulWidget {
