@@ -1,9 +1,5 @@
-import 'dart:io';
-
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:easy_dynamic_theme/easy_dynamic_theme.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:local_auth/local_auth.dart';
@@ -196,7 +192,6 @@ class _SettingsSectionState extends State<SettingsSection> {
                       return Theme.of(context).colorScheme.onTertiary;
                     }
                     return Theme.of(context).colorScheme.onBackground;
-                    ;
                   }),
                   backgroundColor:
                       WidgetStateProperty.resolveWith<Color>((states) {
