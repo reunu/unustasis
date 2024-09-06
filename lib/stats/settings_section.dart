@@ -10,6 +10,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:logging/logging.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../domain/log_helper.dart';
 import '../control_screen.dart';
@@ -34,6 +35,7 @@ class _SettingsSectionState extends State<SettingsSection> {
   ScooterKeylessDistance autoUnlockDistance = ScooterKeylessDistance.regular;
   bool openSeatOnUnlock = false;
   bool hazardLocking = false;
+  bool osmConsent = true;
 
   void getInitialSettings() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -45,6 +47,7 @@ class _SettingsSectionState extends State<SettingsSection> {
           ScooterKeylessDistance.regular.threshold;
       openSeatOnUnlock = widget.service.openSeatOnUnlock;
       hazardLocking = widget.service.hazardLocking;
+      osmConsent = prefs.getBool("osmConsent") ?? true;
     });
   }
 
@@ -59,7 +62,7 @@ class _SettingsSectionState extends State<SettingsSection> {
     return ListView.separated(
       padding: const EdgeInsets.symmetric(vertical: 16),
       shrinkWrap: true,
-      itemCount: (autoUnlock ? 14 : 13),
+      itemCount: (autoUnlock ? 16 : 15),
       separatorBuilder: (context, index) => Divider(
         indent: 16,
         endIndent: 16,
@@ -69,50 +72,6 @@ class _SettingsSectionState extends State<SettingsSection> {
       itemBuilder: (context, index) => [
         Header(
             FlutterI18n.translate(context, "stats_settings_section_scooter")),
-        FutureBuilder<List<BiometricType>>(
-            future: LocalAuthentication().getAvailableBiometrics(),
-            builder: (context, biometricsOptionsSnap) {
-              if (biometricsOptionsSnap.hasData &&
-                  biometricsOptionsSnap.data!.isNotEmpty) {
-                return SwitchListTile(
-                  secondary: const Icon(Icons.lock_outlined),
-                  title: Text(
-                      FlutterI18n.translate(context, "settings_biometrics")),
-                  subtitle: Text(FlutterI18n.translate(
-                      context, "settings_biometrics_description")),
-                  value: biometrics,
-                  onChanged: (value) async {
-                    final LocalAuthentication auth = LocalAuthentication();
-                    try {
-                      final bool didAuthenticate = await auth.authenticate(
-                          localizedReason: FlutterI18n.translate(
-                              context, "biometrics_message"));
-                      if (didAuthenticate) {
-                        SharedPreferences prefs =
-                            await SharedPreferences.getInstance();
-                        prefs.setBool("biometrics", value);
-                        setState(() {
-                          biometrics = value;
-                        });
-                      } else {
-                        Fluttertoast.showToast(
-                          msg: FlutterI18n.translate(
-                              context, "biometrics_failed"),
-                        );
-                      }
-                    } catch (e, stack) {
-                      log.warning("Biometrics error", e, stack);
-                      Fluttertoast.showToast(
-                        msg:
-                            FlutterI18n.translate(context, "biometrics_failed"),
-                      );
-                    }
-                  },
-                );
-              } else {
-                return Container();
-              }
-            }),
         SwitchListTile(
           secondary: const Icon(Icons.key_outlined),
           title: Text(FlutterI18n.translate(context, "settings_auto_unlock")),
@@ -179,6 +138,50 @@ class _SettingsSectionState extends State<SettingsSection> {
           },
         ),
         Header(FlutterI18n.translate(context, "stats_settings_section_app")),
+        FutureBuilder<List<BiometricType>>(
+            future: LocalAuthentication().getAvailableBiometrics(),
+            builder: (context, biometricsOptionsSnap) {
+              if (biometricsOptionsSnap.hasData &&
+                  biometricsOptionsSnap.data!.isNotEmpty) {
+                return SwitchListTile(
+                  secondary: const Icon(Icons.lock_outlined),
+                  title: Text(
+                      FlutterI18n.translate(context, "settings_biometrics")),
+                  subtitle: Text(FlutterI18n.translate(
+                      context, "settings_biometrics_description")),
+                  value: biometrics,
+                  onChanged: (value) async {
+                    final LocalAuthentication auth = LocalAuthentication();
+                    try {
+                      final bool didAuthenticate = await auth.authenticate(
+                          localizedReason: FlutterI18n.translate(
+                              context, "biometrics_message"));
+                      if (didAuthenticate) {
+                        SharedPreferences prefs =
+                            await SharedPreferences.getInstance();
+                        prefs.setBool("biometrics", value);
+                        setState(() {
+                          biometrics = value;
+                        });
+                      } else {
+                        Fluttertoast.showToast(
+                          msg: FlutterI18n.translate(
+                              context, "biometrics_failed"),
+                        );
+                      }
+                    } catch (e, stack) {
+                      log.warning("Biometrics error", e, stack);
+                      Fluttertoast.showToast(
+                        msg:
+                            FlutterI18n.translate(context, "biometrics_failed"),
+                      );
+                    }
+                  },
+                );
+              } else {
+                return Container();
+              }
+            }),
         ListTile(
             leading: const Icon(Icons.wb_sunny_outlined),
             title: Text(FlutterI18n.translate(context, "settings_theme")),
@@ -256,6 +259,20 @@ class _SettingsSectionState extends State<SettingsSection> {
             },
           ),
         ),
+        SwitchListTile(
+          secondary: const Icon(Icons.pin_drop_outlined),
+          title: Text(FlutterI18n.translate(context, "settings_osm_consent")),
+          subtitle: Text(FlutterI18n.translate(
+              context, "settings_osm_consent_description")),
+          value: osmConsent,
+          onChanged: (value) async {
+            SharedPreferences prefs = await SharedPreferences.getInstance();
+            prefs.setBool("osmConsent", value);
+            setState(() {
+              osmConsent = value;
+            });
+          },
+        ),
         Header(FlutterI18n.translate(context, "stats_settings_section_about")),
         ListTile(
           leading: const Icon(Icons.help_outline),
@@ -324,6 +341,15 @@ OS: $os''',
                 await FlutterEmailSender.send(email);
               }
             });
+          },
+          trailing: const Icon(Icons.chevron_right),
+        ),
+        ListTile(
+          leading: const Icon(Icons.privacy_tip_outlined),
+          title:
+              Text(FlutterI18n.translate(context, "settings_privacy_policy")),
+          onTap: () {
+            launchUrl(Uri.parse("https://google.com"));
           },
           trailing: const Icon(Icons.chevron_right),
         ),
