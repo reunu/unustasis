@@ -270,60 +270,7 @@ class _SettingsSectionState extends State<SettingsSection> {
           leading: const Icon(Icons.bug_report_outlined),
           title: Text(FlutterI18n.translate(context, "settings_report")),
           onTap: () {
-            showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                      title: Text(
-                          FlutterI18n.translate(context, "settings_report")),
-                      content: Text(FlutterI18n.translate(
-                          context, "settings_report_description")),
-                      actions: [
-                        TextButton(
-                            onPressed: () => Navigator.of(context).pop(false),
-                            child: Text(FlutterI18n.translate(
-                                context, "settings_report_cancel"))),
-                        TextButton(
-                            onPressed: () => Navigator.of(context).pop(true),
-                            child: Text(FlutterI18n.translate(
-                                context, "settings_report_proceed"))),
-                      ],
-                    )).then((confirmed) async {
-              if (confirmed == true) {
-                // write log file
-                File logFile = await LogHelper().saveLogsToFile();
-
-                // get some more device info to add to the body
-                DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
-                String device, os;
-                if (Platform.isIOS) {
-                  IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
-                  device = iosInfo.utsname.machine;
-                  os = iosInfo.systemVersion;
-                } else if (Platform.isAndroid) {
-                  AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
-                  device = "${androidInfo.brand} ${androidInfo.model}";
-                  os = androidInfo.version.release;
-                } else {
-                  device = "unknown";
-                  os = "unsupported";
-                }
-
-                final Email email = Email(
-                  body:
-                      '''${FlutterI18n.translate(context, "report_placeholder")}
-
--------------------------------
-Device: $device
-OS: $os''',
-                  subject: FlutterI18n.translate(context, "report_subject"),
-                  recipients: ['unu@freal.de'],
-                  attachmentPaths: [logFile.path],
-                  isHTML: false,
-                );
-
-                await FlutterEmailSender.send(email);
-              }
-            });
+            LogHelper.startBugReport(context);
           },
           trailing: const Icon(Icons.chevron_right),
         ),

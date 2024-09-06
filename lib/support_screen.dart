@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:unustasis/domain/log_helper.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SupportScreen extends StatelessWidget {
@@ -38,14 +39,11 @@ class SupportScreen extends StatelessWidget {
           return Container(
             color: Theme.of(context).colorScheme.onTertiary,
             child: ListView.builder(
-                itemCount: faq.length + 1,
+                itemCount: faq.length + 2,
                 itemBuilder: (context, index) {
                   if (index == faq.length) {
                     return Padding(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 32,
-                        horizontal: 16,
-                      ),
+                      padding: const EdgeInsets.fromLTRB(16, 32, 16, 8),
                       child: OutlinedButton(
                         onPressed: () {
                           launchUrl(Uri.parse("https://discord.gg/UEPGY8AG9V"));
@@ -59,10 +57,44 @@ class SupportScreen extends StatelessWidget {
                                 Icons.discord_outlined,
                                 color:
                                     Theme.of(context).colorScheme.onBackground,
+                                size: 20,
                               ),
-                              const SizedBox(width: 16),
+                              const SizedBox(width: 8),
                               Text(
                                 "Unu Community Discord",
+                                style: TextStyle(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }
+                  if (index == faq.length + 1) {
+                    return Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                      child: OutlinedButton(
+                        onPressed: () {
+                          LogHelper.startBugReport(context);
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.bug_report_outlined,
+                                color:
+                                    Theme.of(context).colorScheme.onBackground,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                FlutterI18n.translate(
+                                    context, "settings_report"),
                                 style: TextStyle(
                                     color: Theme.of(context)
                                         .colorScheme
