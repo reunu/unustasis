@@ -1,20 +1,23 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:easy_dynamic_theme/easy_dynamic_theme.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:logging/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:unustasis/domain/analytics.dart';
-import 'package:unustasis/domain/theme_helper.dart';
-import 'package:unustasis/flutter/blue_plus_mockable.dart';
-import 'package:unustasis/home_screen.dart';
-import 'package:unustasis/scooter_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 
+import '../domain/analytics.dart';
+import '../domain/log_helper.dart';
+import '../flutter/blue_plus_mockable.dart';
+import '../home_screen.dart';
+import '../scooter_service.dart';
+
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  LogHelper().initialize();
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   SystemChrome.setPreferredOrientations(
       [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
 
@@ -23,7 +26,7 @@ void main() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
   final String? localeString = prefs.getString('savedLocale');
   if (localeString != null) {
-    log("Saved locale: $localeString");
+    Logger("Main").fine("Saved locale: $localeString");
     savedLocale = Locale(localeString);
   }
 
@@ -110,7 +113,8 @@ class _MyAppState extends State<MyApp> {
             forcedLocale: widget.savedLocale,
           ),
           missingTranslationHandler: (key, locale) {
-            log("--- Missing Key: $key, languageCode: ${locale?.languageCode}");
+            Logger("Main").warning(
+                "--- Missing Key: $key, languageCode: ${locale?.languageCode}");
           },
         ),
       ],

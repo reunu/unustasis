@@ -1,2 +1,6 @@
 ### Changes:
-- All changes are under the hood this time, hoping to solve some connection issues
+- Added bug report feature
+- Disabled seat button in hibernation
+- Polished images for black, white and stone colors
+- Clarified state strings
+- Added limited edition colorways

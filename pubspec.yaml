@@ -16,11 +16,11 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.1.3+12
+version: 1.2.1+15
 
 environment:
   sdk: '>=3.3.2 <4.0.0'
-  flutter: 3.19.5
+  flutter: 3.22.3
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -52,11 +52,15 @@ dependencies:
   url_launcher: ^6.2.6
   maps_launcher: ^2.2.1
   lottie: ^3.1.0
-  flutter_native_splash: ^2.4.0
+  flutter_native_splash: ^2.4.1
   easy_dynamic_theme: ^2.3.1
   shimmer: ^3.0.0
   firebase_analytics: ^11.2.0
   firebase_core: ^3.2.0
+  logging: ^1.2.0
+  path_provider: ^2.1.4
+  flutter_email_sender: ^6.0.3
+  device_info_plus: ^10.1.2
 
 dev_dependencies:
   flutter_test:
@@ -103,6 +107,9 @@ flutter:
     - images/scooter/base_4.webp
     - images/scooter/base_5.webp
     - images/scooter/base_6.webp
+    - images/scooter/base_7.webp
+    - images/scooter/base_8.webp
+    - images/scooter/base_9.webp
     - images/scooter/side_0.webp
     - images/scooter/side_1.webp
     - images/scooter/side_2.webp
@@ -110,6 +117,9 @@ flutter:
     - images/scooter/side_4.webp
     - images/scooter/side_5.webp
     - images/scooter/side_6.webp
+    - images/scooter/side_7.webp
+    - images/scooter/side_8.webp
+    - images/scooter/side_9.webp
     - images/scooter/disconnected.webp
     - images/scooter/light_beam.webp
     - images/scooter/light_ring.webp
@@ -122,6 +132,7 @@ flutter:
     - images/battery/batt_empty.webp
     - images/battery/batt_cbb.webp
     - images/battery/batt_aux.webp
+    - images/battery/batt_internal.webp
     - assets/i18n/en.json
     - assets/i18n/de.json
     - assets/i18n/pi.json

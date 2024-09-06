@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -7,21 +6,27 @@ import 'package:flutter/services.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:logging/logging.dart';
 import 'package:lottie/lottie.dart';
-import 'package:unustasis/domain/analytics.dart';
-import 'package:unustasis/domain/theme_helper.dart';
-import 'package:unustasis/home_screen.dart';
-import 'package:unustasis/scooter_service.dart';
-import 'package:unustasis/domain/scooter_state.dart';
-import 'package:unustasis/scooter_visual.dart';
-import 'package:unustasis/support_screen.dart';
+
+import '../domain/analytics.dart';
+import '../domain/theme_helper.dart';
+import '../home_screen.dart';
+import '../scooter_service.dart';
+import '../domain/scooter_state.dart';
+import '../scooter_visual.dart';
+import '../support_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({
     required this.service,
+    this.excludedScooterIds,
+    this.skipWelcome = false,
     super.key,
   });
   final ScooterService service;
+  final List<String>? excludedScooterIds;
+  final bool skipWelcome;
 
   @override
   State<OnboardingScreen> createState() => _OnboardingScreenState();
@@ -29,6 +34,7 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen>
     with TickerProviderStateMixin {
+  final log = Logger('OnboardingScreen');
   bool _scanning = false;
   int _step = 0;
   BluetoothDevice? _foundScooter;
@@ -45,6 +51,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   @override
   void initState() {
+    if (widget.skipWelcome) {
+      setState(() {
+        _step = 1;
+      });
+    }
     _scanningController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
@@ -82,7 +93,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             text: FlutterI18n.translate(context, "onboarding_step0_body"),
             btnText: FlutterI18n.translate(context, "onboarding_step0_button"),
             onPressed: () {
-              log("Next");
               setState(() {
                 _step = 1;
               });
@@ -93,7 +103,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             text: FlutterI18n.translate(context, "onboarding_step1_body"),
             btnText: FlutterI18n.translate(context, "onboarding_step1_button"),
             onPressed: () {
-              log("Next");
               _startSearch();
               setState(() {
                 _step = 2;
@@ -115,7 +124,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               btnText: FlutterI18n.translate(
                   context, "onboarding_step2_button_error"),
               onPressed: () {
-                log("Retrying");
                 _startSearch();
               });
         }
@@ -129,11 +137,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 }),
             btnText: FlutterI18n.translate(context, "onboarding_step3_button"),
             onPressed: () {
-              log("Pairing");
               try {
-                widget.service.startWithFoundDevice(device: _foundScooter!);
-              } catch (e) {
-                log("Error: $e");
+                widget.service
+                    .connectToScooterId(_foundScooter!.remoteId.toString());
+              } catch (e, stack) {
+                log.severe("Error connecting to scooter!", e, stack);
                 Fluttertoast.showToast(
                     msg: FlutterI18n.translate(
                         context, "onboarding_step4_error"),
@@ -157,7 +165,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             text: FlutterI18n.translate(context, "onboarding_step5_body"),
             btnText: FlutterI18n.translate(context, "onboarding_step5_button"),
             onPressed: () {
-              log("Continue");
               Analytics.of(context).logEvent("onboarding_completed");
               Navigator.of(context).pushReplacement(MaterialPageRoute(
                 builder: (context) =>
@@ -173,7 +180,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: false,
+        // only show back button if this is not initial onboarding
+        automaticallyImplyLeading: widget.skipWelcome ? true : false,
         systemOverlayStyle: SystemUiOverlayStyle(
             statusBarBrightness:
                 context.isDarkMode ? Brightness.dark : Brightness.light),
@@ -231,14 +239,16 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   void _startSearch() async {
     try {
-      _foundScooter = await widget.service.findEligibleScooter();
+      _foundScooter = await widget.service.findEligibleScooter(
+          excludedScooterIds: widget.excludedScooterIds ?? [],
+          includeSystemScooters: false);
       if (_foundScooter != null) {
         setState(() {
           _step = 3;
         });
       }
-    } catch (e) {
-      log("Error: $e");
+    } catch (e, stack) {
+      log.severe("Error finding scooters!", e, stack);
     }
   }
 
@@ -251,7 +261,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             tapCount++;
             if (tapCount >= 27) {
               // Handle the 10 taps in short succession
-              log('27 taps detected! Skipping onboarding...');
+              log.info('27 taps detected! Skipping onboarding...');
               tapCount = 0;
               Navigator.of(context).pushReplacement(MaterialPageRoute(
                 builder: (context) => HomeScreen(

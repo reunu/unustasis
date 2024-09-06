@@ -1,20 +1,23 @@
-import 'dart:developer';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:logging/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:unustasis/control_screen.dart';
-import 'package:unustasis/domain/icomoon.dart';
-import 'package:unustasis/domain/theme_helper.dart';
-import 'package:unustasis/driving_screen.dart';
-import 'package:unustasis/onboarding_screen.dart';
-import 'package:unustasis/scooter_service.dart';
-import 'package:unustasis/domain/scooter_state.dart';
-import 'package:unustasis/scooter_visual.dart';
-import 'package:unustasis/stats/stats_screen.dart';
+
+import '../control_screen.dart';
+import '../domain/icomoon.dart';
+import '../domain/theme_helper.dart';
+import '../driving_screen.dart';
+import '../onboarding_screen.dart';
+import '../scooter_service.dart';
+import '../domain/scooter_state.dart';
+import '../scooter_visual.dart';
+import '../stats/stats_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final ScooterService scooterService;
@@ -30,6 +33,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final log = Logger('HomeScreen');
   ScooterState? _scooterState = ScooterState.disconnected;
   bool _connected = false;
   bool _scanning = false;
@@ -38,48 +42,58 @@ class _HomeScreenState extends State<HomeScreen> {
   bool? _handlebarsLocked;
   int? _primarySOC;
   int? _secondarySOC;
-  int? color;
+
+  StreamSubscription? _stateSubscription;
+  StreamSubscription? _connectedSubscription;
+  StreamSubscription? _scanningSubscription;
+  StreamSubscription? _seatClosedSubscription;
+  StreamSubscription? _handlebarsLockedSubscription;
+  StreamSubscription? _primarySOCSubscription;
+  StreamSubscription? _secondarySOCSubscription;
 
   @override
   void initState() {
     super.initState();
-    setupColor();
     if (widget.forceOpen != true) {
-      log("Redirecting or starting");
+      log.fine("Redirecting or starting");
       redirectOrStart();
     }
-    widget.scooterService.state.listen((state) {
+    _stateSubscription = widget.scooterService.state.listen((state) {
       setState(() {
         _scooterState = state;
       });
     });
-    widget.scooterService.connected.listen((isConnected) {
+    _connectedSubscription =
+        widget.scooterService.connected.listen((isConnected) {
       setState(() {
         _connected = isConnected;
       });
     });
-    widget.scooterService.scanning.listen((isScanning) {
+    _scanningSubscription = widget.scooterService.scanning.listen((isScanning) {
       setState(() {
         _scanning = isScanning;
       });
-      log("Scanning: $isScanning");
+      log.fine("Scanning: $isScanning");
     });
-    widget.scooterService.seatClosed.listen((isClosed) {
+    _seatClosedSubscription =
+        widget.scooterService.seatClosed.listen((isClosed) {
       setState(() {
         _seatClosed = isClosed;
       });
     });
-    widget.scooterService.handlebarsLocked.listen((isLocked) {
+    _handlebarsLockedSubscription =
+        widget.scooterService.handlebarsLocked.listen((isLocked) {
       setState(() {
         _handlebarsLocked = isLocked;
       });
     });
-    widget.scooterService.primarySOC.listen((soc) {
+    _primarySOCSubscription = widget.scooterService.primarySOC.listen((soc) {
       setState(() {
         _primarySOC = soc;
       });
     });
-    widget.scooterService.secondarySOC.listen((soc) {
+    _secondarySOCSubscription =
+        widget.scooterService.secondarySOC.listen((soc) {
       setState(() {
         _secondarySOC = soc;
       });
@@ -109,8 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 statusBarColor: Colors.transparent,
                 statusBarIconBrightness: Brightness.dark,
                 systemNavigationBarColor: Colors.white),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 500),
+        child: Container(
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.background,
           ),
@@ -217,7 +230,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 .colorScheme
                                                 .onSurface
                                                 .withOpacity(0.4)
-                                            : _primarySOC! < 15
+                                            : _primarySOC! <= 15
                                                 ? Theme.of(context)
                                                     .colorScheme
                                                     .error
@@ -244,8 +257,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                           color: dataIsOld
                                               ? Theme.of(context)
                                                   .colorScheme
-                                                  .onBackground
-                                              : _primarySOC! < 15
+                                                  .onSurface
+                                                  .withOpacity(0.4)
+                                              : _secondarySOC! <= 15
                                                   ? Theme.of(context)
                                                       .colorScheme
                                                       .error
@@ -264,12 +278,16 @@ class _HomeScreenState extends State<HomeScreen> {
                             }),
                       const SizedBox(height: 16),
                       Expanded(
-                          child: ScooterVisual(
-                              color: color,
-                              state: _scooterState,
-                              scanning: _scanning,
-                              blinkerLeft: _hazards,
-                              blinkerRight: _hazards)),
+                          child: StreamBuilder<int?>(
+                              stream: widget.scooterService.scooterColor,
+                              builder: (context, colorSnap) {
+                                return ScooterVisual(
+                                    color: colorSnap.data ?? 1,
+                                    state: _scooterState,
+                                    scanning: _scanning,
+                                    blinkerLeft: _hazards,
+                                    blinkerRight: _hazards);
+                              })),
                       const SizedBox(height: 16),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -280,7 +298,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               onPressed: _connected &&
                                       _scooterState != null &&
                                       _seatClosed == true &&
-                                      _scanning == false
+                                      _scanning == false &&
+                                      _scooterState?.isReadyForSeatOpen == true
                                   ? widget.scooterService.openSeat
                                   : null,
                               label: _seatClosed == false
@@ -308,12 +327,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                                   .hazardLocking) {
                                                 _flashHazards(1);
                                               }
-                                            } catch (e) {
+                                            } catch (e, stack) {
                                               if (e
                                                   .toString()
                                                   .contains("SEAT_OPEN")) {
                                                 showSeatWarning();
                                               } else {
+                                                log.severe(
+                                                    "Problem opening the seat",
+                                                    e,
+                                                    stack);
                                                 Fluttertoast.showToast(
                                                     msg: e.toString());
                                               }
@@ -382,12 +405,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void setupColor() {
-    SharedPreferences.getInstance().then((prefs) {
-      setState(() {
-        color = prefs.getInt("color");
-      });
-    });
+  @override
+  void dispose() {
+    _stateSubscription?.cancel();
+    _connectedSubscription?.cancel();
+    _scanningSubscription?.cancel();
+    _seatClosedSubscription?.cancel();
+    _handlebarsLockedSubscription?.cancel();
+    _primarySOCSubscription?.cancel();
+    _secondarySOCSubscription?.cancel();
+    super.dispose();
   }
 
   void showSeatWarning() {
@@ -419,8 +446,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void redirectOrStart() async {
     List<String> ids = await widget.scooterService.getSavedScooterIds();
-    log("Saved scooters: $ids");
+    log.info("Saved scooters: $ids");
     if ((await widget.scooterService.getSavedScooterIds()).isEmpty) {
+      FlutterNativeSplash.remove();
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -451,7 +479,8 @@ class _HomeScreenState extends State<HomeScreen> {
         } else {
           widget.scooterService.optionalAuth = true;
         }
-      } catch (e) {
+      } catch (e, stack) {
+        log.info("Biometrics failed", e, stack);
         Fluttertoast.showToast(
             msg: FlutterI18n.translate(context, "biometrics_failed"));
         Navigator.of(context).pop();
