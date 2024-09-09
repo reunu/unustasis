@@ -8,6 +8,7 @@ import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LogHelper {
   // Private constructor
@@ -100,7 +101,9 @@ class LogHelper {
 
 -------------------------------
 Device: $device
-OS: $os''',
+OS: $os
+Saved scooters: ${(await SharedPreferences.getInstance()).getString("savedScooters")}
+''',
           subject: FlutterI18n.translate(context, "report_subject"),
           recipients: ['unu@freal.de'],
           attachmentPaths: [logFile.path],
