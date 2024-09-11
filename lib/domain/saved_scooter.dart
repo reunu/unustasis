@@ -93,13 +93,15 @@ class SavedScooter {
         'lastSecondarySOC': _lastSecondarySOC,
         'lastCbbSOC': _lastCbbSOC,
         'lastAuxSOC': _lastAuxSOC,
-        'lastLocation': _lastLocation?.toJson(),
+        'lastLocation': _lastLocation?.toJson() ?? "",
       };
 
   factory SavedScooter.fromJson(
     String id,
     Map<String, dynamic> map,
   ) {
+    bool hasLocation = map.containsKey('lastLocation') &&
+        (map['lastLocation'] as String).isNotEmpty;
     return SavedScooter(
         id: id,
         name: map['name'],
@@ -107,7 +109,7 @@ class SavedScooter {
         lastPing: map.containsKey('lastPing')
             ? DateTime.fromMicrosecondsSinceEpoch(map['lastPing'])
             : DateTime.now(),
-        lastLocation: LatLng.fromJson(map['lastLocation']),
+        lastLocation: hasLocation ? LatLng.fromJson(map['lastLocation']) : null,
         lastPrimarySOC: map['lastPrimarySOC'],
         lastSecondarySOC: map['lastSecondarySOC'],
         lastCbbSOC: map['lastCbbSOC'],
