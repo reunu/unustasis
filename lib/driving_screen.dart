@@ -3,12 +3,12 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:provider/provider.dart';
 
 import '../scooter_service.dart';
 
 class DrivingScreen extends StatefulWidget {
-  final ScooterService service;
-  const DrivingScreen({required this.service, super.key});
+  const DrivingScreen({super.key});
 
   @override
   State<DrivingScreen> createState() => _DrivingScreenState();
@@ -121,18 +121,18 @@ class _DrivingScreenState extends State<DrivingScreen> {
               ],
             ),
             const SizedBox(height: 32),
-            StreamBuilder(
-              stream: widget.service.primarySOC,
-              builder: (context, snapshot) {
+            Selector<ScooterService, int?>(
+              selector: (context, service) => service.primarySOC,
+              builder: (context, primarySOC, _) {
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('${(snapshot.data ?? 0).toString()}%'),
+                    Text('${(primarySOC ?? 0).toString()}%'),
                     const SizedBox(width: 16),
                     SizedBox(
                       width: 150,
                       child: LinearProgressIndicator(
-                        value: (snapshot.data ?? 0) / 100,
+                        value: (primarySOC ?? 0) / 100,
                         backgroundColor: Theme.of(context).colorScheme.surface,
                         color: Theme.of(context).colorScheme.primary,
                         minHeight: 16,
@@ -144,18 +144,18 @@ class _DrivingScreenState extends State<DrivingScreen> {
               },
             ),
             const SizedBox(height: 8),
-            StreamBuilder(
-              stream: widget.service.secondarySOC,
-              builder: (context, snapshot) {
+            Selector<ScooterService, int?>(
+              selector: (context, service) => service.secondarySOC,
+              builder: (context, secondarySOC, _) {
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('${(snapshot.data ?? 0).toString()}%'),
+                    Text('${(secondarySOC ?? 0).toString()}%'),
                     const SizedBox(width: 16),
                     SizedBox(
                       width: 150,
                       child: LinearProgressIndicator(
-                        value: (snapshot.data ?? 0) / 100,
+                        value: (secondarySOC ?? 0) / 100,
                         backgroundColor: Theme.of(context).colorScheme.surface,
                         color: Theme.of(context).colorScheme.primary,
                         minHeight: 16,

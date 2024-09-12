@@ -16,11 +16,9 @@ import '../scooter_service.dart';
 class ScooterSection extends StatefulWidget {
   const ScooterSection({
     super.key,
-    required this.service,
     required this.dataIsOld,
   });
 
-  final ScooterService service;
   final bool dataIsOld;
 
   @override

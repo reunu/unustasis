@@ -5,9 +5,7 @@ import '../home_screen.dart';
 import '../scooter_service.dart';
 
 class ControlScreen extends StatefulWidget {
-  const ControlScreen({required ScooterService service, super.key})
-      : _service = service;
-  final ScooterService _service;
+  const ControlScreen({super.key});
 
   @override
   State<ControlScreen> createState() => _ControlScreenState();

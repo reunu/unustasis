@@ -18,12 +18,10 @@ import '../support_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({
-    required this.service,
     this.excludedScooterIds,
     this.skipWelcome = false,
     super.key,
   });
-  final ScooterService service;
   final List<String>? excludedScooterIds;
   final bool skipWelcome;
 
