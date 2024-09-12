@@ -100,6 +100,7 @@
     "stats_settings_section_scooter": "Scooter",
     "stats_settings_section_app": "App",
     "stats_settings_section_about": "About",
+    "settings_color_onboarding": "Tap to change color",
     "settings_color": "Scooter color",
     "settings_color_info": "Will update on app restart",
     "color_black": "Black",

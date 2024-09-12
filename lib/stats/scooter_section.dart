@@ -199,7 +199,7 @@ class SavedScooterCard extends StatelessWidget {
                 ),
                 if (showOnboarding)
                   Text(
-                    "Tap to change scooter color",
+                    FlutterI18n.translate(context, "settings_color_onboarding"),
                     style: Theme.of(context).textTheme.bodySmall!.copyWith(
                           color: Theme.of(context)
                               .colorScheme
