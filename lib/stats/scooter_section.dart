@@ -256,14 +256,13 @@ class SavedScooterCard extends StatelessWidget {
                 if (connected)
                   ListTile(
                     title: Text(FlutterI18n.translate(context, "stats_state")),
-                    subtitle: StreamBuilder<ScooterState?>(
-                        stream: service.state,
-                        builder: (context, state) {
-                          return Text(
-                            state.data?.description(context) ??
-                                FlutterI18n.translate(context, "stats_unknown"),
-                          );
-                        }),
+                    subtitle: Text(
+                      context
+                              .select<ScooterService, ScooterState?>(
+                                  (service) => service.state)
+                              ?.description(context) ??
+                          FlutterI18n.translate(context, "stats_unknown"),
+                    ),
                   ),
                 if (!connected)
                   Divider(
@@ -368,6 +367,8 @@ class SavedScooterCard extends StatelessWidget {
                             ),
                           ),
                           onPressed: () async {
+                            ScooterService service =
+                                context.read<ScooterService>();
                             service.stopAutoRestart();
                             service.myScooter?.disconnect();
                             service.myScooter = null;
@@ -396,8 +397,10 @@ class SavedScooterCard extends StatelessWidget {
                             try {
                               log.info(
                                   "Trying to connect to ${savedScooter.id}");
-                              await service.connectToScooterId(savedScooter.id);
-                              service.startAutoRestart();
+                              await context
+                                  .read<ScooterService>()
+                                  .connectToScooterId(savedScooter.id);
+                              context.read<ScooterService>().startAutoRestart();
                               rebuild();
                             } catch (e, stack) {
                               log.severe(
@@ -433,7 +436,9 @@ class SavedScooterCard extends StatelessWidget {
                           bool? forget = await showForgetDialog(context);
                           if (forget == true) {
                             String name = savedScooter.name;
-                            service.forgetSavedScooter(savedScooter.id);
+                            context
+                                .read<ScooterService>()
+                                .forgetSavedScooter(savedScooter.id);
                             rebuild();
                             Fluttertoast.showToast(
                                 msg: FlutterI18n.translate(
