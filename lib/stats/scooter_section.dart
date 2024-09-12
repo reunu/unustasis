@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:logging/logging.dart';
 import 'package:maps_launcher/maps_launcher.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../stats/stats_screen.dart';
@@ -52,12 +54,19 @@ class _ScooterSectionState extends State<ScooterSection> {
     setupInitialColor();
   }
 
-  List<SavedScooter> sortedScooters() {
-    List<SavedScooter> scooters = widget.service.savedScooters.values.toList();
+  List<SavedScooter> sortedScooters(BuildContext context) {
+    List<SavedScooter> scooters =
+        context.read<ScooterService>().savedScooters.values.toList();
     scooters.sort((a, b) {
       // Check if either scooter is the connected one
-      if (a.id == widget.service.myScooter?.remoteId.toString()) return -1;
-      if (b.id == widget.service.myScooter?.remoteId.toString()) return 1;
+      if (a.id ==
+          context.read<ScooterService>().myScooter?.remoteId.toString()) {
+        return -1;
+      }
+      if (b.id ==
+          context.read<ScooterService>().myScooter?.remoteId.toString()) {
+        return 1;
+      }
 
       // If neither is the connected scooter, sort by lastPing
       return b.lastPing.compareTo(a.lastPing);
@@ -67,75 +76,67 @@ class _ScooterSectionState extends State<ScooterSection> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<bool>(
-        stream: widget.service.connected,
-        builder: (context, snapshot) {
-          return ListView(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shrinkWrap: true,
-            children: [
-              ...sortedScooters().map((scooter) {
-                return Padding(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                  child: StreamBuilder<ScooterState?>(
-                      stream: widget.service.state,
-                      builder: (context, stateSnap) {
-                        return SavedScooterCard(
-                          savedScooter: scooter,
-                          connected: (scooter.id ==
-                                  widget.service.myScooter?.remoteId
-                                      .toString() &&
-                              stateSnap.data != ScooterState.disconnected),
-                          service: widget.service,
-                          rebuild: () => setState(() {}),
-                        );
-                      }),
-                );
-              }),
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-                child: TextButton.icon(
-                  style: TextButton.styleFrom(
-                    minimumSize: const Size.fromHeight(60),
-                    backgroundColor: Theme.of(context).colorScheme.onSurface,
-                  ),
-                  onPressed: () async {
-                    if (widget.service.myScooter != null) {
-                      widget.service.myScooter!.disconnect();
-                      widget.service.myScooter = null;
-                    }
-                    List<String> savedIds =
-                        await widget.service.getSavedScooterIds();
-                    Navigator.push(context, MaterialPageRoute(
-                      builder: (context) {
-                        return OnboardingScreen(
-                          service: widget.service,
-                          excludedScooterIds: savedIds,
-                          skipWelcome: true,
-                        );
-                      },
-                    ));
-                  },
-                  icon: Icon(
-                    Icons.add,
-                    color: Theme.of(context).colorScheme.background,
-                    size: 16,
-                  ),
-                  label: Text(
-                    FlutterI18n.translate(context, "settings_add_scooter")
-                        .toUpperCase(),
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: Theme.of(context).colorScheme.background,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+    return ListView(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      shrinkWrap: true,
+      children: [
+        ...sortedScooters(context).map((scooter) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            child: SavedScooterCard(
+              savedScooter: scooter,
+              connected: (scooter.id ==
+                      context
+                          .read<ScooterService>()
+                          .myScooter
+                          ?.remoteId
+                          .toString() &&
+                  context.select<ScooterService, ScooterState?>(
+                          (service) => service.state) !=
+                      ScooterState.disconnected),
+              rebuild: () => setState(() {}),
+            ),
           );
-        });
+        }),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          child: TextButton.icon(
+            style: TextButton.styleFrom(
+              minimumSize: const Size.fromHeight(60),
+              backgroundColor: Theme.of(context).colorScheme.onSurface,
+            ),
+            onPressed: () async {
+              ScooterService service = context.read<ScooterService>();
+              service.myScooter?.disconnect();
+              service.myScooter = null;
+
+              List<String> savedIds = await service.getSavedScooterIds();
+              Navigator.push(context, MaterialPageRoute(
+                builder: (context) {
+                  return OnboardingScreen(
+                    excludedScooterIds: savedIds,
+                    skipWelcome: true,
+                  );
+                },
+              ));
+            },
+            icon: Icon(
+              Icons.add,
+              color: Theme.of(context).colorScheme.background,
+              size: 16,
+            ),
+            label: Text(
+              FlutterI18n.translate(context, "settings_add_scooter")
+                  .toUpperCase(),
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color: Theme.of(context).colorScheme.background,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -150,13 +151,11 @@ class SavedScooterCard extends StatelessWidget {
   final log = Logger("ScooterSection");
   final bool connected;
   final SavedScooter savedScooter;
-  final ScooterService service;
   final void Function() rebuild;
   SavedScooterCard({
     super.key,
     required this.savedScooter,
     required this.connected,
-    required this.service,
     required this.rebuild,
   });
 
@@ -229,7 +228,7 @@ class SavedScooterCard extends StatelessWidget {
                     if (newName != null &&
                         newName.isNotEmpty &&
                         newName != savedScooter.name) {
-                      service.renameSavedScooter(
+                      context.read<ScooterService>().renameSavedScooter(
                           name: newName, id: savedScooter.id);
                       rebuild();
                     }

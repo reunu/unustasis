@@ -115,60 +115,52 @@ class _BatterySectionState extends State<BatterySection> {
               ]);
             }),
         const SizedBox(height: 32),
-        if (primarySOCSnap.hasData && primarySOCSnap.data! > 0)
-          StreamBuilder<int?>(
-              stream: widget.service.primaryCycles,
-              builder: (context, primaryCycleSnap) {
-                return _batteryCard(
-                  type: BatteryType.primary,
-                  soc: primarySOCSnap.data!,
-                  range: _primaryRange,
-                  cycles: primaryCycleSnap.data,
-                  old: widget.dataIsOld,
-                );
-              }),
-        if (secondarySOCSnap.hasData && secondarySOCSnap.data! > 0)
-          StreamBuilder<int?>(
-              stream: widget.service.secondaryCycles,
-              builder: (context, secondaryCycleSnap) {
-                return _batteryCard(
-                  type: BatteryType.secondary,
-                  soc: secondarySOCSnap.data!,
-                  range: _secondaryRange,
-                  cycles: secondaryCycleSnap.data,
-                  old: widget.dataIsOld,
-                );
-              }),
+        if ((context.select<ScooterService, int?>(
+                    (service) => service.primarySOC) ??
+                0) >
+            0)
+          _batteryCard(
+            type: BatteryType.primary,
+            soc: context
+                .select<ScooterService, int?>((service) => service.primarySOC)!,
+            cycles: context.select<ScooterService, int?>(
+                (service) => service.primaryCycles),
+            old: widget.dataIsOld,
+          ),
+
+        if ((context.select<ScooterService, int?>(
+                    (service) => service.secondarySOC) ??
+                0) >
+            0)
+          _batteryCard(
+            type: BatteryType.secondary,
+            soc: context.select<ScooterService, int?>(
+                (service) => service.secondarySOC)!,
+            cycles: context.select<ScooterService, int?>(
+                (service) => service.secondaryCycles),
+            old: widget.dataIsOld,
+          ),
         Row(
           children: [
             Expanded(
-              child: StreamBuilder<int?>(
-                stream: widget.service.cbbSOC,
-                builder: (context, snapshot) {
-                  return StreamBuilder<bool?>(
-                      stream: widget.service.cbbCharging,
-                      builder: (context, cbbCharging) {
-                        return _internalBatteryCard(
-                          type: BatteryType.cbb,
-                          soc: snapshot.data ?? 100,
-                          charging: cbbCharging.data,
-                          old: widget.dataIsOld,
-                        );
-                      });
-                },
+              child: _internalBatteryCard(
+                type: BatteryType.cbb,
+                soc: context.select<ScooterService, int?>(
+                        (service) => service.cbbSOC) ??
+                    100,
+                charging: context.select<ScooterService, bool?>(
+                    (service) => service.cbbCharging),
+                old: widget.dataIsOld,
               ),
             ),
             const SizedBox(width: 16),
             Expanded(
-              child: StreamBuilder<int?>(
-                stream: widget.service.auxSOC,
-                builder: (context, snapshot) {
-                  return _internalBatteryCard(
-                    type: BatteryType.aux,
-                    soc: snapshot.data ?? 100,
-                    old: widget.dataIsOld,
-                  );
-                },
+              child: _internalBatteryCard(
+                type: BatteryType.aux,
+                soc: context.select<ScooterService, int?>(
+                        (service) => service.auxSOC) ??
+                    100,
+                old: widget.dataIsOld,
               ),
             ),
           ],
@@ -186,7 +178,6 @@ class _BatterySectionState extends State<BatterySection> {
           _batteryCard(
             type: BatteryType.nfc,
             soc: nfcBattery ?? 0,
-            range: (nfcBattery != null) ? (nfcBattery! * 0.45).round() : 0,
             cycles: nfcCycles,
             old: false,
           ),
@@ -400,7 +391,6 @@ class _BatterySectionState extends State<BatterySection> {
   Widget _batteryCard({
     required BatteryType type,
     required int soc,
-    required int range,
     int? cycles,
     bool old = false,
   }) {
@@ -492,7 +482,7 @@ class _BatterySectionState extends State<BatterySection> {
                         size: 16,
                       ),
                       const SizedBox(width: 4),
-                      Text("$range km")
+                      Text("${(45 * (soc / 100)).round()} km")
                     ],
                   ),
                   const SizedBox(height: 8),

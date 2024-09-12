@@ -7,11 +7,9 @@ import '../stats/battery_section.dart';
 
 class RangeSection extends StatelessWidget {
   const RangeSection({
-    required this.service,
     required this.dataIsOld,
     super.key,
   });
-  final ScooterService service;
   final bool dataIsOld;
 
   @override
