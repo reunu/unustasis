@@ -2,6 +2,8 @@ PODS:
   - Flutter (1.0.0)
   - flutter_blue_plus (0.0.1):
     - Flutter
+  - flutter_email_sender (0.0.1):
+    - Flutter
   - flutter_native_splash (0.0.1):
     - Flutter
   - fluttertoast (0.0.2):
@@ -30,6 +32,7 @@ PODS:
 DEPENDENCIES:
   - Flutter (from `Flutter`)
   - flutter_blue_plus (from `.symlinks/plugins/flutter_blue_plus/ios`)
+  - flutter_email_sender (from `.symlinks/plugins/flutter_email_sender/ios`)
   - flutter_native_splash (from `.symlinks/plugins/flutter_native_splash/ios`)
   - fluttertoast (from `.symlinks/plugins/fluttertoast/ios`)
   - geolocator_apple (from `.symlinks/plugins/geolocator_apple/ios`)
@@ -50,6 +53,8 @@ EXTERNAL SOURCES:
     :path: Flutter
   flutter_blue_plus:
     :path: ".symlinks/plugins/flutter_blue_plus/ios"
+  flutter_email_sender:
+    :path: ".symlinks/plugins/flutter_email_sender/ios"
   flutter_native_splash:
     :path: ".symlinks/plugins/flutter_native_splash/ios"
   fluttertoast:
@@ -74,6 +79,7 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
   flutter_blue_plus: 4837da7d00cf5d441fdd6635b3a57f936778ea96
+  flutter_email_sender: 10a22605f92809a11ef52b2f412db806c6082d40
   flutter_native_splash: edf599c81f74d093a4daf8e17bd7a018854bc778
   fluttertoast: 31b00dabfa7fb7bacd9e7dbee580d7a2ff4bf265
   geolocator_apple: 6cbaf322953988e009e5ecb481f07efece75c450

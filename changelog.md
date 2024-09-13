@@ -1,3 +1,6 @@
 ### Changes:
-- Interface polishing for the most part
-- Big things coming!
+- Added bug report feature
+- Disabled seat button in hibernation
+- Polished images for black, white and stone colors
+- Clarified state strings
+- Added limited edition colorways

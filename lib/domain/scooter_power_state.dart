@@ -1,4 +1,4 @@
-import 'dart:developer';
+import 'package:logging/logging.dart';
 
 enum ScooterPowerState {
   booting,
@@ -10,6 +10,8 @@ enum ScooterPowerState {
   unknown;
 
   static ScooterPowerState? fromString(String? powerState) {
+    final log = Logger("ScooterPowerState");
+
     switch (powerState) {
       case "booting":
         return ScooterPowerState.booting;
@@ -26,7 +28,7 @@ enum ScooterPowerState {
       case null:
         return null;
       default:
-        log("Unknown state: $powerState");
+        log.warning("Unknown state: $powerState");
         return ScooterPowerState.unknown;
     }
   }

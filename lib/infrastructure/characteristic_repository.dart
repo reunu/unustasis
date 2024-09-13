@@ -1,8 +1,8 @@
-import 'dart:developer';
-
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:logging/logging.dart';
 
 class CharacteristicRepository {
+  final log = Logger("CharacteristicRepository");
   BluetoothDevice scooter;
   late BluetoothCharacteristic commandCharacteristic;
   late BluetoothCharacteristic hibernationCommandCharacteristic;
@@ -78,7 +78,8 @@ class CharacteristicRepository {
 
   BluetoothCharacteristic _findCharacteristic(
       BluetoothDevice device, String serviceUuid, String characteristicUuid) {
-    log("Finding characteristic $characteristicUuid in service $serviceUuid...");
+    log.info(
+        "Finding characteristic $characteristicUuid in service $serviceUuid...");
     return device.servicesList
         .firstWhere((service) => service.serviceUuid.toString() == serviceUuid)
         .characteristics
