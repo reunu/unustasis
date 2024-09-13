@@ -60,7 +60,7 @@ class _SettingsSectionState extends State<SettingsSection> {
         indent: 16,
         endIndent: 16,
         height: 24,
-        color: Theme.of(context).colorScheme.onBackground.withOpacity(0.1),
+        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
       ),
       itemBuilder: (context, index) => [
         Header(
@@ -191,7 +191,7 @@ class _SettingsSectionState extends State<SettingsSection> {
                     if (states.contains(WidgetState.selected)) {
                       return Theme.of(context).colorScheme.onTertiary;
                     }
-                    return Theme.of(context).colorScheme.onBackground;
+                    return Theme.of(context).colorScheme.onSurface;
                   }),
                   backgroundColor:
                       WidgetStateProperty.resolveWith<Color>((states) {
@@ -228,7 +228,7 @@ class _SettingsSectionState extends State<SettingsSection> {
               contentPadding: EdgeInsets.all(16),
               border: OutlineInputBorder(),
             ),
-            dropdownColor: Theme.of(context).colorScheme.surface,
+            dropdownColor: Theme.of(context).colorScheme.surfaceContainer,
             items: [
               DropdownMenuItem<Locale>(
                 value: const Locale("en"),
