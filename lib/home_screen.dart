@@ -152,14 +152,15 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                         ),
-                        onLongPress: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => DrivingScreen(
-                              service: widget.scooterService,
-                            ),
-                          ),
-                        ),
+                        // Hidden for stable release
+                        // onLongPress: () => Navigator.push(
+                        //   context,
+                        //   MaterialPageRoute(
+                        //     builder: (context) => DrivingScreen(
+                        //       service: widget.scooterService,
+                        //     ),
+                        //   ),
+                        // ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [

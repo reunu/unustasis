@@ -100,6 +100,7 @@
     "stats_settings_section_scooter": "Ship",
     "stats_settings_section_app": "Helm",
     "stats_settings_section_about": "About",
+    "settings_color_onboarding": "Tap to change ship color",
     "settings_color": "Ship color",
     "settings_color_info": "Will update on restart",
     "color_black": "Eyepatch black",

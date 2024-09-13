@@ -90,7 +90,7 @@ class _BatterySectionState extends State<BatterySection> {
                                       .colorScheme
                                       .onSurface
                                       .withOpacity(0.4)
-                                  : primarySOCSnap.data! <= 15
+                                  : secondarySOCSnap.data! <= 15
                                       ? Colors.red
                                       : Theme.of(context).colorScheme.primary,
                             ),
