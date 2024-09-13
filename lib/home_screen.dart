@@ -12,7 +12,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../control_screen.dart';
 import '../domain/icomoon.dart';
 import '../domain/theme_helper.dart';
-import '../driving_screen.dart';
 import '../onboarding_screen.dart';
 import '../scooter_service.dart';
 import '../domain/scooter_state.dart';
@@ -152,14 +151,15 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                         ),
-                        onLongPress: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => DrivingScreen(
-                              service: widget.scooterService,
-                            ),
-                          ),
-                        ),
+                        // Hidden for stable release
+                        // onLongPress: () => Navigator.push(
+                        //   context,
+                        //   MaterialPageRoute(
+                        //     builder: (context) => DrivingScreen(
+                        //       service: widget.scooterService,
+                        //     ),
+                        //   ),
+                        // ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [

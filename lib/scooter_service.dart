@@ -572,20 +572,23 @@ class ScooterService {
     // Test if location services are enabled.
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      throw "Location services are not enabled";
+      log.warning("Location services are not enabled");
+      return;
     }
 
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        throw "Location permissions are/were denied";
+        log.warning("Location permissions are/were denied");
+        return;
       }
     }
 
     if (permission == LocationPermission.deniedForever) {
       // Permissions are denied forever, handle appropriately.
-      throw "Location permissions are denied forever";
+      log.info("Location permissions are denied forever");
+      return;
     }
 
     // When we reach here, permissions are granted and we can
