@@ -23,12 +23,6 @@ Run the following command in the root of this project to install and start the d
 flutter run
 ```
 
-To get the map preview working, you need to [create a Stadia API key](https://stadiamaps.com) (free tier will suffice) and launch the app via this command:
-
-```
-flutter run --dart-define='STADIA_TOKEN=<your-api-key>'
-```
-
 ### Contributing
 
 Interested in contributing? Join the [Unu Community Discord](https://discord.gg/fa63HJYaP4) or create an issue right here on GitHub!
