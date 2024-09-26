@@ -1,6 +1,7 @@
 ### Changes:
-- Added bug report feature
-- Disabled seat button in hibernation
-- Polished images for black, white and stone colors
-- Clarified state strings
-- Added limited edition colorways
+- Fix for users with location services disabled
+- Adding privacy policy link
+- Adding nominatim opt-out
+- Better onboarding for color selection
+- Improved error reporting
+- Minor bug and typo fixes
