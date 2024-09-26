@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class GeoHelper {
   static Future<String?> getAddress(
@@ -10,6 +11,13 @@ class GeoHelper {
     if (position == null) {
       return null;
     }
+
+    // see if user hasn't disabled Nominatim
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool("osmConsent") == false) {
+      return null;
+    }
+
     Response response = await get(Uri.parse(
         'https://nominatim.openstreetmap.org/reverse?lat=${position.latitude}&lon=${position.longitude}&format=json'));
     if (response.statusCode != 200 || response.body.isEmpty) {
