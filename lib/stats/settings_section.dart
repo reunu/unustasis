@@ -291,7 +291,8 @@ class _SettingsSectionState extends State<SettingsSection> {
           title:
               Text(FlutterI18n.translate(context, "settings_privacy_policy")),
           onTap: () {
-            launchUrl(Uri.parse("https://google.com"));
+            launchUrl(Uri.parse(
+                "https://unumotors.com/de-de/privacy-policy-of-unu-app/"));
           },
           trailing: const Icon(Icons.chevron_right),
         ),
