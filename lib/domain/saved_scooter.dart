@@ -107,8 +107,7 @@ class SavedScooter {
         lastPing: map.containsKey('lastPing')
             ? DateTime.fromMicrosecondsSinceEpoch(map['lastPing'])
             : DateTime.now(),
-        lastLocation: map['lastLocation'] != null &&
-                (map['lastLocation'] as String).isNotEmpty
+        lastLocation: map['lastLocation'] != null
             ? LatLng.fromJson(map['lastLocation'])
             : null,
         lastPrimarySOC: map['lastPrimarySOC'],
