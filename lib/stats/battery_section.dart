@@ -83,8 +83,9 @@ class _BatterySectionState extends State<BatterySection> {
                               value: secondarySOCSnap.data! / 100,
                               borderRadius: BorderRadius.circular(16.0),
                               minHeight: 24,
-                              backgroundColor:
-                                  Theme.of(context).colorScheme.surface,
+                              backgroundColor: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainer,
                               color: widget.dataIsOld
                                   ? Theme.of(context)
                                       .colorScheme
@@ -104,7 +105,7 @@ class _BatterySectionState extends State<BatterySection> {
                             borderRadius: BorderRadius.circular(16.0),
                             minHeight: 24,
                             backgroundColor:
-                                Theme.of(context).colorScheme.surface,
+                                Theme.of(context).colorScheme.surfaceContainer,
                             color: widget.dataIsOld
                                 ? Theme.of(context)
                                     .colorScheme
@@ -185,7 +186,7 @@ class _BatterySectionState extends State<BatterySection> {
                         endIndent: 0,
                         color: Theme.of(context)
                             .colorScheme
-                            .onBackground
+                            .onSurface
                             .withOpacity(0.1),
                       ),
                     if (nfcBattery != 0 && nfcBattery != null && !nfcScanning)
@@ -232,7 +233,7 @@ class _BatterySectionState extends State<BatterySection> {
                                     side: BorderSide(
                                       color: Theme.of(context)
                                           .colorScheme
-                                          .onBackground,
+                                          .onSurface,
                                     ),
                                   ),
                                   onPressed: () async {
@@ -339,7 +340,7 @@ class _BatterySectionState extends State<BatterySection> {
                                     style: TextStyle(
                                       color: Theme.of(context)
                                           .colorScheme
-                                          .onBackground,
+                                          .onSurface,
                                     ),
                                   ),
                                 ),
@@ -363,7 +364,7 @@ class _BatterySectionState extends State<BatterySection> {
         height: 180,
         padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
+          color: Theme.of(context).colorScheme.surfaceContainer,
           borderRadius: BorderRadius.circular(16.0),
           border: (soc <= 15 && !old)
               ? Border.all(
@@ -381,10 +382,8 @@ class _BatterySectionState extends State<BatterySection> {
               style: TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 12,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onBackground
-                      .withOpacity(0.5)),
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
             ),
             Text(
               type.description(context),
@@ -392,10 +391,8 @@ class _BatterySectionState extends State<BatterySection> {
               style: TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 12,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onBackground
-                      .withOpacity(0.5)),
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
             ),
             const SizedBox(height: 8),
             Padding(
@@ -434,7 +431,7 @@ class _BatterySectionState extends State<BatterySection> {
         height: 160,
         padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
+          color: Theme.of(context).colorScheme.surfaceContainer,
           borderRadius: BorderRadius.circular(16.0),
           border: (soc <= 15 && !old)
               ? Border.all(
@@ -461,7 +458,7 @@ class _BatterySectionState extends State<BatterySection> {
                         fontSize: 12,
                         color: Theme.of(context)
                             .colorScheme
-                            .onBackground
+                            .onSurface
                             .withOpacity(0.5)),
                   ),
                   const SizedBox(height: 32),
@@ -490,7 +487,7 @@ class _BatterySectionState extends State<BatterySection> {
                         fontSize: 12,
                         color: Theme.of(context)
                             .colorScheme
-                            .onBackground
+                            .onSurface
                             .withOpacity(0.5)),
                   ),
                   const SizedBox(height: 8),

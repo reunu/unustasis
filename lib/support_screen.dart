@@ -56,8 +56,7 @@ class SupportScreen extends StatelessWidget {
                             children: [
                               Icon(
                                 Icons.discord_outlined,
-                                color:
-                                    Theme.of(context).colorScheme.onBackground,
+                                color: Theme.of(context).colorScheme.onSurface,
                                 size: 20,
                               ),
                               const SizedBox(width: 8),
@@ -88,8 +87,7 @@ class SupportScreen extends StatelessWidget {
                             children: [
                               Icon(
                                 Icons.bug_report_outlined,
-                                color:
-                                    Theme.of(context).colorScheme.onBackground,
+                                color: Theme.of(context).colorScheme.onSurface,
                                 size: 20,
                               ),
                               const SizedBox(width: 8),
@@ -114,7 +112,7 @@ class SupportScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     initiallyExpanded: true,
-                    iconColor: Theme.of(context).colorScheme.onBackground,
+                    iconColor: Theme.of(context).colorScheme.onSurface,
                     tilePadding: const EdgeInsets.only(
                         left: 16, right: 16, top: 8, bottom: 8),
                     title: Text(
@@ -124,10 +122,9 @@ class SupportScreen extends StatelessWidget {
                     children: [
                       for (MapEntry question in category.value.entries)
                         ExpansionTile(
-                            iconColor:
-                                Theme.of(context).colorScheme.onBackground,
+                            iconColor: Theme.of(context).colorScheme.onSurface,
                             backgroundColor:
-                                Theme.of(context).colorScheme.background,
+                                Theme.of(context).colorScheme.surface,
                             collapsedBackgroundColor:
                                 Theme.of(context).colorScheme.onTertiary,
                             tilePadding: const EdgeInsets.only(
@@ -142,7 +139,7 @@ class SupportScreen extends StatelessWidget {
                                   style: TextStyle(
                                       color: Theme.of(context)
                                           .colorScheme
-                                          .onBackground
+                                          .onSurface
                                           .withOpacity(0.6)),
                                 ),
                               )
