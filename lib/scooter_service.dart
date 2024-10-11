@@ -280,7 +280,8 @@ class ScooterService {
 
   Future<List<BluetoothDevice>> getSystemScooters() async {
     // See if the phone is already connected to a scooter. If so, hook into that.
-    List<BluetoothDevice> systemDevices = await flutterBluePlus.systemDevices;
+    List<BluetoothDevice> systemDevices = await flutterBluePlus
+        .systemDevices([Guid("9a590000-6e67-5d0d-aab9-ad9126b66f91")]);
     List<BluetoothDevice> systemScooters = [];
     List<String> savedScooterIds = await getSavedScooterIds();
     for (var device in systemDevices) {
