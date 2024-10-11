@@ -20,7 +20,8 @@ class CharacteristicRepository {
 
   CharacteristicRepository(this.scooter);
 
-  findAll() async {
+  Future<void> findAll() async {
+    log.info("findAll running");
     await scooter.discoverServices();
     commandCharacteristic = _findCharacteristic(
         scooter,
@@ -34,6 +35,7 @@ class CharacteristicRepository {
         scooter,
         "9a590020-6e67-5d0d-aab9-ad9126b66f91",
         "9a590021-6e67-5d0d-aab9-ad9126b66f91");
+    log.info("State characteristic initialized! It's $stateCharacteristic");
     powerStateCharacteristic = _findCharacteristic(
         scooter,
         "9a5900a0-6e67-5d0d-aab9-ad9126b66f91",
@@ -74,6 +76,7 @@ class CharacteristicRepository {
         scooter,
         "9a5900e0-6e67-5d0d-aab9-ad9126b66f91",
         "9a5900f5-6e67-5d0d-aab9-ad9126b66f91");
+    return;
   }
 
   BluetoothCharacteristic _findCharacteristic(

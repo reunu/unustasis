@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:logging/logging.dart';
-import 'package:rxdart/rxdart.dart';
 
 import '../scooter_service.dart';
 import '../domain/scooter_battery.dart';
@@ -16,8 +15,9 @@ class BatteryReader {
 
   BatteryReader(this._battery, this._service);
 
-  void readAndSubscribeSOC(BluetoothCharacteristic socCharacteristic,
-      BehaviorSubject<int?> socController) async {
+  void readAndSubscribeSOC(
+    BluetoothCharacteristic socCharacteristic,
+  ) async {
     subscribeCharacteristic(socCharacteristic, (value) async {
       int? soc;
       if (_battery == ScooterBattery.cbb && value.length == 1) {
@@ -28,32 +28,63 @@ class BatteryReader {
       log.info("$_battery SOC received: $soc");
       // sometimes the scooter sends null. Ignoring those values...
       if (soc != null) {
-        socController.add(soc);
+        switch (_battery) {
+          case ScooterBattery.primary:
+            _service.primarySOC = soc;
+          case ScooterBattery.secondary:
+            _service.secondarySOC = soc;
+          case ScooterBattery.cbb:
+            _service.cbbSOC = soc;
+          case ScooterBattery.aux:
+            _service.auxSOC = soc;
+        }
         _writeSocToCache(soc);
         _service.ping();
       }
     });
   }
 
-  void readAndSubscribeCycles(BluetoothCharacteristic cyclesCharacteristic,
-      BehaviorSubject<int?> cyclesController) async {
+  void readAndSubscribeCycles(
+    BluetoothCharacteristic cyclesCharacteristic,
+  ) async {
     subscribeCharacteristic(cyclesCharacteristic, (value) {
       int? cycles = _convertUint32ToInt(value);
       log.info("$_battery battery cycles received: $cycles");
-      cyclesController.add(cycles);
+      switch (_battery) {
+        case ScooterBattery.primary:
+          _service.primaryCycles = cycles;
+        case ScooterBattery.secondary:
+          _service.secondaryCycles = cycles;
+        default:
+          // we will never read cycles of CBB or AUX, so this is unreachable
+          break;
+      }
       _service.ping();
     });
   }
 
-  void readAndSubscribeCharging(BluetoothCharacteristic chargingCharacteristic,
-      BehaviorSubject<bool?> chargingController) {
+  void readAndSubscribeCharging(
+    BluetoothCharacteristic chargingCharacteristic,
+  ) {
     StringReader("${_battery.name} charging", chargingCharacteristic)
         .readAndSubscribe((String chargingState) {
       if (chargingState == "charging") {
-        chargingController.add(true);
+        switch (_battery) {
+          case ScooterBattery.cbb:
+            _service.cbbCharging = true;
+          default:
+            // CBB is the only one that reports charging, so this is unreachable
+            break;
+        }
         _service.ping();
       } else if (chargingState == "not-charging") {
-        chargingController.add(false);
+        switch (_battery) {
+          case ScooterBattery.cbb:
+            _service.cbbCharging = false;
+          default:
+            // CBB is the only one that reports charging, so this is unreachable
+            break;
+        }
         _service.ping();
       }
     });

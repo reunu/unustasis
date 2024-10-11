@@ -5,6 +5,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:logging/logging.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -16,9 +17,7 @@ import '../scooter_service.dart';
 import '../support_screen.dart';
 
 class SettingsSection extends StatefulWidget {
-  const SettingsSection({required this.service, super.key});
-
-  final ScooterService service;
+  const SettingsSection({super.key});
 
   @override
   State<SettingsSection> createState() => _SettingsSectionState();
@@ -34,15 +33,16 @@ class _SettingsSectionState extends State<SettingsSection> {
   bool osmConsent = true;
 
   void getInitialSettings() async {
+    ScooterService service = context.read<ScooterService>();
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
       biometrics = prefs.getBool("biometrics") ?? false;
-      autoUnlock = widget.service.autoUnlock;
-      autoUnlockDistance = ScooterKeylessDistance.fromThreshold(
-              widget.service.autoUnlockThreshold) ??
-          ScooterKeylessDistance.regular.threshold;
-      openSeatOnUnlock = widget.service.openSeatOnUnlock;
-      hazardLocking = widget.service.hazardLocking;
+      autoUnlock = service.autoUnlock;
+      autoUnlockDistance =
+          ScooterKeylessDistance.fromThreshold(service.autoUnlockThreshold) ??
+              ScooterKeylessDistance.regular.threshold;
+      openSeatOnUnlock = service.openSeatOnUnlock;
+      hazardLocking = service.hazardLocking;
       osmConsent = prefs.getBool("osmConsent") ?? true;
     });
   }
@@ -75,7 +75,7 @@ class _SettingsSectionState extends State<SettingsSection> {
               context, "settings_auto_unlock_description")),
           value: autoUnlock,
           onChanged: (value) async {
-            widget.service.setAutoUnlock(value);
+            context.read<ScooterService>().setAutoUnlock(value);
             setState(() {
               autoUnlock = value;
             });
@@ -98,7 +98,7 @@ class _SettingsSectionState extends State<SettingsSection> {
               onChanged: (value) async {
                 var distance =
                     ScooterKeylessDistance.fromThreshold(value.toInt());
-                widget.service.setAutoUnlockThreshold(distance);
+                context.read<ScooterService>().setAutoUnlockThreshold(distance);
                 setState(() {
                   autoUnlockDistance = distance;
                 });
@@ -113,7 +113,7 @@ class _SettingsSectionState extends State<SettingsSection> {
               context, "settings_open_seat_on_unlock_description")),
           value: openSeatOnUnlock,
           onChanged: (value) async {
-            widget.service.setOpenSeatOnUnlock(value);
+            context.read<ScooterService>().setOpenSeatOnUnlock(value);
             setState(() {
               openSeatOnUnlock = value;
             });
@@ -127,7 +127,7 @@ class _SettingsSectionState extends State<SettingsSection> {
               context, "settings_hazard_locking_description")),
           value: hazardLocking,
           onChanged: (value) async {
-            widget.service.setHazardLocking(value);
+            context.read<ScooterService>().setHazardLocking(value);
             setState(() {
               hazardLocking = value;
             });

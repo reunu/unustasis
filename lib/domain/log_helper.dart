@@ -28,6 +28,7 @@ class LogHelper {
 
   void initialize() {
     Logger.root.onRecord.listen((record) {
+      print(record);
       // Ensure the buffer doesn't exceed the max size
       if (_logBuffer.length >= maxBufferSize) {
         _logBuffer.removeAt(0); // Remove the oldest log entry
