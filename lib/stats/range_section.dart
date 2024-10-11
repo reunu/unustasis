@@ -49,7 +49,7 @@ class RangeSection extends StatelessWidget {
           height: 40,
           indent: 12,
           endIndent: 12,
-          color: Theme.of(context).colorScheme.onBackground.withOpacity(0.1),
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
         ),
         StreamBuilder<int?>(
             stream: service.primarySOC,
@@ -84,7 +84,7 @@ class RangeSection extends StatelessWidget {
         height: 150,
         padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
+          color: Theme.of(context).colorScheme.surfaceContainer,
           borderRadius: BorderRadius.circular(16.0),
         ),
         child: Row(
@@ -104,7 +104,7 @@ class RangeSection extends StatelessWidget {
                       fontSize: 12,
                       color: Theme.of(context)
                           .colorScheme
-                          .onBackground
+                          .onSurface
                           .withOpacity(0.5)),
                 ),
                 const SizedBox(height: 32),
@@ -168,7 +168,7 @@ class RangeSection extends StatelessWidget {
         height: 200,
         padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 16.0),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
+          color: Theme.of(context).colorScheme.surfaceContainer,
           borderRadius: BorderRadius.circular(16.0),
         ),
         child: Row(
@@ -189,7 +189,7 @@ class RangeSection extends StatelessWidget {
                       fontSize: 12,
                       color: Theme.of(context)
                           .colorScheme
-                          .onBackground
+                          .onSurface
                           .withOpacity(0.5)),
                 ),
                 const SizedBox(height: 8),

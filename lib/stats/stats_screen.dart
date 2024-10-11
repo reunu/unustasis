@@ -33,19 +33,17 @@ class _StatsScreenState extends State<StatsScreen> {
         extendBodyBehindAppBar: true,
         appBar: AppBar(
           title: Text(FlutterI18n.translate(context, 'stats_title')),
-          backgroundColor: Theme.of(context).colorScheme.background,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           bottom: PreferredSize(
               preferredSize: const Size.fromHeight(50.0),
               child: TabBar(
                   isScrollable: true,
                   tabAlignment: TabAlignment.center,
                   labelPadding: const EdgeInsets.symmetric(horizontal: 24),
-                  unselectedLabelColor: Theme.of(context)
-                      .colorScheme
-                      .onBackground
-                      .withOpacity(0.3),
-                  labelColor: Theme.of(context).colorScheme.onBackground,
-                  indicatorColor: Theme.of(context).colorScheme.onBackground,
+                  unselectedLabelColor:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                  labelColor: Theme.of(context).colorScheme.onSurface,
+                  indicatorColor: Theme.of(context).colorScheme.onSurface,
                   dividerColor: Colors.transparent,
                   tabs: [
                     Tab(
@@ -86,8 +84,8 @@ class _StatsScreenState extends State<StatsScreen> {
               center: Alignment.center,
               radius: 1.3,
               colors: [
-                Theme.of(context).colorScheme.background,
-                Theme.of(context).colorScheme.background,
+                Theme.of(context).colorScheme.surface,
+                Theme.of(context).colorScheme.surface,
               ],
             ),
           ),
@@ -172,7 +170,7 @@ class LastPingInfo extends StatelessWidget {
                       fontSize: 12,
                       color: Theme.of(context)
                           .colorScheme
-                          .onBackground
+                          .onSurface
                           .withOpacity(0.7),
                     ),
                   ),
@@ -183,7 +181,7 @@ class LastPingInfo extends StatelessWidget {
                     Icons.schedule_rounded,
                     color: Theme.of(context)
                         .colorScheme
-                        .onBackground
+                        .onSurface
                         .withOpacity(0.7),
                     size: 24,
                   ),
