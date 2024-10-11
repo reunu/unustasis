@@ -164,7 +164,7 @@ class SavedScooterCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: const BorderRadius.all(Radius.circular(16)),
-        color: Theme.of(context).colorScheme.surface,
+        color: Theme.of(context).colorScheme.surfaceContainer,
       ),
       child: FutureBuilder<SharedPreferences>(
           future: SharedPreferences.getInstance(),
@@ -249,7 +249,7 @@ class SavedScooterCard extends StatelessWidget {
                     height: 0,
                     color: Theme.of(context)
                         .colorScheme
-                        .onBackground
+                        .onSurface
                         .withOpacity(0.1),
                   ),
                 if (connected)
@@ -270,7 +270,7 @@ class SavedScooterCard extends StatelessWidget {
                     height: 0,
                     color: Theme.of(context)
                         .colorScheme
-                        .onBackground
+                        .onSurface
                         .withOpacity(0.1),
                   ),
                 if (!connected)
@@ -298,7 +298,7 @@ class SavedScooterCard extends StatelessWidget {
                     height: 0,
                     color: Theme.of(context)
                         .colorScheme
-                        .onBackground
+                        .onSurface
                         .withOpacity(0.1),
                   ),
                 if (savedScooter.lastLocation != null && !connected)
@@ -331,10 +331,8 @@ class SavedScooterCard extends StatelessWidget {
                   indent: 16,
                   endIndent: 16,
                   height: 0,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onBackground
-                      .withOpacity(0.1),
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
                 ),
                 ListTile(
                   title: Text("ID"),
@@ -344,10 +342,8 @@ class SavedScooterCard extends StatelessWidget {
                   indent: 16,
                   endIndent: 16,
                   height: 0,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onBackground
-                      .withOpacity(0.1),
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
                 ),
                 const SizedBox(height: 8),
                 Padding(

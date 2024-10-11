@@ -101,7 +101,8 @@ class _DrivingScreenState extends State<DrivingScreen> {
                     child: CircularProgressIndicator(
                       value: _speed / 120,
                       strokeWidth: 10,
-                      backgroundColor: Theme.of(context).colorScheme.surface,
+                      backgroundColor:
+                          Theme.of(context).colorScheme.surfaceContainer,
                     ),
                   ),
                 ),
@@ -133,7 +134,8 @@ class _DrivingScreenState extends State<DrivingScreen> {
                       width: 150,
                       child: LinearProgressIndicator(
                         value: (primarySOC ?? 0) / 100,
-                        backgroundColor: Theme.of(context).colorScheme.surface,
+                        backgroundColor:
+                            Theme.of(context).colorScheme.surfaceContainer,
                         color: Theme.of(context).colorScheme.primary,
                         minHeight: 16,
                         borderRadius: BorderRadius.circular(8),
@@ -156,7 +158,8 @@ class _DrivingScreenState extends State<DrivingScreen> {
                       width: 150,
                       child: LinearProgressIndicator(
                         value: (secondarySOC ?? 0) / 100,
-                        backgroundColor: Theme.of(context).colorScheme.surface,
+                        backgroundColor:
+                            Theme.of(context).colorScheme.surfaceContainer,
                         color: Theme.of(context).colorScheme.primary,
                         minHeight: 16,
                         borderRadius: BorderRadius.circular(8),

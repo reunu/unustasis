@@ -172,7 +172,7 @@ class _BatterySectionState extends State<BatterySection> {
             height: 40,
             indent: 0,
             endIndent: 0,
-            color: Theme.of(context).colorScheme.onBackground.withOpacity(0.1),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
           ),
         if (nfcBattery != 0 && nfcBattery != null && !nfcScanning)
           _batteryCard(
@@ -210,7 +210,7 @@ class _BatterySectionState extends State<BatterySection> {
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size.fromHeight(60),
                         side: BorderSide(
-                          color: Theme.of(context).colorScheme.onBackground,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       onPressed: () async {
@@ -308,7 +308,7 @@ class _BatterySectionState extends State<BatterySection> {
                       child: Text(
                         FlutterI18n.translate(context, "stats_nfc_button"),
                         style: TextStyle(
-                          color: Theme.of(context).colorScheme.onBackground,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ),
@@ -330,7 +330,7 @@ class _BatterySectionState extends State<BatterySection> {
         height: 180,
         padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
+          color: Theme.of(context).colorScheme.surfaceContainer,
           borderRadius: BorderRadius.circular(16.0),
           border: (soc <= 15 && !old)
               ? Border.all(
@@ -348,10 +348,8 @@ class _BatterySectionState extends State<BatterySection> {
               style: TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 12,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onBackground
-                      .withOpacity(0.5)),
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
             ),
             Text(
               type.description(context),
@@ -359,10 +357,8 @@ class _BatterySectionState extends State<BatterySection> {
               style: TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 12,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onBackground
-                      .withOpacity(0.5)),
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
             ),
             const SizedBox(height: 8),
             Padding(
@@ -400,7 +396,7 @@ class _BatterySectionState extends State<BatterySection> {
         height: 160,
         padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
+          color: Theme.of(context).colorScheme.surfaceContainer,
           borderRadius: BorderRadius.circular(16.0),
           border: (soc <= 15 && !old)
               ? Border.all(
@@ -427,7 +423,7 @@ class _BatterySectionState extends State<BatterySection> {
                         fontSize: 12,
                         color: Theme.of(context)
                             .colorScheme
-                            .onBackground
+                            .onSurface
                             .withOpacity(0.5)),
                   ),
                   const SizedBox(height: 32),
@@ -456,7 +452,7 @@ class _BatterySectionState extends State<BatterySection> {
                         fontSize: 12,
                         color: Theme.of(context)
                             .colorScheme
-                            .onBackground
+                            .onSurface
                             .withOpacity(0.5)),
                   ),
                   const SizedBox(height: 8),

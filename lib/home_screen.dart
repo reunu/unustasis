@@ -73,7 +73,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 systemNavigationBarColor: Colors.white),
         child: Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.background,
+            color: Theme.of(context).colorScheme.surface,
           ),
           child: Stack(
             alignment: Alignment.center,
@@ -487,7 +487,7 @@ class StateCircle extends StatelessWidget {
                       .toColor()
               : Theme.of(context)
                   .colorScheme
-                  .surface
+                  .surfaceContainer
                   .withOpacity(context.isDarkMode ? 0.5 : 0.7),
         ),
       ),
@@ -536,9 +536,8 @@ class _ScooterPowerButtonState extends State<ScooterPowerButton> {
                 elevation: 0,
                 padding:
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-                backgroundColor: loading
-                    ? Theme.of(context).colorScheme.background
-                    : mainColor,
+                backgroundColor:
+                    loading ? Theme.of(context).colorScheme.surface : mainColor,
               ),
               onPressed: () {
                 Fluttertoast.showToast(msg: widget._label);
@@ -567,7 +566,7 @@ class _ScooterPowerButtonState extends State<ScooterPowerButton> {
                     )
                   : Icon(
                       widget._icon,
-                      color: Theme.of(context).colorScheme.background,
+                      color: Theme.of(context).colorScheme.surface,
                     ),
             ),
           ),
@@ -607,8 +606,8 @@ class ScooterActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     Color mainColor = _iconColor ??
         (_onPressed == null
-            ? Theme.of(context).colorScheme.onBackground.withOpacity(0.2)
-            : Theme.of(context).colorScheme.onBackground);
+            ? Theme.of(context).colorScheme.onSurface.withOpacity(0.2)
+            : Theme.of(context).colorScheme.onSurface);
     return Column(
       children: [
         OutlinedButton(

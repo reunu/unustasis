@@ -202,7 +202,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       .withLightness(0.3)
                       .withSaturation(1)
                       .toColor()
-                  : Theme.of(context).colorScheme.surface,
+                  : Theme.of(context).colorScheme.surfaceContainer,
               Theme.of(context).colorScheme.onTertiary,
             ],
           ),
@@ -322,7 +322,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             minimumSize: const Size.fromHeight(
               60,
             ), // fromHeight use double.infinity as width and 40 is the height
-            backgroundColor: Theme.of(context).colorScheme.onBackground,
+            backgroundColor: Theme.of(context).colorScheme.onSurface,
           ),
           onPressed: onPressed,
           child: Padding(
