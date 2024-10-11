@@ -522,6 +522,8 @@ class ScooterService with ChangeNotifier {
       characteristicRepository = CharacteristicRepository(myScooter!);
       await characteristicRepository.findAll();
 
+      log.info(
+          "Found all characteristics! StateCharacteristic is: ${characteristicRepository.stateCharacteristic}");
       _scooterReader = ScooterReader(
         characteristicRepository: characteristicRepository,
         service: this,
