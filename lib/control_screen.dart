@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:provider/provider.dart';
 
 import '../home_screen.dart';
 import '../scooter_service.dart';
 
 class ControlScreen extends StatefulWidget {
-  const ControlScreen({required ScooterService service, super.key})
-      : _service = service;
-  final ScooterService _service;
+  const ControlScreen({super.key});
 
   @override
   State<ControlScreen> createState() => _ControlScreenState();
@@ -33,7 +32,7 @@ class _ControlScreenState extends State<ControlScreen> {
                 Expanded(
                   child: ScooterActionButton(
                     onPressed: () {
-                      widget._service.unlock();
+                      context.read<ScooterService>().unlock();
                       Navigator.of(context).pop();
                     },
                     icon: Icons.lock_open_outlined,
@@ -43,7 +42,7 @@ class _ControlScreenState extends State<ControlScreen> {
                 Expanded(
                   child: ScooterActionButton(
                     onPressed: () {
-                      widget._service.lock();
+                      context.read<ScooterService>().lock();
                       Navigator.of(context).pop();
                     },
                     icon: Icons.lock_outlined,
@@ -61,7 +60,7 @@ class _ControlScreenState extends State<ControlScreen> {
                 Expanded(
                   child: ScooterActionButton(
                     onPressed: () {
-                      widget._service.wakeUp();
+                      context.read<ScooterService>().wakeUp();
                       Navigator.of(context).pop();
                     },
                     icon: Icons.wb_sunny_outlined,
@@ -71,7 +70,7 @@ class _ControlScreenState extends State<ControlScreen> {
                 Expanded(
                   child: ScooterActionButton(
                     onPressed: () {
-                      widget._service.hibernate();
+                      context.read<ScooterService>().hibernate();
                       Navigator.of(context).pop();
                     },
                     icon: Icons.nightlight_outlined,
@@ -89,8 +88,9 @@ class _ControlScreenState extends State<ControlScreen> {
               children: [
                 Expanded(
                   child: ScooterActionButton(
-                    onPressed: () =>
-                        widget._service.blink(left: true, right: false),
+                    onPressed: () => context
+                        .read<ScooterService>()
+                        .blink(left: true, right: false),
                     icon: Icons.arrow_back_ios_new_rounded,
                     label:
                         FlutterI18n.translate(context, "controls_blink_left"),
@@ -98,8 +98,9 @@ class _ControlScreenState extends State<ControlScreen> {
                 ),
                 Expanded(
                   child: ScooterActionButton(
-                    onPressed: () =>
-                        widget._service.blink(left: false, right: true),
+                    onPressed: () => context
+                        .read<ScooterService>()
+                        .blink(left: false, right: true),
                     icon: Icons.arrow_forward_ios_rounded,
                     label:
                         FlutterI18n.translate(context, "controls_blink_right"),
@@ -115,8 +116,9 @@ class _ControlScreenState extends State<ControlScreen> {
                 children: [
                   Expanded(
                     child: ScooterActionButton(
-                      onPressed: () =>
-                          widget._service.blink(left: true, right: true),
+                      onPressed: () => context
+                          .read<ScooterService>()
+                          .blink(left: true, right: true),
                       icon: Icons.code_rounded,
                       label: FlutterI18n.translate(
                           context, "controls_blink_hazard"),
@@ -124,8 +126,9 @@ class _ControlScreenState extends State<ControlScreen> {
                   ),
                   Expanded(
                     child: ScooterActionButton(
-                      onPressed: () =>
-                          widget._service.blink(left: false, right: false),
+                      onPressed: () => context
+                          .read<ScooterService>()
+                          .blink(left: false, right: false),
                       icon: Icons.code_off_rounded,
                       label:
                           FlutterI18n.translate(context, "controls_blink_off"),

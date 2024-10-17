@@ -1,9 +1,8 @@
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:provider/provider.dart';
 
 import '../stats/settings_section.dart';
 import '../scooter_service.dart';
@@ -11,9 +10,7 @@ import '../stats/battery_section.dart';
 import '../stats/scooter_section.dart';
 
 class StatsScreen extends StatefulWidget {
-  const StatsScreen({required this.service, super.key});
-
-  final ScooterService service;
+  const StatsScreen({super.key});
 
   @override
   State<StatsScreen> createState() => _StatsScreenState();
@@ -33,19 +30,17 @@ class _StatsScreenState extends State<StatsScreen> {
         extendBodyBehindAppBar: true,
         appBar: AppBar(
           title: Text(FlutterI18n.translate(context, 'stats_title')),
-          backgroundColor: Theme.of(context).colorScheme.background,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           bottom: PreferredSize(
               preferredSize: const Size.fromHeight(50.0),
               child: TabBar(
                   isScrollable: true,
                   tabAlignment: TabAlignment.center,
                   labelPadding: const EdgeInsets.symmetric(horizontal: 24),
-                  unselectedLabelColor: Theme.of(context)
-                      .colorScheme
-                      .onBackground
-                      .withOpacity(0.3),
-                  labelColor: Theme.of(context).colorScheme.onBackground,
-                  indicatorColor: Theme.of(context).colorScheme.onBackground,
+                  unselectedLabelColor:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                  labelColor: Theme.of(context).colorScheme.onSurface,
+                  indicatorColor: Theme.of(context).colorScheme.onSurface,
                   dividerColor: Colors.transparent,
                   tabs: [
                     Tab(
@@ -75,8 +70,9 @@ class _StatsScreenState extends State<StatsScreen> {
                   ])),
           actions: [
             LastPingInfo(
-              stream: widget.service.lastPing,
-              onDebugLongPress: widget.service.addDemoData,
+              lastPing: context.select<ScooterService, DateTime?>(
+                  (service) => service.lastPing),
+              onDebugLongPress: context.read<ScooterService>().addDemoData,
             ),
           ],
         ),
@@ -86,32 +82,25 @@ class _StatsScreenState extends State<StatsScreen> {
               center: Alignment.center,
               radius: 1.3,
               colors: [
-                Theme.of(context).colorScheme.background,
-                Theme.of(context).colorScheme.background,
+                Theme.of(context).colorScheme.surface,
+                Theme.of(context).colorScheme.surface,
               ],
             ),
           ),
           child: SafeArea(
-            child: StreamBuilder<DateTime?>(
-                stream: widget.service.lastPing,
-                builder: (context, lastPing) {
-                  bool dataIsOld = !lastPing.hasData ||
-                      lastPing.hasData &&
-                          lastPing.data!
-                                  .difference(DateTime.now())
-                                  .inMinutes
-                                  .abs() >
-                              5;
+            child: Selector<ScooterService, DateTime?>(
+                selector: (context, service) => service.lastPing,
+                builder: (context, lastPing, _) {
+                  bool dataIsOld = lastPing == null ||
+                      lastPing.difference(DateTime.now()).inMinutes.abs() > 5;
                   return TabBarView(
                     children: [
                       // BATTERY TAB
-                      BatterySection(
-                          service: widget.service, dataIsOld: dataIsOld),
+                      BatterySection(dataIsOld: dataIsOld),
                       // SCOOTER TAB
-                      ScooterSection(
-                          service: widget.service, dataIsOld: dataIsOld),
+                      ScooterSection(dataIsOld: dataIsOld),
                       // SETTINGS TAB
-                      SettingsSection(service: widget.service),
+                      const SettingsSection(),
                     ],
                   );
                 }),
@@ -125,11 +114,11 @@ class _StatsScreenState extends State<StatsScreen> {
 class LastPingInfo extends StatelessWidget {
   const LastPingInfo({
     super.key,
-    required this.stream,
+    this.lastPing,
     this.onDebugLongPress,
   });
 
-  final Stream<DateTime?> stream;
+  final DateTime? lastPing;
   final void Function()? onDebugLongPress;
 
   @override
@@ -140,60 +129,48 @@ class LastPingInfo extends StatelessWidget {
           onDebugLongPress!();
         }
       },
-      child: StreamBuilder<DateTime?>(
-          stream: stream,
-          builder: (context, snapshot) {
-            return InkWell(
-              onTap: () {
-                String timeDiff =
-                    snapshot.data!.calculateTimeDifferenceInShort(context);
-                if (timeDiff ==
-                    FlutterI18n.translate(context, "stats_last_ping_now")) {
-                  Fluttertoast.showToast(
-                    msg: FlutterI18n.translate(
-                        context, "stats_last_ping_toast_now"),
-                  );
-                } else {
-                  Fluttertoast.showToast(
-                    msg: FlutterI18n.translate(context, "stats_last_ping_toast",
-                        translationParams: {"time": timeDiff.toLowerCase()}),
-                  );
-                }
-              },
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    snapshot.data?.calculateTimeDifferenceInShort(context) ??
-                        "NEVER",
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 12,
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onBackground
-                          .withOpacity(0.7),
-                    ),
-                  ),
-                  const SizedBox(
-                    width: 4,
-                  ),
-                  Icon(
-                    Icons.schedule_rounded,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onBackground
-                        .withOpacity(0.7),
-                    size: 24,
-                  ),
-                  const SizedBox(
-                    width: 32,
-                  ),
-                ],
-              ),
+      child: InkWell(
+        onTap: () {
+          String timeDiff = lastPing?.calculateTimeDifferenceInShort(context) ??
+              "???"; // somehow, we are here even though there never was a ping?
+          if (timeDiff ==
+              FlutterI18n.translate(context, "stats_last_ping_now")) {
+            Fluttertoast.showToast(
+              msg: FlutterI18n.translate(context, "stats_last_ping_toast_now"),
             );
-          }),
+          } else {
+            Fluttertoast.showToast(
+              msg: FlutterI18n.translate(context, "stats_last_ping_toast",
+                  translationParams: {"time": timeDiff.toLowerCase()}),
+            );
+          }
+        },
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              lastPing?.calculateTimeDifferenceInShort(context) ?? "???",
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+              ),
+            ),
+            const SizedBox(
+              width: 4,
+            ),
+            Icon(
+              Icons.schedule_rounded,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+              size: 24,
+            ),
+            const SizedBox(
+              width: 32,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
