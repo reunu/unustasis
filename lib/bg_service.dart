@@ -1,91 +1,114 @@
-import 'package:flutter_background/flutter_background.dart';
-import 'package:flutter_background_service/flutter_background_service.dart';
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
-import 'package:unustasis/flutter/blue_plus_mockable.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'dart:async';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:logging/logging.dart';
+import 'package:unustasis/flutter/blue_plus_mockable.dart';
+import 'package:unustasis/scooter_service.dart';
 
-import 'scooter_service.dart'; // Reference your existing ScooterService class
+// this will be used as notification channel id
+const notificationChannelId = 'unu_foreground';
 
-FlutterBluePlusMockable flutterBluePlus = FlutterBluePlusMockable();
-ScooterService scooterService = ScooterService(flutterBluePlus);
+// this will be used for notification id, So you can update your custom notification with this id.
+const notificationId = 1612;
 
-final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-    FlutterLocalNotificationsPlugin();
+FlutterBluePlusMockable fbp = FlutterBluePlusMockable();
+ScooterService scooterService = ScooterService(fbp);
 
-Future<void> initializeBackgroundService() async {
-  // Initialize notification channel for Android
+void startBackgroundService() {
+  final service = FlutterBackgroundService();
+  service.startService();
+}
+
+void stopBackgroundService() {
+  final service = FlutterBackgroundService();
+  service.invoke("stop");
+}
+
+Future<void> setupNotificationService() async {
+  final service = FlutterBackgroundService();
+
   const AndroidNotificationChannel channel = AndroidNotificationChannel(
-    'scooter_service_channel', // id
-    'Scooter Service Channel', // title
-    description: 'This channel is used by the scooter background service',
-    importance: Importance.low, // Set the importance level
+    notificationChannelId, // id
+    'Unu Foreground Service', // title
+    description:
+        'This channel is used for periodically checking your scooter.', // description
+    importance: Importance.low, // importance must be at low or higher level
   );
+
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+
+  flutterLocalNotificationsPlugin
+      .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>()
+      ?.requestNotificationsPermission();
 
   await flutterLocalNotificationsPlugin
       .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>()
       ?.createNotificationChannel(channel);
 
-  // Request background execution permissions
-  await FlutterBackground.initialize();
-
-  final service = FlutterBackgroundService();
-
-  // Start the service
   await service.configure(
+    iosConfiguration: IosConfiguration(
+      autoStart: true,
+      onForeground: onStart,
+      onBackground: onIosBackground,
+    ),
     androidConfiguration: AndroidConfiguration(
+      autoStart: true,
       onStart: onStart,
       isForegroundMode: true,
-      autoStart: true,
-      notificationChannelId: channel.id,
-      initialNotificationTitle: 'Scooter Service',
-      initialNotificationContent: 'Managing scooter connection',
-      foregroundServiceNotificationId: 888,
-    ),
-    iosConfiguration: IosConfiguration(
-      onForeground: onStart,
-      onBackground: onIosBackgroundAsync,
+      autoStartOnBoot: true,
+      foregroundServiceTypes: [AndroidForegroundType.connectedDevice],
+      notificationChannelId:
+          notificationChannelId, // this must match with notification channel you created above.
+      initialNotificationTitle: 'AWESOME SERVICE',
+      initialNotificationContent: 'Initializing',
+      foregroundServiceNotificationId: notificationId,
     ),
   );
+}
 
-  service.startService();
+@pragma('vm:entry-point')
+Future<bool> onIosBackground(ServiceInstance service) async {
+  WidgetsFlutterBinding.ensureInitialized();
+  DartPluginRegistrant.ensureInitialized();
+
+  return true;
 }
 
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {
-  // Initialize ScooterService here
-  scooterService.start();
+  service.on("start").listen((event) {});
+  Logger("BackgroundService").info("Background service started!");
 
-  // Listen to events and commands from the home screen widget or other parts
-  service.on('unlock_scooter').listen((event) {
-    scooterService.unlock();
-  });
+  scooterService.start(restart: true);
 
-  service.on('lock_scooter').listen((event) {
-    scooterService.lock();
-  });
-
-  // Periodically update the scooter's battery status
-  Timer.periodic(const Duration(minutes: 5), (timer) async {
+  Timer.periodic(const Duration(seconds: 1), (timer) async {
     if (service is AndroidServiceInstance) {
-      if (!(await service.isForegroundService())) {
-        timer.cancel();
+      if (await service.isForegroundService()) {
+        FlutterLocalNotificationsPlugin().show(
+          notificationId,
+          'COOL SERVICE',
+          'Time: ${DateTime.now()}, Scanning: ${scooterService.scanning} Connected: ${scooterService.connected}',
+          const NotificationDetails(
+            android: AndroidNotificationDetails(
+              notificationChannelId,
+              'MY FOREGROUND SERVICE',
+              icon: 'ic_bg_service_small',
+              ongoing: true,
+            ),
+          ),
+        );
       }
     }
-    final batteryLevel = scooterService.primarySOC;
-    service.invoke('update', {'battery': batteryLevel.toString()});
   });
-}
 
-// Required for iOS background execution (async function)
-@pragma('vm:entry-point')
-Future<bool> onIosBackgroundAsync(ServiceInstance service) async {
-  WidgetsFlutterBinding.ensureInitialized();
-  // Keep the service alive for periodic updates
-  Timer.periodic(const Duration(minutes: 5), (timer) async {
-    final batteryLevel = scooterService.primarySOC;
-    service.invoke('update', {'battery': batteryLevel.toString()});
+  Timer.periodic(const Duration(minutes: 1), (timer) {
+    // look for our scooter, connect to it, poll state and battery levels
   });
-  return true;
 }

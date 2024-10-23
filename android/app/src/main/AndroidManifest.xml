@@ -32,8 +32,9 @@
 
 
         <service
-            android:name="de.freal.unustasis.BackgroundService"
+            android:name="id.flutter.flutter_background_service.BackgroundService"
             android:permission="android.permission.BIND_JOB_SERVICE"
+            android:foregroundServiceType="connectedDevice"
             android:exported="true" />
 
         <!-- To restart service at device boot -->
@@ -71,5 +72,7 @@
     <uses-permission android:name="android.permission.NFC" />
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 </manifest>

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:easy_dynamic_theme/easy_dynamic_theme.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:logging/logging.dart';
@@ -30,7 +32,7 @@ void main() async {
   }
 
   // here goes nothing...
-  await initializeBackgroundService();
+  setupNotificationService();
 
   runApp(ChangeNotifierProvider(
       create: (context) => ScooterService(FlutterBluePlusMockable()),
