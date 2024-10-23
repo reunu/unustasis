@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -92,7 +93,13 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   void _warnOfOldApp() async {
     final appCheck = AppCheck();
     log.info("Checking for old app");
-    if (await appCheck.isAppInstalled('com.unumotors.app')) {
+    bool appInstalled = false;
+    if (Platform.isAndroid) {
+      appInstalled = await appCheck.isAppInstalled('com.unumotors.app');
+    } else if (Platform.isIOS) {
+      appInstalled = await appCheck.isAppInstalled('com.unumotors.app://');
+    }
+    if (appInstalled) {
       showDialog<void>(
         context: context,
         barrierDismissible: false, // user must tap button!
