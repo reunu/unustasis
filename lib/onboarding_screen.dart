@@ -8,6 +8,7 @@ import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:logging/logging.dart';
 import 'package:lottie/lottie.dart';
+import 'package:appcheck/appcheck.dart';
 
 import '../domain/theme_helper.dart';
 import '../home_screen.dart';
@@ -50,7 +51,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   @override
   void initState() {
+    // for adding second or third scooters
     if (widget.skipWelcome) {
+      // show an alert if we discover the old unu app still installed
+      _warnOfOldApp();
+      // move on in the background
       setState(() {
         _step = 1;
       });
@@ -84,6 +89,40 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     super.initState();
   }
 
+  void _warnOfOldApp() async {
+    final appCheck = AppCheck();
+    log.info("Checking for old app");
+    if (await appCheck.isAppInstalled('com.unumotors.app')) {
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false, // user must tap button!
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text(FlutterI18n.translate(context, "old_app_alert_title")),
+            content: SingleChildScrollView(
+              child: ListBody(
+                children: <Widget>[
+                  Text(FlutterI18n.translate(context, "old_app_alert_body")),
+                ],
+              ),
+            ),
+            actions: <Widget>[
+              TextButton(
+                child: Text(FlutterI18n.translate(
+                    context, "old_app_alert_acknowledge")),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        },
+      );
+    } else {
+      log.info("Old app not detected");
+    }
+  }
+
   List<Widget> getWidgets(int step) {
     switch (step) {
       case 0:
@@ -92,6 +131,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             text: FlutterI18n.translate(context, "onboarding_step0_body"),
             btnText: FlutterI18n.translate(context, "onboarding_step0_button"),
             onPressed: () {
+              // show an alert if we discover the old unu app still installed
+              _warnOfOldApp();
+              // move on in the background
               setState(() {
                 _step = 1;
               });
