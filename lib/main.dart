@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
@@ -25,6 +27,9 @@ void main() async {
   if (localeString != null) {
     Logger("Main").fine("Saved locale: $localeString");
     savedLocale = Locale(localeString);
+  } else {
+    // we have no language saved, so we pass along the device language
+    savedLocale = Locale(Platform.localeName.split('_').first);
   }
   runApp(EasyDynamicThemeWidget(
     child: MyApp(
