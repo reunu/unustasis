@@ -90,6 +90,8 @@ class _ScooterSectionState extends State<ScooterSection> {
                                       .toString() &&
                               stateSnap.data != ScooterState.disconnected),
                           service: widget.service,
+                          single:
+                              widget.service.savedScooters.values.length == 1,
                           rebuild: () => setState(() {}),
                         );
                       }),
@@ -153,12 +155,14 @@ class SavedScooterCard extends StatelessWidget {
   final bool connected;
   final SavedScooter savedScooter;
   final ScooterService service;
+  final bool single;
   final void Function() rebuild;
   SavedScooterCard({
     super.key,
     required this.savedScooter,
     required this.connected,
     required this.service,
+    required this.single,
     required this.rebuild,
   });
 
@@ -331,6 +335,30 @@ class SavedScooterCard extends StatelessWidget {
                         savedScooter.lastLocation!.longitude,
                       );
                     },
+                  ),
+                Divider(
+                  indent: 16,
+                  endIndent: 16,
+                  height: 0,
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                ),
+                if (!single) // only show this if there's more than one scooter
+                  ListTile(
+                    title: Text(FlutterI18n.translate(
+                        context, "stats_scooter_auto_connect")),
+                    subtitle: Text(savedScooter.autoConnect
+                        ? FlutterI18n.translate(context,
+                            "stats_scooter_auto_connect_on_description")
+                        : FlutterI18n.translate(context,
+                            "stats_scooter_auto_connect_off_description")),
+                    trailing: Switch(
+                      value: savedScooter.autoConnect,
+                      onChanged: (value) {
+                        savedScooter.autoConnect = value;
+                        rebuild();
+                      },
+                    ),
                   ),
                 Divider(
                   indent: 16,

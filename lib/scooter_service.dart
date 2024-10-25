@@ -110,15 +110,18 @@ class ScooterService {
   }
 
   void seedStreamsWithCache() {
-    // get the saved scooter with the most recent ping
     SavedScooter? mostRecentScooter;
-    for (var scooter in savedScooters.values) {
+    // don't seed with scooters that have auto-connect disabled
+    List<SavedScooter> autoConnectScooters =
+        filterAutoConnectScooters(savedScooters).values.toList();
+    // get the saved scooter with the most recent ping
+    for (var scooter in autoConnectScooters) {
       if (mostRecentScooter == null ||
           scooter.lastPing.isAfter(mostRecentScooter.lastPing)) {
         mostRecentScooter = scooter;
       }
     }
-
+    // assume this is the one we'll connect to, and seed the streams
     _lastPingController.add(mostRecentScooter?.lastPing);
     _primarySOCController.add(mostRecentScooter?.lastPrimarySOC);
     _secondarySOCController.add(mostRecentScooter?.lastSecondarySOC);
@@ -283,7 +286,8 @@ class ScooterService {
     List<BluetoothDevice> systemDevices = await flutterBluePlus
         .systemDevices([Guid("9a590000-6e67-5d0d-aab9-ad9126b66f91")]);
     List<BluetoothDevice> systemScooters = [];
-    List<String> savedScooterIds = await getSavedScooterIds();
+    List<String> savedScooterIds =
+        await getSavedScooterIds(onlyAutoConnect: true);
     for (var device in systemDevices) {
       // criteria: it's named "unu Scooter" or it's one we saved
       if (device.advName == "unu Scooter" ||
@@ -298,7 +302,8 @@ class ScooterService {
   Stream<BluetoothDevice> getNearbyScooters(
       {bool preferSavedScooters = true}) async* {
     List<BluetoothDevice> foundScooterCache = [];
-    List<String> savedScooterIds = await getSavedScooterIds();
+    List<String> savedScooterIds =
+        await getSavedScooterIds(onlyAutoConnect: true);
     if (savedScooterIds.isNotEmpty && preferSavedScooters) {
       flutterBluePlus.startScan(
         withRemoteIds: savedScooterIds, // look for OUR scooter
@@ -737,9 +742,26 @@ class ScooterService {
     return scooters;
   }
 
-  Future<List<String>> getSavedScooterIds() async {
+  Map<String, SavedScooter> filterAutoConnectScooters(
+      Map<String, SavedScooter> scooters) {
+    // bypass filtering if there is only one scooter
+    // (this might happen if the user has removed all but one scooter)
+    if (scooters.length == 1) {
+      return scooters;
+    }
+    Map<String, SavedScooter> scootersToConnect = getSavedScooters();
+    scootersToConnect.removeWhere((key, value) => !value.autoConnect);
+    return scootersToConnect;
+  }
+
+  Future<List<String>> getSavedScooterIds(
+      {bool onlyAutoConnect = false}) async {
     if (savedScooters.isNotEmpty) {
-      return savedScooters.keys.toList();
+      if (onlyAutoConnect) {
+        return filterAutoConnectScooters(savedScooters).keys.toList();
+      } else {
+        return savedScooters.keys.toList();
+      }
     } else {
       // nothing saved locally yet, check prefs
       prefs ??= await SharedPreferences.getInstance();
