@@ -514,12 +514,15 @@ class ScooterService {
 
   Future<void> lock() async {
     if (_seatClosedController.value == false) {
-      log.info("Seat seems to be open, checking again...");
+      log.warning("Seat seems to be open, checking again...");
       // make really sure nothing has changed
       await characteristicRepository.seatCharacteristic.read();
       if (_seatClosedController.value == false) {
-        log.info("Locking aborted, because seat is open!");
+        log.warning("Locking aborted, because seat is open!");
         throw SeatOpenException();
+      } else {
+        log.info(
+            "Seat state was ${_seatClosedController.value} this time, proceeding...");
       }
     }
     _sendCommand("scooter:state lock");
