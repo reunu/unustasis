@@ -59,6 +59,7 @@ dependencies:
   path_provider: ^2.1.4
   flutter_email_sender: ^6.0.3
   device_info_plus: ^10.1.2
+  appcheck: ^1.5.2
 
 dev_dependencies:
   flutter_test:
