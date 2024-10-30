@@ -320,26 +320,25 @@ class _HomeScreenState extends State<HomeScreen> {
                                 action: _scooterState != null &&
                                         _scooterState!.isReadyForLockChange
                                     ? (_scooterState!.isOn
-                                        ? () {
+                                        ? () async {
                                             try {
-                                              widget.scooterService.lock();
+                                              await widget.scooterService
+                                                  .lock();
                                               if (widget.scooterService
                                                   .hazardLocking) {
                                                 _flashHazards(1);
                                               }
+                                            } on SeatOpenException catch (_) {
+                                              log.warning(
+                                                  "Seat is open, showing alert");
+                                              showSeatWarning();
                                             } catch (e, stack) {
-                                              if (e
-                                                  .toString()
-                                                  .contains("SEAT_OPEN")) {
-                                                showSeatWarning();
-                                              } else {
-                                                log.severe(
-                                                    "Problem opening the seat",
-                                                    e,
-                                                    stack);
-                                                Fluttertoast.showToast(
-                                                    msg: e.toString());
-                                              }
+                                              log.severe(
+                                                  "Problem opening the seat",
+                                                  e,
+                                                  stack);
+                                              Fluttertoast.showToast(
+                                                  msg: e.toString());
                                             }
                                           }
                                         : (_scooterState == ScooterState.standby

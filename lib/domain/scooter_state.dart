@@ -175,6 +175,7 @@ extension StateExtension on ScooterState {
     switch (this) {
       case ScooterState.hibernating:
       case ScooterState.hibernatingImminent:
+      case ScooterState.booting:
         return false;
       default:
         return true;
