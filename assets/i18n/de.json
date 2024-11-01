@@ -81,6 +81,8 @@
     "stats_aux_charging_absorption": "Lädt (absorption charging)",
     "stats_aux_charging_bulk": "Lädt (bulk charging)",
     "stats_aux_charging_none": "Lädt nicht",
+    "stats_diagnostics_title": "{type} Diagnosedaten",
+    "stats_diagnostics_close": "Schließen",
     "stats_nfc_button": "Per NFC auslesen",
     "stats_nfc_invalid": "Tag nicht lesbar",
     "stats_nfc_not_available": "NFC nicht verfügbar",

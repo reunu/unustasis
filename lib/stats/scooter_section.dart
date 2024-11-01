@@ -335,7 +335,7 @@ class SavedScooterCard extends StatelessWidget {
                       Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
                 ),
                 ListTile(
-                  title: Text("ID"),
+                  title: const Text("ID"),
                   subtitle: Text(savedScooter.id),
                 ),
                 Divider(

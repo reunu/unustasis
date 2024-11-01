@@ -415,7 +415,13 @@ class _BatterySectionState extends State<BatterySection> {
 
   AlertDialog _auxDiagnosticDialog(BuildContext context) {
     return AlertDialog(
-      title: Text("AUX Diagnostic"),
+      title: Text(
+        FlutterI18n.translate(
+          context,
+          "stats_diagnostics_title",
+          translationParams: {"type": "AUX"},
+        ),
+      ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -436,15 +442,22 @@ class _BatterySectionState extends State<BatterySection> {
           onPressed: () {
             Navigator.of(context).pop();
           },
-          child: Text("Close"),
-        )
+          child:
+              Text(FlutterI18n.translate(context, "stats_diagnostics_close")),
+        ),
       ],
     );
   }
 
   AlertDialog _cbbDiagnosticDialog(BuildContext context) {
     return AlertDialog(
-      title: Text("CBB Diagnostic"),
+      title: Text(
+        FlutterI18n.translate(
+          context,
+          "stats_diagnostics_title",
+          translationParams: {"type": "CBB"},
+        ),
+      ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -467,8 +480,9 @@ class _BatterySectionState extends State<BatterySection> {
           onPressed: () {
             Navigator.of(context).pop();
           },
-          child: Text("Close"),
-        )
+          child:
+              Text(FlutterI18n.translate(context, "stats_diagnostics_close")),
+        ),
       ],
     );
   }
