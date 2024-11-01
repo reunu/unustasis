@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
@@ -51,71 +52,77 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Unustasis',
-      theme: ThemeData(
-        appBarTheme: const AppBarTheme(
-          centerTitle: true,
-        ),
-        textTheme: GoogleFonts.nunitoTextTheme(
-            ThemeData(brightness: Brightness.light).textTheme),
-        brightness: Brightness.light,
-        useMaterial3: true,
-        colorScheme: ColorScheme.light(
-          primary: createMaterialColor(const Color(0xFF099768)),
-          onPrimary: Colors.black,
-          secondary: Colors.green,
-          onSecondary: Colors.black,
-          surface: Colors.white,
-          onTertiary: Colors.white,
-          onSurface: Colors.black,
-          surfaceContainer: Colors.grey.shade200,
-          error: Colors.red,
-          onError: Colors.black,
-        ),
-        /* dark theme settings */
-      ),
-      darkTheme: ThemeData(
-        appBarTheme: const AppBarTheme(
-          centerTitle: true,
-        ),
-        textTheme: GoogleFonts.nunitoTextTheme(
-            ThemeData(brightness: Brightness.dark).textTheme),
-        brightness: Brightness.dark,
-        useMaterial3: true,
-        colorScheme: ColorScheme.dark(
-          primary: createMaterialColor(const Color(0xFF3DCC9D)),
-          onPrimary: Colors.white,
-          secondary: Colors.green,
-          onSecondary: Colors.white,
-          surface: const Color.fromARGB(255, 20, 20, 20),
-          onTertiary: Colors.black,
-          onSurface: Colors.white,
-          surfaceContainer: Colors.grey.shade900,
-          error: Colors.red,
-          onError: Colors.white,
-        ),
-        /* dark theme settings */
-      ),
-      themeMode: EasyDynamicTheme.of(context).themeMode,
-      localizationsDelegates: [
-        FlutterI18nDelegate(
-          translationLoader: FileTranslationLoader(
-            useCountryCode: false,
-            fallbackFile: 'en',
-            basePath: 'assets/i18n',
-            forcedLocale: widget.savedLocale,
+    return DynamicColorBuilder(
+        builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
+      ColorScheme lightScheme = lightDynamic?.copyWith() ??
+          ColorScheme.light(
+            primary: createMaterialColor(const Color(0xFF099768)),
+            onPrimary: Colors.black,
+            secondary: Colors.green,
+            onSecondary: Colors.black,
+            surface: Colors.white,
+            onTertiary: Colors.white,
+            onSurface: Colors.black,
+            surfaceContainer: Colors.grey.shade200,
+            error: Colors.red,
+            onError: Colors.black,
+          );
+      ColorScheme darkScheme = darkDynamic?.copyWith() ??
+          ColorScheme.dark(
+            primary: createMaterialColor(const Color(0xFF3DCC9D)),
+            onPrimary: Colors.white,
+            secondary: Colors.green,
+            onSecondary: Colors.white,
+            surface: const Color.fromARGB(255, 20, 20, 20),
+            onTertiary: Colors.black,
+            onSurface: Colors.white,
+            surfaceContainer: Colors.grey.shade900,
+            error: Colors.red,
+            onError: Colors.white,
+          );
+
+      return MaterialApp(
+        title: 'Unustasis',
+        theme: ThemeData(
+          appBarTheme: const AppBarTheme(
+            centerTitle: true,
           ),
-          missingTranslationHandler: (key, locale) {
-            Logger("Main").warning(
-                "--- Missing Key: $key, languageCode: ${locale?.languageCode}");
-          },
+          textTheme: GoogleFonts.nunitoTextTheme(
+              ThemeData(brightness: Brightness.light).textTheme),
+          brightness: Brightness.light,
+          useMaterial3: true,
+          colorScheme: lightScheme,
         ),
-      ],
-      home: HomeScreen(
-        scooterService: service,
-      ),
-    );
+        darkTheme: ThemeData(
+          appBarTheme: const AppBarTheme(
+            centerTitle: true,
+          ),
+          textTheme: GoogleFonts.nunitoTextTheme(
+              ThemeData(brightness: Brightness.dark).textTheme),
+          brightness: Brightness.dark,
+          useMaterial3: true,
+          colorScheme: darkScheme,
+        ),
+        themeMode: EasyDynamicTheme.of(context).themeMode,
+        localizationsDelegates: [
+          FlutterI18nDelegate(
+            translationLoader: FileTranslationLoader(
+              useCountryCode: false,
+              fallbackFile: 'en',
+              basePath: 'assets/i18n',
+              forcedLocale: widget.savedLocale,
+            ),
+            missingTranslationHandler: (key, locale) {
+              Logger("Main").warning(
+                  "--- Missing Key: $key, languageCode: ${locale?.languageCode}");
+            },
+          ),
+        ],
+        home: HomeScreen(
+          scooterService: service,
+        ),
+      );
+    });
   }
 
   @override

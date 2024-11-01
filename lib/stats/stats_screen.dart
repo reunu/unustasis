@@ -143,19 +143,22 @@ class LastPingInfo extends StatelessWidget {
           builder: (context, snapshot) {
             return InkWell(
               onTap: () {
-                String timeDiff =
-                    snapshot.data!.calculateTimeDifferenceInShort(context);
-                if (timeDiff ==
-                    FlutterI18n.translate(context, "stats_last_ping_now")) {
-                  Fluttertoast.showToast(
-                    msg: FlutterI18n.translate(
-                        context, "stats_last_ping_toast_now"),
-                  );
-                } else {
-                  Fluttertoast.showToast(
-                    msg: FlutterI18n.translate(context, "stats_last_ping_toast",
-                        translationParams: {"time": timeDiff.toLowerCase()}),
-                  );
+                if (snapshot.hasData) {
+                  String timeDiff =
+                      snapshot.data!.calculateTimeDifferenceInShort(context);
+                  if (timeDiff ==
+                      FlutterI18n.translate(context, "stats_last_ping_now")) {
+                    Fluttertoast.showToast(
+                      msg: FlutterI18n.translate(
+                          context, "stats_last_ping_toast_now"),
+                    );
+                  } else {
+                    Fluttertoast.showToast(
+                      msg: FlutterI18n.translate(
+                          context, "stats_last_ping_toast",
+                          translationParams: {"time": timeDiff.toLowerCase()}),
+                    );
+                  }
                 }
               },
               child: Row(
