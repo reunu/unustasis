@@ -167,6 +167,8 @@ class ScooterService with ChangeNotifier {
     _cbbCharging = false;
     _lastPing = DateTime.now();
     _scooterName = "Demo Scooter";
+
+    notifyListeners();
   }
 
   // STATUS STREAMS

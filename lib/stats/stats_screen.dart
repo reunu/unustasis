@@ -69,10 +69,14 @@ class _StatsScreenState extends State<StatsScreen> {
                     ),
                   ])),
           actions: [
-            LastPingInfo(
-              lastPing: context.select<ScooterService, DateTime?>(
-                  (service) => service.lastPing),
-              onDebugLongPress: context.read<ScooterService>().addDemoData,
+            Selector<ScooterService, DateTime?>(
+              selector: (context, service) => service.lastPing,
+              builder: (context, lastPing, _) {
+                return LastPingInfo(
+                  lastPing: lastPing,
+                  onDebugLongPress: context.read<ScooterService>().addDemoData,
+                );
+              },
             ),
           ],
         ),
