@@ -323,14 +323,23 @@ class ScooterService {
     }
   }
 
-  Future<void> connectToScooterId(String id) async {
+  Future<void> connectToScooterId(
+    String id, {
+    bool initialConnect = false,
+  }) async {
     _foundSth = true;
     _stateController.add(ScooterState.linking);
     try {
       // attempt to connect to what we found
       BluetoothDevice attemptedScooter = BluetoothDevice.fromId(id);
       // wait for the connection to be established
-      await attemptedScooter.connect();
+      log.info("Connecting to ${attemptedScooter.remoteId}");
+      await attemptedScooter.connect(timeout: const Duration(seconds: 30));
+      if (initialConnect && Platform.isAndroid) {
+        await attemptedScooter.createBond(timeout: 30);
+        log.info("Bond established");
+      }
+      log.info("Connected to ${attemptedScooter.remoteId}");
       // Set up this scooter as ours
       myScooter = attemptedScooter;
       addSavedScooter(myScooter!.remoteId.toString());

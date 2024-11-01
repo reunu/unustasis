@@ -15,6 +15,7 @@
     "onboarding_step3_button": "CONNECT",
     "onboarding_step4_heading": "Connectin'...",
     "onboarding_step4_body": "Ye should get a pairin' request in a second, so keep an eye on yer notifications. Ye can find the pairin' code on the ship display, arrr!",
+    "onboarding_step4_explainer": "\n\nImportant: If ye get multiple pairin' requests, ye shall confirm all of 'em!",
     "onboarding_step4_error": "Connection failed, arrr! Make sure the ship be powered on and nearby, then try again.",
     "onboarding_step5_heading": "That be it, arrr!",
     "onboarding_step5_body": "Yer ship be connected and be ready to use. Enjoy yer ride, me heartie!",
