@@ -11,7 +11,11 @@ class CharacteristicRepository {
   late BluetoothCharacteristic seatCharacteristic;
   late BluetoothCharacteristic handlebarCharacteristic;
   late BluetoothCharacteristic auxSOCCharacteristic;
+  late BluetoothCharacteristic auxVoltageCharacteristic;
+  late BluetoothCharacteristic auxChargingCharacteristic;
   late BluetoothCharacteristic cbbSOCCharacteristic;
+  late BluetoothCharacteristic cbbVoltageCharacteristic;
+  late BluetoothCharacteristic cbbCapacityCharacteristic;
   late BluetoothCharacteristic cbbChargingCharacteristic;
   late BluetoothCharacteristic primaryCyclesCharacteristic;
   late BluetoothCharacteristic primarySOCCharacteristic;
@@ -52,10 +56,26 @@ class CharacteristicRepository {
         scooter,
         "9a590040-6e67-5d0d-aab9-ad9126b66f91",
         "9a590044-6e67-5d0d-aab9-ad9126b66f91");
+    auxVoltageCharacteristic = _findCharacteristic(
+        scooter,
+        "9a590040-6e67-5d0d-aab9-ad9126b66f91",
+        "9a590041-6e67-5d0d-aab9-ad9126b66f91");
+    auxChargingCharacteristic = _findCharacteristic(
+        scooter,
+        "9a590040-6e67-5d0d-aab9-ad9126b66f91",
+        "9a590043-6e67-5d0d-aab9-ad9126b66f91");
     cbbSOCCharacteristic = _findCharacteristic(
         scooter,
         "9a590060-6e67-5d0d-aab9-ad9126b66f91",
         "9a590061-6e67-5d0d-aab9-ad9126b66f91");
+    cbbVoltageCharacteristic = _findCharacteristic(
+        scooter,
+        "9a590060-6e67-5d0d-aab9-ad9126b66f91",
+        "9a590065-6e67-5d0d-aab9-ad9126b66f91");
+    cbbCapacityCharacteristic = _findCharacteristic(
+        scooter,
+        "9a590060-6e67-5d0d-aab9-ad9126b66f91",
+        "9a590063-6e67-5d0d-aab9-ad9126b66f91");
     cbbChargingCharacteristic = _findCharacteristic(
         scooter,
         "9a590060-6e67-5d0d-aab9-ad9126b66f91",

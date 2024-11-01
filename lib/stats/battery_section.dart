@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:logging/logging.dart';
@@ -11,6 +11,7 @@ import 'package:nfc_manager/nfc_manager.dart';
 import 'package:nfc_manager/platform_tags.dart';
 import 'package:provider/provider.dart';
 
+import '../domain/scooter_battery.dart';
 import '../scooter_service.dart';
 
 class BatterySection extends StatefulWidget {
@@ -81,7 +82,7 @@ class _BatterySectionState extends State<BatterySection> {
                           borderRadius: BorderRadius.circular(16.0),
                           minHeight: 24,
                           backgroundColor:
-                              Theme.of(context).colorScheme.surface,
+                              Theme.of(context).colorScheme.surfaceContainer,
                           color: widget.dataIsOld
                               ? Theme.of(context)
                                   .colorScheme
@@ -99,7 +100,8 @@ class _BatterySectionState extends State<BatterySection> {
                         value: (data.primarySOC ?? 0) / 100,
                         borderRadius: BorderRadius.circular(16.0),
                         minHeight: 24,
-                        backgroundColor: Theme.of(context).colorScheme.surface,
+                        backgroundColor:
+                            Theme.of(context).colorScheme.surfaceContainer,
                         color: widget.dataIsOld
                             ? Theme.of(context)
                                 .colorScheme
@@ -120,7 +122,7 @@ class _BatterySectionState extends State<BatterySection> {
                 0) >
             0)
           _batteryCard(
-            type: BatteryType.primary,
+            type: ScooterBatteryType.primary,
             soc: context
                 .select<ScooterService, int?>((service) => service.primarySOC)!,
             cycles: context.select<ScooterService, int?>(
@@ -133,7 +135,7 @@ class _BatterySectionState extends State<BatterySection> {
                 0) >
             0)
           _batteryCard(
-            type: BatteryType.secondary,
+            type: ScooterBatteryType.secondary,
             soc: context.select<ScooterService, int?>(
                 (service) => service.secondarySOC)!,
             cycles: context.select<ScooterService, int?>(
@@ -144,23 +146,25 @@ class _BatterySectionState extends State<BatterySection> {
           children: [
             Expanded(
               child: _internalBatteryCard(
-                type: BatteryType.cbb,
+                type: ScooterBatteryType.cbb,
                 soc: context.select<ScooterService, int?>(
                         (service) => service.cbbSOC) ??
                     100,
                 charging: context.select<ScooterService, bool?>(
                     (service) => service.cbbCharging),
                 old: widget.dataIsOld,
+                context: context,
               ),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: _internalBatteryCard(
-                type: BatteryType.aux,
+                type: ScooterBatteryType.aux,
                 soc: context.select<ScooterService, int?>(
                         (service) => service.auxSOC) ??
                     100,
                 old: widget.dataIsOld,
+                context: context,
               ),
             ),
           ],
@@ -176,7 +180,7 @@ class _BatterySectionState extends State<BatterySection> {
           ),
         if (nfcBattery != 0 && nfcBattery != null && !nfcScanning)
           _batteryCard(
-            type: BatteryType.nfc,
+            type: ScooterBatteryType.nfc,
             soc: nfcBattery ?? 0,
             cycles: nfcCycles,
             old: false,
@@ -319,73 +323,158 @@ class _BatterySectionState extends State<BatterySection> {
   }
 
   Widget _internalBatteryCard({
-    required BatteryType type,
+    required ScooterBatteryType type,
     required int soc,
     bool? charging,
     bool old = false,
+    required BuildContext context,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Container(
-        height: 180,
-        padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainer,
-          borderRadius: BorderRadius.circular(16.0),
-          border: (soc <= 15 && !old)
-              ? Border.all(
-                  color: Colors.red,
-                  width: 2,
-                )
-              : null,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.max,
-          children: [
-            Text(
-              type.name(context).toUpperCase(),
-              style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 12,
-                  color:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
-            ),
-            Text(
-              type.description(context),
-              textAlign: TextAlign.end,
-              style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 12,
-                  color:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
-            ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0, bottom: 24),
-              child: Text(
-                type.socText(soc, context),
-                style: Theme.of(context).textTheme.displaySmall,
-                textScaler: TextScaler.noScaling,
+      child: GestureDetector(
+        child: Container(
+          height: 180,
+          padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainer,
+            borderRadius: BorderRadius.circular(16.0),
+            border: (soc <= 15 && !old)
+                ? Border.all(
+                    color: Colors.red,
+                    width: 2,
+                  )
+                : null,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.max,
+            children: [
+              Text(
+                type.name(context).toUpperCase(),
+                style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 12,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.5)),
               ),
-            ),
-            const SizedBox(height: 4),
-            Expanded(
-              child: Image.asset(
-                width: double.infinity,
-                type.imagePath(soc),
-                fit: BoxFit.contain,
-                alignment: Alignment.bottomCenter,
+              Text(
+                type.description(context),
+                textAlign: TextAlign.end,
+                style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 12,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withOpacity(0.5)),
               ),
-            ),
-          ],
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0, bottom: 24),
+                child: Text(
+                  type.socText(soc, context),
+                  style: Theme.of(context).textTheme.displaySmall,
+                  textScaler: TextScaler.noScaling,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Expanded(
+                child: Image.asset(
+                  width: double.infinity,
+                  type.imagePath(soc),
+                  fit: BoxFit.contain,
+                  alignment: Alignment.bottomCenter,
+                ),
+              ),
+            ],
+          ),
         ),
+        onLongPress: () {
+          HapticFeedback.mediumImpact();
+          switch (type) {
+            case ScooterBatteryType.aux:
+              showDialog(
+                  context: context,
+                  builder: (context) => _auxDiagnosticDialog(context));
+              break;
+            case ScooterBatteryType.cbb:
+              showDialog(
+                  context: context,
+                  builder: (context) => _cbbDiagnosticDialog(context));
+              break;
+            default:
+              // no diagnostics for NFC
+              break;
+          }
+        },
       ),
     );
   }
 
+  AlertDialog _auxDiagnosticDialog(BuildContext context) {
+    return AlertDialog(
+      title: Text("AUX Diagnostic"),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+              "SOC: ${context.select<ScooterService, int?>((service) => service.auxSOC) ?? "??? "}%"),
+          Text(context
+                  .select<ScooterService, AUXChargingState?>(
+                      (service) => service.auxCharging)
+                  ?.name(context) ??
+              "???"),
+          Text(
+              "Voltage: ${context.select<ScooterService, int?>((service) => service.auxVoltage) ?? "??? "}mV"),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+          child: Text("Close"),
+        )
+      ],
+    );
+  }
+
+  AlertDialog _cbbDiagnosticDialog(BuildContext context) {
+    return AlertDialog(
+      title: Text("CBB Diagnostic"),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+              "SOC: ${context.select<ScooterService, int?>((service) => service.cbbSOC) ?? "??? "}%"),
+          Text((context.select<ScooterService, bool?>(
+                      (service) => service.cbbCharging)) ==
+                  true
+              ? "Charging"
+              : "Not charging"),
+          Text(
+              "Voltage: ${context.select<ScooterService, int?>((service) => service.cbbVoltage) ?? "??? "}mV"),
+          Text(
+              "Capacity: ${context.select<ScooterService, int?>((service) => service.cbbCapacity) ?? "??? "}mAh"),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+          child: Text("Close"),
+        )
+      ],
+    );
+  }
+
   Widget _batteryCard({
-    required BatteryType type,
+    required ScooterBatteryType type,
     required int soc,
     int? cycles,
     bool old = false,
@@ -491,6 +580,7 @@ class _BatterySectionState extends State<BatterySection> {
     );
   }
 
+  // ignore: unused_element
   Widget _splitProgressBar(
       {required int maxSteps,
       required int currentStep,
@@ -521,80 +611,5 @@ class _BatterySectionState extends State<BatterySection> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: bars,
     );
-  }
-}
-
-enum BatteryType { primary, secondary, cbb, aux, nfc }
-
-extension BatteryExtension on BatteryType {
-  String name(BuildContext context) {
-    switch (this) {
-      case BatteryType.primary:
-        return FlutterI18n.translate(context, "stats_primary_name");
-      case BatteryType.secondary:
-        return FlutterI18n.translate(context, "stats_secondary_name");
-      case BatteryType.cbb:
-        return FlutterI18n.translate(context, "stats_cbb_name");
-      case BatteryType.aux:
-        return FlutterI18n.translate(context, "stats_aux_name");
-      case BatteryType.nfc:
-        return FlutterI18n.translate(context, "stats_nfc_name");
-    }
-  }
-
-  String description(BuildContext context) {
-    switch (this) {
-      case BatteryType.primary:
-        return FlutterI18n.translate(context, "stats_primary_desc");
-      case BatteryType.secondary:
-        return FlutterI18n.translate(context, "stats_secondary_desc");
-      case BatteryType.cbb:
-        return FlutterI18n.translate(context, "stats_cbb_desc");
-      case BatteryType.aux:
-        return FlutterI18n.translate(context, "stats_aux_desc");
-      case BatteryType.nfc:
-        return FlutterI18n.translate(context, "stats_nfc_desc");
-    }
-  }
-
-  String socText(int soc, BuildContext context) {
-    if (this == BatteryType.aux) {
-      switch (soc ~/ 25) {
-        case 0:
-          return FlutterI18n.translate(context, "stats_aux_0");
-        case 1:
-          return FlutterI18n.translate(context, "stats_aux_25");
-        case 2:
-          return FlutterI18n.translate(context, "stats_aux_50");
-        case 3:
-          return FlutterI18n.translate(context, "stats_aux_75");
-        case 4:
-          return FlutterI18n.translate(context, "stats_aux_100");
-      }
-    }
-    return "$soc%";
-  }
-
-  String imagePath(int soc) {
-    switch (this) {
-      case BatteryType.primary:
-      case BatteryType.secondary:
-      case BatteryType.nfc:
-        if (soc > 85) {
-          return "images/battery/batt_full.webp";
-        } else if (soc > 60) {
-          return "images/battery/batt_75.webp";
-        } else if (soc > 35) {
-          return "images/battery/batt_50.webp";
-        } else if (soc > 10) {
-          return "images/battery/batt_25.webp";
-        } else {
-          return "images/battery/batt_empty.webp";
-        }
-      case BatteryType.cbb:
-        return "images/battery/batt_internal.webp";
-      case BatteryType.aux:
-        return 'images/battery/batt_internal.webp';
-    }
   }
 }
