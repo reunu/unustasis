@@ -562,12 +562,15 @@ class ScooterService with ChangeNotifier {
 
   Future<void> lock() async {
     if (_seatClosed == false) {
-      log.info("Seat seems to be open, checking again...");
+      log.warning("Seat seems to be open, checking again...");
       // make really sure nothing has changed
       await characteristicRepository.seatCharacteristic.read();
       if (_seatClosed == false) {
-        log.info("Locking aborted, because seat is open!");
+        log.warning("Locking aborted, because seat is open!");
+
         throw SeatOpenException();
+      } else {
+        log.info("Seat state was $_seatClosed this time, proceeding...");
       }
     }
     _sendCommand("scooter:state lock");

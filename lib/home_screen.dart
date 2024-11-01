@@ -95,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => StatsScreen(),
+                            builder: (context) => const StatsScreen(),
                           ),
                         ),
                         // Hidden for stable release
@@ -294,19 +294,23 @@ class _HomeScreenState extends State<HomeScreen> {
                                                   .read<ScooterService>()
                                                   .lock();
                                               // TODO: Flash hazards in visual
-                                            } catch (e, stack) {
-                                              if (e
-                                                  .toString()
-                                                  .contains("SEAT_OPEN")) {
-                                                showSeatWarning();
-                                              } else {
-                                                log.severe(
-                                                    "Problem opening the seat",
-                                                    e,
-                                                    stack);
-                                                Fluttertoast.showToast(
-                                                    msg: e.toString());
+
+                                              if (context
+                                                  .read<ScooterService>()
+                                                  .hazardLocking) {
+                                                _flashHazards(1);
                                               }
+                                            } on SeatOpenException catch (_) {
+                                              log.warning(
+                                                  "Seat is open, showing alert");
+                                              showSeatWarning();
+                                            } catch (e, stack) {
+                                              log.severe(
+                                                  "Problem opening the seat",
+                                                  e,
+                                                  stack);
+                                              Fluttertoast.showToast(
+                                                  msg: e.toString());
                                             }
                                           }
                                         : (_state == ScooterState.standby
@@ -342,7 +346,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                             context,
                                             MaterialPageRoute(
                                               builder: (context) =>
-                                                  ControlScreen(),
+                                                  const ControlScreen(),
                                             ),
                                           );
                                         }
