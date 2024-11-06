@@ -58,7 +58,7 @@ class _SettingsSectionState extends State<SettingsSection> {
   List<Widget> settingsItems() => [
         Header(
             FlutterI18n.translate(context, "stats_settings_section_scooter")),
-        SwitchListTile.adaptive(
+        SwitchListTile(
           secondary: const Icon(Icons.key_outlined),
           title: Text(FlutterI18n.translate(context, "settings_auto_unlock")),
           subtitle: Text(FlutterI18n.translate(
@@ -95,7 +95,7 @@ class _SettingsSectionState extends State<SettingsSection> {
               },
             ),
           ),
-        SwitchListTile.adaptive(
+        SwitchListTile(
           secondary: const Icon(Icons.work_outline),
           title: Text(
               FlutterI18n.translate(context, "settings_open_seat_on_unlock")),
@@ -109,7 +109,7 @@ class _SettingsSectionState extends State<SettingsSection> {
             });
           },
         ),
-        SwitchListTile.adaptive(
+        SwitchListTile(
           secondary: const Icon(Icons.code_rounded),
           title:
               Text(FlutterI18n.translate(context, "settings_hazard_locking")),
@@ -129,7 +129,7 @@ class _SettingsSectionState extends State<SettingsSection> {
             builder: (context, biometricsOptionsSnap) {
               if (biometricsOptionsSnap.hasData &&
                   biometricsOptionsSnap.data!.isNotEmpty) {
-                return SwitchListTile.adaptive(
+                return SwitchListTile(
                   secondary: const Icon(Icons.lock_outlined),
                   title: Text(
                       FlutterI18n.translate(context, "settings_biometrics")),
@@ -244,7 +244,7 @@ class _SettingsSectionState extends State<SettingsSection> {
             },
           ),
         ),
-        SwitchListTile.adaptive(
+        SwitchListTile(
           secondary: const Icon(Icons.pin_drop_outlined),
           title: Text(FlutterI18n.translate(context, "settings_osm_consent")),
           subtitle: Text(FlutterI18n.translate(
@@ -260,7 +260,7 @@ class _SettingsSectionState extends State<SettingsSection> {
         ),
         if (DateTime.now().month == 11 ||
             DateTime.now().month == 12) // All seasonal months
-          SwitchListTile.adaptive(
+          SwitchListTile(
               secondary: const Icon(Icons.star),
               title: Text(FlutterI18n.translate(context, "settings_seasonal")),
               subtitle:
