@@ -15,6 +15,7 @@
     "onboarding_step3_button": "CONNECT",
     "onboarding_step4_heading": "Connecting...",
     "onboarding_step4_body": "You should get a pairing request in a second, so keep an eye on your notifications. You can find the pairing code on the scooter display.",
+    "onboarding_step4_explainer": "\n\nImportant: If you get multiple requests, you need to confirm all of them!",
     "onboarding_step4_error": "Connection failed. Make sure the scooter is powered on and nearby, then try again.",
     "onboarding_step5_heading": "That's it!",
     "onboarding_step5_body": "Your scooter was connected and is ready to use. Enjoy your ride!",
