@@ -28,6 +28,7 @@ class _SettingsSectionState extends State<SettingsSection> {
   final log = Logger('SettingsSection');
   bool biometrics = false;
   bool autoUnlock = false;
+  bool seasonal = true;
   ScooterKeylessDistance autoUnlockDistance = ScooterKeylessDistance.regular;
   bool openSeatOnUnlock = false;
   bool hazardLocking = false;
@@ -44,6 +45,7 @@ class _SettingsSectionState extends State<SettingsSection> {
       openSeatOnUnlock = widget.service.openSeatOnUnlock;
       hazardLocking = widget.service.hazardLocking;
       osmConsent = prefs.getBool("osmConsent") ?? true;
+      seasonal = prefs.getBool("seasonal") ?? true;
     });
   }
 
@@ -53,22 +55,10 @@ class _SettingsSectionState extends State<SettingsSection> {
     getInitialSettings();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return ListView.separated(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      shrinkWrap: true,
-      itemCount: (autoUnlock ? 16 : 15),
-      separatorBuilder: (context, index) => Divider(
-        indent: 16,
-        endIndent: 16,
-        height: 24,
-        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
-      ),
-      itemBuilder: (context, index) => [
+  List<Widget> settingsItems() => [
         Header(
             FlutterI18n.translate(context, "stats_settings_section_scooter")),
-        SwitchListTile(
+        SwitchListTile.adaptive(
           secondary: const Icon(Icons.key_outlined),
           title: Text(FlutterI18n.translate(context, "settings_auto_unlock")),
           subtitle: Text(FlutterI18n.translate(
@@ -105,7 +95,7 @@ class _SettingsSectionState extends State<SettingsSection> {
               },
             ),
           ),
-        SwitchListTile(
+        SwitchListTile.adaptive(
           secondary: const Icon(Icons.work_outline),
           title: Text(
               FlutterI18n.translate(context, "settings_open_seat_on_unlock")),
@@ -119,7 +109,7 @@ class _SettingsSectionState extends State<SettingsSection> {
             });
           },
         ),
-        SwitchListTile(
+        SwitchListTile.adaptive(
           secondary: const Icon(Icons.code_rounded),
           title:
               Text(FlutterI18n.translate(context, "settings_hazard_locking")),
@@ -139,7 +129,7 @@ class _SettingsSectionState extends State<SettingsSection> {
             builder: (context, biometricsOptionsSnap) {
               if (biometricsOptionsSnap.hasData &&
                   biometricsOptionsSnap.data!.isNotEmpty) {
-                return SwitchListTile(
+                return SwitchListTile.adaptive(
                   secondary: const Icon(Icons.lock_outlined),
                   title: Text(
                       FlutterI18n.translate(context, "settings_biometrics")),
@@ -254,7 +244,7 @@ class _SettingsSectionState extends State<SettingsSection> {
             },
           ),
         ),
-        SwitchListTile(
+        SwitchListTile.adaptive(
           secondary: const Icon(Icons.pin_drop_outlined),
           title: Text(FlutterI18n.translate(context, "settings_osm_consent")),
           subtitle: Text(FlutterI18n.translate(
@@ -268,6 +258,21 @@ class _SettingsSectionState extends State<SettingsSection> {
             });
           },
         ),
+        if (DateTime.now().month == 11 ||
+            DateTime.now().month == 12) // All seasonal months
+          SwitchListTile.adaptive(
+              secondary: const Icon(Icons.star),
+              title: Text(FlutterI18n.translate(context, "settings_seasonal")),
+              subtitle:
+                  Text(FlutterI18n.translate(context, "settings_color_info")),
+              value: seasonal,
+              onChanged: (value) async {
+                SharedPreferences prefs = await SharedPreferences.getInstance();
+                prefs.setBool("seasonal", value);
+                setState(() {
+                  seasonal = value;
+                });
+              }),
         Header(FlutterI18n.translate(context, "stats_settings_section_about")),
         ListTile(
           leading: const Icon(Icons.help_outline),
@@ -329,7 +334,21 @@ class _SettingsSectionState extends State<SettingsSection> {
                 },
               );
             }),
-      ][index],
+      ];
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      shrinkWrap: true,
+      itemCount: (autoUnlock ? 16 : 15),
+      separatorBuilder: (context, index) => Divider(
+        indent: 16,
+        endIndent: 16,
+        height: 24,
+        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+      ),
+      itemBuilder: (context, index) => settingsItems()[index],
     );
   }
 }

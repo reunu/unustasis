@@ -17,6 +17,7 @@ import '../scooter_service.dart';
 import '../domain/scooter_state.dart';
 import '../scooter_visual.dart';
 import '../stats/stats_screen.dart';
+import 'helper_widgets.dart/snowfall.dart';
 
 class HomeScreen extends StatefulWidget {
   final ScooterService scooterService;
@@ -37,6 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _connected = false;
   bool _scanning = false;
   bool _hazards = false;
+  bool _snowing = false;
   bool? _seatClosed;
   bool? _handlebarsLocked;
   int? _primarySOC;
@@ -97,6 +99,22 @@ class _HomeScreenState extends State<HomeScreen> {
         _secondarySOC = soc;
       });
     });
+    _startSeasonal();
+  }
+
+  Future<void> _startSeasonal() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool("seasonal") ?? true) {
+      switch (DateTime.now().month) {
+        case 11:
+        case 12:
+          // December, snow season!
+          setState(() {
+            _snowing = true;
+          });
+        // who knows what else might be in the future?
+      }
+    }
   }
 
   void _flashHazards(int times) async {
@@ -133,6 +151,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   scanning: _scanning,
                   connected: _connected,
                   scooterState: _scooterState),
+              if (_snowing)
+                SnowfallBackground(
+                  backgroundColor: Colors.transparent,
+                  snowflakeColor: context.isDarkMode
+                      ? Colors.white.withOpacity(0.15)
+                      : Colors.black.withOpacity(0.05),
+                ),
               SafeArea(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
@@ -282,11 +307,13 @@ class _HomeScreenState extends State<HomeScreen> {
                               stream: widget.scooterService.scooterColor,
                               builder: (context, colorSnap) {
                                 return ScooterVisual(
-                                    color: colorSnap.data ?? 1,
-                                    state: _scooterState,
-                                    scanning: _scanning,
-                                    blinkerLeft: _hazards,
-                                    blinkerRight: _hazards);
+                                  color: colorSnap.data ?? 1,
+                                  state: _scooterState,
+                                  scanning: _scanning,
+                                  blinkerLeft: _hazards,
+                                  blinkerRight: _hazards,
+                                  winter: _snowing,
+                                );
                               })),
                       const SizedBox(height: 16),
                       Row(

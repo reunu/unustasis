@@ -155,6 +155,7 @@
     "settings_privacy_policy": "Datenschutzerklärung",
     "settings_osm_consent": "Letzte bekannte Adresse anzeigen",
     "settings_osm_consent_description": "Onlinedienste nutzen, um die Adresse des letzten bekannten Rollerstandorts anzuzeigen",
+    "settings_seasonal": "Saisonale Effekte",
     "stats_last_ping_title": "Zuletzt verbunden",
     "stats_last_ping": "Vor {time}",
     "stats_last_ping_toast": "Zuletzt aktualisiert vor {time}",
