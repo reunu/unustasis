@@ -72,7 +72,7 @@ class Snowflake {
     y = random.nextDouble() *
         maxHeight; // Now using the full height of the screen.
     speed = 0.2 + random.nextDouble() * 0.8;
-    radius = 1 + random.nextDouble() * 3;
+    radius = 0.5 + random.nextDouble() * 3;
   }
 
   void updatePosition() {
