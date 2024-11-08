@@ -92,8 +92,8 @@ class ScooterService with ChangeNotifier {
       if (myScooter != null && myScooter!.isConnected) {
         // only refresh state and seatbox, for now
         log.info("Auto-refresh...");
-        characteristicRepository.stateCharacteristic.read();
-        characteristicRepository.seatCharacteristic.read();
+        characteristicRepository.stateCharacteristic!.read();
+        characteristicRepository.seatCharacteristic!.read();
       }
     });
   }
@@ -108,15 +108,18 @@ class ScooterService with ChangeNotifier {
   }
 
   void seedStreamsWithCache() {
-    // get the saved scooter with the most recent ping
     SavedScooter? mostRecentScooter;
-    for (var scooter in savedScooters.values) {
+    // don't seed with scooters that have auto-connect disabled
+    List<SavedScooter> autoConnectScooters =
+        filterAutoConnectScooters(savedScooters).values.toList();
+    // get the saved scooter with the most recent ping
+    for (var scooter in autoConnectScooters) {
       if (mostRecentScooter == null ||
           scooter.lastPing.isAfter(mostRecentScooter.lastPing)) {
         mostRecentScooter = scooter;
       }
     }
-
+    // assume this is the one we'll connect to, and seed the streams
     _lastPing = mostRecentScooter?.lastPing;
     _primarySOC = mostRecentScooter?.lastPrimarySOC;
     _secondarySOC = mostRecentScooter?.lastSecondarySOC;
@@ -161,7 +164,7 @@ class ScooterService with ChangeNotifier {
     _primaryCycles = 190;
     _secondaryCycles = 75;
     _connected = true;
-    _state = ScooterState.standby;
+    _state = ScooterState.parked;
     _seatClosed = true;
     _handlebarsLocked = false;
     _cbbCharging = false;
@@ -340,11 +343,11 @@ class ScooterService with ChangeNotifier {
     List<BluetoothDevice> systemDevices = await flutterBluePlus
         .systemDevices([Guid("9a590000-6e67-5d0d-aab9-ad9126b66f91")]);
     List<BluetoothDevice> systemScooters = [];
-    List<String> savedScooterIds = await getSavedScooterIds();
+    List<String> savedScooterIds =
+        await getSavedScooterIds(onlyAutoConnect: true);
     for (var device in systemDevices) {
-      // criteria: it's named "unu Scooter" or it's one we saved
-      if (device.advName == "unu Scooter" ||
-          savedScooterIds.contains(device.remoteId.toString())) {
+      // see if this is a scooter we saved and want to (auto-)connect to
+      if (savedScooterIds.contains(device.remoteId.toString())) {
         // That's a scooter!
         systemScooters.add(device);
       }
@@ -355,8 +358,14 @@ class ScooterService with ChangeNotifier {
   Stream<BluetoothDevice> getNearbyScooters(
       {bool preferSavedScooters = true}) async* {
     List<BluetoothDevice> foundScooterCache = [];
-    List<String> savedScooterIds = await getSavedScooterIds();
-    if (savedScooterIds.isNotEmpty && preferSavedScooters) {
+    List<String> savedScooterIds =
+        await getSavedScooterIds(onlyAutoConnect: true);
+    if (savedScooterIds.isEmpty && savedScooters.isNotEmpty) {
+      log.info(
+          "We have ${savedScooters.length} saved scooters, but getSavedScooterIds returned an empty list. Probably no auto-connect enabled scooters, so we're not even scanning.");
+      return;
+    }
+    if (savedScooters.isNotEmpty && preferSavedScooters) {
       flutterBluePlus.startScan(
         withRemoteIds: savedScooterIds, // look for OUR scooter
         timeout: const Duration(seconds: 30),
@@ -380,18 +389,35 @@ class ScooterService with ChangeNotifier {
     }
   }
 
-  Future<void> connectToScooterId(String id) async {
+  Future<void> connectToScooterId(
+    String id, {
+    bool initialConnect = false,
+  }) async {
     _foundSth = true;
     state = ScooterState.linking;
     try {
       // attempt to connect to what we found
       BluetoothDevice attemptedScooter = BluetoothDevice.fromId(id);
       // wait for the connection to be established
-      await attemptedScooter.connect();
+      log.info("Connecting to ${attemptedScooter.remoteId}");
+      await attemptedScooter.connect(timeout: const Duration(seconds: 30));
+      if (initialConnect && Platform.isAndroid) {
+        await attemptedScooter.createBond(timeout: 30);
+        log.info("Bond established");
+      }
+      log.info("Connected to ${attemptedScooter.remoteId}");
       // Set up this scooter as ours
       myScooter = attemptedScooter;
       addSavedScooter(myScooter!.remoteId.toString());
-      await setUpCharacteristics(myScooter!);
+      try {
+        await setUpCharacteristics(myScooter!);
+      } on UnavailableCharacteristicsException {
+        log.warning(
+            "Some characteristics are null, if this turns out to be a rare issue we might display a toast here in the future");
+        // Fluttertoast.showToast(
+        // msg: "Scooter firmware outdated, some features may not work");
+      }
+
       // save this as the last known location
       _pollLocation();
       // Let everybody know
@@ -531,6 +557,13 @@ class ScooterService with ChangeNotifier {
         service: this,
       );
       _scooterReader.readAndSubscribe();
+
+      // check if any of the characteristics are null, and if so, throw an error
+      if (characteristicRepository.anyAreNull()) {
+        log.warning(
+            "Some characteristics are null, throwing exception to warn further up the chain!");
+        throw UnavailableCharacteristicsException();
+      }
     } catch (e) {
       rethrow;
     }
@@ -566,7 +599,7 @@ class ScooterService with ChangeNotifier {
     if (_seatClosed == false) {
       log.warning("Seat seems to be open, checking again...");
       // make really sure nothing has changed
-      await characteristicRepository.seatCharacteristic.read();
+      await characteristicRepository.seatCharacteristic!.read();
       if (_seatClosed == false) {
         log.warning("Locking aborted, because seat is open!");
 
@@ -668,8 +701,11 @@ class ScooterService with ChangeNotifier {
       characteristicToSend = characteristic;
     }
 
+    // commandCharcteristic should never be null, so we can assume it's not
+    // if the given characteristic is null, we'll "fail" quitely by sending garbage to the default command characteristic instead
+
     try {
-      characteristicToSend.write(ascii.encode(command));
+      characteristicToSend!.write(ascii.encode(command));
     } catch (e) {
       rethrow;
     }
@@ -790,9 +826,26 @@ class ScooterService with ChangeNotifier {
     return scooters;
   }
 
-  Future<List<String>> getSavedScooterIds() async {
+  Map<String, SavedScooter> filterAutoConnectScooters(
+      Map<String, SavedScooter> scooters) {
+    // bypass filtering if there is only one scooter
+    // (this might happen if the user has removed all but one scooter)
+    if (scooters.length == 1) {
+      return scooters;
+    }
+    Map<String, SavedScooter> scootersToConnect = getSavedScooters();
+    scootersToConnect.removeWhere((key, value) => !value.autoConnect);
+    return scootersToConnect;
+  }
+
+  Future<List<String>> getSavedScooterIds(
+      {bool onlyAutoConnect = false}) async {
     if (savedScooters.isNotEmpty) {
-      return savedScooters.keys.toList();
+      if (onlyAutoConnect) {
+        return filterAutoConnectScooters(savedScooters).keys.toList();
+      } else {
+        return savedScooters.keys.toList();
+      }
     } else {
       // nothing saved locally yet, check prefs
       prefs ??= await SharedPreferences.getInstance();
@@ -884,3 +937,5 @@ class ScooterService with ChangeNotifier {
 }
 
 class SeatOpenException {}
+
+class UnavailableCharacteristicsException {}

@@ -173,7 +173,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               });
         }
       case 3:
-        _pairingController.stop();
+        _pairingController.reset();
         return _onboardingStep(
             heading: FlutterI18n.translate(context, "onboarding_step3_heading"),
             text: FlutterI18n.translate(context, "onboarding_step3_body",
@@ -183,9 +183,10 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             btnText: FlutterI18n.translate(context, "onboarding_step3_button"),
             onPressed: () {
               try {
-                context
-                    .read<ScooterService>()
-                    .connectToScooterId(_foundScooter!.remoteId.toString());
+                context.read<ScooterService>().connectToScooterId(
+                      _foundScooter!.remoteId.toString(),
+                      initialConnect: true,
+                    );
               } catch (e, stack) {
                 log.severe("Error connecting to scooter!", e, stack);
                 Fluttertoast.showToast(
@@ -204,7 +205,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
         _pairingController.repeat();
         return _onboardingStep(
             heading: FlutterI18n.translate(context, "onboarding_step4_heading"),
-            text: FlutterI18n.translate(context, "onboarding_step4_body"));
+            text:
+                "${FlutterI18n.translate(context, "onboarding_step4_body")}${Platform.isAndroid ? FlutterI18n.translate(context, "onboarding_step4_explainer") : ""}");
       case 5:
         return _onboardingStep(
             heading: FlutterI18n.translate(context, "onboarding_step5_heading"),
@@ -285,7 +287,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     try {
       _foundScooter = await context.read<ScooterService>().findEligibleScooter(
           excludedScooterIds: widget.excludedScooterIds ?? [],
-          includeSystemScooters: false);
+          // exclude system scooters if we're adding an additional scooter
+          includeSystemScooters: !widget.skipWelcome);
       if (_foundScooter != null) {
         setState(() {
           _step = 3;

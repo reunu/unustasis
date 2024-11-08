@@ -8,6 +8,7 @@ class SavedScooter {
   String _id;
   int _color;
   DateTime _lastPing;
+  bool _autoConnect;
   int? _lastPrimarySOC;
   int? _lastSecondarySOC;
   int? _lastCbbSOC;
@@ -19,6 +20,7 @@ class SavedScooter {
     required String id,
     int? color,
     DateTime? lastPing,
+    bool? autoConnect,
     int? lastPrimarySOC,
     int? lastSecondarySOC,
     int? lastCbbSOC,
@@ -28,6 +30,7 @@ class SavedScooter {
         _id = id,
         _color = color ?? 1,
         _lastPing = lastPing ?? DateTime.now(),
+        _autoConnect = autoConnect ?? true,
         _lastPrimarySOC = lastPrimarySOC,
         _lastSecondarySOC = lastSecondarySOC,
         _lastCbbSOC = lastCbbSOC,
@@ -46,6 +49,11 @@ class SavedScooter {
 
   set lastPing(DateTime lastPing) {
     _lastPing = lastPing;
+    updateSharedPreferences();
+  }
+
+  set autoConnect(bool autoConnect) {
+    _autoConnect = autoConnect;
     updateSharedPreferences();
   }
 
@@ -78,6 +86,7 @@ class SavedScooter {
   String get id => _id;
   int get color => _color;
   DateTime get lastPing => _lastPing;
+  bool get autoConnect => _autoConnect;
   int? get lastPrimarySOC => _lastPrimarySOC;
   int? get lastSecondarySOC => _lastSecondarySOC;
   int? get lastCbbSOC => _lastCbbSOC;
@@ -89,6 +98,7 @@ class SavedScooter {
         'name': _name,
         'color': _color,
         'lastPing': _lastPing.microsecondsSinceEpoch,
+        'autoConnect': _autoConnect,
         'lastPrimarySOC': _lastPrimarySOC,
         'lastSecondarySOC': _lastSecondarySOC,
         'lastCbbSOC': _lastCbbSOC,
@@ -107,6 +117,7 @@ class SavedScooter {
         lastPing: map.containsKey('lastPing')
             ? DateTime.fromMicrosecondsSinceEpoch(map['lastPing'])
             : DateTime.now(),
+        autoConnect: map['autoConnect'],
         lastLocation: map['lastLocation'] != null
             ? LatLng.fromJson(map['lastLocation'])
             : null,

@@ -84,6 +84,7 @@ class _ScooterSectionState extends State<ScooterSection> {
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
             child: SavedScooterCard(
               savedScooter: scooter,
+              single: sortedScooters(context).length == 1,
               connected: (scooter.id ==
                       context
                           .read<ScooterService>()
@@ -121,7 +122,7 @@ class _ScooterSectionState extends State<ScooterSection> {
             },
             icon: Icon(
               Icons.add,
-              color: Theme.of(context).colorScheme.background,
+              color: Theme.of(context).colorScheme.surface,
               size: 16,
             ),
             label: Text(
@@ -129,7 +130,7 @@ class _ScooterSectionState extends State<ScooterSection> {
                   .toUpperCase(),
               style: TextStyle(
                 fontWeight: FontWeight.w700,
-                color: Theme.of(context).colorScheme.background,
+                color: Theme.of(context).colorScheme.surface,
               ),
             ),
           ),
@@ -150,11 +151,13 @@ class SavedScooterCard extends StatelessWidget {
   final log = Logger("ScooterSection");
   final bool connected;
   final SavedScooter savedScooter;
+  final bool single;
   final void Function() rebuild;
   SavedScooterCard({
     super.key,
     required this.savedScooter,
     required this.connected,
+    required this.single,
     required this.rebuild,
   });
 
@@ -326,6 +329,30 @@ class SavedScooterCard extends StatelessWidget {
                         savedScooter.lastLocation!.longitude,
                       );
                     },
+                  ),
+                Divider(
+                  indent: 16,
+                  endIndent: 16,
+                  height: 0,
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                ),
+                if (!single) // only show this if there's more than one scooter
+                  ListTile(
+                    title: Text(FlutterI18n.translate(
+                        context, "stats_scooter_auto_connect")),
+                    subtitle: Text(savedScooter.autoConnect
+                        ? FlutterI18n.translate(context,
+                            "stats_scooter_auto_connect_on_description")
+                        : FlutterI18n.translate(context,
+                            "stats_scooter_auto_connect_off_description")),
+                    trailing: Switch(
+                      value: savedScooter.autoConnect,
+                      onChanged: (value) {
+                        savedScooter.autoConnect = value;
+                        rebuild();
+                      },
+                    ),
                   ),
                 Divider(
                   indent: 16,

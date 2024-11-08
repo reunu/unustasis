@@ -18,6 +18,7 @@ import '../scooter_service.dart';
 import '../domain/scooter_state.dart';
 import '../scooter_visual.dart';
 import '../stats/stats_screen.dart';
+import 'helper_widgets/snowfall.dart';
 
 class HomeScreen extends StatefulWidget {
   final bool? forceOpen;
@@ -33,6 +34,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final log = Logger('HomeScreen');
   bool _hazards = false;
+  bool _snowing = false;
 
   @override
   void initState() {
@@ -40,6 +42,21 @@ class _HomeScreenState extends State<HomeScreen> {
     if (widget.forceOpen != true) {
       log.fine("Redirecting or starting");
       redirectOrStart();
+    }
+    _startSeasonal();
+  }
+
+  Future<void> _startSeasonal() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool("seasonal") ?? true) {
+      switch (DateTime.now().month) {
+        case 12:
+          // December, snow season!
+          setState(() {
+            _snowing = true;
+          });
+        // who knows what else might be in the future?
+      }
     }
   }
 
@@ -79,9 +96,17 @@ class _HomeScreenState extends State<HomeScreen> {
             alignment: Alignment.center,
             children: [
               StateCircle(
-                  scanning: _scanning,
-                  connected: _connected,
-                  scooterState: _state),
+                connected: _connected,
+                scooterState: _state,
+                scanning: _scanning,
+              ),
+              if (_snowing)
+                SnowfallBackground(
+                  backgroundColor: Colors.transparent,
+                  snowflakeColor: context.isDarkMode
+                      ? Colors.white.withOpacity(0.15)
+                      : Colors.black.withOpacity(0.05),
+                ),
               SafeArea(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
@@ -184,6 +209,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       width:
                                           MediaQuery.of(context).size.width / 6,
                                       child: LinearProgressIndicator(
+                                        backgroundColor: Colors.black26,
                                         minHeight: 8,
                                         borderRadius: BorderRadius.circular(8),
                                         value: data.primarySOC! / 100.0,
@@ -241,13 +267,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(height: 16),
                       Expanded(
                         child: ScooterVisual(
-                            color: context.select<ScooterService, int?>(
-                                    (service) => service.scooterColor) ??
-                                1,
-                            state: _state,
-                            scanning: _scanning,
-                            blinkerLeft: _hazards,
-                            blinkerRight: _hazards),
+                          color: context.select<ScooterService, int?>(
+                                  (service) => service.scooterColor) ??
+                              1,
+                          state: _state,
+                          scanning: _scanning,
+                          blinkerLeft: _hazards,
+                          blinkerRight: _hazards,
+                          winter: _snowing,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       Row(
