@@ -4,19 +4,19 @@ import 'package:logging/logging.dart';
 class CharacteristicRepository {
   final log = Logger("CharacteristicRepository");
   BluetoothDevice scooter;
-  late BluetoothCharacteristic commandCharacteristic;
-  late BluetoothCharacteristic hibernationCommandCharacteristic;
-  late BluetoothCharacteristic stateCharacteristic;
-  late BluetoothCharacteristic powerStateCharacteristic;
-  late BluetoothCharacteristic seatCharacteristic;
-  late BluetoothCharacteristic handlebarCharacteristic;
-  late BluetoothCharacteristic auxSOCCharacteristic;
-  late BluetoothCharacteristic cbbSOCCharacteristic;
-  late BluetoothCharacteristic cbbChargingCharacteristic;
-  late BluetoothCharacteristic primaryCyclesCharacteristic;
-  late BluetoothCharacteristic primarySOCCharacteristic;
-  late BluetoothCharacteristic secondaryCyclesCharacteristic;
-  late BluetoothCharacteristic secondarySOCCharacteristic;
+  BluetoothCharacteristic? commandCharacteristic;
+  BluetoothCharacteristic? hibernationCommandCharacteristic;
+  BluetoothCharacteristic? stateCharacteristic;
+  BluetoothCharacteristic? powerStateCharacteristic;
+  BluetoothCharacteristic? seatCharacteristic;
+  BluetoothCharacteristic? handlebarCharacteristic;
+  BluetoothCharacteristic? auxSOCCharacteristic;
+  BluetoothCharacteristic? cbbSOCCharacteristic;
+  BluetoothCharacteristic? cbbChargingCharacteristic;
+  BluetoothCharacteristic? primaryCyclesCharacteristic;
+  BluetoothCharacteristic? primarySOCCharacteristic;
+  BluetoothCharacteristic? secondaryCyclesCharacteristic;
+  BluetoothCharacteristic? secondarySOCCharacteristic;
 
   CharacteristicRepository(this.scooter);
 
@@ -76,14 +76,34 @@ class CharacteristicRepository {
         "9a5900f5-6e67-5d0d-aab9-ad9126b66f91");
   }
 
-  BluetoothCharacteristic _findCharacteristic(
+  bool anyAreNull() {
+    return stateCharacteristic == null ||
+        powerStateCharacteristic == null ||
+        seatCharacteristic == null ||
+        handlebarCharacteristic == null ||
+        auxSOCCharacteristic == null ||
+        cbbSOCCharacteristic == null ||
+        cbbChargingCharacteristic == null ||
+        primaryCyclesCharacteristic == null ||
+        primarySOCCharacteristic == null ||
+        secondaryCyclesCharacteristic == null ||
+        secondarySOCCharacteristic == null;
+  }
+
+  BluetoothCharacteristic? _findCharacteristic(
       BluetoothDevice device, String serviceUuid, String characteristicUuid) {
     log.info(
         "Finding characteristic $characteristicUuid in service $serviceUuid...");
-    return device.servicesList
-        .firstWhere((service) => service.serviceUuid.toString() == serviceUuid)
-        .characteristics
-        .firstWhere(
-            (char) => char.characteristicUuid.toString() == characteristicUuid);
+    try {
+      return device.servicesList
+          .firstWhere(
+              (service) => service.serviceUuid.toString() == serviceUuid)
+          .characteristics
+          .firstWhere((char) =>
+              char.characteristicUuid.toString() == characteristicUuid);
+    } catch (e) {
+      log.severe("Characteristic $characteristicUuid not found!");
+      return null;
+    }
   }
 }

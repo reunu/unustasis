@@ -94,8 +94,8 @@ class ScooterService {
       if (myScooter != null && myScooter!.isConnected) {
         // only refresh state and seatbox, for now
         log.info("Auto-refresh...");
-        characteristicRepository.stateCharacteristic.read();
-        characteristicRepository.seatCharacteristic.read();
+        characteristicRepository.stateCharacteristic!.read();
+        characteristicRepository.seatCharacteristic!.read();
       }
     });
   }
@@ -343,7 +343,15 @@ class ScooterService {
       // Set up this scooter as ours
       myScooter = attemptedScooter;
       addSavedScooter(myScooter!.remoteId.toString());
-      await setUpCharacteristics(myScooter!);
+      try {
+        await setUpCharacteristics(myScooter!);
+      } on UnavailableCharacteristicsException {
+        log.warning(
+            "Some characteristics are null, if this turns out to be a rare issue we might display a toast here in the future");
+        // Fluttertoast.showToast(
+        // msg: "Scooter firmware outdated, some features may not work");
+      }
+
       // save this as the last known location
       _pollLocation();
       // Let everybody know
@@ -490,6 +498,13 @@ class ScooterService {
           secondaryCyclesController: _secondaryCyclesController,
           service: this);
       _scooterReader.readAndSubscribe();
+
+      // check if any of the characteristics are null, and if so, throw an error
+      if (characteristicRepository.anyAreNull()) {
+        log.warning(
+            "Some characteristics are null, throwing exception to warn further up the chain!");
+        throw UnavailableCharacteristicsException();
+      }
     } catch (e) {
       rethrow;
     }
@@ -525,7 +540,7 @@ class ScooterService {
     if (_seatClosedController.value == false) {
       log.warning("Seat seems to be open, checking again...");
       // make really sure nothing has changed
-      await characteristicRepository.seatCharacteristic.read();
+      await characteristicRepository.seatCharacteristic!.read();
       if (_seatClosedController.value == false) {
         log.warning("Locking aborted, because seat is open!");
         throw SeatOpenException();
@@ -627,8 +642,11 @@ class ScooterService {
       characteristicToSend = characteristic;
     }
 
+    // commandCharcteristic should never be null, so we can assume it's not
+    // if the given characteristic is null, we'll "fail" quitely by sending garbage to the default command characteristic instead
+
     try {
-      characteristicToSend.write(ascii.encode(command));
+      characteristicToSend!.write(ascii.encode(command));
     } catch (e) {
       rethrow;
     }
@@ -852,3 +870,5 @@ class ScooterService {
 }
 
 class SeatOpenException {}
+
+class UnavailableCharacteristicsException {}
