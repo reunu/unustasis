@@ -289,9 +289,8 @@ class ScooterService {
     List<String> savedScooterIds =
         await getSavedScooterIds(onlyAutoConnect: true);
     for (var device in systemDevices) {
-      // criteria: it's named "unu Scooter" or it's one we saved
-      if (device.advName == "unu Scooter" ||
-          savedScooterIds.contains(device.remoteId.toString())) {
+      // see if this is a scooter we saved and want to (auto-)connect to
+      if (savedScooterIds.contains(device.remoteId.toString())) {
         // That's a scooter!
         systemScooters.add(device);
       }
