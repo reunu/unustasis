@@ -12,12 +12,14 @@ class ScooterVisual extends StatelessWidget {
   final bool blinkerLeft;
   final bool blinkerRight;
   final int? color;
+  final bool winter;
 
   const ScooterVisual(
       {required this.state,
       required this.scanning,
       required this.blinkerLeft,
       required this.blinkerRight,
+      this.winter = false,
       this.color,
       super.key});
 
@@ -63,6 +65,21 @@ class ScooterVisual extends StatelessWidget {
                         ? CrossFadeState.showFirst
                         : CrossFadeState.showSecond,
                   ),
+                  if (winter && state != ScooterState.disconnected)
+                    AnimatedCrossFade(
+                      duration: const Duration(milliseconds: 500),
+                      firstChild: const Image(
+                        image: AssetImage(
+                            "images/scooter/seasonal/winter_on.webp"),
+                      ),
+                      secondChild: const Image(
+                        image: AssetImage(
+                            "images/scooter/seasonal/winter_off.webp"),
+                      ),
+                      crossFadeState: state != null && state!.isOn
+                          ? CrossFadeState.showFirst
+                          : CrossFadeState.showSecond,
+                    ),
                   AnimatedOpacity(
                     opacity: state != null && state!.isOn ? 1.0 : 0.0,
                     duration: const Duration(milliseconds: 1000),

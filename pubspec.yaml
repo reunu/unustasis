@@ -124,6 +124,8 @@ flutter:
     - images/scooter/light_ring.webp
     - images/scooter/blinker_l.webp
     - images/scooter/blinker_r.webp
+    - images/scooter/seasonal/winter_on.webp
+    - images/scooter/seasonal/winter_off.webp
     - images/battery/batt_full.webp
     - images/battery/batt_75.webp
     - images/battery/batt_50.webp

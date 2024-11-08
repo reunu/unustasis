@@ -163,12 +163,14 @@ class ScooterService {
     _primaryCyclesController.add(190);
     _secondaryCyclesController.add(75);
     _connectedController.add(true);
-    _stateController.add(ScooterState.standby);
+    _stateController.add(ScooterState.parked);
     _seatClosedController.add(true);
     _handlebarController.add(false);
     _cbbChargingController.add(false);
     _lastPingController.add(DateTime.now());
     _scooterNameController.add("Demo Scooter");
+    _connectedController.close();
+    _stateController.close();
   }
 
   // STATUS STREAMS
