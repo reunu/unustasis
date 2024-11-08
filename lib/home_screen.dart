@@ -106,7 +106,6 @@ class _HomeScreenState extends State<HomeScreen> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     if (prefs.getBool("seasonal") ?? true) {
       switch (DateTime.now().month) {
-        case 11:
         case 12:
           // December, snow season!
           setState(() {
