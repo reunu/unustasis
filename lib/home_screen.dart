@@ -246,6 +246,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       width:
                                           MediaQuery.of(context).size.width / 6,
                                       child: LinearProgressIndicator(
+                                        backgroundColor: Colors.black26,
                                         minHeight: 8,
                                         borderRadius: BorderRadius.circular(8),
                                         value: _primarySOC! / 100.0,
@@ -472,7 +473,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void redirectOrStart() async {
     List<String> ids = await widget.scooterService.getSavedScooterIds();
     log.info("Saved scooters: $ids");
-    if ((await widget.scooterService.getSavedScooterIds()).isEmpty) {
+    if (ids.isEmpty) {
       FlutterNativeSplash.remove();
       Navigator.pushReplacement(
         context,
