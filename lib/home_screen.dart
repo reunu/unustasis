@@ -222,6 +222,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       width:
                                           MediaQuery.of(context).size.width / 6,
                                       child: LinearProgressIndicator(
+                                        backgroundColor: Colors.black26,
                                         minHeight: 8,
                                         borderRadius: BorderRadius.circular(8),
                                         value: _primarySOC! / 100.0,

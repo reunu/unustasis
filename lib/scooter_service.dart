@@ -303,7 +303,12 @@ class ScooterService {
     List<BluetoothDevice> foundScooterCache = [];
     List<String> savedScooterIds =
         await getSavedScooterIds(onlyAutoConnect: true);
-    if (savedScooterIds.isNotEmpty && preferSavedScooters) {
+    if (savedScooterIds.isEmpty && savedScooters.isNotEmpty) {
+      log.info(
+          "We have ${savedScooters.length} saved scooters, but getSavedScooterIds returned an empty list. Probably no auto-connect enabled scooters, so we're not even scanning.");
+      return;
+    }
+    if (savedScooters.isNotEmpty && preferSavedScooters) {
       flutterBluePlus.startScan(
         withRemoteIds: savedScooterIds, // look for OUR scooter
         timeout: const Duration(seconds: 30),
