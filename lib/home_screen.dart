@@ -72,11 +72,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final _connected =
-        context.select((ScooterService service) => service.connected);
-    final _scanning =
-        context.select((ScooterService service) => service.scanning);
-    final _state = context.select((ScooterService service) => service.state);
     return Scaffold(
       body: AnnotatedRegion<SystemUiOverlayStyle>(
         value: context.isDarkMode
@@ -96,9 +91,12 @@ class _HomeScreenState extends State<HomeScreen> {
             alignment: Alignment.center,
             children: [
               StateCircle(
-                connected: _connected,
-                scooterState: _state,
-                scanning: _scanning,
+                connected: context
+                    .select((ScooterService service) => service.connected),
+                scooterState:
+                    context.select((ScooterService service) => service.state),
+                scanning: context
+                    .select((ScooterService service) => service.scanning),
               ),
               if (_snowing)
                 SnowfallBackground(
@@ -135,7 +133,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            SizedBox(width: _connected ? 32 : 0),
+                            SizedBox(
+                                width: context.select(
+                                        (ScooterService service) =>
+                                            service.connected)
+                                    ? 32
+                                    : 0),
                             Text(
                               context.select<ScooterService, String?>(
                                       (service) => service.scooterName) ??
@@ -152,10 +155,16 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       Builder(builder: (context) {
+                        ScooterState? state = context
+                            .select((ScooterService service) => service.state);
+                        bool scanning = context.select(
+                            (ScooterService service) => service.scanning);
+                        bool connected = context.select(
+                            (ScooterService service) => service.connected);
                         return Text(
-                          _scanning &&
-                                  (_state == null ||
-                                      _state == ScooterState.disconnected)
+                          scanning &&
+                                  (state == null ||
+                                      state == ScooterState.disconnected)
                               ? (context
                                       .read<ScooterService>()
                                       .savedScooters
@@ -164,11 +173,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                       context, "home_scanning_known")
                                   : FlutterI18n.translate(
                                       context, "home_scanning"))
-                              : ((_state != null
-                                      ? _state.name(context)
+                              : ((state != null
+                                      ? state.name(context)
                                       : FlutterI18n.translate(
                                           context, "home_loading_state")) +
-                                  (_connected &&
+                                  (connected &&
                                           context.select<ScooterService, bool?>(
                                                   (service) => service
                                                       .handlebarsLocked) ==
@@ -270,8 +279,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: context.select<ScooterService, int?>(
                                   (service) => service.scooterColor) ??
                               1,
-                          state: _state,
-                          scanning: _scanning,
+                          state: context.select(
+                              (ScooterService service) => service.state),
+                          scanning: context.select(
+                              (ScooterService service) => service.scanning),
                           blinkerLeft: _hazards,
                           blinkerRight: _hazards,
                           winter: _snowing,
@@ -286,13 +297,20 @@ class _HomeScreenState extends State<HomeScreen> {
                               selector: (context, service) =>
                                   service.seatClosed,
                               builder: (context, seatClosed, _) {
+                                ScooterState? state = context.select(
+                                    (ScooterService service) => service.state);
                                 return Expanded(
                                   child: ScooterActionButton(
-                                    onPressed: _connected &&
-                                            _state != null &&
+                                    onPressed: context.select(
+                                                (ScooterService service) =>
+                                                    service.connected) &&
+                                            state != null &&
                                             seatClosed == true &&
-                                            _scanning == false &&
-                                            _state.isReadyForSeatOpen == true
+                                            context.select(
+                                                    (ScooterService service) =>
+                                                        service.scanning) ==
+                                                false &&
+                                            state.isReadyForSeatOpen == true
                                         ? context
                                             .read<ScooterService>()
                                             .openSeat
@@ -311,84 +329,101 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 );
                               }),
-                          Expanded(
-                            child: ScooterPowerButton(
-                                action: _state != null &&
-                                        _state.isReadyForLockChange
-                                    ? (_state.isOn
-                                        ? () {
-                                            try {
-                                              context
-                                                  .read<ScooterService>()
-                                                  .lock();
-                                              // TODO: Flash hazards in visual
+                          Selector<ScooterService, ScooterState?>(
+                              selector: (context, service) => service.state,
+                              builder: (context, state, _) {
+                                return Expanded(
+                                  child: ScooterPowerButton(
+                                      action: state != null &&
+                                              state.isReadyForLockChange
+                                          ? (state.isOn
+                                              ? () {
+                                                  try {
+                                                    context
+                                                        .read<ScooterService>()
+                                                        .lock();
+                                                    // TODO: Flash hazards in visual
 
-                                              if (context
-                                                  .read<ScooterService>()
-                                                  .hazardLocking) {
-                                                _flashHazards(1);
-                                              }
-                                            } on SeatOpenException catch (_) {
-                                              log.warning(
-                                                  "Seat is open, showing alert");
-                                              showSeatWarning();
-                                            } catch (e, stack) {
-                                              log.severe(
-                                                  "Problem opening the seat",
-                                                  e,
-                                                  stack);
-                                              Fluttertoast.showToast(
-                                                  msg: e.toString());
-                                            }
-                                          }
-                                        : (_state == ScooterState.standby
-                                            ? () {
+                                                    if (context
+                                                        .read<ScooterService>()
+                                                        .hazardLocking) {
+                                                      _flashHazards(1);
+                                                    }
+                                                  } on SeatOpenException catch (_) {
+                                                    log.warning(
+                                                        "Seat is open, showing alert");
+                                                    showSeatWarning();
+                                                  } catch (e, stack) {
+                                                    log.severe(
+                                                        "Problem opening the seat",
+                                                        e,
+                                                        stack);
+                                                    Fluttertoast.showToast(
+                                                        msg: e.toString());
+                                                  }
+                                                }
+                                              : (state == ScooterState.standby
+                                                  ? () {
+                                                      context
+                                                          .read<
+                                                              ScooterService>()
+                                                          .unlock();
+                                                      // TODO: Flash hazards in visual
+                                                    }
+                                                  : context
+                                                      .read<ScooterService>()
+                                                      .wakeUpAndUnlock))
+                                          : null,
+                                      icon: state != null && state.isOn
+                                          ? Icons.lock_open
+                                          : Icons.lock_outline,
+                                      label: state != null && state.isOn
+                                          ? FlutterI18n.translate(
+                                              context, "home_lock_button")
+                                          : FlutterI18n.translate(
+                                              context, "home_unlock_button")),
+                                );
+                              }),
+                          Selector<ScooterService, bool>(
+                              selector: (context, service) => service.scanning,
+                              builder: (context, scanning, _) {
+                                return Expanded(
+                                  child: ScooterActionButton(
+                                      onPressed: scanning
+                                          ? () {
+                                              if (!context.select(
+                                                  (ScooterService service) =>
+                                                      service.connected)) {
                                                 context
                                                     .read<ScooterService>()
-                                                    .unlock();
-                                                // TODO: Flash hazards in visual
+                                                    .start();
+                                              } else {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) =>
+                                                        const ControlScreen(),
+                                                  ),
+                                                );
                                               }
-                                            : context
-                                                .read<ScooterService>()
-                                                .wakeUpAndUnlock))
-                                    : null,
-                                icon: _state != null && _state.isOn
-                                    ? Icons.lock_open
-                                    : Icons.lock_outline,
-                                label: _state != null && _state.isOn
-                                    ? FlutterI18n.translate(
-                                        context, "home_lock_button")
-                                    : FlutterI18n.translate(
-                                        context, "home_unlock_button")),
-                          ),
-                          Expanded(
-                            child: ScooterActionButton(
-                                onPressed: !_scanning
-                                    ? () {
-                                        if (!_connected) {
-                                          context
-                                              .read<ScooterService>()
-                                              .start();
-                                        } else {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  const ControlScreen(),
-                                            ),
-                                          );
-                                        }
-                                      }
-                                    : null,
-                                icon: (!_connected && !_scanning)
-                                    ? Icons.refresh_rounded
-                                    : Icons.more_vert_rounded,
-                                label: (!_connected && !_scanning)
-                                    ? FlutterI18n.translate(
-                                        context, "home_reconnect_button")
-                                    : FlutterI18n.translate(
-                                        context, "home_controls_button")),
-                          ),
+                                            }
+                                          : null,
+                                      icon: (!context.select(
+                                                  (ScooterService service) =>
+                                                      service.connected) &&
+                                              scanning)
+                                          ? Icons.refresh_rounded
+                                          : Icons.more_vert_rounded,
+                                      label: (!context.select(
+                                                  (ScooterService service) =>
+                                                      service.connected) &&
+                                              scanning)
+                                          ? FlutterI18n.translate(
+                                              context, "home_reconnect_button")
+                                          : FlutterI18n.translate(
+                                              context, "home_controls_button")),
+                                );
+                              }),
                         ],
                       )
                     ],
