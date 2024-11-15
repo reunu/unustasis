@@ -2,7 +2,6 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'dart:async';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:logging/logging.dart';
@@ -11,6 +10,7 @@ import 'package:unustasis/scooter_service.dart';
 
 // this will be used as notification channel id
 const notificationChannelId = 'unu_foreground';
+const notificationChannelName = 'Connection Foreground Service';
 
 // this will be used for notification id, So you can update your custom notification with this id.
 const notificationId = 1612;
@@ -33,7 +33,7 @@ Future<void> setupNotificationService() async {
 
   const AndroidNotificationChannel channel = AndroidNotificationChannel(
     notificationChannelId, // id
-    'Unu Foreground Service', // title
+    notificationChannelName, // title
     description:
         'This channel is used for periodically checking your scooter.', // description
     importance: Importance.low, // importance must be at low or higher level
@@ -84,6 +84,7 @@ Future<bool> onIosBackground(ServiceInstance service) async {
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {
   service.on("start").listen((event) {});
+
   Logger("BackgroundService").info("Background service started!");
 
   scooterService.start(restart: true);
@@ -93,12 +94,12 @@ void onStart(ServiceInstance service) async {
       if (await service.isForegroundService()) {
         FlutterLocalNotificationsPlugin().show(
           notificationId,
-          'COOL SERVICE',
+          notificationChannelName,
           'Time: ${DateTime.now()}, Scanning: ${scooterService.scanning} Connected: ${scooterService.connected}',
           const NotificationDetails(
             android: AndroidNotificationDetails(
               notificationChannelId,
-              'MY FOREGROUND SERVICE',
+              notificationChannelName,
               icon: 'ic_bg_service_small',
               ongoing: true,
             ),
