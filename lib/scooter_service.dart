@@ -523,7 +523,7 @@ class ScooterService {
 
   // SCOOTER ACTIONS
 
-  void unlock() {
+  Future<void> unlock() async {
     _sendCommand("scooter:state unlock");
     HapticFeedback.heavyImpact();
 
@@ -534,6 +534,13 @@ class ScooterService {
     if (_openSeatOnUnlock) {
       openSeat();
     }
+
+    Future.delayed(const Duration(seconds: 3000), () {
+      if (_handlebarController.value == true) {
+        log.warning("Handlebars didn't unlock, sending warning");
+        throw HandlebarLockException();
+      }
+    });
   }
 
   Future<void> wakeUpAndUnlock() async {
@@ -548,6 +555,7 @@ class ScooterService {
   }
 
   Future<void> lock() async {
+    // double-check for open seat
     if (_seatClosedController.value == false) {
       log.warning("Seat seems to be open, checking again...");
       // make really sure nothing has changed
@@ -560,12 +568,21 @@ class ScooterService {
             "Seat state was ${_seatClosedController.value} this time, proceeding...");
       }
     }
+
+    // send the command
     _sendCommand("scooter:state lock");
     HapticFeedback.heavyImpact();
 
     if (_hazardLocking) {
       hazard(times: 1);
     }
+
+    Future.delayed(const Duration(seconds: 3000), () {
+      if (_handlebarController.value == true) {
+        log.warning("Handlebars didn't lock, sending warning");
+        throw HandlebarLockException();
+      }
+    });
 
     // don't immediately unlock again automatically
     _autoUnlockCooldown = true;
@@ -900,3 +917,5 @@ class ScooterService {
 class SeatOpenException {}
 
 class UnavailableCharacteristicsException {}
+
+class HandlebarLockException {}
