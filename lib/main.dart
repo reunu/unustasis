@@ -7,6 +7,7 @@ import 'package:easy_dynamic_theme/easy_dynamic_theme.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:logging/logging.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../domain/log_helper.dart';
@@ -31,11 +32,13 @@ void main() async {
     // we have no language saved, so we pass along the device language
     savedLocale = Locale(Platform.localeName.split('_').first);
   }
-  runApp(EasyDynamicThemeWidget(
-    child: MyApp(
-      savedLocale: savedLocale,
-    ),
-  ));
+  runApp(ChangeNotifierProvider(
+      create: (context) => ScooterService(FlutterBluePlusMockable()),
+      child: EasyDynamicThemeWidget(
+        child: MyApp(
+          savedLocale: savedLocale,
+        ),
+      )));
 }
 
 class MyApp extends StatefulWidget {
@@ -47,8 +50,6 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  final ScooterService service = ScooterService(FlutterBluePlusMockable());
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -112,15 +113,12 @@ class _MyAppState extends State<MyApp> {
           },
         ),
       ],
-      home: HomeScreen(
-        scooterService: service,
-      ),
+      home: const HomeScreen(),
     );
   }
 
   @override
   void dispose() {
-    service.dispose();
     super.dispose();
   }
 }
