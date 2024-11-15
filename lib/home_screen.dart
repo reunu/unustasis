@@ -154,125 +154,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           ],
                         ),
                       ),
-                      Builder(builder: (context) {
-                        ScooterState? state = context
-                            .select((ScooterService service) => service.state);
-                        bool scanning = context.select(
-                            (ScooterService service) => service.scanning);
-                        bool connected = context.select(
-                            (ScooterService service) => service.connected);
-                        return Text(
-                          scanning &&
-                                  (state == null ||
-                                      state == ScooterState.disconnected)
-                              ? (context
-                                      .read<ScooterService>()
-                                      .savedScooters
-                                      .isNotEmpty
-                                  ? FlutterI18n.translate(
-                                      context, "home_scanning_known")
-                                  : FlutterI18n.translate(
-                                      context, "home_scanning"))
-                              : ((state != null
-                                      ? state.name(context)
-                                      : FlutterI18n.translate(
-                                          context, "home_loading_state")) +
-                                  (connected &&
-                                          context.select<ScooterService, bool?>(
-                                                  (service) => service
-                                                      .handlebarsLocked) ==
-                                              false
-                                      ? FlutterI18n.translate(
-                                          context, "home_unlocked")
-                                      : "")),
-                          style: Theme.of(context).textTheme.titleMedium,
-                        );
-                      }),
+                      const StatusText(),
                       const SizedBox(height: 16),
                       if (context.select<ScooterService, int?>(
                               (service) => service.primarySOC) !=
                           null)
-                        Selector<
-                                ScooterService,
-                                ({
-                                  DateTime? lastPing,
-                                  int? primarySOC,
-                                  int? secondarySOC
-                                })>(
-                            selector: (context, service) => (
-                                  lastPing: service.lastPing,
-                                  primarySOC: service.primarySOC,
-                                  secondarySOC: service.secondarySOC
-                                ),
-                            builder: (context, data, _) {
-                              bool dataIsOld = data.lastPing == null ||
-                                  data.lastPing!
-                                          .difference(DateTime.now())
-                                          .inMinutes
-                                          .abs() >
-                                      5;
-                              return Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  SizedBox(
-                                      width:
-                                          MediaQuery.of(context).size.width / 6,
-                                      child: LinearProgressIndicator(
-                                        backgroundColor: Colors.black26,
-                                        minHeight: 8,
-                                        borderRadius: BorderRadius.circular(8),
-                                        value: data.primarySOC! / 100.0,
-                                        color: dataIsOld
-                                            ? Theme.of(context)
-                                                .colorScheme
-                                                .onSurface
-                                                .withOpacity(0.4)
-                                            : data.primarySOC! <= 15
-                                                ? Theme.of(context)
-                                                    .colorScheme
-                                                    .error
-                                                : Theme.of(context)
-                                                    .colorScheme
-                                                    .primary,
-                                      )),
-                                  const SizedBox(width: 8),
-                                  Text("${data.primarySOC}%"),
-                                  if (data.secondarySOC != null &&
-                                      data.secondarySOC! > 0)
-                                    const VerticalDivider(),
-                                  if (data.secondarySOC != null &&
-                                      data.secondarySOC! > 0)
-                                    SizedBox(
-                                        width:
-                                            MediaQuery.of(context).size.width /
-                                                6,
-                                        child: LinearProgressIndicator(
-                                          minHeight: 8,
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                          value: data.secondarySOC! / 100.0,
-                                          color: dataIsOld
-                                              ? Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurface
-                                                  .withOpacity(0.4)
-                                              : data.secondarySOC! <= 15
-                                                  ? Theme.of(context)
-                                                      .colorScheme
-                                                      .error
-                                                  : Theme.of(context)
-                                                      .colorScheme
-                                                      .primary,
-                                        )),
-                                  if (data.secondarySOC != null &&
-                                      data.secondarySOC! > 0)
-                                    const SizedBox(width: 8),
-                                  if (data.secondarySOC != null &&
-                                      data.secondarySOC! > 0)
-                                    Text("${data.secondarySOC}%"),
-                                ],
-                              );
-                            }),
+                        const BatteryBars(),
                       const SizedBox(height: 16),
                       Expanded(
                         child: ScooterVisual(
@@ -293,42 +180,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         mainAxisSize: MainAxisSize.max,
                         children: [
-                          Selector<ScooterService, bool?>(
-                              selector: (context, service) =>
-                                  service.seatClosed,
-                              builder: (context, seatClosed, _) {
-                                ScooterState? state = context.select(
-                                    (ScooterService service) => service.state);
-                                return Expanded(
-                                  child: ScooterActionButton(
-                                    onPressed: context.select(
-                                                (ScooterService service) =>
-                                                    service.connected) &&
-                                            state != null &&
-                                            seatClosed == true &&
-                                            context.select(
-                                                    (ScooterService service) =>
-                                                        service.scanning) ==
-                                                false &&
-                                            state.isReadyForSeatOpen == true
-                                        ? context
-                                            .read<ScooterService>()
-                                            .openSeat
-                                        : null,
-                                    label: seatClosed == false
-                                        ? FlutterI18n.translate(
-                                            context, "home_seat_button_open")
-                                        : FlutterI18n.translate(
-                                            context, "home_seat_button_closed"),
-                                    icon: seatClosed == false
-                                        ? Icomoon.seat_open
-                                        : Icomoon.seat_closed,
-                                    iconColor: seatClosed == false
-                                        ? Theme.of(context).colorScheme.error
-                                        : null,
-                                  ),
-                                );
-                              }),
+                          const SeatButton(),
                           Selector<ScooterService, ScooterState?>(
                               selector: (context, service) => service.state,
                               builder: (context, state, _) {
@@ -508,6 +360,148 @@ class _HomeScreenState extends State<HomeScreen> {
     } else {
       context.read<ScooterService>().optionalAuth = true;
     }
+  }
+}
+
+class SeatButton extends StatelessWidget {
+  const SeatButton({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Selector<ScooterService, ({bool? seatClosed, ScooterState? state})>(
+        selector: (context, service) =>
+            (seatClosed: service.seatClosed, state: service.state),
+        builder: (context, data, _) {
+          return Expanded(
+            child: ScooterActionButton(
+              onPressed: context.select(
+                          (ScooterService service) => service.connected) &&
+                      data.state != null &&
+                      data.seatClosed == true &&
+                      context.select(
+                              (ScooterService service) => service.scanning) ==
+                          false &&
+                      data.state!.isReadyForSeatOpen == true
+                  ? context.read<ScooterService>().openSeat
+                  : null,
+              label: data.seatClosed == false
+                  ? FlutterI18n.translate(context, "home_seat_button_open")
+                  : FlutterI18n.translate(context, "home_seat_button_closed"),
+              icon: data.seatClosed == false
+                  ? Icomoon.seat_open
+                  : Icomoon.seat_closed,
+              iconColor: data.seatClosed == false
+                  ? Theme.of(context).colorScheme.error
+                  : null,
+            ),
+          );
+        });
+  }
+}
+
+class BatteryBars extends StatelessWidget {
+  const BatteryBars({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Selector<ScooterService,
+            ({DateTime? lastPing, int? primarySOC, int? secondarySOC})>(
+        selector: (context, service) => (
+              lastPing: service.lastPing,
+              primarySOC: service.primarySOC,
+              secondarySOC: service.secondarySOC
+            ),
+        builder: (context, data, _) {
+          bool dataIsOld = data.lastPing == null ||
+              data.lastPing!.difference(DateTime.now()).inMinutes.abs() > 5;
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                  width: MediaQuery.of(context).size.width / 6,
+                  child: LinearProgressIndicator(
+                    backgroundColor: Colors.black26,
+                    minHeight: 8,
+                    borderRadius: BorderRadius.circular(8),
+                    value: data.primarySOC! / 100.0,
+                    color: dataIsOld
+                        ? Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.4)
+                        : data.primarySOC! <= 15
+                            ? Theme.of(context).colorScheme.error
+                            : Theme.of(context).colorScheme.primary,
+                  )),
+              const SizedBox(width: 8),
+              Text("${data.primarySOC}%"),
+              if (data.secondarySOC != null && data.secondarySOC! > 0)
+                const VerticalDivider(),
+              if (data.secondarySOC != null && data.secondarySOC! > 0)
+                SizedBox(
+                    width: MediaQuery.of(context).size.width / 6,
+                    child: LinearProgressIndicator(
+                      minHeight: 8,
+                      borderRadius: BorderRadius.circular(8),
+                      value: data.secondarySOC! / 100.0,
+                      color: dataIsOld
+                          ? Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.4)
+                          : data.secondarySOC! <= 15
+                              ? Theme.of(context).colorScheme.error
+                              : Theme.of(context).colorScheme.primary,
+                    )),
+              if (data.secondarySOC != null && data.secondarySOC! > 0)
+                const SizedBox(width: 8),
+              if (data.secondarySOC != null && data.secondarySOC! > 0)
+                Text("${data.secondarySOC}%"),
+            ],
+          );
+        });
+  }
+}
+
+class StatusText extends StatelessWidget {
+  const StatusText({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Selector<ScooterService,
+            ({bool connected, bool scanning, ScooterState? state})>(
+        selector: (context, service) => (
+              state: service.state,
+              scanning: service.scanning,
+              connected: service.connected
+            ),
+        builder: (context, data, _) {
+          return Text(
+            data.scanning &&
+                    (data.state == null ||
+                        data.state == ScooterState.disconnected)
+                ? (context.read<ScooterService>().savedScooters.isNotEmpty
+                    ? FlutterI18n.translate(context, "home_scanning_known")
+                    : FlutterI18n.translate(context, "home_scanning"))
+                : ((data.state != null
+                        ? data.state!.name(context)
+                        : FlutterI18n.translate(
+                            context, "home_loading_state")) +
+                    (data.connected &&
+                            context.select<ScooterService, bool?>(
+                                    (service) => service.handlebarsLocked) ==
+                                false
+                        ? FlutterI18n.translate(context, "home_unlocked")
+                        : "")),
+            style: Theme.of(context).textTheme.titleMedium,
+          );
+        });
   }
 }
 
