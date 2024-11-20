@@ -17,6 +17,7 @@ import '../scooter_service.dart';
 import '../domain/scooter_state.dart';
 import '../scooter_visual.dart';
 import '../stats/stats_screen.dart';
+import 'helper_widgets.dart/snowfall.dart';
 
 class HomeScreen extends StatefulWidget {
   final ScooterService scooterService;
@@ -37,6 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _connected = false;
   bool _scanning = false;
   bool _hazards = false;
+  bool _snowing = false;
   bool? _seatClosed;
   bool? _handlebarsLocked;
   int? _primarySOC;
@@ -97,6 +99,21 @@ class _HomeScreenState extends State<HomeScreen> {
         _secondarySOC = soc;
       });
     });
+    _startSeasonal();
+  }
+
+  Future<void> _startSeasonal() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool("seasonal") ?? true) {
+      switch (DateTime.now().month) {
+        case 12:
+          // December, snow season!
+          setState(() {
+            _snowing = true;
+          });
+        // who knows what else might be in the future?
+      }
+    }
   }
 
   void _flashHazards(int times) async {
@@ -124,7 +141,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 systemNavigationBarColor: Colors.white),
         child: Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.background,
+            color: Theme.of(context).colorScheme.surface,
           ),
           child: Stack(
             alignment: Alignment.center,
@@ -133,6 +150,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   scanning: _scanning,
                   connected: _connected,
                   scooterState: _scooterState),
+              if (_snowing)
+                SnowfallBackground(
+                  backgroundColor: Colors.transparent,
+                  snowflakeColor: context.isDarkMode
+                      ? Colors.white.withOpacity(0.15)
+                      : Colors.black.withOpacity(0.05),
+                ),
               SafeArea(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
@@ -222,6 +246,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       width:
                                           MediaQuery.of(context).size.width / 6,
                                       child: LinearProgressIndicator(
+                                        backgroundColor: Colors.black26,
                                         minHeight: 8,
                                         borderRadius: BorderRadius.circular(8),
                                         value: _primarySOC! / 100.0,
@@ -282,11 +307,13 @@ class _HomeScreenState extends State<HomeScreen> {
                               stream: widget.scooterService.scooterColor,
                               builder: (context, colorSnap) {
                                 return ScooterVisual(
-                                    color: colorSnap.data ?? 1,
-                                    state: _scooterState,
-                                    scanning: _scanning,
-                                    blinkerLeft: _hazards,
-                                    blinkerRight: _hazards);
+                                  color: colorSnap.data ?? 1,
+                                  state: _scooterState,
+                                  scanning: _scanning,
+                                  blinkerLeft: _hazards,
+                                  blinkerRight: _hazards,
+                                  winter: _snowing,
+                                );
                               })),
                       const SizedBox(height: 16),
                       Row(
@@ -320,26 +347,25 @@ class _HomeScreenState extends State<HomeScreen> {
                                 action: _scooterState != null &&
                                         _scooterState!.isReadyForLockChange
                                     ? (_scooterState!.isOn
-                                        ? () {
+                                        ? () async {
                                             try {
-                                              widget.scooterService.lock();
+                                              await widget.scooterService
+                                                  .lock();
                                               if (widget.scooterService
                                                   .hazardLocking) {
                                                 _flashHazards(1);
                                               }
+                                            } on SeatOpenException catch (_) {
+                                              log.warning(
+                                                  "Seat is open, showing alert");
+                                              showSeatWarning();
                                             } catch (e, stack) {
-                                              if (e
-                                                  .toString()
-                                                  .contains("SEAT_OPEN")) {
-                                                showSeatWarning();
-                                              } else {
-                                                log.severe(
-                                                    "Problem opening the seat",
-                                                    e,
-                                                    stack);
-                                                Fluttertoast.showToast(
-                                                    msg: e.toString());
-                                              }
+                                              log.severe(
+                                                  "Problem opening the seat",
+                                                  e,
+                                                  stack);
+                                              Fluttertoast.showToast(
+                                                  msg: e.toString());
                                             }
                                           }
                                         : (_scooterState == ScooterState.standby
@@ -447,7 +473,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void redirectOrStart() async {
     List<String> ids = await widget.scooterService.getSavedScooterIds();
     log.info("Saved scooters: $ids");
-    if ((await widget.scooterService.getSavedScooterIds()).isEmpty) {
+    if (ids.isEmpty) {
       FlutterNativeSplash.remove();
       Navigator.pushReplacement(
         context,
@@ -535,7 +561,7 @@ class StateCircle extends StatelessWidget {
                       .toColor()
               : Theme.of(context)
                   .colorScheme
-                  .surface
+                  .surfaceContainer
                   .withOpacity(context.isDarkMode ? 0.5 : 0.7),
         ),
       ),
@@ -584,9 +610,8 @@ class _ScooterPowerButtonState extends State<ScooterPowerButton> {
                 elevation: 0,
                 padding:
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-                backgroundColor: loading
-                    ? Theme.of(context).colorScheme.background
-                    : mainColor,
+                backgroundColor:
+                    loading ? Theme.of(context).colorScheme.surface : mainColor,
               ),
               onPressed: () {
                 Fluttertoast.showToast(msg: widget._label);
@@ -615,7 +640,7 @@ class _ScooterPowerButtonState extends State<ScooterPowerButton> {
                     )
                   : Icon(
                       widget._icon,
-                      color: Theme.of(context).colorScheme.background,
+                      color: Theme.of(context).colorScheme.surface,
                     ),
             ),
           ),
@@ -655,8 +680,8 @@ class ScooterActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     Color mainColor = _iconColor ??
         (_onPressed == null
-            ? Theme.of(context).colorScheme.onBackground.withOpacity(0.2)
-            : Theme.of(context).colorScheme.onBackground);
+            ? Theme.of(context).colorScheme.onSurface.withOpacity(0.2)
+            : Theme.of(context).colorScheme.onSurface);
     return Column(
       children: [
         OutlinedButton(

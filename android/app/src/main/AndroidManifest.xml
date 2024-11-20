@@ -46,6 +46,7 @@
             <action android:name="android.intent.action.SENDTO" />
             <data android:scheme="mailto" />
         </intent>
+        <package android:name="com.unumotors.app" />
     </queries>
 
     <uses-permission android:name="android.permission.INTERNET" />

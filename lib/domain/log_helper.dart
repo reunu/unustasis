@@ -3,9 +3,11 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -28,6 +30,11 @@ class LogHelper {
 
   void initialize() {
     Logger.root.onRecord.listen((record) {
+      if (kDebugMode && record.level >= Level.INFO) {
+        Fluttertoast.showToast(
+            msg: record.message, fontSize: 6, toastLength: Toast.LENGTH_SHORT);
+        print(record);
+      }
       // Ensure the buffer doesn't exceed the max size
       if (_logBuffer.length >= maxBufferSize) {
         _logBuffer.removeAt(0); // Remove the oldest log entry

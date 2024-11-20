@@ -88,7 +88,7 @@ extension StateExtension on ScooterState {
       case ScooterState.disconnected:
       default:
         // scooter is disconnected or in a bad state (like Bavaria or sth)
-        return Theme.of(context).colorScheme.surface;
+        return Theme.of(context).colorScheme.surfaceContainer;
     }
   }
 
@@ -176,6 +176,7 @@ extension StateExtension on ScooterState {
     switch (this) {
       case ScooterState.hibernating:
       case ScooterState.hibernatingImminent:
+      case ScooterState.booting:
         return false;
       default:
         return true;

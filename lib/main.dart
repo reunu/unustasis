@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
@@ -25,6 +27,9 @@ void main() async {
   if (localeString != null) {
     Logger("Main").fine("Saved locale: $localeString");
     savedLocale = Locale(localeString);
+  } else {
+    // we have no language saved, so we pass along the device language
+    savedLocale = Locale(Platform.localeName.split('_').first);
   }
   runApp(EasyDynamicThemeWidget(
     child: MyApp(
@@ -61,13 +66,12 @@ class _MyAppState extends State<MyApp> {
           onPrimary: Colors.black,
           secondary: Colors.green,
           onSecondary: Colors.black,
-          background: Colors.white,
+          surface: Colors.white,
           onTertiary: Colors.white,
-          onBackground: Colors.black,
-          surface: Colors.grey.shade200,
           onSurface: Colors.black,
           error: createMaterialColor(const Color(0xFFFF554C)),
           onError: Colors.white,
+          surfaceContainer: Colors.grey.shade200,
         ),
         /* dark theme settings */
       ),
@@ -84,13 +88,11 @@ class _MyAppState extends State<MyApp> {
           onPrimary: Colors.white,
           secondary: Colors.green,
           onSecondary: Colors.white,
-          background: const Color.fromARGB(255, 20, 20, 20),
+          surface: const Color.fromARGB(255, 20, 20, 20),
           onTertiary: Colors.black,
-          onBackground: Colors.white,
-          surface: Colors.grey.shade900,
           onSurface: Colors.white,
           error: createMaterialColor(const Color(0xFFFF554C)),
-          onError: Colors.white,
+          surfaceContainer: Colors.grey.shade900,
         ),
         /* dark theme settings */
       ),
