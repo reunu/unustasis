@@ -93,6 +93,7 @@ class _MyAppState extends State<MyApp> {
           onSurface: Colors.white,
           error: createMaterialColor(const Color(0xFFFF554C)),
           surfaceContainer: Colors.grey.shade900,
+          onError: Colors.white,
         ),
         /* dark theme settings */
       ),
