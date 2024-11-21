@@ -523,16 +523,16 @@ class ScooterService {
 
   // SCOOTER ACTIONS
 
-  void unlock() {
-    _sendCommand("scooter:state unlock");
+  void unlock() async {
     HapticFeedback.heavyImpact();
+    await _sendCommand("scooter:state unlock");
+
+    if (_openSeatOnUnlock) {
+      await openSeat();
+    }
 
     if (_hazardLocking) {
       hazard(times: 2);
-    }
-
-    if (_openSeatOnUnlock) {
-      openSeat();
     }
   }
 
@@ -573,8 +573,8 @@ class ScooterService {
     _autoUnlockCooldown = false;
   }
 
-  void openSeat() {
-    _sendCommand("scooter:seatbox open");
+  Future<void> openSeat() {
+    return _sendCommand("scooter:seatbox open");
   }
 
   void blink({required bool left, required bool right}) {
@@ -639,7 +639,8 @@ class ScooterService {
 
   // HELPER FUNCTIONS
 
-  void _sendCommand(String command, {BluetoothCharacteristic? characteristic}) {
+  Future<void> _sendCommand(String command,
+      {BluetoothCharacteristic? characteristic}) async {
     log.fine("Sending command: $command");
     if (myScooter == null) {
       throw "Scooter not found!";
@@ -657,7 +658,7 @@ class ScooterService {
     // if the given characteristic is null, we'll "fail" quitely by sending garbage to the default command characteristic instead
 
     try {
-      characteristicToSend!.write(ascii.encode(command));
+      await characteristicToSend!.write(ascii.encode(command));
     } catch (e) {
       rethrow;
     }
