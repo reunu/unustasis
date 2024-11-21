@@ -535,7 +535,7 @@ class ScooterService {
       openSeat();
     }
 
-    Future.delayed(const Duration(seconds: 3000), () {
+    await Future.delayed(const Duration(seconds: 2), () {
       if (_handlebarController.value == true) {
         log.warning("Handlebars didn't unlock, sending warning");
         throw HandlebarLockException();
@@ -577,8 +577,8 @@ class ScooterService {
       hazard(times: 1);
     }
 
-    Future.delayed(const Duration(seconds: 3000), () {
-      if (_handlebarController.value == true) {
+    await Future.delayed(const Duration(seconds: 2), () {
+      if (_handlebarController.value == false) {
         log.warning("Handlebars didn't lock, sending warning");
         throw HandlebarLockException();
       }

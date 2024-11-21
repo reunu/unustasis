@@ -360,7 +360,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                               log.warning(
                                                   "Seat is open, showing alert");
                                               showSeatWarning();
-                                            } on HandlebarLockException {
+                                            } on HandlebarLockException catch (_) {
                                               log.warning(
                                                   "Handlebars are still unlocked, showing alert");
                                               showHandlebarWarning(
@@ -384,7 +384,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                       .hazardLocking) {
                                                     _flashHazards(2);
                                                   }
-                                                } on HandlebarLockException {
+                                                } on HandlebarLockException catch (_) {
                                                   log.warning(
                                                       "Handlebars are still locked, showing alert");
                                                   showHandlebarWarning(
