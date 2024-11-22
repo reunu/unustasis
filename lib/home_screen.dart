@@ -7,6 +7,7 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:logging/logging.dart';
+import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../control_screen.dart';
@@ -359,6 +360,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                               log.warning(
                                                   "Seat is open, showing alert");
                                               showSeatWarning();
+                                            } on HandlebarLockException catch (_) {
+                                              log.warning(
+                                                  "Handlebars are still unlocked, showing alert");
+                                              showHandlebarWarning(
+                                                didNotUnlock: false,
+                                              );
                                             } catch (e, stack) {
                                               log.severe(
                                                   "Problem opening the seat",
@@ -369,11 +376,20 @@ class _HomeScreenState extends State<HomeScreen> {
                                             }
                                           }
                                         : (_scooterState == ScooterState.standby
-                                            ? () {
-                                                widget.scooterService.unlock();
-                                                if (widget.scooterService
-                                                    .hazardLocking) {
-                                                  _flashHazards(2);
+                                            ? () async {
+                                                try {
+                                                  await widget.scooterService
+                                                      .unlock();
+                                                  if (widget.scooterService
+                                                      .hazardLocking) {
+                                                    _flashHazards(2);
+                                                  }
+                                                } on HandlebarLockException catch (_) {
+                                                  log.warning(
+                                                      "Handlebars are still locked, showing alert");
+                                                  showHandlebarWarning(
+                                                    didNotUnlock: true,
+                                                  );
                                                 }
                                               }
                                             : widget.scooterService
@@ -461,6 +477,57 @@ class _HomeScreenState extends State<HomeScreen> {
             TextButton(
               child: const Text('OK'),
               onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void showHandlebarWarning({required bool didNotUnlock}) {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Lottie.asset(
+                "assets/anim/handlebars.json",
+                height: 160,
+              ),
+              const SizedBox(height: 24),
+              Text(FlutterI18n.translate(context,
+                  "${didNotUnlock ? "locked" : "unlocked"}_handlebar_alert_title")),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text(FlutterI18n.translate(context,
+                    "${didNotUnlock ? "locked" : "unlocked"}_handlebar_alert_body")),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text(FlutterI18n.translate(context,
+                  "${didNotUnlock ? "locked" : "unlocked"}_handlebar_alert_action")),
+              onPressed: () {
+                if (didNotUnlock) {
+                  widget.scooterService.lock();
+                } else {
+                  widget.scooterService.unlock();
+                }
                 Navigator.of(context).pop();
               },
             ),
