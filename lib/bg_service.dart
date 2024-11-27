@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'dart:async';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:home_widget/home_widget.dart';
 import 'package:logging/logging.dart';
 import 'package:unustasis/flutter/blue_plus_mockable.dart';
 import 'package:unustasis/scooter_service.dart';
@@ -83,7 +84,13 @@ Future<bool> onIosBackground(ServiceInstance service) async {
 
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {
-  service.on("start").listen((event) {});
+  service.on("lock").listen((event) {
+    scooterService.lock();
+  });
+
+  service.on("unlock").listen((event) {
+    scooterService.unlock();
+  });
 
   Logger("BackgroundService").info("Background service started!");
 
@@ -92,6 +99,7 @@ void onStart(ServiceInstance service) async {
   Timer.periodic(const Duration(seconds: 1), (timer) async {
     if (service is AndroidServiceInstance) {
       if (await service.isForegroundService()) {
+        // Update Notification
         FlutterLocalNotificationsPlugin().show(
           notificationId,
           notificationChannelName,
@@ -104,6 +112,21 @@ void onStart(ServiceInstance service) async {
               ongoing: true,
             ),
           ),
+        );
+
+        // Update widget
+        await HomeWidget.saveWidgetData<String>(
+            'title', scooterService.scanning ? "Scanning" : "Not scanning");
+        await HomeWidget.saveWidgetData<String>(
+            'message', DateTime.now().toString());
+
+        Logger("BackgroundService")
+            .info("Now I would update the widget using HomeWidgetReceiver");
+
+        await HomeWidget.updateWidget(
+          name: 'HomeWidgetReceiver',
+          androidName: 'HomeWidgetReceiver',
+          qualifiedAndroidName: 'de.freal.unustasis.HomeWidgetReceiver',
         );
       }
     }

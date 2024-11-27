@@ -60,6 +60,7 @@ dependencies:
   provider: ^6.1.2
   flutter_local_notifications: ^17.2.3
   appcheck: ^1.5.2
+  home_widget: ^0.7.0
 
 dev_dependencies:
   flutter_test:

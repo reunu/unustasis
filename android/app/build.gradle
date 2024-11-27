@@ -75,13 +75,24 @@ android {
             versionNameSuffix "-debug"
         }
     }
+
+    buildFeatures {
+        compose true
+    }
+
+    composeOptions {	
+        kotlinCompilerExtensionVersion '1.5.2'
+    }
+
 }
 
 flutter {
     source '../..'
 }
 
-dependencies {}
+dependencies {
+    implementation 'androidx.glance:glance-appwidget:1.1.0'
+}
 
 configurations.all {
     resolutionStrategy {
