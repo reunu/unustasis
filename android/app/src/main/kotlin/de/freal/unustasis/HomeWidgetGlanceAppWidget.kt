@@ -1,4 +1,4 @@
-package de.freal.unustasis.glance
+package de.freal.unustasis
 
 import HomeWidgetGlanceState
 import HomeWidgetGlanceStateDefinition

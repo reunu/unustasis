@@ -94,7 +94,12 @@ void onStart(ServiceInstance service) async {
 
   Logger("BackgroundService").info("Background service started!");
 
-  scooterService.start(restart: true);
+  try {
+    scooterService.start(restart: true);
+  } catch (e) {
+    Logger("BackgroundService")
+        .info("Error while starting the scooter service");
+  }
 
   Timer.periodic(const Duration(seconds: 1), (timer) async {
     if (service is AndroidServiceInstance) {
@@ -124,10 +129,9 @@ void onStart(ServiceInstance service) async {
             .info("Now I would update the widget using HomeWidgetReceiver");
 
         await HomeWidget.updateWidget(
-          name: 'HomeWidgetReceiver',
-          androidName: 'HomeWidgetReceiver',
           qualifiedAndroidName: 'de.freal.unustasis.HomeWidgetReceiver',
         );
+        Logger("BackgroundService").info("Widget updated");
       }
     }
   });
