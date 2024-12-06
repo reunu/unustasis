@@ -58,11 +58,12 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
                 GlanceTheme.colors
             else
+                // TODO default theme
                 GlanceTheme.colors
         ) {
             Box(
                 modifier =
-                GlanceModifier.background(GlanceTheme.colors.surface)
+                GlanceModifier.background(GlanceTheme.colors.widgetBackground)
                     .padding(16.dp).cornerRadius(32.dp)
             ) {
                 Column(
@@ -70,7 +71,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                     verticalAlignment = Alignment.Vertical.CenterVertically,
                     horizontalAlignment = Alignment.Horizontal.Start,
                 ) {
-                    Text("Unustasis ($tick)", style = TextStyle(color = GlanceTheme.colors.onSurface))
+                    Text("Unustasis ($tick)", style = TextStyle(color = GlanceTheme.colors.secondary))
                     Text(
                         title,
                         style = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold, color = GlanceTheme.colors.onBackground),
@@ -82,7 +83,6 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                             )
                         ).padding(bottom = 4.dp),
                     )
-
                     Row(
                         verticalAlignment = Alignment.Vertical.CenterVertically,
                         horizontalAlignment = Alignment.Horizontal.Start,
@@ -91,11 +91,11 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                             progress = soc1 / 100f,
                             modifier = GlanceModifier.width(64.dp).height(8.dp),
                             color = GlanceTheme.colors.primary,
-                            backgroundColor = ColorProvider(day = Color.LightGray, night = Color.DarkGray),
+                            backgroundColor = GlanceTheme.colors.secondaryContainer,
                         )
                         Text(
                             "$soc1%",
-                            style = TextStyle(color = GlanceTheme.colors.onSurface),
+                            style = TextStyle(color = GlanceTheme.colors.secondary),
                             modifier = GlanceModifier.padding(start = 8.dp),
                         )
                     }
@@ -107,12 +107,12 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                             progress = soc2 / 100f,
                             modifier = GlanceModifier.width(64.dp).height(8.dp),
                             color = GlanceTheme.colors.primary,
-                            backgroundColor = ColorProvider(day = Color.LightGray, night = Color.DarkGray),
+                            backgroundColor = GlanceTheme.colors.secondaryContainer,
 
                             )
                         Text(
                             "$soc2%",
-                            style = TextStyle(color = GlanceTheme.colors.onSurface),
+                            style = TextStyle(color = GlanceTheme.colors.secondary),
                             modifier = GlanceModifier.padding(start = 8.dp),
                         )
                     }
