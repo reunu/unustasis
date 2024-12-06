@@ -6,12 +6,14 @@ import 'dart:async';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:logging/logging.dart';
+import 'package:unustasis/domain/scooter_state.dart';
 import 'package:unustasis/flutter/blue_plus_mockable.dart';
+import 'package:unustasis/home_screen.dart';
 import 'package:unustasis/scooter_service.dart';
 
 // this will be used as notification channel id
 const notificationChannelId = 'unu_foreground';
-const notificationChannelName = 'Connection Foreground Service';
+const notificationChannelName = 'Unu Background Connection';
 
 // this will be used for notification id, So you can update your custom notification with this id.
 const notificationId = 1612;
@@ -27,6 +29,22 @@ void startBackgroundService() {
 void stopBackgroundService() {
   final service = FlutterBackgroundService();
   service.invoke("stop");
+}
+
+void updateWidget() async {
+  // update all data we have
+  await HomeWidget.saveWidgetData<bool>('connected', scooterService.connected);
+  await HomeWidget.saveWidgetData<bool>('scanning', scooterService.scanning);
+  await HomeWidget.saveWidgetData<bool>(
+      'poweredOn', scooterService.state?.isOn ?? false);
+  await HomeWidget.saveWidgetData<int>('tick', DateTime.now().second);
+  await HomeWidget.saveWidgetData<int>('soc1', scooterService.primarySOC);
+  await HomeWidget.saveWidgetData<int>('soc2', scooterService.secondarySOC);
+
+// once all is set, rebuild the widget
+  await HomeWidget.updateWidget(
+    qualifiedAndroidName: 'de.freal.unustasis.HomeWidgetReceiver',
+  );
 }
 
 Future<void> setupNotificationService() async {
@@ -74,6 +92,22 @@ Future<void> setupNotificationService() async {
   );
 }
 
+void updateNotification() async {
+  FlutterLocalNotificationsPlugin().show(
+    notificationId,
+    notificationChannelName,
+    'Time: ${DateTime.now()}, Scanning: ${scooterService.scanning} Connected: ${scooterService.connected}',
+    const NotificationDetails(
+      android: AndroidNotificationDetails(
+        notificationChannelId,
+        notificationChannelName,
+        icon: 'ic_bg_service_small',
+        ongoing: true,
+      ),
+    ),
+  );
+}
+
 @pragma('vm:entry-point')
 Future<bool> onIosBackground(ServiceInstance service) async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -82,17 +116,27 @@ Future<bool> onIosBackground(ServiceInstance service) async {
   return true;
 }
 
+@pragma("vm:entry-point")
+FutureOr<void> backgroundCallback(Uri? data) async {
+  // perform the requested action
+  switch (data.toString().split("://")[1]) {
+    case "lock":
+      scooterService.lock();
+    // await HomeWidget.saveWidgetData<bool>('poweredOn', false);
+    case "unlock":
+      scooterService.unlock();
+    // await HomeWidget.saveWidgetData<bool>('poweredOn', true);
+  }
+  await HomeWidget.updateWidget(
+    qualifiedAndroidName: 'de.freal.unustasis.HomeWidgetReceiver',
+  );
+}
+
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {
-  service.on("lock").listen((event) {
-    scooterService.lock();
-  });
-
-  service.on("unlock").listen((event) {
-    scooterService.unlock();
-  });
-
   Logger("BackgroundService").info("Background service started!");
+
+  HomeWidget.registerInteractivityCallback(backgroundCallback);
 
   try {
     scooterService.start(restart: true);
@@ -105,38 +149,10 @@ void onStart(ServiceInstance service) async {
     if (service is AndroidServiceInstance) {
       if (await service.isForegroundService()) {
         // Update Notification
-        FlutterLocalNotificationsPlugin().show(
-          notificationId,
-          notificationChannelName,
-          'Time: ${DateTime.now()}, Scanning: ${scooterService.scanning} Connected: ${scooterService.connected}',
-          const NotificationDetails(
-            android: AndroidNotificationDetails(
-              notificationChannelId,
-              notificationChannelName,
-              icon: 'ic_bg_service_small',
-              ongoing: true,
-            ),
-          ),
-        );
-
+        updateNotification();
         // Update widget
-        await HomeWidget.saveWidgetData<String>(
-            'title', scooterService.scanning ? "Scanning" : "Not scanning");
-        await HomeWidget.saveWidgetData<String>(
-            'message', DateTime.now().toString());
-
-        Logger("BackgroundService")
-            .info("Now I would update the widget using HomeWidgetReceiver");
-
-        await HomeWidget.updateWidget(
-          qualifiedAndroidName: 'de.freal.unustasis.HomeWidgetReceiver',
-        );
-        Logger("BackgroundService").info("Widget updated");
+        updateWidget();
       }
     }
-  });
-
-  Timer.periodic(const Duration(minutes: 1), (timer) {
-    // look for our scooter, connect to it, poll state and battery levels
   });
 }
