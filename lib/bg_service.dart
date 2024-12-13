@@ -85,8 +85,8 @@ Future<void> setupNotificationService() async {
       foregroundServiceTypes: [AndroidForegroundType.connectedDevice],
       notificationChannelId:
           notificationChannelId, // this must match with notification channel you created above.
-      initialNotificationTitle: 'AWESOME SERVICE',
-      initialNotificationContent: 'Initializing',
+      initialNotificationTitle: 'Unu Background Connection',
+      initialNotificationContent: 'Initializing...',
       foregroundServiceNotificationId: notificationId,
     ),
   );
@@ -145,7 +145,39 @@ void onStart(ServiceInstance service) async {
         .info("Error while starting the scooter service");
   }
 
-  Timer.periodic(const Duration(seconds: 1), (timer) async {
+  // set up state values
+  bool connected = scooterService.connected;
+  DateTime? lastPing = scooterService.lastPing;
+  ScooterState? state = scooterService.state;
+  int? scooterColor = scooterService.scooterColor;
+  int? primarySOC = scooterService.primarySOC;
+  int? secondarySOC = scooterService.secondarySOC;
+  bool scanning = scooterService.scanning; // debug
+
+  // listen to changes
+  scooterService.addListener(() {
+    print("ScooterService updated");
+    if (connected != scooterService.connected ||
+        lastPing != scooterService.lastPing ||
+        state != scooterService.state ||
+        scooterColor != scooterService.scooterColor ||
+        primarySOC != scooterService.primarySOC ||
+        secondarySOC != scooterService.secondarySOC ||
+        scanning != scooterService.scanning) {
+      // update state values
+      connected = scooterService.connected;
+      lastPing = scooterService.lastPing;
+      state = scooterService.state;
+      scooterColor = scooterService.scooterColor;
+      primarySOC = scooterService.primarySOC;
+      secondarySOC = scooterService.secondarySOC;
+      scanning = scooterService.scanning; // debug
+      // update home screen widget
+      updateWidget();
+    }
+  });
+
+  Timer.periodic(const Duration(seconds: 10), (timer) async {
     if (service is AndroidServiceInstance) {
       if (await service.isForegroundService()) {
         // Update Notification
