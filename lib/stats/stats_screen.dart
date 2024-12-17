@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:unustasis/stats/support_section.dart';
 
 import '../stats/settings_section.dart';
 import '../scooter_service.dart';
@@ -28,7 +29,7 @@ class _StatsScreenState extends State<StatsScreen> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         extendBodyBehindAppBar: true,
         appBar: AppBar(
@@ -70,6 +71,14 @@ class _StatsScreenState extends State<StatsScreen> {
                         ),
                       ),
                     ),
+                    Tab(
+                      child: Text(
+                        FlutterI18n.translate(context, 'stats_title_support'),
+                        style: const TextStyle(
+                          fontSize: 16,
+                        ),
+                      ),
+                    )
                   ])),
           actions: [
             LastPingInfo(
@@ -110,6 +119,8 @@ class _StatsScreenState extends State<StatsScreen> {
                           service: widget.service, dataIsOld: dataIsOld),
                       // SETTINGS TAB
                       SettingsSection(service: widget.service),
+                      // SUPPORT TAB
+                      const SupportSection(),
                     ],
                   );
                 }),
