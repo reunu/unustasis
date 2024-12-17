@@ -20,18 +20,55 @@ class SupportSection extends StatefulWidget {
 
 class _SupportSectionState extends State<SupportSection> {
   List<Widget> supportItems() => [
-        Header("Common questions"),
+        Header(FlutterI18n.translate(context, "support_faqs")),
+        Divider(
+          indent: 16,
+          endIndent: 16,
+          height: 24,
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+        ),
         const FaqWidget(),
-        Header("Garages"),
-        const GarageWidget(),
-        Header("Get support"),
+        Divider(
+          indent: 16,
+          endIndent: 16,
+          height: 24,
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+        ),
+        Header(
+          FlutterI18n.translate(context, "support_garages"),
+          subtitle:
+              FlutterI18n.translate(context, "support_garages_description"),
+        ),
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 8),
+          child: GarageWidget(),
+        ),
+        Divider(
+          indent: 16,
+          endIndent: 16,
+          height: 24,
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+        ),
+        Header(FlutterI18n.translate(context, "support_get_help")),
+        Divider(
+          indent: 16,
+          endIndent: 16,
+          height: 24,
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+        ),
         ListTile(
           leading: const Icon(Icons.bug_report_outlined),
-          title: Text("Report a bug"),
+          title: Text(FlutterI18n.translate(context, "settings_report")),
           trailing: const Icon(Icons.chevron_right),
           onTap: () {
             LogHelper.startBugReport(context);
           },
+        ),
+        Divider(
+          indent: 16,
+          endIndent: 16,
+          height: 24,
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
         ),
         ListTile(
           leading: const Icon(Icons.discord_outlined),
@@ -41,20 +78,20 @@ class _SupportSectionState extends State<SupportSection> {
             launchUrl(Uri.parse("https://discord.gg/UEPGY8AG9V"));
           },
         ),
+        Divider(
+          indent: 16,
+          endIndent: 16,
+          height: 24,
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+        ),
       ];
 
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
+    return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 16),
       shrinkWrap: true,
       itemCount: supportItems().length,
-      separatorBuilder: (context, index) => Divider(
-        indent: 16,
-        endIndent: 16,
-        height: 24,
-        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
-      ),
       itemBuilder: (context, index) => supportItems()[index],
     );
   }
@@ -92,6 +129,7 @@ class FaqWidget extends StatelessWidget {
           }
           Map<String, dynamic> faq = snapshot.data!;
           return ListView.separated(
+            physics: const NeverScrollableScrollPhysics(),
             shrinkWrap: true,
             itemCount: faq.length,
             separatorBuilder: (context, index) => Divider(
@@ -150,7 +188,6 @@ class GarageWidget extends StatelessWidget {
   const GarageWidget({super.key});
 
   Future<List<Garage>> getGarages() async {
-    print("Getting garages from API");
     final response = await http
         .get(Uri.parse('https://unumotors.com/page-data/sq/d/2596243890.json'));
     if (response.statusCode == 200) {
@@ -160,6 +197,8 @@ class GarageWidget extends StatelessWidget {
       List<dynamic> garages = content['garages'];
       return garages.map((garage) => Garage.fromJson(garage)).toList();
     } else {
+      Logger("GarageWidget")
+          .severe('Failed to load garages', response.toString());
       throw Exception('Failed to load garages');
     }
   }
@@ -177,7 +216,7 @@ class GarageWidget extends StatelessWidget {
     // get both location and garage data
     List<dynamic> result = await Future.wait({
       getGarages(),
-      Geolocator.getCurrentPosition(),
+      Geolocator.getLastKnownPosition(),
     });
     // organize results
     List<Garage> garages = result[0] as List<Garage>;
@@ -201,7 +240,7 @@ class GarageWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 180,
+      height: 170,
       child: FutureBuilder(
         future: getClosestGarages(),
         builder: (context, snapshot) {
@@ -212,7 +251,13 @@ class GarageWidget extends StatelessWidget {
               children: [
                 const Icon(Icons.search_off_outlined, size: 40),
                 const SizedBox(height: 8),
-                Text(FlutterI18n.translate(context, "stats_no_garages")),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                  child: Text(
+                    FlutterI18n.translate(context, "support_garages_none"),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
               ],
             );
           }
@@ -251,7 +296,8 @@ class _GarageTile extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(right: 16),
       child: Container(
-        width: 300,
+        width: MediaQuery.of(context).size.width * 0.7,
+        constraints: const BoxConstraints(maxWidth: 500),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surfaceContainer,
@@ -259,12 +305,25 @@ class _GarageTile extends StatelessWidget {
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            Text(garage.name, style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 4),
-            Text((garage.distance! / 1000).toStringAsFixed(2) + " km"),
+            Text(
+              garage.name,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyLarge
+                  ?.copyWith(fontWeight: FontWeight.w600),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
             const SizedBox(height: 8),
+            Text("${garage.street}, ${garage.city}",
+                overflow: TextOverflow.ellipsis),
+            Text(FlutterI18n.translate(context, "support_garage_distance",
+                translationParams: {
+                  "dist": (garage.distance! / 1000).toStringAsFixed(1)
+                })),
+            const SizedBox(height: 16),
             Row(
               mainAxisSize: MainAxisSize.max,
               children: [
@@ -278,8 +337,9 @@ class _GarageTile extends StatelessWidget {
                       MapsLauncher.launchQuery(
                           "${garage.name} ${garage.street}, ${garage.zipCode}");
                     },
-                    label: Text("Map"),
-                    icon: Icon(Icons.map_outlined),
+                    label: Text(
+                        FlutterI18n.translate(context, "support_garage_map")),
+                    icon: const Icon(Icons.map_outlined),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -295,8 +355,9 @@ class _GarageTile extends StatelessWidget {
                         path: garage.phone,
                       ));
                     },
-                    label: Text("Call"),
-                    icon: Icon(Icons.phone_outlined),
+                    label: Text(
+                        FlutterI18n.translate(context, "support_garage_call")),
+                    icon: const Icon(Icons.phone_outlined),
                   ),
                 ),
               ],

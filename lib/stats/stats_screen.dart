@@ -73,7 +73,7 @@ class _StatsScreenState extends State<StatsScreen> {
                     ),
                     Tab(
                       child: Text(
-                        "SUPPORT",
+                        FlutterI18n.translate(context, 'stats_title_support'),
                         style: const TextStyle(
                           fontSize: 16,
                         ),
