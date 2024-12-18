@@ -157,7 +157,13 @@ void onStart(ServiceInstance service) async {
   // listen to changes
   scooterService.addListener(() {
     print("ScooterService updated");
-    if (true) {
+    if (connected != scooterService.connected ||
+        lastPing != scooterService.lastPing ||
+        state != scooterService.state ||
+        scooterColor != scooterService.scooterColor ||
+        primarySOC != scooterService.primarySOC ||
+        secondarySOC != scooterService.secondarySOC ||
+        scanning != scooterService.scanning) {
       // debug
       print("Relevant values have changed");
       // update state values
@@ -170,13 +176,11 @@ void onStart(ServiceInstance service) async {
       scanning = scooterService.scanning; // debug
       // update home screen widget
       updateWidget();
-      updateNotification();
     } else {
       print("No relevant values have changed");
     }
   });
 
-  updateNotification();
   Timer.periodic(const Duration(minutes: 3), (timer) async {
     if (service is AndroidServiceInstance) {
       if (await service.isForegroundService()) {
