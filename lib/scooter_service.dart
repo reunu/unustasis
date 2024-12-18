@@ -578,7 +578,7 @@ class ScooterService with ChangeNotifier {
 
   // SCOOTER ACTIONS
 
-  void unlock() {
+  Future<void> unlock() async {
     _sendCommand("scooter:state unlock");
     HapticFeedback.heavyImpact();
 
@@ -589,6 +589,13 @@ class ScooterService with ChangeNotifier {
     if (_openSeatOnUnlock) {
       openSeat();
     }
+
+    await Future.delayed(const Duration(seconds: 2), () {
+      if (_handlebarsLocked == true) {
+        log.warning("Handlebars didn't unlock, sending warning");
+        throw HandlebarLockException();
+      }
+    });
   }
 
   Future<void> wakeUpAndUnlock() async {
@@ -615,12 +622,21 @@ class ScooterService with ChangeNotifier {
         log.info("Seat state was $_seatClosed this time, proceeding...");
       }
     }
+
+    // send the command
     _sendCommand("scooter:state lock");
     HapticFeedback.heavyImpact();
 
     if (_hazardLocking) {
       hazard(times: 1);
     }
+
+    await Future.delayed(const Duration(seconds: 2), () {
+      if (_handlebarsLocked == false) {
+        log.warning("Handlebars didn't lock, sending warning");
+        throw HandlebarLockException();
+      }
+    });
 
     // don't immediately unlock again automatically
     _autoUnlockCooldown = true;
@@ -946,3 +962,5 @@ class ScooterService with ChangeNotifier {
 class SeatOpenException {}
 
 class UnavailableCharacteristicsException {}
+
+class HandlebarLockException {}
