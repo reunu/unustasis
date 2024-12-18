@@ -366,11 +366,14 @@ class ScooterService with ChangeNotifier {
       return;
     }
     if (savedScooters.isNotEmpty && preferSavedScooters) {
+      log.info(
+          "Looking for our scooters, since we have ${savedScooters.length} saved scooters");
       flutterBluePlus.startScan(
         withRemoteIds: savedScooterIds, // look for OUR scooter
         timeout: const Duration(seconds: 30),
       );
     } else {
+      log.info("Looking for any scooter, since we have no saved scooters");
       flutterBluePlus.startScan(
         withNames: [
           "unu Scooter",
@@ -446,24 +449,26 @@ class ScooterService with ChangeNotifier {
 
   // spins up the whole connection process, and connects/bonds with the nearest scooter
   void start({bool restart = true}) async {
+    // GETTING READY
     // Remove the splash screen
     Future.delayed(const Duration(milliseconds: 1500), () {
       FlutterNativeSplash.remove();
     });
+    // Try to turn on Bluetooth (Android-Only)
     if (Platform.isAndroid) {
       await flutterBluePlus.turnOn();
     }
     // TODO: prompt the user to turn it on manually on iOS
-    log.fine("Starting connection process...");
+
+    // CLEANUP
     _foundSth = false;
-    // Cleanup in case this is a restart
     connected = false;
     state = ScooterState.disconnected;
-
     if (myScooter != null) {
       myScooter!.disconnect();
     }
 
+    // SCAN
     // TODO: replace with getEligibleScooters, why do we still have this duplicated?!
 
     // First, see if the phone is already actively connected to a scooter
@@ -487,6 +492,7 @@ class ScooterService with ChangeNotifier {
             msg: "Error during search or connect!"); // TODO: Localize
       }
     }
+
     if (restart) {
       startAutoRestart();
     }
@@ -515,6 +521,7 @@ class ScooterService with ChangeNotifier {
   void stopAutoRestart() {
     _autoRestarting = false;
     _autoRestartSubscription.cancel();
+    log.fine("Auto-restart stopped.");
   }
 
   void setAutoUnlock(bool enabled) {

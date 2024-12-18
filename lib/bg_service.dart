@@ -139,7 +139,7 @@ void onStart(ServiceInstance service) async {
   HomeWidget.registerInteractivityCallback(backgroundCallback);
 
   try {
-    scooterService.start(restart: true);
+    scooterService.start();
   } catch (e) {
     Logger("BackgroundService")
         .info("Error while starting the scooter service");
@@ -164,6 +164,8 @@ void onStart(ServiceInstance service) async {
         primarySOC != scooterService.primarySOC ||
         secondarySOC != scooterService.secondarySOC ||
         scanning != scooterService.scanning) {
+      // debug
+      print("Relevant values have changed");
       // update state values
       connected = scooterService.connected;
       lastPing = scooterService.lastPing;
@@ -174,16 +176,18 @@ void onStart(ServiceInstance service) async {
       scanning = scooterService.scanning; // debug
       // update home screen widget
       updateWidget();
+    } else {
+      print("No relevant values have changed");
     }
   });
 
-  Timer.periodic(const Duration(seconds: 10), (timer) async {
+  Timer.periodic(const Duration(minutes: 3), (timer) async {
     if (service is AndroidServiceInstance) {
       if (await service.isForegroundService()) {
-        // Update Notification
-        updateNotification();
-        // Update widget
-        updateWidget();
+        if (!scooterService.scanning && !scooterService.connected) {
+          // must have been killed along the way
+          scooterService.start();
+        }
       }
     }
   });

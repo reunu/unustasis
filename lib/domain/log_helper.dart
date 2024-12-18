@@ -33,8 +33,8 @@ class LogHelper {
       if (kDebugMode && record.level >= Level.INFO) {
         Fluttertoast.showToast(
             msg: record.message, fontSize: 6, toastLength: Toast.LENGTH_SHORT);
-        print(record);
       }
+      print(record);
       // Ensure the buffer doesn't exceed the max size
       if (_logBuffer.length >= maxBufferSize) {
         _logBuffer.removeAt(0); // Remove the oldest log entry
