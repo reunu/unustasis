@@ -459,6 +459,10 @@ class ScooterService with ChangeNotifier {
       FlutterNativeSplash.remove();
     });
     // Try to turn on Bluetooth (Android-Only)
+    await FlutterBluePlus.adapterState
+        .where((val) => val == BluetoothAdapterState.on)
+        .first;
+
     if (Platform.isAndroid) {
       await flutterBluePlus.turnOn();
     }
