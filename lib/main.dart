@@ -35,7 +35,7 @@ void main() async {
   }
 
   // here goes nothing...
-  setupNotificationService();
+  setupBackgroundService();
 
   runApp(ChangeNotifierProvider(
       create: (context) => ScooterService(FlutterBluePlusMockable()),

@@ -366,12 +366,16 @@ class ScooterService with ChangeNotifier {
       return;
     }
     if (savedScooters.isNotEmpty && preferSavedScooters) {
-      log.info(
+      print(
           "Looking for our scooters, since we have ${savedScooters.length} saved scooters");
-      flutterBluePlus.startScan(
-        withRemoteIds: savedScooterIds, // look for OUR scooter
-        timeout: const Duration(seconds: 30),
-      );
+      try {
+        flutterBluePlus.startScan(
+          withRemoteIds: savedScooterIds, // look for OUR scooter
+          timeout: const Duration(seconds: 30),
+        );
+      } catch (e) {
+        print("Failed to start scan");
+      }
     } else {
       log.info("Looking for any scooter, since we have no saved scooters");
       flutterBluePlus.startScan(
@@ -478,6 +482,7 @@ class ScooterService with ChangeNotifier {
       connectToScooterId(systemScooters.first.remoteId.toString());
     } else {
       try {
+        log.fine("Looking for nearby scooters");
         // If not, start scanning for nearby scooters
         getNearbyScooters().listen((foundScooter) async {
           // there's one! Attempt to connect to it

@@ -47,16 +47,8 @@ void updateWidget() async {
   );
 }
 
-Future<void> setupNotificationService() async {
+Future<void> setupBackgroundService() async {
   final service = FlutterBackgroundService();
-
-  const AndroidNotificationChannel channel = AndroidNotificationChannel(
-    notificationChannelId, // id
-    notificationChannelName, // title
-    description:
-        'This channel is used for periodically checking your scooter.', // description
-    importance: Importance.low, // importance must be at low or higher level
-  );
 
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
@@ -69,7 +61,16 @@ Future<void> setupNotificationService() async {
   await flutterLocalNotificationsPlugin
       .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>()
-      ?.createNotificationChannel(channel);
+      ?.createNotificationChannel(
+        const AndroidNotificationChannel(
+          notificationChannelId, // id
+          notificationChannelName, // title
+          description:
+              'This channel is used for periodically checking your scooter.', // description
+          importance:
+              Importance.low, // importance must be at low or higher level
+        ),
+      );
 
   await service.configure(
     iosConfiguration: IosConfiguration(
@@ -92,11 +93,11 @@ Future<void> setupNotificationService() async {
   );
 }
 
-void updateNotification() async {
+void updateNotification({String? debugText}) async {
   FlutterLocalNotificationsPlugin().show(
     notificationId,
     notificationChannelName,
-    'Time: ${DateTime.now()}, Scanning: ${scooterService.scanning} Connected: ${scooterService.connected}',
+    '${(debugText != null) ? "$debugText\n" : ""} Time: ${DateTime.now()}, Scanning: ${scooterService.scanning} Connected: ${scooterService.connected}',
     const NotificationDetails(
       android: AndroidNotificationDetails(
         notificationChannelId,
@@ -157,13 +158,7 @@ void onStart(ServiceInstance service) async {
   // listen to changes
   scooterService.addListener(() {
     print("ScooterService updated");
-    if (connected != scooterService.connected ||
-        lastPing != scooterService.lastPing ||
-        state != scooterService.state ||
-        scooterColor != scooterService.scooterColor ||
-        primarySOC != scooterService.primarySOC ||
-        secondarySOC != scooterService.secondarySOC ||
-        scanning != scooterService.scanning) {
+    if (true) {
       // debug
       print("Relevant values have changed");
       // update state values
@@ -176,17 +171,19 @@ void onStart(ServiceInstance service) async {
       scanning = scooterService.scanning; // debug
       // update home screen widget
       updateWidget();
+      updateNotification();
     } else {
       print("No relevant values have changed");
     }
   });
 
-  Timer.periodic(const Duration(minutes: 3), (timer) async {
+  Timer.periodic(const Duration(minutes: 1), (timer) async {
     if (service is AndroidServiceInstance) {
       if (await service.isForegroundService()) {
         if (!scooterService.scanning && !scooterService.connected) {
           // must have been killed along the way
           scooterService.start();
+          updateNotification(debugText: "Reconnecting...");
         }
       }
     }
