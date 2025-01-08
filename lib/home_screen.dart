@@ -264,16 +264,18 @@ class _HomeScreenState extends State<HomeScreen> {
                                               context, "home_unlock_button")),
                                 );
                               }),
-                          Selector<ScooterService, bool>(
-                              selector: (context, service) => service.scanning,
-                              builder: (context, scanning, _) {
+                          Selector<ScooterService,
+                                  ({bool scanning, bool connected})>(
+                              selector: (context, service) => (
+                                    scanning: service.scanning,
+                                    connected: service.connected
+                                  ),
+                              builder: (context, state, _) {
                                 return Expanded(
                                   child: ScooterActionButton(
-                                      onPressed: !scanning
+                                      onPressed: !state.scanning
                                           ? () {
-                                              if (!context.select(
-                                                  (ScooterService service) =>
-                                                      service.connected)) {
+                                              if (!state.connected) {
                                                 print(
                                                     "Manually reconnecting...");
                                                 try {
@@ -294,14 +296,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                               }
                                             }
                                           : null,
-                                      icon: (!context.select(
-                                              (ScooterService service) =>
-                                                  service.connected))
+                                      icon: !state.connected
                                           ? Icons.refresh_rounded
                                           : Icons.more_vert_rounded,
-                                      label: (!context.select(
-                                              (ScooterService service) =>
-                                                  service.connected))
+                                      label: !state.connected
                                           ? FlutterI18n.translate(
                                               context, "home_reconnect_button")
                                           : FlutterI18n.translate(

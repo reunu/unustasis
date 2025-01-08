@@ -70,12 +70,14 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     context.read<ScooterService>().addListener(() {
       if (mounted) {
         ScooterService service = context.read<ScooterService>();
+        setState(() {
+          _scanning = service.scanning;
+        });
         if (service.scanning) {
           _scanningController.repeat();
         } else if (!service.scanning) {
           _scanningController.stop();
         }
-        _scanning = service.scanning;
         if (service.connected) {
           setState(() {
             _step = 5;

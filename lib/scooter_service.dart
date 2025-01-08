@@ -62,6 +62,11 @@ class ScooterService with ChangeNotifier {
       restoreCachedSettings();
     });
 
+    // update the "scanning" listener
+    flutterBluePlus.isScanning.listen((isScanning) {
+      scanning = isScanning;
+    });
+
     // start the location polling timer
     _locationTimer = Timer.periodic(const Duration(seconds: 20), (timer) {
       if (myScooter != null && myScooter!.isConnected) {
@@ -283,6 +288,7 @@ class ScooterService with ChangeNotifier {
   bool _scanning = false;
   bool get scanning => _scanning;
   set scanning(bool scanning) {
+    log.info("Scanning: $scanning");
     _scanning = scanning;
     notifyListeners();
   }
@@ -378,12 +384,16 @@ class ScooterService with ChangeNotifier {
       }
     } else {
       log.info("Looking for any scooter, since we have no saved scooters");
-      flutterBluePlus.startScan(
-        withNames: [
-          "unu Scooter",
-        ], // if we don't have a saved scooter, look for ANY scooter
-        timeout: const Duration(seconds: 30),
-      );
+      try {
+        flutterBluePlus.startScan(
+          withNames: [
+            "unu Scooter",
+          ], // if we don't have a saved scooter, look for ANY scooter
+          timeout: const Duration(seconds: 30),
+        );
+      } catch (e) {
+        print("Failed to start scan");
+      }
     }
     await for (var scanResult in flutterBluePlus.onScanResults) {
       if (scanResult.isNotEmpty) {
@@ -453,6 +463,7 @@ class ScooterService with ChangeNotifier {
 
   // spins up the whole connection process, and connects/bonds with the nearest scooter
   void start({bool restart = true}) async {
+    log.info("START called on service");
     // GETTING READY
     // Remove the splash screen
     Future.delayed(const Duration(milliseconds: 1500), () {
@@ -464,7 +475,7 @@ class ScooterService with ChangeNotifier {
         .first;
 
     if (Platform.isAndroid) {
-      await flutterBluePlus.turnOn();
+      // await flutterBluePlus.turnOn();
     }
     // TODO: prompt the user to turn it on manually on iOS
 
@@ -503,7 +514,7 @@ class ScooterService with ChangeNotifier {
     }
 
     if (restart) {
-      startAutoRestart();
+      //startAutoRestart();
     }
   }
 
@@ -513,11 +524,10 @@ class ScooterService with ChangeNotifier {
       _autoRestarting = true;
       _autoRestartSubscription =
           flutterBluePlus.isScanning.listen((scanState) async {
-        _scanning = scanState;
         // retry if we stop scanning without having found anything
-        if (_scanning == false && !_foundSth) {
-          await Future.delayed(const Duration(seconds: 3));
-          if (!_foundSth && !_scanning && _autoRestarting) {
+        if (scanState == false && !_foundSth) {
+          await Future.delayed(const Duration(seconds: 10));
+          if (!_foundSth && !scanState && _autoRestarting) {
             // make sure nothing happened in these few seconds
             log.fine("Auto-restarting...");
             start();
