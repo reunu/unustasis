@@ -97,7 +97,7 @@ void updateNotification({String? debugText}) async {
   FlutterLocalNotificationsPlugin().show(
     notificationId,
     notificationChannelName,
-    '${(debugText != null) ? "$debugText\n" : ""} Time: ${DateTime.now()}, Scanning: ${scooterService.scanning} Connected: ${scooterService.connected}',
+    'Time: ${DateTime.now()}, Scanning: ${scooterService.scanning} Connected: ${scooterService.connected}',
     const NotificationDetails(
       android: AndroidNotificationDetails(
         notificationChannelId,
@@ -122,11 +122,19 @@ FutureOr<void> backgroundCallback(Uri? data) async {
   // perform the requested action
   switch (data.toString().split("://")[1]) {
     case "lock":
-      scooterService.lock();
-    // await HomeWidget.saveWidgetData<bool>('poweredOn', false);
+      try {
+        scooterService.lock();
+        // await HomeWidget.saveWidgetData<bool>('poweredOn', false);
+      } catch (e) {
+        // ignore
+      }
     case "unlock":
-      scooterService.unlock();
-    // await HomeWidget.saveWidgetData<bool>('poweredOn', true);
+      try {
+        scooterService.unlock();
+        // await HomeWidget.saveWidgetData<bool>('poweredOn', false);
+      } catch (e) {
+        // ignore
+      }
   }
   await HomeWidget.updateWidget(
     qualifiedAndroidName: 'de.freal.unustasis.HomeWidgetReceiver',
@@ -159,7 +167,7 @@ void onStart(ServiceInstance service) async {
   scooterService.addListener(() {
     print("ScooterService updated");
     if (true) {
-      // debug
+      // TODO
       print("Relevant values have changed");
       // update state values
       connected = scooterService.connected;
@@ -182,8 +190,11 @@ void onStart(ServiceInstance service) async {
       if (await service.isForegroundService()) {
         if (!scooterService.scanning && !scooterService.connected) {
           // must have been killed along the way
-          scooterService.start();
-          updateNotification(debugText: "Reconnecting...");
+          // make sure we're not just between auto-restarts
+          await Future.delayed(const Duration(seconds: 5));
+          if (!scooterService.scanning && !scooterService.connected) {
+            scooterService.start();
+          }
         }
       }
     }

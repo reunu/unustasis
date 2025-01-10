@@ -514,7 +514,7 @@ class ScooterService with ChangeNotifier {
     }
 
     if (restart) {
-      //startAutoRestart();
+      startAutoRestart();
     }
   }
 
@@ -526,14 +526,16 @@ class ScooterService with ChangeNotifier {
           flutterBluePlus.isScanning.listen((scanState) async {
         // retry if we stop scanning without having found anything
         if (scanState == false && !_foundSth) {
-          await Future.delayed(const Duration(seconds: 10));
-          if (!_foundSth && !scanState && _autoRestarting) {
+          await Future.delayed(const Duration(seconds: 3));
+          if (!_foundSth && !scanning && _autoRestarting) {
             // make sure nothing happened in these few seconds
-            log.fine("Auto-restarting...");
+            log.info("Auto-restarting...");
             start();
           }
         }
       });
+    } else {
+      log.info("Auto-restart already running, avoiding duplicate");
     }
   }
 
