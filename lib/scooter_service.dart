@@ -112,7 +112,7 @@ class ScooterService with ChangeNotifier {
     _hazardLocking = prefs?.getBool("hazardLocking") ?? false;
   }
 
-  void seedStreamsWithCache() {
+  SavedScooter? getMostRecentScooter() {
     SavedScooter? mostRecentScooter;
     // don't seed with scooters that have auto-connect disabled
     List<SavedScooter> autoConnectScooters =
@@ -124,6 +124,15 @@ class ScooterService with ChangeNotifier {
         mostRecentScooter = scooter;
       }
     }
+    return mostRecentScooter!;
+  }
+
+  void testPing() {
+    scooterName = "Pong";
+  }
+
+  void seedStreamsWithCache() {
+    SavedScooter? mostRecentScooter = getMostRecentScooter();
     // assume this is the one we'll connect to, and seed the streams
     _lastPing = mostRecentScooter?.lastPing;
     _primarySOC = mostRecentScooter?.lastPrimarySOC;
@@ -132,6 +141,7 @@ class ScooterService with ChangeNotifier {
     _auxSOC = mostRecentScooter?.lastAuxSOC;
     _scooterName = mostRecentScooter?.name;
     _scooterColor = mostRecentScooter?.color;
+    _lastLocation = mostRecentScooter?.lastLocation;
   }
 
   void addDemoData() {
@@ -284,6 +294,9 @@ class ScooterService with ChangeNotifier {
     _scooterColor = scooterColor;
     notifyListeners();
   }
+
+  LatLng? _lastLocation;
+  LatLng? get lastLocation => _lastLocation;
 
   bool _scanning = false;
   bool get scanning => _scanning;
@@ -948,7 +961,10 @@ class ScooterService with ChangeNotifier {
 
     prefs ??= await SharedPreferences.getInstance();
     prefs!.setString("savedScooters", jsonEncode(savedScooters));
-    scooterName = name;
+    if (getMostRecentScooter()?.id == id) {
+      // if we're renaming the most recent scooter, update the name immediately
+      scooterName = name;
+    }
   }
 
   void addSavedScooter(String id) async {

@@ -6,10 +6,12 @@ import 'dart:async';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:logging/logging.dart';
+import 'package:maps_launcher/maps_launcher.dart';
 import 'package:unustasis/domain/scooter_state.dart';
 import 'package:unustasis/flutter/blue_plus_mockable.dart';
-import 'package:unustasis/home_screen.dart';
 import 'package:unustasis/scooter_service.dart';
+
+final log = Logger("BackgroundService");
 
 // this will be used as notification channel id
 const notificationChannelId = 'unu_foreground';
@@ -31,15 +33,24 @@ void stopBackgroundService() {
   service.invoke("stop");
 }
 
+void setWidgetScanning(bool scanning) async {
+  await HomeWidget.saveWidgetData<bool>("scanning", scanning);
+  await HomeWidget.updateWidget(
+    qualifiedAndroidName: 'de.freal.unustasis.HomeWidgetReceiver',
+  );
+}
+
 void updateWidget() async {
   // update all data we have
-  await HomeWidget.saveWidgetData<bool>('connected', scooterService.connected);
-  await HomeWidget.saveWidgetData<bool>('scanning', scooterService.scanning);
-  await HomeWidget.saveWidgetData<bool>(
-      'poweredOn', scooterService.state?.isOn ?? false);
-  await HomeWidget.saveWidgetData<int>('tick', DateTime.now().second);
-  await HomeWidget.saveWidgetData<int>('soc1', scooterService.primarySOC);
-  await HomeWidget.saveWidgetData<int>('soc2', scooterService.secondarySOC);
+  await HomeWidget.saveWidgetData<bool>("connected", scooterService.connected);
+  await HomeWidget.saveWidgetData<bool>("scanning", scooterService.scanning);
+  await HomeWidget.saveWidgetData<int>("state", scooterService.state!.index);
+  await HomeWidget.saveWidgetData<String>("lastPing",
+      scooterService.lastPing?.calculateTimeDifferenceInShort() ?? "");
+  await HomeWidget.saveWidgetData<int>("soc1", scooterService.primarySOC);
+  await HomeWidget.saveWidgetData<int?>("soc2", scooterService.secondarySOC);
+  await HomeWidget.saveWidgetData<String>(
+      "scooterName", scooterService.scooterName);
 
 // once all is set, rebuild the widget
   await HomeWidget.updateWidget(
@@ -119,22 +130,20 @@ Future<bool> onIosBackground(ServiceInstance service) async {
 
 @pragma("vm:entry-point")
 FutureOr<void> backgroundCallback(Uri? data) async {
-  // perform the requested action
-  switch (data.toString().split("://")[1]) {
-    case "lock":
-      try {
-        scooterService.lock();
-        // await HomeWidget.saveWidgetData<bool>('poweredOn', false);
-      } catch (e) {
-        // ignore
-      }
-    case "unlock":
-      try {
-        scooterService.unlock();
-        // await HomeWidget.saveWidgetData<bool>('poweredOn', false);
-      } catch (e) {
-        // ignore
-      }
+  await HomeWidget.setAppGroupId('de.freal.unustasis');
+  print("Received data: $data");
+  switch (data?.host) {
+    case "stop":
+      stopBackgroundService();
+    case "openlocation":
+      print("Opening location");
+      MapsLauncher.launchCoordinates(
+        scooterService.lastLocation!.latitude,
+        scooterService.lastLocation!.longitude,
+      );
+    case "ping":
+      print("pong");
+      scooterService.testPing();
   }
   await HomeWidget.updateWidget(
     qualifiedAndroidName: 'de.freal.unustasis.HomeWidgetReceiver',
@@ -143,15 +152,19 @@ FutureOr<void> backgroundCallback(Uri? data) async {
 
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {
-  Logger("BackgroundService").info("Background service started!");
+  print("Background service started!");
 
   HomeWidget.registerInteractivityCallback(backgroundCallback);
 
   try {
-    scooterService.start();
+    if ((await scooterService.getSavedScooterIds()).isNotEmpty) {
+      scooterService.start();
+    } else {
+      print("No saved scooters found. Won't start the scooter service.");
+      // user has not set up any scooters to connect to
+    }
   } catch (e) {
-    Logger("BackgroundService")
-        .info("Error while starting the scooter service");
+    print("Error while starting the scooter service");
   }
 
   // set up state values
@@ -199,4 +212,29 @@ void onStart(ServiceInstance service) async {
       }
     }
   });
+}
+
+extension DateTimeExtension on DateTime {
+  String calculateTimeDifferenceInShort() {
+    final originalDate = DateTime.now();
+    final difference = originalDate.difference(this);
+
+    if ((difference.inDays / 7).floor() >= 1) {
+      return '1W';
+    } else if (difference.inDays >= 2) {
+      return '${difference.inDays}D';
+    } else if (difference.inDays >= 1) {
+      return '1D';
+    } else if (difference.inHours >= 2) {
+      return '${difference.inHours}H';
+    } else if (difference.inHours >= 1) {
+      return '1H';
+    } else if (difference.inMinutes >= 2) {
+      return '${difference.inMinutes}M';
+    } else if (difference.inMinutes >= 1) {
+      return '1M';
+    } else {
+      return "";
+    }
+  }
 }
