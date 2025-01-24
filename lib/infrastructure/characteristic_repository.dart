@@ -23,56 +23,56 @@ class CharacteristicRepository {
   Future<void> findAll() async {
     log.info("findAll running");
     await scooter.discoverServices();
-    commandCharacteristic = _findCharacteristic(
+    commandCharacteristic = findCharacteristic(
         scooter,
         "9a590000-6e67-5d0d-aab9-ad9126b66f91",
         "9a590001-6e67-5d0d-aab9-ad9126b66f91");
-    hibernationCommandCharacteristic = _findCharacteristic(
+    hibernationCommandCharacteristic = findCharacteristic(
         scooter,
         "9a590000-6e67-5d0d-aab9-ad9126b66f91",
         "9a590002-6e67-5d0d-aab9-ad9126b66f91");
-    stateCharacteristic = _findCharacteristic(
+    stateCharacteristic = findCharacteristic(
         scooter,
         "9a590020-6e67-5d0d-aab9-ad9126b66f91",
         "9a590021-6e67-5d0d-aab9-ad9126b66f91");
     log.info("State characteristic initialized! It's $stateCharacteristic");
-    powerStateCharacteristic = _findCharacteristic(
+    powerStateCharacteristic = findCharacteristic(
         scooter,
         "9a5900a0-6e67-5d0d-aab9-ad9126b66f91",
         "9a5900a1-6e67-5d0d-aab9-ad9126b66f91");
-    seatCharacteristic = _findCharacteristic(
+    seatCharacteristic = findCharacteristic(
         scooter,
         "9a590020-6e67-5d0d-aab9-ad9126b66f91",
         "9a590022-6e67-5d0d-aab9-ad9126b66f91");
-    handlebarCharacteristic = _findCharacteristic(
+    handlebarCharacteristic = findCharacteristic(
         scooter,
         "9a590020-6e67-5d0d-aab9-ad9126b66f91",
         "9a590023-6e67-5d0d-aab9-ad9126b66f91");
-    auxSOCCharacteristic = _findCharacteristic(
+    auxSOCCharacteristic = findCharacteristic(
         scooter,
         "9a590040-6e67-5d0d-aab9-ad9126b66f91",
         "9a590044-6e67-5d0d-aab9-ad9126b66f91");
-    cbbSOCCharacteristic = _findCharacteristic(
+    cbbSOCCharacteristic = findCharacteristic(
         scooter,
         "9a590060-6e67-5d0d-aab9-ad9126b66f91",
         "9a590061-6e67-5d0d-aab9-ad9126b66f91");
-    cbbChargingCharacteristic = _findCharacteristic(
+    cbbChargingCharacteristic = findCharacteristic(
         scooter,
         "9a590060-6e67-5d0d-aab9-ad9126b66f91",
         "9a590072-6e67-5d0d-aab9-ad9126b66f91");
-    primaryCyclesCharacteristic = _findCharacteristic(
+    primaryCyclesCharacteristic = findCharacteristic(
         scooter,
         "9a5900e0-6e67-5d0d-aab9-ad9126b66f91",
         "9a5900e6-6e67-5d0d-aab9-ad9126b66f91");
-    primarySOCCharacteristic = _findCharacteristic(
+    primarySOCCharacteristic = findCharacteristic(
         scooter,
         "9a5900e0-6e67-5d0d-aab9-ad9126b66f91",
         "9a5900e9-6e67-5d0d-aab9-ad9126b66f91");
-    secondaryCyclesCharacteristic = _findCharacteristic(
+    secondaryCyclesCharacteristic = findCharacteristic(
         scooter,
         "9a5900e0-6e67-5d0d-aab9-ad9126b66f91",
         "9a5900f2-6e67-5d0d-aab9-ad9126b66f91");
-    secondarySOCCharacteristic = _findCharacteristic(
+    secondarySOCCharacteristic = findCharacteristic(
         scooter,
         "9a5900e0-6e67-5d0d-aab9-ad9126b66f91",
         "9a5900f5-6e67-5d0d-aab9-ad9126b66f91");
@@ -93,10 +93,8 @@ class CharacteristicRepository {
         secondarySOCCharacteristic == null;
   }
 
-  BluetoothCharacteristic? _findCharacteristic(
+  static BluetoothCharacteristic? findCharacteristic(
       BluetoothDevice device, String serviceUuid, String characteristicUuid) {
-    log.info(
-        "Finding characteristic $characteristicUuid in service $serviceUuid...");
     try {
       return device.servicesList
           .firstWhere(
@@ -105,7 +103,8 @@ class CharacteristicRepository {
           .firstWhere((char) =>
               char.characteristicUuid.toString() == characteristicUuid);
     } catch (e) {
-      log.severe("Characteristic $characteristicUuid not found!");
+      Logger("findCharacteristic")
+          .severe("Characteristic $characteristicUuid not found!");
       return null;
     }
   }

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -38,6 +39,8 @@ class ScooterService with ChangeNotifier {
   bool optionalAuth = false;
   late CharacteristicRepository characteristicRepository;
   late ScooterReader _scooterReader;
+  // get a random number
+  final int serviceIdentifier = Random().nextInt(10000);
 
   final FlutterBluePlusMockable flutterBluePlus;
 
@@ -124,10 +127,11 @@ class ScooterService with ChangeNotifier {
         mostRecentScooter = scooter;
       }
     }
-    return mostRecentScooter!;
+    return mostRecentScooter;
   }
 
   void testPing() {
+    print("Pong from the service!");
     scooterName = "Pong";
   }
 
@@ -766,6 +770,36 @@ class ScooterService with ChangeNotifier {
     } catch (e) {
       rethrow;
     }
+  }
+
+  static Future<void> sendStaticPowerCommand(String id, String command) async {
+    BluetoothDevice scooter = BluetoothDevice.fromId(id);
+    if (scooter.isDisconnected) {
+      await scooter.connect();
+    }
+    await scooter.discoverServices();
+    BluetoothCharacteristic? commandCharacteristic =
+        CharacteristicRepository.findCharacteristic(
+            scooter,
+            "9a590000-6e67-5d0d-aab9-ad9126b66f91",
+            "9a590001-6e67-5d0d-aab9-ad9126b66f91");
+    await commandCharacteristic!.write(ascii.encode(command));
+  }
+
+  Future<bool> attemptConnection() async {
+    List<String> savedScooterIds =
+        await getSavedScooterIds(onlyAutoConnect: true);
+    for (String scooterId in savedScooterIds) {
+      try {
+        await connectToScooterId(scooterId);
+      } catch (e) {
+        log.info("Didn't connect to $scooterId", e);
+      }
+      if (BluetoothDevice.fromId(scooterId).isConnected) {
+        return Future.value(true);
+      }
+    }
+    return Future.value(false);
   }
 
   Future<void> _waitForScooterState(

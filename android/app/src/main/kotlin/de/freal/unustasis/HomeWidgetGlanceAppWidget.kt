@@ -3,6 +3,7 @@ package de.freal.unustasis
 import HomeWidgetGlanceState
 import HomeWidgetGlanceStateDefinition
 import android.content.Context
+import android.content.Intent
 import android.icu.text.CaseMap.Title
 import android.net.Uri
 import android.os.Build
@@ -70,44 +71,26 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
         // TODO
     }
 
-    val actionKey = ActionParameters.Key<String>(
-    "actionUriString"
+    val actionUriStringKey = ActionParameters.Key<String>(
+        "actionUriString"
     )
-
-    fun getStateName(state: Int): String {
-        when (state) {
-            0 -> return "Stand-by"
-            1 -> return "Off"
-            2 -> return "Parked"
-            3 -> return "Shutting down"
-            4 -> return "Ready"
-            5 -> return "Hibernating"
-            6 -> return "Hibernating soon"
-            7 -> return "Booting"
-            8 -> return "Unknown"
-            9 -> return "Linking"
-            10 -> return "Disconnected"
-            else -> {
-                return "Unknown"
-            }
-        }
-    }
 
     @Composable
     private fun GlanceContent(context: Context, currentState: HomeWidgetGlanceState) {
         val size = LocalSize.current
         val data = currentState.preferences
 
-        val state = data.getInt("state", 8)
-        val connected = data.getBoolean("connected", false)
-        val scanning = data.getBoolean("scanning", false)
-        val lastPing = data.getString("lastPing", "")
-        val soc1 = data.getInt("soc1", 0)
-        val soc2 = data.getInt("soc2", 0)
-        val scooterName = data.getString("scooterName", "Unu Scooter")!!
-
-        val title =
-            if (scanning) "Scanning..." else getStateName(state)
+        val state : Int = data.getInt("state", 8)
+        val stateName : String = data.getString("stateName", "Unknown")!!
+        val connected : Boolean = data.getBoolean("connected", false)
+        val scanning : Boolean = data.getBoolean("scanning", false)
+        val lastPing : String = data.getString("lastPing", "")!!
+        val soc1: Int = data.getInt("soc1", 0)
+        val soc2 : Int = data.getInt("soc2", 0)
+        val scooterName : String = data.getString("scooterName", "Unu Scooter")!!
+        val scooterId : String? = data.getString("scooterId", null)
+        val lastLat : String? = data.getString("lastLat", null)
+        val lastLon : String? = data.getString("lastLon", null)
 
         GlanceTheme(
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
@@ -131,10 +114,10 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                         SinglePowerButton(
                             scanning = scanning,
                             enabled = connected,
-                            locked = state == 2
+                            locked = state == 0
                         )
                         Text(
-                            text = title,
+                            text = stateName,
                             maxLines = 1,
                             style = TextStyle(
                                 fontSize = 16.sp,
@@ -162,7 +145,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                                 center = false,
                             )
                             StateText(
-                                state = state,
+                                stateName = stateName,
                                 centerText = false,
                                 singleLine = size.width < LONG_BAR.width,
                             )
@@ -173,7 +156,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                         SinglePowerButton(
                             scanning = scanning,
                             enabled = connected,
-                            locked = state == 2
+                            locked = state == 0
                         )
                     }
 
@@ -193,7 +176,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                         }
                         Spacer(GlanceModifier.defaultWeight())
                         StateText(
-                            state = state,
+                            stateName = stateName,
                             centerText = true,
                             singleLine = false,
                             modifier = GlanceModifier.padding(bottom = 4.dp)
@@ -204,7 +187,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                         SinglePowerButton(
                             scanning = scanning,
                             enabled = connected,
-                            locked = state == 2
+                            locked = state == 0
                         )
                     }
                 } else {
@@ -221,7 +204,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                         )
                         Spacer(GlanceModifier.defaultWeight())
                         StateText(
-                            state = state,
+                            stateName = stateName,
                             centerText = false,
                             singleLine = false,
                             modifier = GlanceModifier.padding(bottom = 4.dp)
@@ -231,10 +214,12 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                         AdvancedPowerButton(
                             scanning = scanning,
                             enabled = connected,
-                            locked = state == 2,
+                            locked = state == 0,
                             seatOpen = null,
-                            lastLat = null,
-                            lastLon = null,
+                            lastLat = lastLat,
+                            lastLon = lastLon,
+                            scooterName = scooterName,
+                            state = state,
                         )
                     }
                 }
@@ -275,13 +260,13 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
     
     @Composable
     fun StateText(
-        state: Int,
+        stateName: String,
         centerText: Boolean = false,
         singleLine: Boolean = false,
         modifier: GlanceModifier = GlanceModifier,
     ) {
         Text(
-            text = getStateName(state),
+            text = stateName,
             style = TextStyle(
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
@@ -374,7 +359,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
         enabled: Boolean,
         locked: Boolean?)
     {
-        val powerActionUriString = if (locked == true) "unustasis://unlock" else if (locked == false) "unustasis://lock" else "unustasis://scan";
+
         if(scanning)
             Box(
                 modifier = GlanceModifier
@@ -398,9 +383,13 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                     if(locked == true) "Unlock" else "Lock"
                 } else "Scan",
                 onClick =
-                    actionRunCallback<InteractiveAction>(
-                        actionParametersOf(actionKey to powerActionUriString)
-                    ),
+                if(locked == false && enabled){
+                    actionRunCallback<LockAction>()
+                } else if (locked == true && enabled){
+                    actionRunCallback<UnlockAction>()
+                } else {
+                    actionRunCallback<ScanAction>()
+                },
                 backgroundColor = if(enabled) GlanceTheme.colors.primary else GlanceTheme.colors.surfaceVariant,
                 modifier = GlanceModifier
                     .size(64.dp)
@@ -411,14 +400,30 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
 
     @Composable
     fun AdvancedPowerButton(
+        state: Int,
         scanning: Boolean,
         enabled: Boolean,
         locked: Boolean?,
         seatOpen: Boolean?,
-        lastLat: Double?,
-        lastLon: Double?,
+        lastLat: String?,
+        lastLon: String?,
+        scooterName: String,
         modifier: GlanceModifier = GlanceModifier,
     ){
+
+        val hasLocation: Boolean = lastLat != null &&
+                lastLat != "0.0" &&
+                lastLon != null &&
+                lastLon != "0.0"
+
+        val seatOpenable : Boolean = state == 0 || state == 2
+
+
+        // Create the Intent for opening the map
+        val openMapIntent = Intent(Intent.ACTION_VIEW).apply {
+            data = Uri.parse("geo:0,0?q=$lastLat,$lastLon($scooterName)")
+        }
+
                 Row (
                     horizontalAlignment = Alignment.Horizontal.CenterHorizontally,
                     verticalAlignment = Alignment.Vertical.CenterVertically,
@@ -431,16 +436,28 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                         contentAlignment = Alignment.Center,
                         modifier = GlanceModifier
                             .fillMaxHeight()
-                            .background(GlanceTheme.colors.primaryContainer)
+                            .background(
+                                if (hasLocation) {
+                                    GlanceTheme.colors.primaryContainer
+                                } else {
+                                    GlanceTheme.colors.surfaceVariant
+                                }
+                            )
                             .defaultWeight()
                     ){
                         SquareIconButton(
                             imageProvider = ImageProvider(ic_location),
                             contentDescription = "Last known location",
-                            backgroundColor = GlanceTheme.colors.primaryContainer,
-                            contentColor = GlanceTheme.colors.primary,
-                            onClick =
-                            actionRunCallback<OpenLocation>(),
+                            backgroundColor = if (hasLocation) {
+                                GlanceTheme.colors.primaryContainer
+                            } else {
+                                GlanceTheme.colors.surfaceVariant
+                            },
+                            contentColor = if(hasLocation){
+                                GlanceTheme.colors.primary
+                            } else {
+                                GlanceTheme.colors.secondary },
+                            onClick = actionStartActivity(openMapIntent)
                         )
                     }
                     Box(
@@ -453,22 +470,36 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                         contentAlignment = Alignment.Center,
                         modifier = GlanceModifier
                             .fillMaxHeight()
-                            .background(if (enabled) GlanceTheme.colors.primaryContainer else GlanceTheme.colors.surfaceVariant)
+                            .background(if (enabled && seatOpenable) {
+                                GlanceTheme.colors.primaryContainer
+                            } else {
+                                GlanceTheme.colors.surfaceVariant
+                            })
                             .defaultWeight()
                     ) {
                         SquareIconButton(
                             imageProvider = ImageProvider(if (seatOpen == true) ic_seatbox_open else ic_seatbox),
                             contentDescription = "Seatbox ${if (seatOpen == true) "open" else "closed"}",
-                            backgroundColor = GlanceTheme.colors.surfaceVariant,
+                            backgroundColor = if (enabled && seatOpenable) {
+                                GlanceTheme.colors.primaryContainer
+                            } else {
+                                GlanceTheme.colors.surfaceVariant
+                            },
                             contentColor =
-                            if (!enabled) {
+                            if (!enabled || !seatOpenable) {
                                 GlanceTheme.colors.secondary
                             } else if (seatOpen == true) {
                                 androidx.glance.unit.ColorProvider(Color.Red)
                             } else {
                                 GlanceTheme.colors.primary
                             },
-                            onClick = actionRunCallback<Ping>(),
+                            onClick = if(enabled && seatOpenable){
+                                actionRunCallback<OpenSeatAction>()
+                            } else if (!enabled){
+                                actionRunCallback<ScanAction>()
+                            } else {
+                               actionRunCallback<VoidAction>()
+                            },
                             enabled = enabled,
                         )
                     }
@@ -484,7 +515,11 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                         modifier = GlanceModifier
                             .fillMaxHeight()
                             .defaultWeight()
-                            .background(if(enabled) GlanceTheme.colors.primary else GlanceTheme.colors.surfaceVariant)
+                            .background(if(enabled){
+                                GlanceTheme.colors.primary
+                            } else {
+                                GlanceTheme.colors.surfaceVariant
+                            })
                     ){
                         if(scanning){
                             CircularProgressIndicator(
@@ -498,11 +533,19 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                                 imageProvider = ImageProvider(if (locked == false && enabled) ic_unlock else ic_lock),
                                 contentDescription = " ${if (locked == false) "Unlock" else "Lock"} scooter",
                                 contentColor = if(enabled) GlanceTheme.colors.onPrimary else GlanceTheme.colors.secondary,
-                                backgroundColor = if(enabled) GlanceTheme.colors.primary else GlanceTheme.colors.surfaceVariant,
+                                backgroundColor = if(enabled){
+                                    GlanceTheme.colors.primary
+                                } else {
+                                    GlanceTheme.colors.surfaceVariant
+                                },
                                 onClick =
-                                actionRunCallback<InteractiveAction>(
-                                    // TODO
-                                ),
+                                if(locked == false && enabled){
+                                    actionRunCallback<LockAction>()
+                                } else if (locked == true && enabled){
+                                    actionRunCallback<UnlockAction>()
+                                } else {
+                                    actionRunCallback<ScanAction>()
+                                },
                                 modifier = GlanceModifier
                                     .fillMaxSize(),
                            )
@@ -516,40 +559,39 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
 
 }
 
-class OpenLocation : ActionCallback {
+class ScanAction : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
-        val backgroundIntent = HomeWidgetBackgroundIntent.getBroadcast(
-            context,
-            Uri.parse("unustasis://openLocation")
-        )
+        val backgroundIntent = HomeWidgetBackgroundIntent.getBroadcast(context, Uri.parse("unustasis://scan"))
         backgroundIntent.send()
     }
 }
 
-class Ping : ActionCallback {
+class LockAction : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
-        val backgroundIntent = HomeWidgetBackgroundIntent.getBroadcast(
-            context,
-            Uri.parse("unustasis://ping")
-        )
+        val backgroundIntent = HomeWidgetBackgroundIntent.getBroadcast(context, Uri.parse("unustasis://lock"))
         backgroundIntent.send()
     }
 }
 
-class InteractiveAction(
-    private val actionUri: String
-) : ActionCallback {
-
-    override suspend fun onAction(
-        context: Context,
-        glanceId: GlanceId,
-        parameters: ActionParameters
-    ) {
-        val backgroundIntent =
-            HomeWidgetBackgroundIntent.getBroadcast(
-                context, Uri.parse(actionUri)
-            )
+class UnlockAction : ActionCallback {
+    override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
+        val backgroundIntent = HomeWidgetBackgroundIntent.getBroadcast(context, Uri.parse("unustasis://unlock"))
         backgroundIntent.send()
     }
 }
+
+class OpenSeatAction : ActionCallback {
+    override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
+        val backgroundIntent = HomeWidgetBackgroundIntent.getBroadcast(context, Uri.parse("unustasis://openseat"))
+        backgroundIntent.send()
+    }
+}
+
+class VoidAction : ActionCallback {
+    override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
+        // Do nothing
+    }
+}
+
+
 
