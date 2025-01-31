@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -40,7 +40,7 @@ class ScooterService with ChangeNotifier {
   late CharacteristicRepository characteristicRepository;
   late ScooterReader _scooterReader;
   // get a random number
-  final int serviceIdentifier = Random().nextInt(10000);
+  late bool isInBackgroundService;
 
   final FlutterBluePlusMockable flutterBluePlus;
 
@@ -54,7 +54,7 @@ class ScooterService with ChangeNotifier {
   }
 
   // On initialization...
-  ScooterService(this.flutterBluePlus) {
+  ScooterService(this.flutterBluePlus, {this.isInBackgroundService = false}) {
     // Load saved scooter ID and cached values from SharedPrefs
     SharedPreferences.getInstance().then((prefs) {
       this.prefs = prefs;
@@ -80,6 +80,7 @@ class ScooterService with ChangeNotifier {
       if (myScooter != null && myScooter!.isConnected && _autoUnlock) {
         try {
           rssi = await myScooter!.readRssi();
+          print("rssi is $rssi");
         } catch (e) {
           // probably not connected anymore
         }
@@ -106,7 +107,7 @@ class ScooterService with ChangeNotifier {
     });
   }
 
-  void restoreCachedSettings() {
+  Future<void> restoreCachedSettings() async {
     _autoUnlock = prefs?.getBool("autoUnlock") ?? false;
     _autoUnlockThreshold = prefs?.getInt("autoUnlockThreshold") ??
         ScooterKeylessDistance.regular.threshold;
@@ -115,7 +116,7 @@ class ScooterService with ChangeNotifier {
     _hazardLocking = prefs?.getBool("hazardLocking") ?? false;
   }
 
-  SavedScooter? getMostRecentScooter() {
+  Future<SavedScooter?> getMostRecentScooter() async {
     SavedScooter? mostRecentScooter;
     // don't seed with scooters that have auto-connect disabled
     List<SavedScooter> autoConnectScooters =
@@ -130,13 +131,19 @@ class ScooterService with ChangeNotifier {
     return mostRecentScooter;
   }
 
-  void testPing() {
-    print("Pong from the service!");
-    scooterName = "Pong";
+  void setMostRecentScooter(String id) async {
+    Map<String, SavedScooter> autoConnectScooters =
+        filterAutoConnectScooters(savedScooters);
+    if (autoConnectScooters[id] != null) {
+      savedScooters[id]!.lastPing = DateTime.now();
+      scooterName = savedScooters[id]!.name;
+    } else {
+      // this may be the most recent, but we'll ignore it since it's not an auto-connect scooter
+    }
   }
 
-  void seedStreamsWithCache() {
-    SavedScooter? mostRecentScooter = getMostRecentScooter();
+  Future<void> seedStreamsWithCache() async {
+    SavedScooter? mostRecentScooter = await getMostRecentScooter();
     // assume this is the one we'll connect to, and seed the streams
     _lastPing = mostRecentScooter?.lastPing;
     _primarySOC = mostRecentScooter?.lastPrimarySOC;
@@ -146,6 +153,7 @@ class ScooterService with ChangeNotifier {
     _scooterName = mostRecentScooter?.name;
     _scooterColor = mostRecentScooter?.color;
     _lastLocation = mostRecentScooter?.lastLocation;
+    return;
   }
 
   void addDemoData() {
@@ -442,6 +450,12 @@ class ScooterService with ChangeNotifier {
       log.info("Connected to ${attemptedScooter.remoteId}");
       // Set up this scooter as ours
       myScooter = attemptedScooter;
+      setMostRecentScooter(id);
+      updateBackgroundService({
+        "mostRecent": id,
+        "scooterName": savedScooters[myScooter!.remoteId.toString()]?.name,
+        "lastPing": DateTime.now(),
+      });
       addSavedScooter(myScooter!.remoteId.toString());
       try {
         await setUpCharacteristics(myScooter!);
@@ -565,21 +579,25 @@ class ScooterService with ChangeNotifier {
   void setAutoUnlock(bool enabled) {
     _autoUnlock = enabled;
     prefs?.setBool("autoUnlock", enabled);
+    updateBackgroundService({"autoUnlock": enabled});
   }
 
-  void setAutoUnlockThreshold(ScooterKeylessDistance distance) {
-    _autoUnlockThreshold = distance.threshold;
-    prefs?.setInt("autoUnlockThreshold", distance.threshold);
+  void setAutoUnlockThreshold(int threshold) {
+    _autoUnlockThreshold = threshold;
+    prefs?.setInt("autoUnlockThreshold", threshold);
+    updateBackgroundService({"autoUnlockThreshold": threshold});
   }
 
   void setOpenSeatOnUnlock(bool enabled) {
     _openSeatOnUnlock = enabled;
     prefs?.setBool("openSeatOnUnlock", enabled);
+    updateBackgroundService({"openSeatOnUnlock": enabled});
   }
 
   void setHazardLocking(bool enabled) {
     _hazardLocking = enabled;
     prefs?.setBool("hazardLocking", enabled);
+    updateBackgroundService({"hazardLocking": enabled});
   }
 
   bool get autoUnlock => _autoUnlock;
@@ -621,14 +639,18 @@ class ScooterService with ChangeNotifier {
     HapticFeedback.heavyImpact();
 
     if (_hazardLocking) {
-      hazard(times: 2);
+      Future.delayed(const Duration(milliseconds: 1000), () {
+        hazard(times: 2);
+      });
     }
 
     if (_openSeatOnUnlock) {
-      openSeat();
+      Future.delayed(const Duration(milliseconds: 500), () {
+        openSeat();
+      });
     }
 
-    await Future.delayed(const Duration(seconds: 2), () {
+    await Future.delayed(const Duration(seconds: 4), () {
       if (_handlebarsLocked == true) {
         log.warning("Handlebars didn't unlock, sending warning");
         throw HandlebarLockException();
@@ -669,7 +691,7 @@ class ScooterService with ChangeNotifier {
       hazard(times: 1);
     }
 
-    await Future.delayed(const Duration(seconds: 2), () {
+    await Future.delayed(const Duration(seconds: 4), () {
       if (_handlebarsLocked == false) {
         log.warning("Handlebars didn't lock, sending warning");
         throw HandlebarLockException();
@@ -786,20 +808,19 @@ class ScooterService with ChangeNotifier {
     await commandCharacteristic!.write(ascii.encode(command));
   }
 
-  Future<bool> attemptConnection() async {
-    List<String> savedScooterIds =
-        await getSavedScooterIds(onlyAutoConnect: true);
-    for (String scooterId in savedScooterIds) {
+  Future<bool> attemptLatestAutoConnection() async {
+    SavedScooter? latestScooter = await getMostRecentScooter();
+    if (latestScooter != null) {
       try {
-        await connectToScooterId(scooterId);
+        await connectToScooterId(latestScooter.id);
+        if (BluetoothDevice.fromId(latestScooter.id).isConnected) {
+          return true;
+        }
       } catch (e) {
-        log.info("Didn't connect to $scooterId", e);
-      }
-      if (BluetoothDevice.fromId(scooterId).isConnected) {
-        return Future.value(true);
+        return false;
       }
     }
-    return Future.value(false);
+    return false;
   }
 
   Future<void> _waitForScooterState(
@@ -924,9 +945,9 @@ class ScooterService with ChangeNotifier {
     if (scooters.length == 1) {
       return scooters;
     }
-    Map<String, SavedScooter> scootersToConnect = getSavedScooters();
-    scootersToConnect.removeWhere((key, value) => !value.autoConnect);
-    return scootersToConnect;
+    Map<String, SavedScooter> filteredScooters = scooters;
+    filteredScooters.removeWhere((key, value) => !value.autoConnect);
+    return filteredScooters;
   }
 
   Future<List<String>> getSavedScooterIds(
@@ -995,10 +1016,19 @@ class ScooterService with ChangeNotifier {
 
     prefs ??= await SharedPreferences.getInstance();
     prefs!.setString("savedScooters", jsonEncode(savedScooters));
-    if (getMostRecentScooter()?.id == id) {
+    if ((await getMostRecentScooter())?.id == id) {
       // if we're renaming the most recent scooter, update the name immediately
       scooterName = name;
+      updateBackgroundService({"scooterName": name});
     }
+    // let the background service know too right away
+    notifyListeners();
+  }
+
+  void updateBackgroundService(dynamic data) {
+    if (!isInBackgroundService) {
+      FlutterBackgroundService().invoke("update", data);
+    } else {}
   }
 
   void addSavedScooter(String id) async {

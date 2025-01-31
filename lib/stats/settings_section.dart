@@ -85,10 +85,12 @@ class _SettingsSectionState extends State<SettingsSection> {
                   .toDouble(),
               divisions: ScooterKeylessDistance.values.length - 1,
               label: autoUnlockDistance.getFormattedThreshold(),
-              onChanged: (value) async {
+              onChanged: (threshold) async {
                 var distance =
-                    ScooterKeylessDistance.fromThreshold(value.toInt());
-                context.read<ScooterService>().setAutoUnlockThreshold(distance);
+                    ScooterKeylessDistance.fromThreshold(threshold.toInt());
+                context
+                    .read<ScooterService>()
+                    .setAutoUnlockThreshold(threshold.toInt());
                 setState(() {
                   autoUnlockDistance = distance;
                 });

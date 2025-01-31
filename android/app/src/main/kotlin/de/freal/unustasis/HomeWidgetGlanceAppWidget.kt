@@ -80,7 +80,9 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
         val size = LocalSize.current
         val data = currentState.preferences
 
-        val state : Int = data.getInt("state", 8)
+        val locked : Boolean = data.getBoolean("locked", true)
+        val seatOpenable : Boolean = data.getBoolean("seatOpenable", false)
+        val seatClosed: Boolean = data.getBoolean("seatClosed", false)
         val stateName : String = data.getString("stateName", "Unknown")!!
         val connected : Boolean = data.getBoolean("connected", false)
         val scanning : Boolean = data.getBoolean("scanning", false)
@@ -114,7 +116,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                         SinglePowerButton(
                             scanning = scanning,
                             enabled = connected,
-                            locked = state == 0
+                            locked = locked
                         )
                         Text(
                             text = stateName,
@@ -156,7 +158,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                         SinglePowerButton(
                             scanning = scanning,
                             enabled = connected,
-                            locked = state == 0
+                            locked = locked
                         )
                     }
 
@@ -187,7 +189,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                         SinglePowerButton(
                             scanning = scanning,
                             enabled = connected,
-                            locked = state == 0
+                            locked = locked
                         )
                     }
                 } else {
@@ -214,12 +216,12 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                         AdvancedPowerButton(
                             scanning = scanning,
                             enabled = connected,
-                            locked = state == 0,
-                            seatOpen = null,
+                            locked = locked,
+                            seatClosed = seatClosed,
                             lastLat = lastLat,
                             lastLon = lastLon,
                             scooterName = scooterName,
-                            state = state,
+                            seatOpenable = seatOpenable,
                         )
                     }
                 }
@@ -400,11 +402,11 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
 
     @Composable
     fun AdvancedPowerButton(
-        state: Int,
         scanning: Boolean,
         enabled: Boolean,
         locked: Boolean?,
-        seatOpen: Boolean?,
+        seatClosed: Boolean?,
+        seatOpenable: Boolean,
         lastLat: String?,
         lastLon: String?,
         scooterName: String,
@@ -415,8 +417,6 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                 lastLat != "0.0" &&
                 lastLon != null &&
                 lastLon != "0.0"
-
-        val seatOpenable : Boolean = state == 0 || state == 2
 
 
         // Create the Intent for opening the map
@@ -478,8 +478,8 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                             .defaultWeight()
                     ) {
                         SquareIconButton(
-                            imageProvider = ImageProvider(if (seatOpen == true) ic_seatbox_open else ic_seatbox),
-                            contentDescription = "Seatbox ${if (seatOpen == true) "open" else "closed"}",
+                            imageProvider = ImageProvider(if (seatClosed == false) ic_seatbox_open else ic_seatbox),
+                            contentDescription = "Seatbox ${if (seatClosed == false) "open" else "closed"}",
                             backgroundColor = if (enabled && seatOpenable) {
                                 GlanceTheme.colors.primaryContainer
                             } else {
@@ -488,7 +488,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                             contentColor =
                             if (!enabled || !seatOpenable) {
                                 GlanceTheme.colors.secondary
-                            } else if (seatOpen == true) {
+                            } else if (seatClosed == false) {
                                 androidx.glance.unit.ColorProvider(Color.Red)
                             } else {
                                 GlanceTheme.colors.primary
