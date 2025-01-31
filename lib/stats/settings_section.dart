@@ -72,29 +72,34 @@ class _SettingsSectionState extends State<SettingsSection> {
           },
         ),
         if (autoUnlock)
-          ListTile(
-            title: Text(
-                "${FlutterI18n.translate(context, "settings_auto_unlock_threshold")}: ${autoUnlockDistance.name(context)}"),
-            subtitle: Slider(
-              value: autoUnlockDistance.threshold.toDouble(),
-              min: ScooterKeylessDistance.getMinThresholdDistance()
-                  .threshold
-                  .toDouble(),
-              max: ScooterKeylessDistance.getMaxThresholdDistance()
-                  .threshold
-                  .toDouble(),
-              divisions: ScooterKeylessDistance.values.length - 1,
-              label: autoUnlockDistance.getFormattedThreshold(),
-              onChanged: (value) async {
-                var distance =
-                    ScooterKeylessDistance.fromThreshold(value.toInt());
-                widget.service.setAutoUnlockThreshold(distance);
-                setState(() {
-                  autoUnlockDistance = distance;
-                });
-              },
-            ),
-          ),
+          StreamBuilder<int?>(
+              stream: widget.service.rssi,
+              builder: (context, snapshot) {
+                return ListTile(
+                  title: Text(
+                      "${FlutterI18n.translate(context, "settings_auto_unlock_threshold")}: ${autoUnlockDistance.name(context)}"),
+                  subtitle: Slider(
+                    value: autoUnlockDistance.threshold.toDouble(),
+                    min: ScooterKeylessDistance.getMinThresholdDistance()
+                        .threshold
+                        .toDouble(),
+                    max: ScooterKeylessDistance.getMaxThresholdDistance()
+                        .threshold
+                        .toDouble(),
+                    secondaryTrackValue: snapshot.data?.toDouble(),
+                    divisions: ScooterKeylessDistance.values.length - 1,
+                    label: autoUnlockDistance.getFormattedThreshold(),
+                    onChanged: (value) async {
+                      var distance =
+                          ScooterKeylessDistance.fromThreshold(value.toInt());
+                      widget.service.setAutoUnlockThreshold(distance);
+                      setState(() {
+                        autoUnlockDistance = distance;
+                      });
+                    },
+                  ),
+                );
+              }),
         SwitchListTile(
           secondary: const Icon(Icons.work_outline),
           title: Text(
