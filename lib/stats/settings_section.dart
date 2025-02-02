@@ -34,27 +34,6 @@ class _SettingsSectionState extends State<SettingsSection> {
   bool hazardLocking = false;
   bool osmConsent = true;
 
-  void getInitialSettings() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      biometrics = prefs.getBool("biometrics") ?? false;
-      autoUnlock = widget.service.autoUnlock;
-      autoUnlockDistance = ScooterKeylessDistance.fromThreshold(
-              widget.service.autoUnlockThreshold) ??
-          ScooterKeylessDistance.regular.threshold;
-      openSeatOnUnlock = widget.service.openSeatOnUnlock;
-      hazardLocking = widget.service.hazardLocking;
-      osmConsent = prefs.getBool("osmConsent") ?? true;
-      seasonal = prefs.getBool("seasonal") ?? true;
-    });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    getInitialSettings();
-  }
-
   List<Widget> settingsItems() => [
         Header(
             FlutterI18n.translate(context, "stats_settings_section_scooter")),
@@ -72,34 +51,46 @@ class _SettingsSectionState extends State<SettingsSection> {
           },
         ),
         if (autoUnlock)
-          StreamBuilder<int?>(
-              stream: widget.service.rssi,
-              builder: (context, snapshot) {
-                return ListTile(
-                  title: Text(
-                      "${FlutterI18n.translate(context, "settings_auto_unlock_threshold")}: ${autoUnlockDistance.name(context)}"),
-                  subtitle: Slider(
-                    value: autoUnlockDistance.threshold.toDouble(),
-                    min: ScooterKeylessDistance.getMinThresholdDistance()
-                        .threshold
-                        .toDouble(),
-                    max: ScooterKeylessDistance.getMaxThresholdDistance()
-                        .threshold
-                        .toDouble(),
-                    secondaryTrackValue: snapshot.data?.toDouble(),
-                    divisions: ScooterKeylessDistance.values.length - 1,
-                    label: autoUnlockDistance.getFormattedThreshold(),
-                    onChanged: (value) async {
-                      var distance =
-                          ScooterKeylessDistance.fromThreshold(value.toInt());
-                      widget.service.setAutoUnlockThreshold(distance);
-                      setState(() {
-                        autoUnlockDistance = distance;
-                      });
-                    },
-                  ),
-                );
-              }),
+          ListTile(
+            title: Text(
+                "${FlutterI18n.translate(context, "settings_auto_unlock_threshold")}: ${autoUnlockDistance.name(context)}"),
+            subtitle: StreamBuilder<int?>(
+                stream: widget.service.rssi,
+                builder: (context, snapshot) {
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Slider(
+                        value: autoUnlockDistance.threshold.toDouble(),
+                        min: ScooterKeylessDistance.getMinThresholdDistance()
+                            .threshold
+                            .toDouble(),
+                        max: ScooterKeylessDistance.getMaxThresholdDistance()
+                            .threshold
+                            .toDouble(),
+                        secondaryTrackValue: snapshot.data?.toDouble(),
+                        divisions: ScooterKeylessDistance.values.length - 1,
+                        label: autoUnlockDistance.getFormattedThreshold(),
+                        onChanged: (value) async {
+                          var distance = ScooterKeylessDistance.fromThreshold(
+                              value.toInt());
+                          widget.service.setAutoUnlockThreshold(distance);
+                          setState(() {
+                            autoUnlockDistance = distance;
+                          });
+                        },
+                      ),
+                      if (snapshot.hasData)
+                        Text(FlutterI18n.translate(
+                            context, "settings_auto_unlock_threshold_explainer",
+                            translationParams: {
+                              "rssi": snapshot.data!.toString()
+                            })),
+                    ],
+                  );
+                }),
+          ),
         SwitchListTile(
           secondary: const Icon(Icons.work_outline),
           title: Text(
@@ -184,6 +175,9 @@ class _SettingsSectionState extends State<SettingsSection> {
                 },
                 selected: {EasyDynamicTheme.of(context).themeMode!},
                 style: ButtonStyle(
+                  iconColor: WidgetStateProperty.resolveWith<Color>((states) {
+                    return Theme.of(context).colorScheme.onTertiary;
+                  }),
                   foregroundColor:
                       WidgetStateProperty.resolveWith<Color>((states) {
                     if (states.contains(WidgetState.selected)) {
@@ -339,6 +333,27 @@ class _SettingsSectionState extends State<SettingsSection> {
               );
             }),
       ];
+
+  void getInitialSettings() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      biometrics = prefs.getBool("biometrics") ?? false;
+      autoUnlock = widget.service.autoUnlock;
+      autoUnlockDistance = ScooterKeylessDistance.fromThreshold(
+              widget.service.autoUnlockThreshold) ??
+          ScooterKeylessDistance.regular.threshold;
+      openSeatOnUnlock = widget.service.openSeatOnUnlock;
+      hazardLocking = widget.service.hazardLocking;
+      osmConsent = prefs.getBool("osmConsent") ?? true;
+      seasonal = prefs.getBool("seasonal") ?? true;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getInitialSettings();
+  }
 
   @override
   Widget build(BuildContext context) {

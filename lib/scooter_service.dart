@@ -74,6 +74,7 @@ class ScooterService {
         int? rssi;
         try {
           rssi = await myScooter!.readRssi();
+          _rssiController.add(rssi);
         } catch (e) {
           // probably not connected anymore
         }
@@ -232,12 +233,8 @@ class ScooterService {
 
   Stream<bool> get scanning => flutterBluePlus.isScanning;
 
-  Stream<int?> get rssi => flutterBluePlus.events.onReadRssi.asyncMap((event) {
-        if (event.device.remoteId == myScooter?.remoteId) {
-          return event.rssi;
-        }
-        return null;
-      });
+  final BehaviorSubject<int?> _rssiController = BehaviorSubject<int?>();
+  Stream<int?> get rssi => _rssiController.stream;
 
   // MAIN FUNCTIONS
 
