@@ -202,19 +202,13 @@ extension DateTimeExtension on DateTime {
     final difference = originalDate.difference(this);
 
     if ((difference.inDays / 7).floor() >= 1) {
-      return '1W';
-    } else if (difference.inDays >= 2) {
-      return '${difference.inDays}D';
+      return '${(difference.inDays / 7).floor()}W';
     } else if (difference.inDays >= 1) {
-      return '1D';
-    } else if (difference.inHours >= 2) {
-      return '${difference.inHours}H';
+      return '${difference.inDays}D';
     } else if (difference.inHours >= 1) {
-      return '1H';
-    } else if (difference.inMinutes >= 2) {
-      return '${difference.inMinutes}M';
+      return '${difference.inHours}H';
     } else if (difference.inMinutes >= 1) {
-      return '1M';
+      return '${difference.inMinutes}M';
     } else {
       return FlutterI18n.translate(context, "stats_last_ping_now");
     }

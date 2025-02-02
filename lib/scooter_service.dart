@@ -74,6 +74,7 @@ class ScooterService {
         int? rssi;
         try {
           rssi = await myScooter!.readRssi();
+          _rssiController.add(rssi);
         } catch (e) {
           // probably not connected anymore
         }
@@ -232,12 +233,8 @@ class ScooterService {
 
   Stream<bool> get scanning => flutterBluePlus.isScanning;
 
-  Stream<int?> get rssi => flutterBluePlus.events.onReadRssi.asyncMap((event) {
-        if (event.device.remoteId == myScooter?.remoteId) {
-          return event.rssi;
-        }
-        return null;
-      });
+  final BehaviorSubject<int?> _rssiController = BehaviorSubject<int?>();
+  Stream<int?> get rssi => _rssiController.stream;
 
   // MAIN FUNCTIONS
 
@@ -535,7 +532,7 @@ class ScooterService {
       openSeat();
     }
 
-    await Future.delayed(const Duration(seconds: 2), () {
+    await Future.delayed(const Duration(seconds: 3), () {
       if (_handlebarController.value == true) {
         log.warning("Handlebars didn't unlock, sending warning");
         throw HandlebarLockException();
@@ -577,7 +574,7 @@ class ScooterService {
       hazard(times: 1);
     }
 
-    await Future.delayed(const Duration(seconds: 2), () {
+    await Future.delayed(const Duration(seconds: 3), () {
       if (_handlebarController.value == false) {
         log.warning("Handlebars didn't lock, sending warning");
         throw HandlebarLockException();
