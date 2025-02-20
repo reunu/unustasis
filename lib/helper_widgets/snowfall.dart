@@ -88,7 +88,7 @@ class SnowPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = snowflakeColor.withOpacity(0.15);
+    final paint = Paint()..color = snowflakeColor.withValues(alpha: 0.15);
 
     for (var flake in snowflakes) {
       // Ensure positions are constrained to the current canvas size.
