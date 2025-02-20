@@ -86,7 +86,7 @@ class _BatterySectionState extends State<BatterySection> {
                               ? Theme.of(context)
                                   .colorScheme
                                   .onSurface
-                                  .withOpacity(0.4)
+                                  .withValues(alpha: 0.4)
                               : data.secondarySOC! <= 15
                                   ? Colors.red
                                   : Theme.of(context).colorScheme.primary,
@@ -104,7 +104,7 @@ class _BatterySectionState extends State<BatterySection> {
                             ? Theme.of(context)
                                 .colorScheme
                                 .onSurface
-                                .withOpacity(0.4)
+                                .withValues(alpha: 0.4)
                             : (data.primarySOC ?? 0) <= 15
                                 ? Colors.red
                                 : Theme.of(context).colorScheme.primary,
@@ -172,7 +172,7 @@ class _BatterySectionState extends State<BatterySection> {
             height: 40,
             indent: 0,
             endIndent: 0,
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
           ),
         if (nfcBattery != 0 && nfcBattery != null && !nfcScanning)
           _batteryCard(
