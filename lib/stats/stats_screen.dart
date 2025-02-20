@@ -158,7 +158,7 @@ class LastPingInfo extends StatelessWidget {
               style: TextStyle(
                 fontWeight: FontWeight.w900,
                 fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(
@@ -166,7 +166,7 @@ class LastPingInfo extends StatelessWidget {
             ),
             Icon(
               Icons.schedule_rounded,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
               size: 24,
             ),
             const SizedBox(

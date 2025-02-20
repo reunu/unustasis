@@ -188,8 +188,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 return Expanded(
                                   child: ScooterPowerButton(
                                       action: state != null &&
-                                              state!.isReadyForLockChange
-                                          ? (state!.isOn
+                                              state.isReadyForLockChange
+                                          ? (state.isOn
                                               ? () async {
                                                   try {
                                                     await context
@@ -513,7 +513,7 @@ class BatteryBars extends StatelessWidget {
                         ? Theme.of(context)
                             .colorScheme
                             .onSurface
-                            .withOpacity(0.4)
+                            .withValues(alpha: 0.4)
                         : data.primarySOC! <= 15
                             ? Theme.of(context).colorScheme.error
                             : Theme.of(context).colorScheme.primary,
@@ -533,7 +533,7 @@ class BatteryBars extends StatelessWidget {
                           ? Theme.of(context)
                               .colorScheme
                               .onSurface
-                              .withOpacity(0.4)
+                              .withValues(alpha: 0.4)
                           : data.secondarySOC! <= 15
                               ? Theme.of(context).colorScheme.error
                               : Theme.of(context).colorScheme.primary,
