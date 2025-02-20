@@ -117,28 +117,32 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
 
   Future<void> _handleScooterSelection() async {
     final scooterService = context.read<ScooterService>();
+    // Get error message translation while context is definitely valid
+    final errorMessageTemplate = FlutterI18n.translate(context, "cloud_assignment_error");
+    final successMessageTemplate = FlutterI18n.translate(context, "cloud_assignment_success");
+    
     if (scooterService.myScooter == null) {
-      Fluttertoast.showToast(
-        msg: FlutterI18n.translate(context, "cloud_no_ble_scooter")
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(FlutterI18n.translate(context, "cloud_no_ble_scooter")))
       );
       return;
     }
 
-    // Find current assignments
     final assignments = await _cloudService.getCurrentAssignments();
-    
-    // Show selection dialog
+    if (!mounted) return;
+
     showDialog(
       context: context,
-      builder: (BuildContext context) => ScooterSelectionDialog(
+      builder: (BuildContext dialogContext) => ScooterSelectionDialog(
         scooters: _cloudScooters,
         currentlyAssignedId: _cloudScooterId,
         assignedIds: assignments.values.toList(),
         onSelect: (selectedScooter) async {
           try {
             final bleId = scooterService.myScooter!.remoteId.toString();
+            final scooterName = selectedScooter['name'] as String;
             
-            // If this scooter was assigned elsewhere, remove that assignment
             if (assignments.containsValue(selectedScooter['id'])) {
               final oldBleId = assignments.entries
                   .firstWhere((entry) => entry.value == selectedScooter['id'])
@@ -146,33 +150,30 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
               await _cloudService.removeAssignment(oldBleId);
             }
             
-            // Create new assignment
             await _cloudService.assignScooter(
               bleId: bleId,
-              cloudId: selectedScooter['id'],
+              cloudId: selectedScooter['id'] as int,
             );
             
+            if (!mounted) return;
             setState(() {
               _cloudScooterId = selectedScooter['id'] as int;
             });
             
             if (mounted) {
-              Fluttertoast.showToast(
-                msg: FlutterI18n.translate(
-                  context, 
-                  "cloud_assignment_success",
-                  translationParams: {"name": selectedScooter['name']}
-                )
+              final message = successMessageTemplate.replaceAll("{name}", scooterName);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(message))
               );
             }
           } catch (e, stack) {
             log.severe('Error assigning scooter: $e', e, stack);
             if (mounted) {
-              Fluttertoast.showToast(
-                msg: FlutterI18n.translate(
-                  context, 
-                  "cloud_assignment_error",
-                  translationParams: {"error": e.toString()}
+              final message = errorMessageTemplate.replaceAll("{error}", e.toString());
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(message),
+                  backgroundColor: Theme.of(context).colorScheme.error,
                 )
               );
             }

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:logging/logging.dart';
@@ -144,8 +145,13 @@ class CloudService {
     Map<String, int> assignments = {};
     
     for (var scooter in scooters) {
-      if (scooter['ble_mac'] != null && scooter['ble_mac'].toString().isNotEmpty) {
-        assignments[scooter['ble_mac'].toString()] = scooter['id'] as int;
+      final deviceIds = scooter['device_ids'] as Map<String, dynamic>?;
+      if (deviceIds != null) {
+        if (Platform.isAndroid && deviceIds['android'] != null) {
+          assignments[deviceIds['android']] = scooter['id'] as int;
+        } else if (Platform.isIOS && deviceIds['ios'] != null) {
+          assignments[deviceIds['ios']] = scooter['id'] as int;
+        }
       }
     }
     
@@ -153,16 +159,29 @@ class CloudService {
   }
 
   Future<void> assignScooter({required String bleId, required int cloudId}) async {
-    final bleMAC = bleId.toLowerCase().replaceAllMapped(
+    // Format MAC address or keep UUID as is depending on platform
+    final deviceId = Platform.isAndroid ? bleId.toLowerCase().replaceAllMapped(
       RegExp(r'([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})'),
       (match) => '${match[1]}:${match[2]}:${match[3]}:${match[4]}:${match[5]}:${match[6]}'
-    );
+    ) : bleId;
+
+    // Get current device_ids to preserve other platform assignments
+    final scooters = await getScooters();
+    final scooter = scooters.firstWhere((s) => s['id'] == cloudId);
+    Map<String, dynamic> deviceIds = Map<String, dynamic>.from(scooter['device_ids'] ?? {});
+    
+    // Update the appropriate platform ID
+    if (Platform.isAndroid) {
+      deviceIds['android'] = deviceId;
+    } else if (Platform.isIOS) {
+      deviceIds['ios'] = deviceId;
+    }
 
     await _authenticatedRequest(
       '/scooters/$cloudId',
       method: 'PUT',
       body: {
-        'ble_mac': bleMAC,
+        'device_ids': deviceIds,
       },
     );
   }
@@ -172,16 +191,29 @@ class CloudService {
     final cloudId = assignments[bleId];
     
     if (cloudId != null) {
+      // Get current device_ids to preserve other platform assignments
+      final scooters = await getScooters();
+      final scooter = scooters.firstWhere((s) => s['id'] == cloudId);
+      Map<String, dynamic> deviceIds = Map<String, dynamic>.from(scooter['device_ids'] ?? {});
+
+      // Remove the appropriate platform ID
+      if (Platform.isAndroid) {
+        deviceIds.remove('android');
+      } else if (Platform.isIOS) {
+        deviceIds.remove('ios');
+      }
+
       await _authenticatedRequest(
         '/scooters/$cloudId',
         method: 'PUT',
         body: {
-          'ble_mac': '',
+          'device_ids': deviceIds,
         },
       );
     }
   }
 
+  // Command endpoints
   Future<void> lockScooter(int scooterId) async {
     await _authenticatedRequest(
       '/scooters/$scooterId/lock',
