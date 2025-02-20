@@ -192,5 +192,18 @@
     "settings_report_proceed": "Continue",
     "settings_report_cancel": "Cancel",
     "report_subject": "Issue report",
-    "report_placeholder": "Please describe the issue you're having, and how to reproduce it, above the line:"
+    "report_placeholder": "Please describe the issue you're having, and how to reproduce it, above the line:",
+    "stats_settings_section_cloud": "Cloud Connection",
+    "settings_cloud_connect": "Connect to Cloud",
+    "settings_cloud_connect_desc": "Link your scooter to the Sunshine cloud service",
+    "settings_cloud_connected": "Connected to Cloud",
+    "settings_cloud_disconnect_desc": "Your scooter is linked to the cloud",
+    "cloud_token_title": "Enter API Token",
+    "cloud_token_description": "Please paste your API token from the Sunshine dashboard",
+    "cloud_token_label": "API Token",
+    "cloud_token_cancel": "Cancel",
+    "cloud_token_save": "Save",
+    "settings_cloud_not_linked": "Cloud Account Not Linked",
+    "settings_cloud_not_linked_desc": "Connect your current scooter to your cloud account",
+    "settings_cloud_connected_desc": "Your scooter is syncing with the cloud"
 }

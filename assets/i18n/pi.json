@@ -192,5 +192,15 @@
     "settings_report_proceed": "Continue",
     "settings_report_cancel": "Cancel",
     "report_subject": "Error report",
-    "report_placeholder": "Please describe the issue you're having, and how to reproduce it, above the line:"
+    "report_placeholder": "Please describe the issue you're having, and how to reproduce it, above the line:",
+    "stats_settings_section_cloud": "Ye Olde Cloud Connection",
+    "settings_cloud_connect": "Connect to th' Cloud",
+    "settings_cloud_connect_desc": "Link yer vessel to th' Sunshine cloud service",
+    "settings_cloud_connected": "Connected to th' Cloud",
+    "settings_cloud_disconnect_desc": "Yer vessel be linked to th' cloud",
+    "cloud_token_title": "Enter Secret Token",
+    "cloud_token_description": "Paste yer secret token from th' Sunshine map",
+    "cloud_token_label": "Secret Token",
+    "cloud_token_cancel": "Abandon Ship",
+    "cloud_token_save": "Aye, Save It"
 }

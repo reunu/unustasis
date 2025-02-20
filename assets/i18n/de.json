@@ -192,5 +192,15 @@
     "settings_report_proceed": "Fortsetzen",
     "settings_report_cancel": "Abbrechen",
     "report_subject": "Fehlerbericht",
-    "report_placeholder": "Bitte beschreibe über den Linie den Fehler, den du hast, und wie man ihn reproduzieren kann:"
+    "report_placeholder": "Bitte beschreibe über den Linie den Fehler, den du hast, und wie man ihn reproduzieren kann:",
+    "stats_settings_section_cloud": "Cloud-Verbindung",
+    "settings_cloud_connect": "Mit Cloud verbinden",
+    "settings_cloud_connect_desc": "Verknüpfe deinen Scooter mit dem Sunshine-Cloud-Service",
+    "settings_cloud_connected": "Mit Cloud verbunden",
+    "settings_cloud_disconnect_desc": "Dein Scooter ist mit der Cloud verknüpft",
+    "cloud_token_title": "API-Token eingeben",
+    "cloud_token_description": "Bitte füge dein API-Token aus dem Sunshine-Dashboard ein",
+    "cloud_token_label": "API-Token",
+    "cloud_token_cancel": "Abbrechen",
+    "cloud_token_save": "Speichern"
 }
