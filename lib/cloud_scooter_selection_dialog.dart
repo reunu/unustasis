@@ -6,8 +6,8 @@ import 'package:logging/logging.dart';
 class ScooterSelectionDialog extends StatelessWidget {
   final List<Map<String, dynamic>> scooters;
   final Function(Map<String, dynamic>) onSelect;
-  final String? currentlyAssignedId;
-  final List<String> assignedIds;
+  final int? currentlyAssignedId;
+  final List<int> assignedIds;
   
   final log = Logger('ScooterSelectionDialog');
   
@@ -80,8 +80,8 @@ class ScooterSelectionDialog extends StatelessWidget {
           itemCount: scooters.length,
           itemBuilder: (context, index) {
             final scooter = scooters[index];
-            final bool isAssigned = assignedIds.contains(scooter['id']);
-            final bool isCurrentlyAssigned = scooter['id'] == currentlyAssignedId;
+            final bool isAssigned = assignedIds.contains(scooter['id'] as int);
+            final bool isCurrentlyAssigned = scooter['id'] as int == currentlyAssignedId;
             
             return ListTile(
               enabled: !isAssigned || isCurrentlyAssigned,

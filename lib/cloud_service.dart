@@ -139,20 +139,20 @@ class CloudService {
     }
   }
 
-  Future<Map<String, String>> getCurrentAssignments() async {
+  Future<Map<String, int>> getCurrentAssignments() async {
     final scooters = await getScooters();
-    Map<String, String> assignments = {};
+    Map<String, int> assignments = {};
     
     for (var scooter in scooters) {
       if (scooter['ble_mac'] != null && scooter['ble_mac'].toString().isNotEmpty) {
-        assignments[scooter['ble_mac'].toString()] = scooter['id'].toString();
+        assignments[scooter['ble_mac'].toString()] = scooter['id'] as int;
       }
     }
     
     return assignments;
   }
 
-  Future<void> assignScooter({required String bleId, required String cloudId}) async {
+  Future<void> assignScooter({required String bleId, required int cloudId}) async {
     final bleMAC = bleId.toLowerCase().replaceAllMapped(
       RegExp(r'([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})'),
       (match) => '${match[1]}:${match[2]}:${match[3]}:${match[4]}:${match[5]}:${match[6]}'
@@ -182,22 +182,21 @@ class CloudService {
     }
   }
 
-  // Command endpoints
-  Future<void> lockScooter(String scooterId) async {
+  Future<void> lockScooter(int scooterId) async {
     await _authenticatedRequest(
       '/scooters/$scooterId/lock',
       method: 'POST',
     );
   }
 
-  Future<void> unlockScooter(String scooterId) async {
+  Future<void> unlockScooter(int scooterId) async {
     await _authenticatedRequest(
       '/scooters/$scooterId/unlock',
       method: 'POST',
     );
   }
 
-  Future<void> blinkScooter(String scooterId, String state) async {
+  Future<void> blinkScooter(int scooterId, String state) async {
     await _authenticatedRequest(
       '/scooters/$scooterId/blinkers',
       method: 'POST',
@@ -207,7 +206,7 @@ class CloudService {
     );
   }
 
-  Future<void> honkScooter(String scooterId) async {
+  Future<void> honkScooter(int scooterId) async {
     await _authenticatedRequest(
       '/scooters/$scooterId/honk',
       method: 'POST',

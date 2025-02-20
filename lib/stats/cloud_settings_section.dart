@@ -20,7 +20,7 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
   final CloudService _cloudService = CloudService();
   bool _isAuthenticated = false;
   List<Map<String, dynamic>> _cloudScooters = [];
-  String? _cloudScooterId;
+  int? _cloudScooterId;
   bool _isLoading = false;
   final log = Logger('CloudSettings');
 
@@ -153,7 +153,7 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
             );
             
             setState(() {
-              _cloudScooterId = selectedScooter['id'];
+              _cloudScooterId = selectedScooter['id'] as int;
             });
             
             if (mounted) {
