@@ -103,8 +103,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 SnowfallBackground(
                   backgroundColor: Colors.transparent,
                   snowflakeColor: context.isDarkMode
-                      ? Colors.white.withOpacity(0.15)
-                      : Colors.black.withOpacity(0.05),
+                      ? Colors.white.withValues(alpha: 0.15)
+                      : Colors.black.withValues(alpha: 0.05),
                 ),
               SafeArea(
                 child: Padding(
@@ -630,7 +630,7 @@ class StateCircle extends StatelessWidget {
               : Theme.of(context)
                   .colorScheme
                   .surfaceContainer
-                  .withOpacity(context.isDarkMode ? 0.5 : 0.7),
+                  .withValues(alpha: context.isDarkMode ? 0.5 : 0.7),
         ),
       ),
     );
@@ -662,7 +662,7 @@ class _ScooterPowerButtonState extends State<ScooterPowerButton> {
   @override
   Widget build(BuildContext context) {
     Color mainColor = widget._action == null
-        ? Theme.of(context).colorScheme.onSurface.withOpacity(0.2)
+        ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2)
         : Theme.of(context).colorScheme.primary;
     return Column(
       children: [
@@ -748,7 +748,7 @@ class ScooterActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     Color mainColor = _iconColor ??
         (_onPressed == null
-            ? Theme.of(context).colorScheme.onSurface.withOpacity(0.2)
+            ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2)
             : Theme.of(context).colorScheme.onSurface);
     return Column(
       children: [

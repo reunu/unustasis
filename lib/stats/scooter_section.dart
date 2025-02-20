@@ -203,7 +203,7 @@ class SavedScooterCard extends StatelessWidget {
                           color: Theme.of(context)
                               .colorScheme
                               .onSurface
-                              .withOpacity(0.5),
+                              .withValues(alpha: 0.5),
                         ),
                   ),
                 const SizedBox(height: 4),
@@ -253,7 +253,7 @@ class SavedScooterCard extends StatelessWidget {
                     color: Theme.of(context)
                         .colorScheme
                         .onSurface
-                        .withOpacity(0.1),
+                        .withValues(alpha: 0.1),
                   ),
                 if (connected)
                   ListTile(
@@ -274,7 +274,7 @@ class SavedScooterCard extends StatelessWidget {
                     color: Theme.of(context)
                         .colorScheme
                         .onSurface
-                        .withOpacity(0.1),
+                        .withValues(alpha: 0.1),
                   ),
                 if (!connected)
                   ListTile(
@@ -302,7 +302,7 @@ class SavedScooterCard extends StatelessWidget {
                     color: Theme.of(context)
                         .colorScheme
                         .onSurface
-                        .withOpacity(0.1),
+                        .withValues(alpha: 0.1),
                   ),
                 if (savedScooter.lastLocation != null && !connected)
                   ListTile(
@@ -335,7 +335,7 @@ class SavedScooterCard extends StatelessWidget {
                   endIndent: 16,
                   height: 0,
                   color:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                      Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
                 ),
                 if (!single) // only show this if there's more than one scooter
                   ListTile(
@@ -359,7 +359,7 @@ class SavedScooterCard extends StatelessWidget {
                   endIndent: 16,
                   height: 0,
                   color:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                      Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
                 ),
                 ListTile(
                   title: const Text("ID"),
@@ -370,7 +370,7 @@ class SavedScooterCard extends StatelessWidget {
                   endIndent: 16,
                   height: 0,
                   color:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                      Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
                 ),
                 const SizedBox(height: 8),
                 Padding(

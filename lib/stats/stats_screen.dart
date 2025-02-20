@@ -38,7 +38,7 @@ class _StatsScreenState extends State<StatsScreen> {
                   tabAlignment: TabAlignment.center,
                   labelPadding: const EdgeInsets.symmetric(horizontal: 24),
                   unselectedLabelColor:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                      Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
                   labelColor: Theme.of(context).colorScheme.onSurface,
                   indicatorColor: Theme.of(context).colorScheme.onSurface,
                   dividerColor: Colors.transparent,

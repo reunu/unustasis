@@ -349,7 +349,7 @@ class _BatterySectionState extends State<BatterySection> {
                   fontWeight: FontWeight.w900,
                   fontSize: 12,
                   color:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
+                      Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
             ),
             Text(
               type.description(context),
@@ -358,7 +358,7 @@ class _BatterySectionState extends State<BatterySection> {
                   fontWeight: FontWeight.w900,
                   fontSize: 12,
                   color:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
+                      Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
             ),
             const SizedBox(height: 8),
             Padding(
@@ -424,7 +424,7 @@ class _BatterySectionState extends State<BatterySection> {
                         color: Theme.of(context)
                             .colorScheme
                             .onSurface
-                            .withOpacity(0.5)),
+                            .withValues(alpha: 0.5)),
                   ),
                   const SizedBox(height: 32),
                   Expanded(
@@ -453,7 +453,7 @@ class _BatterySectionState extends State<BatterySection> {
                         color: Theme.of(context)
                             .colorScheme
                             .onSurface
-                            .withOpacity(0.5)),
+                            .withValues(alpha: 0.5)),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -488,38 +488,6 @@ class _BatterySectionState extends State<BatterySection> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _splitProgressBar(
-      {required int maxSteps,
-      required int currentStep,
-      required BuildContext context,
-      required bool old}) {
-    List<Widget> bars = [];
-    for (int i = 0; i < maxSteps; i++) {
-      bars.add(
-        Expanded(
-          child: Container(
-            height: 16,
-            decoration: BoxDecoration(
-              color: i < currentStep
-                  ? (old
-                      ? Theme.of(context).colorScheme.onSurface.withOpacity(0.4)
-                      : Theme.of(context).colorScheme.primary)
-                  : Theme.of(context).colorScheme.onTertiary.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-        ),
-      );
-      if (i < maxSteps - 1) {
-        bars.add(const SizedBox(width: 8));
-      }
-    }
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: bars,
     );
   }
 }
