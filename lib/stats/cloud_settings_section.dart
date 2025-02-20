@@ -7,6 +7,7 @@ import 'package:logging/logging.dart';
 
 import '../cloud_service.dart';
 import '../scooter_service.dart';
+import '../cloud_scooter_selection_dialog.dart';
 
 class CloudSettingsSection extends StatefulWidget {
   const CloudSettingsSection({super.key});
@@ -18,8 +19,10 @@ class CloudSettingsSection extends StatefulWidget {
 class _CloudSettingsSectionState extends State<CloudSettingsSection> {
   final CloudService _cloudService = CloudService();
   bool _isAuthenticated = false;
+  List<Map<String, dynamic>> _cloudScooters = [];
   String? _cloudScooterId;
-  bool _isChecking = false;
+  bool _isLoading = false;
+  final log = Logger('CloudSettings');
 
   @override
   void initState() {
@@ -27,69 +30,75 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
     _checkAuthStatus();
   }
 
-    Future<void> _checkAuthStatus() async {
-    final log = Logger('CloudSettings');
-    log.info('Checking auth status...');
-    
+  Future<void> _checkAuthStatus() async {
     setState(() {
-      _isChecking = true;
+      _isLoading = true;
     });
     
     try {
       final isAuth = await _cloudService.isAuthenticated;
-      log.info('Authentication check result: $isAuth');
+      if (isAuth) {
+        await _refreshScooters();
+      }
       
       setState(() {
         _isAuthenticated = isAuth;
-        _isChecking = false;
+        _isLoading = false;
       });
-      log.info('Updated state - authenticated: $_isAuthenticated, cloudId: $_cloudScooterId');
     } catch (e, stack) {
       log.severe('Error checking auth status', e, stack);
       setState(() {
         _isAuthenticated = false;
-        _isChecking = false;
+        _isLoading = false;
       });
     }
   }
 
+  Future<void> _refreshScooters() async {
+    try {
+      final scooters = await _cloudService.getScooters();
+      setState(() {
+        _cloudScooters = scooters;
+      });
+    } catch (e, stack) {
+      log.severe('Error fetching scooters', e, stack);
+      Fluttertoast.showToast(
+        msg: FlutterI18n.translate(context, "cloud_refresh_error")
+      );
+    }
+  }
+
   Future<void> _handleCloudLogin() async {
-    final log = Logger('CloudSettings');
     // Launch browser for authentication
     final Uri url = Uri.parse('https://sunshine.rescoot.org/account');
     if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-      
       // Show dialog to paste token
-      if (mounted) {
-        log.info('Showing token input dialog');
-        final token = await showDialog<String>(
-          context: context,
-          builder: (BuildContext context) => TokenInputDialog(),
-        );
+      final token = await showDialog<String>(
+        context: context,
+        builder: (BuildContext context) => TokenInputDialog(),
+      );
 
-        if (token != null && token.isNotEmpty) {
-          log.info('Received token input (length: ${token.length})');
-          try {
-            log.info('Setting token in cloud service...');
-            await _cloudService.setToken(token);
-            
-            // Force an immediate check of the token by trying to get scooters
-            log.info('Testing token by fetching scooters...');
-            final scooters = await _cloudService.getScooters();
-            log.info('Found ${scooters.length} scooters');
-            
+      if (token != null && token.isNotEmpty) {
+        setState(() {
+          _isLoading = true;
+        });
+        
+        try {
+          await _cloudService.setToken(token);
+          await _checkAuthStatus();
+        } catch (e, stack) {
+          log.severe('Token validation failed', e, stack);
+          if (mounted) {
+            Fluttertoast.showToast(
+              msg: FlutterI18n.translate(
+                context, 
+                "cloud_token_invalid",
+                translationParams: {"error": e.toString()}
+              )
+            );
+            await _cloudService.logout();
             await _checkAuthStatus();
-          } catch (e, stack) {
-            log.severe('Token validation failed: $e', e, stack);
-            if (mounted) {
-              Fluttertoast.showToast(msg: 'Invalid token: ${e.toString()}');
-              await _cloudService.logout();
-              await _checkAuthStatus();
-            }
           }
-        } else {
-          log.info('No token provided or dialog cancelled');
         }
       }
     } else {
@@ -99,89 +108,138 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
 
   Future<void> _handleCloudLogout() async {
     await _cloudService.logout();
-    await _checkAuthStatus();
+    setState(() {
+      _isAuthenticated = false;
+      _cloudScooters = [];
+      _cloudScooterId = null;
+    });
   }
 
-  Future<void> _handleLinkScooter(BuildContext context) async {
+  Future<void> _handleScooterSelection() async {
     final scooterService = context.read<ScooterService>();
-    final bleId = scooterService.myScooter?.remoteId.toString();
-    final scooterName = scooterService.scooterName;
-    
-    if (bleId == null) {
-      Fluttertoast.showToast(msg: 'No scooter connected via BLE');
+    if (scooterService.myScooter == null) {
+      Fluttertoast.showToast(
+        msg: FlutterI18n.translate(context, "cloud_no_ble_scooter")
+      );
       return;
     }
 
-    setState(() {
-      _isChecking = true;
-    });
+    // Find current assignments
+    final assignments = await _cloudService.getCurrentAssignments();
+    
+    // Show selection dialog
+    showDialog(
+      context: context,
+      builder: (BuildContext context) => ScooterSelectionDialog(
+        scooters: _cloudScooters,
+        currentlyAssignedId: _cloudScooterId,
+        assignedIds: assignments.values.toList(),
+        onSelect: (selectedScooter) async {
+          try {
+            final bleId = scooterService.myScooter!.remoteId.toString();
+            
+            // If this scooter was assigned elsewhere, remove that assignment
+            if (assignments.containsValue(selectedScooter['id'])) {
+              final oldBleId = assignments.entries
+                  .firstWhere((entry) => entry.value == selectedScooter['id'])
+                  .key;
+              await _cloudService.removeAssignment(oldBleId);
+            }
+            
+            // Create new assignment
+            await _cloudService.assignScooter(
+              bleId: bleId,
+              cloudId: selectedScooter['id'],
+            );
+            
+            setState(() {
+              _cloudScooterId = selectedScooter['id'];
+            });
+            
+            if (mounted) {
+              Fluttertoast.showToast(
+                msg: FlutterI18n.translate(
+                  context, 
+                  "cloud_assignment_success",
+                  translationParams: {"name": selectedScooter['name']}
+                )
+              );
+            }
+          } catch (e, stack) {
+            log.severe('Error assigning scooter: $e', e, stack);
+            if (mounted) {
+              Fluttertoast.showToast(
+                msg: FlutterI18n.translate(
+                  context, 
+                  "cloud_assignment_error",
+                  translationParams: {"error": e.toString()}
+                )
+              );
+            }
+          }
+        },
+      ),
+    );
+  }
 
-    try {
-      // Create scooter in cloud with BLE ID as VIN
-      await _cloudService.createScooter(
-        name: scooterName ?? 'My Scooter',
-        bleMac: bleId,
-      );
-      
-      // Verify it was created
-      await _checkAuthStatus();
-      
-      if (mounted) {
-        Fluttertoast.showToast(msg: 'Scooter linked to cloud');
-      }
-    } catch (e) {
-      if (mounted) {
-        Fluttertoast.showToast(msg: 'Failed to link scooter: ${e.toString()}');
-      }
-    } finally {
-      setState(() {
-        _isChecking = false;
-      });
+  Future<void> _launchCloudDashboard() async {
+    final Uri url = Uri.parse('https://sunshine.rescoot.org/scooters/');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const ListTile(
+        leading: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+        title: Text("Checking cloud status..."),
+      );
+    }
+
+    if (!_isAuthenticated) {
+      return ListTile(
+        leading: const Icon(Icons.cloud_outlined),
+        title: Text(FlutterI18n.translate(context, "cloud_connect")),
+        subtitle: Text(FlutterI18n.translate(context, "cloud_connect_desc")),
+        onTap: _handleCloudLogin,
+      );
+    }
+
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (_isChecking)
-          const ListTile(
-            leading: SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-            title: Text("Checking cloud status..."),
-          )
-        else if (!_isAuthenticated)
-          ListTile(
-            leading: const Icon(Icons.cloud_outlined),
-            title: Text(FlutterI18n.translate(context, "settings_cloud_connect")),
-            subtitle: Text(FlutterI18n.translate(context, "settings_cloud_connect_desc")),
-            onTap: _handleCloudLogin,
-          )
-        else if (_cloudScooterId == null)
-          ListTile(
-            leading: const Icon(Icons.cloud_queue),
-            title: Text(FlutterI18n.translate(context, "settings_cloud_not_linked")),
-            subtitle: Text(FlutterI18n.translate(context, "settings_cloud_not_linked_desc")),
-            trailing: IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: _checkAuthStatus,
-            ),
-            onTap: () => _handleLinkScooter(context),
-          )
-        else
-          ListTile(
-            leading: const Icon(Icons.cloud_done_outlined),
-            title: Text(FlutterI18n.translate(context, "settings_cloud_connected")),
-            subtitle: Text(FlutterI18n.translate(context, "settings_cloud_connected_desc")),
-            trailing: IconButton(
-              icon: const Icon(Icons.logout),
-              onPressed: _handleCloudLogout,
-            ),
+        ListTile(
+          leading: const Icon(Icons.cloud_queue),
+          title: Text(FlutterI18n.translate(context, "cloud_select_scooter")),
+          subtitle: Text(_cloudScooterId != null 
+            ? FlutterI18n.translate(context, "cloud_scooter_assigned")
+            : FlutterI18n.translate(context, "cloud_no_scooter_assigned")
           ),
+          onTap: _handleScooterSelection,
+        ),
+        ListTile(
+          leading: const Icon(Icons.refresh),
+          title: Text(FlutterI18n.translate(context, "cloud_refresh")),
+          subtitle: Text(FlutterI18n.translate(context, "cloud_refresh_desc")),
+          onTap: _refreshScooters,
+        ),
+        ListTile(
+          leading: const Icon(Icons.open_in_browser),
+          title: Text(FlutterI18n.translate(context, "cloud_open_browser")),
+          subtitle: Text(FlutterI18n.translate(context, "cloud_open_browser_desc")),
+          onTap: _launchCloudDashboard,
+        ),
+        ListTile(
+          leading: const Icon(Icons.logout),
+          title: Text(FlutterI18n.translate(context, "cloud_logout")),
+          subtitle: Text(FlutterI18n.translate(context, "cloud_logout_desc")),
+          onTap: _handleCloudLogout,
+        ),
       ],
     );
   }
@@ -208,6 +266,17 @@ class TokenInputDialog extends StatelessWidget {
               border: const OutlineInputBorder(),
             ),
           ),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.open_in_browser),
+            label: Text(FlutterI18n.translate(context, "cloud_token_get")),
+            onPressed: () async {
+              final Uri url = Uri.parse('https://sunshine.rescoot.org/account');
+              if (await canLaunchUrl(url)) {
+                await launchUrl(url, mode: LaunchMode.externalApplication);
+              }
+            },
+          ),
         ],
       ),
       actions: [
@@ -215,7 +284,7 @@ class TokenInputDialog extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
           child: Text(FlutterI18n.translate(context, "cloud_token_cancel")),
         ),
-        TextButton(
+        FilledButton(
           onPressed: () => Navigator.pop(context, _controller.text),
           child: Text(FlutterI18n.translate(context, "cloud_token_save")),
         ),
