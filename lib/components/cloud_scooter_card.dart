@@ -42,7 +42,7 @@ class CloudScooterCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  FlutterI18n.translate(context, "cloud_linked_scooter"),
+                  FlutterI18n.translate(context, "cloud_scooter_linked"),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.primary,
                       ),
@@ -63,7 +63,7 @@ class CloudScooterCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      (expanded? scooter['name']: FlutterI18n.translate(context, "cloud_scooter_linked").replaceAll('{name}', scooter['name'])),
+                      (expanded? scooter['name']: FlutterI18n.translate(context, "cloud_scooter_linked_to").replaceAll('{name}', scooter['name'])),
                       style: expanded
                           ? Theme.of(context).textTheme.headlineSmall
                           : Theme.of(context).textTheme.titleMedium,
@@ -78,19 +78,11 @@ class CloudScooterCard extends StatelessWidget {
                           }),
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
-                    if (expanded && scooter['location'] != null) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        FormatUtils.formatLocation(
-                            context, scooter['location']),
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
                   ],
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.open_in_new),
+                icon: const Icon(Icons.exit_to_app_outlined),
                 onPressed: () async {
                   final Uri url = Uri.parse(
                       'https://sunshine.rescoot.org/scooters/${scooter['id']}');

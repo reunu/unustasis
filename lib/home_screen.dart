@@ -11,6 +11,9 @@ import 'package:provider/provider.dart';
 import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:unustasis/cloud_service.dart';
+import 'package:unustasis/components/cloud_scooter_card.dart';
+
 import '../control_screen.dart';
 import '../domain/icomoon.dart';
 import '../domain/theme_helper.dart';
@@ -555,34 +558,86 @@ class StatusText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Selector<ScooterService,
-            ({bool connected, bool scanning, ScooterState? state})>(
-        selector: (context, service) => (
-              state: service.state,
-              scanning: service.scanning,
-              connected: service.connected
-            ),
-        builder: (context, data, _) {
-          return Text(
-            data.scanning &&
-                    (data.state == null ||
-                        data.state == ScooterState.disconnected)
-                ? (context.read<ScooterService>().savedScooters.isNotEmpty
-                    ? FlutterI18n.translate(context, "home_scanning_known")
-                    : FlutterI18n.translate(context, "home_scanning"))
-                : ((data.state != null
-                        ? data.state!.name(context)
-                        : FlutterI18n.translate(
-                            context, "home_loading_state")) +
-                    (data.connected &&
-                            context.select<ScooterService, bool?>(
-                                    (service) => service.handlebarsLocked) ==
-                                false
-                        ? FlutterI18n.translate(context, "home_unlocked")
-                        : "")),
-            style: Theme.of(context).textTheme.titleMedium,
+    return Column(
+      children: [
+        Selector<ScooterService,
+                ({bool connected, bool scanning, ScooterState? state})>(
+            selector: (context, service) => (
+                  state: service.state,
+                  scanning: service.scanning,
+                  connected: service.connected
+                ),
+            builder: (context, data, _) {
+              return Text(
+                data.scanning &&
+                        (data.state == null ||
+                            data.state == ScooterState.disconnected)
+                    ? (context.read<ScooterService>().savedScooters.isNotEmpty
+                        ? FlutterI18n.translate(context, "home_scanning_known")
+                        : FlutterI18n.translate(context, "home_scanning"))
+                    : ((data.state != null
+                            ? data.state!.name(context)
+                            : FlutterI18n.translate(
+                                context, "home_loading_state")) +
+                        (data.connected &&
+                                context.select<ScooterService, bool?>(
+                                        (service) =>
+                                            service.handlebarsLocked) ==
+                                    false
+                            ? FlutterI18n.translate(context, "home_unlocked")
+                            : "")),
+                style: Theme.of(context).textTheme.titleMedium,
+              );
+            }),
+        _buildCloudStatus(context),
+      ],
+    );
+  }
+
+  Widget _buildCloudStatus(BuildContext context) {
+    final cloudService = CloudService(context.read<ScooterService>());
+
+    return FutureBuilder<bool>(
+        future: cloudService.isAuthenticated,
+        builder: (context, authSnapshot) {
+          if (!authSnapshot.hasData || !authSnapshot.data!) return Container();
+
+          return FutureBuilder<Map<String, dynamic>?>(
+            future: _getCurrentCloudScooter(context, cloudService),
+            builder: (context, AsyncSnapshot<Map<String, dynamic>?> snapshot) {
+              return Text(
+                FlutterI18n.translate(
+                    context,
+                    (!snapshot.hasData || snapshot.data == null)
+                        ? "cloud_no_linked_scooter"
+                        : "cloud_scooter_linked"),
+                style: Theme.of(context).textTheme.titleMedium,
+              );
+            },
           );
         });
+  }
+
+  Future<Map<String, dynamic>?> _getCurrentCloudScooter(
+      BuildContext context, CloudService cloudService) async {
+    if (!await cloudService.isAuthenticated) return null;
+
+    final cloudScooters = await cloudService.getScooters();
+    final currentCloudId =
+        context.read<ScooterService>().getCurrentCloudScooterId();
+
+    try {
+      return cloudScooters.firstWhere(
+        (s) => s['id'] == currentCloudId,
+        orElse: () => {
+          'name': 'Unknown',
+          'last_seen_at': DateTime.now().toIso8601String(),
+          'color_id': 1
+        },
+      );
+    } catch (e) {
+      return null;
+    }
   }
 }
 

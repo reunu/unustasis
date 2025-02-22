@@ -210,12 +210,12 @@
     "cloud_open_browser_desc": "View cloud dashboard",
     "cloud_logout": "Disconnect Cloud",
     "cloud_logout_desc": "Remove saved authentication token",
-    "cloud_select_scooter": "Link Cloud Scooter",
+    "cloud_select_scooter": "Link cloud scooter",
     "cloud_no_scooter_linked": "No cloud scooter linked",
-    "cloud_scooter_linked": "Linked to {name}",
-    "cloud_linked_scooter": "Cloud Scooter Linked",
+    "cloud_scooter_linked_to": "Linked to {name}",
+    "cloud_scooter_linked": "Linked to cloud",
     "cloud_no_ble_scooter": "Please select a scooter to link",
-    "cloud_assignment_success": "Successfully link {name}",
+    "cloud_assignment_success": "Successfully linked {name}",
     "cloud_assignment_error": "Failed to link scooter: {error}",
     "cloud_reassign_title": "Reassign Scooter?",
     "cloud_reassign_message": "{name} is already linked to a different scooter. Do you want to link it to this scooter instead?",
@@ -226,5 +226,6 @@
     "cloud_select_cancel": "Cancel",
     "cloud_view_scooter": "View in Cloud",
     "cloud_last_sync": "Last synced {time}",
-    "cloud_never_synced": "Never synced"
+    "cloud_never_synced": "Never synced",
+    "cloud_no_linked_scooter": "No cloud scooter linked"
 }

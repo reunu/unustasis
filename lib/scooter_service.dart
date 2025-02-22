@@ -41,6 +41,9 @@ class ScooterService with ChangeNotifier {
   late ScooterReader _scooterReader;
   // get a random number
   late bool isInBackgroundService;
+  // currently selected scooter
+  String? _currentScooterId;
+  String? get currentScooterId => _currentScooterId;
 
   final FlutterBluePlusMockable flutterBluePlus;
 
@@ -53,6 +56,14 @@ class ScooterService with ChangeNotifier {
     }
   }
 
+  Future<void> _initializeCurrentScooter() async {
+    SavedScooter? mostRecentScooter = await getMostRecentScooter();
+    if (mostRecentScooter != null) {
+      _currentScooterId = mostRecentScooter.id;
+      notifyListeners();
+    }
+  }
+
   // On initialization...
   ScooterService(this.flutterBluePlus, {this.isInBackgroundService = false}) {
     // Load saved scooter ID and cached values from SharedPrefs
@@ -61,6 +72,7 @@ class ScooterService with ChangeNotifier {
 
       savedScooters = getSavedScooters();
 
+      _initializeCurrentScooter();
       seedStreamsWithCache();
       restoreCachedSettings();
     });
@@ -114,6 +126,23 @@ class ScooterService with ChangeNotifier {
     optionalAuth = !(prefs?.getBool("biometrics") ?? false);
     _openSeatOnUnlock = prefs?.getBool("openSeatOnUnlock") ?? false;
     _hazardLocking = prefs?.getBool("hazardLocking") ?? false;
+  }
+
+  SavedScooter? getCurrentSavedScooter() {
+    if (_currentScooterId == null) return null;
+    return savedScooters[_currentScooterId];
+  }
+
+  void setCloudScooterId(int cloudId) {
+    if (_currentScooterId != null) {
+      savedScooters[_currentScooterId]?.cloudScooterId = cloudId;
+      savedScooters[_currentScooterId]?.updateSharedPreferences();
+      notifyListeners();
+    }
+  }
+
+  int? getCurrentCloudScooterId() {
+    return getCurrentSavedScooter()?.cloudScooterId;
   }
 
   Future<SavedScooter?> getMostRecentScooter() async {
@@ -437,6 +466,9 @@ class ScooterService with ChangeNotifier {
   }) async {
     _foundSth = true;
     state = ScooterState.linking;
+    // Set the current scooter ID
+    _currentScooterId = id;
+    notifyListeners();
     try {
       // attempt to connect to what we found
       BluetoothDevice attemptedScooter = BluetoothDevice.fromId(id);
@@ -993,6 +1025,11 @@ class ScooterService with ChangeNotifier {
       savedScooters.remove(id);
       prefs ??= await SharedPreferences.getInstance();
       prefs!.setString("savedScooters", jsonEncode(savedScooters));
+
+      // If the current scooter was forgotten, select a new one
+      if (_currentScooterId == id) {
+        await _initializeCurrentScooter();
+      }
     }
     connected = false;
     if (Platform.isAndroid) {}
@@ -1045,6 +1082,12 @@ class ScooterService with ChangeNotifier {
     prefs ??= await SharedPreferences.getInstance();
     prefs!.setString("savedScooters", jsonEncode(savedScooters));
     scooterName = "Scooter Pro";
+
+    // If this is the first scooter, set it as the current scooter
+    if (savedScooters.length == 1) {
+      _currentScooterId = id;
+      notifyListeners();
+    }
   }
 
   @override

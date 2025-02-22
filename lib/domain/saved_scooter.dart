@@ -14,6 +14,7 @@ class SavedScooter {
   int? _lastCbbSOC;
   int? _lastAuxSOC;
   LatLng? _lastLocation;
+  int? _cloudScooterId;
 
   SavedScooter({
     required String name,
@@ -26,6 +27,7 @@ class SavedScooter {
     int? lastCbbSOC,
     int? lastAuxSOC,
     LatLng? lastLocation,
+    int? cloudScooterId,
   })  : _name = name,
         _id = id,
         _color = color ?? 1,
@@ -35,7 +37,8 @@ class SavedScooter {
         _lastSecondarySOC = lastSecondarySOC,
         _lastCbbSOC = lastCbbSOC,
         _lastAuxSOC = lastAuxSOC,
-        _lastLocation = lastLocation;
+        _lastLocation = lastLocation,
+        _cloudScooterId = cloudScooterId;
 
   set name(String name) {
     _name = name;
@@ -82,6 +85,11 @@ class SavedScooter {
     updateSharedPreferences();
   }
 
+  set cloudScooterId(int? cloudScooterId) {
+    _cloudScooterId = cloudScooterId;
+    updateSharedPreferences();
+  }
+
   String get name => _name;
   String get id => _id;
   int get color => _color;
@@ -92,6 +100,7 @@ class SavedScooter {
   int? get lastCbbSOC => _lastCbbSOC;
   int? get lastAuxSOC => _lastAuxSOC;
   LatLng? get lastLocation => _lastLocation;
+  int? get cloudScooterId => _cloudScooterId;
 
   Map<String, dynamic> toJson() => {
         'id': _id,
@@ -104,6 +113,7 @@ class SavedScooter {
         'lastCbbSOC': _lastCbbSOC,
         'lastAuxSOC': _lastAuxSOC,
         'lastLocation': _lastLocation?.toJson(),
+        'cloudScooterId': _cloudScooterId,
       };
 
   factory SavedScooter.fromJson(
@@ -124,7 +134,8 @@ class SavedScooter {
         lastPrimarySOC: map['lastPrimarySOC'],
         lastSecondarySOC: map['lastSecondarySOC'],
         lastCbbSOC: map['lastCbbSOC'],
-        lastAuxSOC: map['lastAuxSOC']);
+        lastAuxSOC: map['lastAuxSOC'],
+        cloudScooterId: map['cloudScooterId']);
   }
 
   void updateSharedPreferences() async {

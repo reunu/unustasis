@@ -6,7 +6,9 @@ import 'package:logging/logging.dart';
 import 'package:maps_launcher/maps_launcher.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../cloud_service.dart';
 import '../stats/stats_screen.dart';
 import '../onboarding_screen.dart';
 import '../domain/saved_scooter.dart';
@@ -334,8 +336,10 @@ class SavedScooterCard extends StatelessWidget {
                   indent: 16,
                   endIndent: 16,
                   height: 0,
-                  color:
-                      Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.1),
                 ),
                 if (!single) // only show this if there's more than one scooter
                   ListTile(
@@ -358,19 +362,54 @@ class SavedScooterCard extends StatelessWidget {
                   indent: 16,
                   endIndent: 16,
                   height: 0,
-                  color:
-                      Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.1),
                 ),
                 ListTile(
                   title: const Text("ID"),
                   subtitle: Text(savedScooter.id),
                 ),
+                if (savedScooter.cloudScooterId != null)
+                  Divider(
+                    indent: 16,
+                    endIndent: 16,
+                    height: 0,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.1),
+                  ),
+                if (savedScooter.cloudScooterId != null)
+                  FutureBuilder<Map<String, dynamic>?>(
+                    future: _getCloudDetails(context),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) return Container();
+                      return ListTile(
+                        title: Text(FlutterI18n.translate(
+                            context, "cloud_scooter_linked")),
+                        subtitle: Text(snapshot.data!['name']),
+                        trailing: const Icon(Icons.exit_to_app_outlined),
+                        onTap: () async {
+                          final Uri url = Uri.parse(
+                              'https://sunshine.rescoot.org/scooters/${savedScooter.cloudScooterId}');
+                          if (await canLaunchUrl(url)) {
+                            await launchUrl(url,
+                                mode: LaunchMode.externalApplication);
+                          }
+                        },
+                      );
+                    },
+                  ),
                 Divider(
                   indent: 16,
                   endIndent: 16,
                   height: 0,
-                  color:
-                      Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.1),
                 ),
                 const SizedBox(height: 8),
                 Padding(
@@ -759,6 +798,25 @@ class SavedScooterCard extends StatelessWidget {
           ),
         ),
       );
+
+  Future<Map<String, dynamic>?> _getCloudDetails(BuildContext context) async {
+    final cloudService = CloudService(context.read<ScooterService>());
+    if (!await cloudService.isAuthenticated) return null;
+
+    try {
+      final cloudScooters = await cloudService.getScooters();
+      return cloudScooters.firstWhere(
+        (s) => s['id'] == savedScooter.cloudScooterId,
+        orElse: () => {
+          'name': 'Unknown',
+          'last_seen_at': DateTime.now().toIso8601String(),
+          'color_id': 1
+        },
+      );
+    } catch (e) {
+      return null;
+    }
+  }
 
   String magic(String input) {
     return input.split('').map((char) {

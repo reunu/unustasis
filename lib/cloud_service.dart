@@ -4,17 +4,23 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:logging/logging.dart';
 
+import 'scooter_service.dart';
+
 class CloudService {
   final log = Logger('CloudService');
   final storage = const FlutterSecureStorage();
   final String baseUrl = 'https://sunshine.rescoot.org/api/v1';
+  final ScooterService scooterService;
   String? _token;
   List<Map<String, dynamic>>? _cachedScooters;
 
   // Singleton pattern
-  static final CloudService _instance = CloudService._internal();
-  factory CloudService() => _instance;
-  CloudService._internal();
+  static CloudService? _instance;
+  factory CloudService(ScooterService scooterService) {
+    _instance ??= CloudService._internal(scooterService);
+    return _instance!;
+  }
+  CloudService._internal(this.scooterService);
 
   Future<void> init() async {
     _token = await storage.read(key: 'sunshine_token');
@@ -60,7 +66,7 @@ class CloudService {
     }
 
     final response = await _authenticatedRequest('/scooters');
-    
+
     if (response is! List) {
       throw Exception('Expected List response but got ${response.runtimeType}');
     }
@@ -70,37 +76,59 @@ class CloudService {
   }
 
   Future<Map<String, int>> getCurrentAssignments() async {
-    final scooters = await getScooters();
     Map<String, int> assignments = {};
-    
-    for (var scooter in scooters) {
-      final deviceIds = scooter['device_ids'] as Map<String, dynamic>?;
-      if (deviceIds != null) {
-        if (Platform.isAndroid && deviceIds['android'] != null) {
-          assignments[deviceIds['android']] = scooter['id'] as int;
-        } else if (Platform.isIOS && deviceIds['ios'] != null) {
-          assignments[deviceIds['ios']] = scooter['id'] as int;
-        }
+
+    for (var savedScooter in scooterService.savedScooters.values) {
+      if (savedScooter.cloudScooterId != null) {
+        assignments[savedScooter.id] = savedScooter.cloudScooterId!;
       }
     }
-    
+
     return assignments;
   }
 
-  Future<void> assignScooter({required String bleId, required int cloudId}) async {
-    // Format MAC address or keep UUID as is depending on platform
-    final deviceId = Platform.isAndroid ? bleId.toLowerCase().replaceAllMapped(
-      RegExp(r'([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})'),
-      (match) => '${match[1]}:${match[2]}:${match[3]}:${match[4]}:${match[5]}:${match[6]}'
-    ) : bleId;
+  Future<void> assignScooter(
+      {required String bleId, required int cloudId}) async {
+    // Get the saved scooter object
+    final savedScooter = scooterService.savedScooters[bleId];
+    if (savedScooter == null) {
+      throw Exception('Local scooter not found');
+    }
 
-    // Get current device_ids to preserve other platform assignments
-    final scooter = _cachedScooters?.firstWhere((s) => s['id'] == cloudId) ?? 
-                    (await getScooters()).firstWhere((s) => s['id'] == cloudId);
-                    
-    Map<String, dynamic> deviceIds = Map<String, dynamic>.from(scooter['device_ids'] ?? {});
-    
-    // Update the appropriate platform ID
+    // Sync name and color
+    final cloudScooter = (await getScooters()).firstWhere(
+      (s) => s['id'] == cloudId,
+      orElse: () => throw Exception('Cloud scooter not found'),
+    );
+
+    // Update local scooter if it has default values
+    if (savedScooter.name == "Scooter Pro" && savedScooter.color == 1) {
+      savedScooter.name = cloudScooter['name'];
+      savedScooter.color = cloudScooter['color_id'] ?? 1;
+    }
+
+    // Get any existing assignment for this cloud scooter
+    final assignments = await getCurrentAssignments();
+    final existingAssignment = assignments.entries.firstWhere(
+        (entry) => entry.value == cloudId,
+        orElse: () => MapEntry('', -1));
+
+    if (existingAssignment.key.isNotEmpty) {
+      // Remove the old assignment
+      await removeAssignment(existingAssignment.key);
+    }
+
+    // Format device ID appropriately
+    final deviceId = Platform.isAndroid
+        ? bleId.toLowerCase().replaceAllMapped(
+            RegExp(
+                r'([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})'),
+            (match) =>
+                '${match[1]}:${match[2]}:${match[3]}:${match[4]}:${match[5]}:${match[6]}')
+        : bleId;
+
+    // Update API and local data
+    final Map<String, dynamic> deviceIds = {};
     if (Platform.isAndroid) {
       deviceIds['android'] = deviceId;
     } else if (Platform.isIOS) {
@@ -115,25 +143,23 @@ class CloudService {
       },
     );
 
-    // Update cached data
-    await _refreshScooters();
+    // Update local saved scooter
+    savedScooter.cloudScooterId = cloudId;
   }
 
   Future<void> removeAssignment(String bleId) async {
-    final assignments = await getCurrentAssignments();
-    final cloudId = assignments[bleId];
-    
-    if (cloudId != null) {
-      final scooter = _cachedScooters?.firstWhere((s) => s['id'] == cloudId) ??
-                      (await getScooters()).firstWhere((s) => s['id'] == cloudId);
-                      
-      Map<String, dynamic> deviceIds = Map<String, dynamic>.from(scooter['device_ids'] ?? {});
+    final savedScooter = scooterService.savedScooters[bleId];
+    if (savedScooter == null) {
+      throw Exception('Local scooter not found');
+    }
 
-      // Remove the appropriate platform ID
+    final cloudId = savedScooter.cloudScooterId;
+    if (cloudId != null) {
+      final Map<String, dynamic> deviceIds = {};
       if (Platform.isAndroid) {
-        deviceIds.remove('android');
+        deviceIds['android'] = null;
       } else if (Platform.isIOS) {
-        deviceIds.remove('ios');
+        deviceIds['ios'] = null;
       }
 
       await _authenticatedRequest(
@@ -144,8 +170,8 @@ class CloudService {
         },
       );
 
-      // Update cached data
-      await _refreshScooters();
+      // Clear local assignment
+      savedScooter.cloudScooterId = null;
     }
   }
 
@@ -216,7 +242,8 @@ class CloudService {
       }
     } else {
       final body = response.body;
-      log.warning('API request failed with status ${response.statusCode}: $body');
+      log.warning(
+          'API request failed with status ${response.statusCode}: $body');
       throw Exception('API request failed (${response.statusCode}): $body');
     }
   }
