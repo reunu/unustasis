@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:logging/logging.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../cloud_service.dart';
 import '../scooter_service.dart';
@@ -38,6 +39,7 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
     try {
       final isAuth = await _cloudService.isAuthenticated;
       if (isAuth) {
+        await _loadStoredAssignment();
         await _refreshScooters();
       }
       
@@ -52,6 +54,25 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
         _isLoading = false;
       });
     }
+  }
+
+  Future<void> _loadStoredAssignment() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _cloudScooterId = prefs.getInt('sunshine_assigned_scooter');
+    });
+  }
+
+  Future<void> _saveAssignment(int? scooterId) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (scooterId != null) {
+      await prefs.setInt('sunshine_assigned_scooter', scooterId);
+    } else {
+      await prefs.remove('sunshine_assigned_scooter');
+    }
+    setState(() {
+      _cloudScooterId = scooterId;
+    });
   }
 
   Future<void> _refreshScooters() async {
@@ -69,10 +90,8 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
   }
 
   Future<void> _handleCloudLogin() async {
-    // Launch browser for authentication
     final Uri url = Uri.parse('https://sunshine.rescoot.org/account');
     if (await canLaunchUrl(url)) {
-      // Show dialog to paste token
       final token = await showDialog<String>(
         context: context,
         builder: (BuildContext context) => TokenInputDialog(),
@@ -97,6 +116,7 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
               )
             );
             await _cloudService.logout();
+            await _saveAssignment(null);
             await _checkAuthStatus();
           }
         }
@@ -108,6 +128,7 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
 
   Future<void> _handleCloudLogout() async {
     await _cloudService.logout();
+    await _saveAssignment(null);
     setState(() {
       _isAuthenticated = false;
       _cloudScooters = [];
@@ -144,6 +165,7 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
             final scooterName = selectedScooter['name'] as String;
             
             if (assignments.containsValue(selectedScooter['id'])) {
+              // Remove the old assignment first
               final oldBleId = assignments.entries
                   .firstWhere((entry) => entry.value == selectedScooter['id'])
                   .key;
@@ -155,17 +177,18 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
               cloudId: selectedScooter['id'] as int,
             );
             
-            if (!mounted) return;
-            setState(() {
-              _cloudScooterId = selectedScooter['id'] as int;
-            });
+            // Save the assignment locally
+            await _saveAssignment(selectedScooter['id'] as int);
             
-            if (mounted) {
-              final message = successMessageTemplate.replaceAll("{name}", scooterName);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(message))
-              );
-            }
+            if (!mounted) return;
+            final message = successMessageTemplate.replaceAll("{name}", scooterName);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(message))
+            );
+            
+            // Refresh the scooter list to show updated assignments
+            await _refreshScooters();
+            
           } catch (e, stack) {
             log.severe('Error assigning scooter: $e', e, stack);
             if (mounted) {
