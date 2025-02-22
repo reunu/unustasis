@@ -221,7 +221,7 @@
     "cloud_reassign_cancel": "Retreat",
     "cloud_reassign_confirm": "Aye, Take It",
     "cloud_no_location": "Lost at sea",
-    "cloud_not_assigned": "Unclaimed vessel",
+    "cloud_not_linked": "Unclaimed vessel",
     "cloud_assigned_to": "Claimed by {platforms}",
     "cloud_select_saved_scooter": "Choose yer Local Vessel",
     "cloud_view_scooter": "View from th' Crow's Nest",

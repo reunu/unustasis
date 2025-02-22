@@ -213,6 +213,7 @@
     "cloud_select_scooter": "Link Cloud Scooter",
     "cloud_no_scooter_linked": "No cloud scooter linked",
     "cloud_scooter_linked": "Linked to {name}",
+    "cloud_linked_scooter": "Cloud Scooter Linked",
     "cloud_no_ble_scooter": "Please select a scooter to link",
     "cloud_assignment_success": "Successfully link {name}",
     "cloud_assignment_error": "Failed to link scooter: {error}",
@@ -222,6 +223,7 @@
     "cloud_reassign_confirm": "Reassign",
     "cloud_not_linked": "Not linked",
     "cloud_select_saved_scooter": "Select Local Scooter",
+    "cloud_select_cancel": "Cancel",
     "cloud_view_scooter": "View in Cloud",
     "cloud_last_sync": "Last synced {time}",
     "cloud_never_synced": "Never synced"
