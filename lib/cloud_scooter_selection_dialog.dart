@@ -45,16 +45,48 @@ class ScooterSelectionDialog extends StatelessWidget {
     return '${lat.toStringAsFixed(6)}, ${lng.toStringAsFixed(6)}';
   }
 
+  String _getAssignmentStatus(BuildContext context, Map<String, dynamic> scooter) {
+    final deviceIds = scooter['device_ids'] as Map<String, dynamic>?;
+    if (deviceIds == null || deviceIds.isEmpty) {
+      return FlutterI18n.translate(context, "cloud_not_assigned");
+    }
+    
+    final List<String> assignments = [];
+    if (deviceIds['android'] != null) {
+      assignments.add('Android');
+    }
+    if (deviceIds['ios'] != null) {
+      assignments.add('iOS');
+    }
+    
+    return FlutterI18n.translate(context, "cloud_assigned_to",
+      translationParams: {"platforms": assignments.join(", ")}
+    );
+  }
+
   Future<bool> _confirmReassignment(BuildContext context, Map<String, dynamic> scooter) async {
+    final currentAssignments = _getAssignmentStatus(context, scooter);
+    
     return await showDialog<bool>(
       context: context,
       builder: (BuildContext context) => AlertDialog(
         title: Text(FlutterI18n.translate(context, "cloud_reassign_title")),
-        content: Text(FlutterI18n.translate(
-          context, 
-          "cloud_reassign_message",
-          translationParams: {"name": scooter['name']}
-        )),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(FlutterI18n.translate(
+              context, 
+              "cloud_reassign_message",
+              translationParams: {"name": scooter['name']}
+            )),
+            const SizedBox(height: 8),
+            Text(
+              currentAssignments,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -80,18 +112,19 @@ class ScooterSelectionDialog extends StatelessWidget {
           itemCount: scooters.length,
           itemBuilder: (context, index) {
             final scooter = scooters[index];
-            final bool isAssigned = assignedIds.contains(scooter['id'] as int);
             final bool isCurrentlyAssigned = scooter['id'] as int == currentlyAssignedId;
+            final deviceIds = scooter['device_ids'] as Map<String, dynamic>?;
+            final bool isAssignedToOtherDevice = 
+              deviceIds != null && deviceIds.isNotEmpty && !isCurrentlyAssigned;
             
             return ListTile(
-              enabled: !isAssigned || isCurrentlyAssigned,
               leading: Stack(
                 children: [
                   Image.asset(
                     "images/scooter/side_${scooter['color_id'] ?? 1}.webp",
                     height: 40,
-                    color: isAssigned && !isCurrentlyAssigned ? Colors.grey : null,
-                    colorBlendMode: isAssigned && !isCurrentlyAssigned ? BlendMode.saturation : null,
+                    color: isAssignedToOtherDevice ? Colors.grey : null,
+                    colorBlendMode: isAssignedToOtherDevice ? BlendMode.saturation : null,
                   ),
                   if (isCurrentlyAssigned)
                     const Positioned(
@@ -108,8 +141,8 @@ class ScooterSelectionDialog extends StatelessWidget {
               title: Text(
                 scooter['name'],
                 style: TextStyle(
-                  color: isAssigned && !isCurrentlyAssigned 
-                    ? Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 128)
+                  color: isAssignedToOtherDevice 
+                    ? Theme.of(context).textTheme.bodyMedium?.color?.withValues(alpha: 0.5)
                     : null,
                 ),
               ),
@@ -119,16 +152,24 @@ class ScooterSelectionDialog extends StatelessWidget {
                   Text(
                     'VIN: ${scooter['vin'] ?? "Unknown"}',
                     style: TextStyle(
-                      color: isAssigned && !isCurrentlyAssigned 
-                        ? Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 128)
+                      color: isAssignedToOtherDevice 
+                        ? Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.5)
+                        : null,
+                    ),
+                  ),
+                  Text(
+                    _getAssignmentStatus(context, scooter),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: isAssignedToOtherDevice 
+                        ? Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.5)
                         : null,
                     ),
                   ),
                   Text(
                     'Last seen: ${_formatLastSeen(scooter['last_seen_at'])}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: isAssigned && !isCurrentlyAssigned 
-                        ? Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 128)
+                      color: isAssignedToOtherDevice 
+                        ? Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.5)
                         : null,
                     ),
                   ),
@@ -136,15 +177,15 @@ class ScooterSelectionDialog extends StatelessWidget {
                     Text(
                       _formatLocation(context, scooter['location']),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: isAssigned && !isCurrentlyAssigned 
-                          ? Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 128)
+                        color: isAssignedToOtherDevice 
+                          ? Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.5)
                           : null,
                       ),
                     ),
                 ],
               ),
               onTap: () async {
-                if (isAssigned && !isCurrentlyAssigned) {
+                if (isAssignedToOtherDevice) {
                   final shouldReassign = await _confirmReassignment(context, scooter);
                   if (shouldReassign && context.mounted) {
                     onSelect(scooter);
