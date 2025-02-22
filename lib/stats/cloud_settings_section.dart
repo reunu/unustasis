@@ -135,47 +135,52 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
       _cloudScooterId = null;
     });
   }
-
-  Widget _buildScooterInfo() {
-    if (_cloudScooterId == null) {
-      return Container();
-    }
+  
+  Widget _buildAssignedScooterTile() {
+    if (_cloudScooterId == null) return Container();
 
     final scooter = _cloudScooters.firstWhere(
       (s) => s['id'] == _cloudScooterId,
-      orElse: () => {'name': 'Unknown', 'last_seen_at': DateTime.now().toIso8601String()},
+      orElse: () => {
+        'name': 'Unknown', 
+        'last_seen_at': DateTime.now().toIso8601String(),
+        'color_id': 1
+      },
     );
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            scooter['name'].toString(),
-            style: Theme.of(context).textTheme.titleMedium,
+    return Column(
+      children: [
+        ListTile(
+          leading: const Icon(Icons.cloud_queue),
+          title: Text(scooter['name'].toString()),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                FlutterI18n.translate(
+                  context, 
+                  "cloud_last_sync",
+                  translationParams: {
+                    "time": _formatLastSeen(scooter['last_seen_at'])
+                  }
+                ),
+              )
+            ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            FlutterI18n.translate(
-              context, 
-              "cloud_last_sync",
-              translationParams: {
-                "time": _formatLastSeen(scooter['last_seen_at'])
+          trailing: IconButton(
+            icon: const Icon(Icons.open_in_new),
+            onPressed: () async {
+              final Uri url = Uri.parse('https://sunshine.rescoot.org/scooters/$_cloudScooterId');
+              if (await canLaunchUrl(url)) {
+                await launchUrl(url, mode: LaunchMode.externalApplication);
               }
-            ),
-            style: Theme.of(context).textTheme.bodySmall,
+            },
+            tooltip: FlutterI18n.translate(context, "cloud_view_scooter"),
           ),
-          if (scooter['location'] != null)
-            Text(
-              _formatLocation(context, scooter['location']),
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-        ],
-      ),
+        ),
+      ],
     );
   }
-
   String _formatLastSeen(String lastSeenStr) {
     final lastSeen = DateTime.parse(lastSeenStr);
     final now = DateTime.now();
@@ -259,8 +264,9 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
         assignedIds: assignments.values.toList(),
         onSelect: (selectedScooter) async {
           try {
-            final bleId = selectedBleId;
-            final scooterName = selectedScooter['name'] as String;
+            if (selectedBleId == null) {
+              throw Exception('No BLE ID selected');
+            }
             
             if (assignments.containsValue(selectedScooter['id'])) {
               // Remove the old assignment first
@@ -270,12 +276,8 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
               await _cloudService.removeAssignment(oldBleId);
             }
             
-            if (bleId == null) {
-              throw Exception('No BLE ID selected');
-            }
-            
             await _cloudService.assignScooter(
-              bleId: bleId,
+              bleId: selectedBleId,
               cloudId: selectedScooter['id'] as int,
             );
             
@@ -283,7 +285,7 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
             await _saveAssignment(selectedScooter['id'] as int);
             
             if (!mounted) return;
-            final message = successMessageTemplate.replaceAll("{name}", scooterName);
+            final message = successMessageTemplate.replaceAll("{name}", selectedScooter['name']);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(message))
             );
@@ -339,36 +341,21 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
 
     return Column(
       children: [
-        Column(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.cloud_queue),
-              title: Text(FlutterI18n.translate(context, "cloud_select_scooter")),
-              subtitle: Text(_cloudScooterId != null 
-                ? FlutterI18n.translate(context, "cloud_scooter_assigned",
-                    translationParams: {
-                      "name": _cloudScooters.firstWhere(
-                        (s) => s['id'] == _cloudScooterId,
-                        orElse: () => {'name': 'Unknown'}
-                      )['name']
-                    })
-                : FlutterI18n.translate(context, "cloud_no_scooter_assigned")
-              ),
-              trailing: _cloudScooterId != null ? IconButton(
-                icon: const Icon(Icons.open_in_new),
-                onPressed: () async {
-                  final Uri url = Uri.parse('https://sunshine.rescoot.org/scooters/$_cloudScooterId');
-                  if (await canLaunchUrl(url)) {
-                    await launchUrl(url, mode: LaunchMode.externalApplication);
-                  }
-                },
-                tooltip: FlutterI18n.translate(context, "cloud_view_scooter"),
-              ) : null,
-              onTap: _handleScooterSelection,
-            ),
-            if (_cloudScooterId != null)
-              _buildScooterInfo(),
-          ],
+        _buildAssignedScooterTile(),
+        ListTile(
+          leading: const Icon(Icons.link),
+          title: Text(FlutterI18n.translate(context, "cloud_select_scooter")),
+          subtitle: Text(_cloudScooterId != null 
+            ? FlutterI18n.translate(context, "cloud_scooter_assigned",
+                translationParams: {
+                  "name": _cloudScooters.firstWhere(
+                    (s) => s['id'] == _cloudScooterId,
+                    orElse: () => {'name': 'Unknown'}
+                  )['name']
+                })
+            : FlutterI18n.translate(context, "cloud_no_scooter_assigned")
+          ),
+          onTap: _handleScooterSelection,
         ),
         ListTile(
           leading: const Icon(Icons.refresh),
