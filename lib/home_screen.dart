@@ -560,6 +560,7 @@ class StatusText extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        _buildCloudStatus(context),
         Selector<ScooterService,
                 ({bool connected, bool scanning, ScooterState? state})>(
             selector: (context, service) => (
@@ -589,7 +590,6 @@ class StatusText extends StatelessWidget {
                 style: Theme.of(context).textTheme.titleMedium,
               );
             }),
-        _buildCloudStatus(context),
       ],
     );
   }
