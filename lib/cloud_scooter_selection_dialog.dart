@@ -31,14 +31,14 @@ class ScooterSelectionDialog extends StatelessWidget {
     // Find any local scooter that matches the device IDs
     final scooterService = context.read<ScooterService>();
     final matchingScooters = scooterService.savedScooters.values.where((saved) {
-      return deviceIds.containsValue(saved.id);
+      return deviceIds.containsValue(saved.id.toLowerCase());
     }).toList();
-    
+
     if (matchingScooters.isEmpty) {
       return FlutterI18n.translate(context, "cloud_not_linked");
     }
     
-    return FlutterI18n.translate(context, "cloud_linked_to_scooter",
+    return FlutterI18n.translate(context, "cloud_scooter_linked_to",
       translationParams: {"name": matchingScooters.first.name}
     );
   }
@@ -100,7 +100,7 @@ class ScooterSelectionDialog extends StatelessWidget {
                 children: [
                   Image.asset(
                     "images/scooter/side_${scooter['color_id'] ?? 1}.webp",
-                    height: 40,
+                    height: 80,
                     color: isAssignedToOther ? Colors.grey : null,
                     colorBlendMode:
                         isAssignedToOther ? BlendMode.saturation : null,
