@@ -161,7 +161,7 @@ class CloudService {
 
       await _authenticatedRequest(
         '/scooters/$cloudId',
-        method: 'PUT',
+        method: 'PATCH',
         body: {
           'device_ids': deviceIds,
         },
