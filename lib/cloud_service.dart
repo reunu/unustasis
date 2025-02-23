@@ -213,6 +213,13 @@ class CloudService {
             body: jsonEncode(body),
           );
           break;
+        case 'PATCH':
+          response = await http.put(
+            uri,
+            headers: headers,
+            body: jsonEncode(body),
+          );
+          break;
         case 'DELETE':
           response = await http.delete(uri, headers: headers);
           break;
@@ -242,5 +249,56 @@ class CloudService {
       log.warning('API request failed with status ${response.statusCode}: $body');
       throw Exception('API request failed (${response.statusCode}): $body');
     }
+  }
+
+  Future<bool> _executeCommand(String endpoint, int scooterId,
+      {String method = 'POST', Map<String, dynamic>? body, String? logName // Optional custom name for logging
+      }) async {
+    final commandName = logName ?? endpoint.replaceAll('/', ' ').trim();
+    log.info("Attempting $commandName for scooter $scooterId");
+
+    try {
+      final response = await _authenticatedRequest('/scooters/$scooterId/$endpoint', method: method, body: body);
+      return response != null;
+    } catch (e, stack) {
+      log.severe('$commandName failed', e, stack);
+      return false;
+    }
+  }
+
+  Future<bool> lock(int scooterId) async {
+    return _executeCommand('lock', scooterId);
+  }
+
+  Future<bool> unlock(int scooterId) async {
+    return _executeCommand('unlock', scooterId);
+  }
+
+  Future<bool> openSeatbox(int scooterId) async {
+    return _executeCommand('open_seatbox', scooterId);
+  }
+
+  Future<bool> blinkers(int scooterId, String state) async {
+    return _executeCommand('blinkers', scooterId, body: {'state': state}, logName: 'blinkers $state');
+  }
+
+  Future<bool> honk(int scooterId) async {
+    return _executeCommand('honk', scooterId);
+  }
+
+  Future<bool> locate(int scooterId) async {
+    return _executeCommand('locate', scooterId);
+  }
+
+  Future<bool> alarm(int scooterId) async {
+    return _executeCommand('alarm', scooterId);
+  }
+
+  Future<bool> ping(int scooterId) async {
+    return _executeCommand('ping', scooterId);
+  }
+
+  Future<bool> getState(int scooterId) async {
+    return _executeCommand('get_state', scooterId);
   }
 }
