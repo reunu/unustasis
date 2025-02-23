@@ -103,8 +103,8 @@ class CloudService {
 
     // Update local scooter if it has default values
     if (savedScooter.name == "Scooter Pro" && savedScooter.color == 1) {
-      savedScooter.name = cloudScooter['name'];
       savedScooter.color = cloudScooter['color_id'] ?? 1;
+      scooterService.renameSavedScooter(id: savedScooter.id, name: cloudScooter['name']);
     }
 
     // Get any existing assignment for this cloud scooter
