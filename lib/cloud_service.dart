@@ -26,9 +26,10 @@ class CloudService {
     _token = await storage.read(key: 'sunshine_token');
     if (_token != null) {
       try {
-        await _refreshScooters();
+        // refresh scooters if needed
+        await getScooters();
       } catch (e, stack) {
-        log.warning('Failed to refresh scooters during init', e, stack);
+        log.warning('Failed to get scooters during init', e, stack);
         // Token might be invalid, clear it
         await logout();
       }
@@ -87,8 +88,7 @@ class CloudService {
     return assignments;
   }
 
-  Future<void> assignScooter(
-      {required String bleId, required int cloudId}) async {
+  Future<void> assignScooter({required String bleId, required int cloudId}) async {
     // Get the saved scooter object
     final savedScooter = scooterService.savedScooters[bleId];
     if (savedScooter == null) {
@@ -109,9 +109,8 @@ class CloudService {
 
     // Get any existing assignment for this cloud scooter
     final assignments = await getCurrentAssignments();
-    final existingAssignment = assignments.entries.firstWhere(
-        (entry) => entry.value == cloudId,
-        orElse: () => MapEntry('', -1));
+    final existingAssignment =
+        assignments.entries.firstWhere((entry) => entry.value == cloudId, orElse: () => MapEntry('', -1));
 
     if (existingAssignment.key.isNotEmpty) {
       // Remove the old assignment
@@ -121,10 +120,8 @@ class CloudService {
     // Format device ID appropriately
     final deviceId = Platform.isAndroid
         ? bleId.toLowerCase().replaceAllMapped(
-            RegExp(
-                r'([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})'),
-            (match) =>
-                '${match[1]}:${match[2]}:${match[3]}:${match[4]}:${match[5]}:${match[6]}')
+            RegExp(r'([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})([0-9A-F]{2})'),
+            (match) => '${match[1]}:${match[2]}:${match[3]}:${match[4]}:${match[5]}:${match[6]}')
         : bleId;
 
     // Update API and local data
@@ -137,7 +134,7 @@ class CloudService {
 
     await _authenticatedRequest(
       '/scooters/$cloudId',
-      method: 'PUT',
+      method: 'PATCH',
       body: {
         'device_ids': deviceIds,
       },
@@ -242,8 +239,7 @@ class CloudService {
       }
     } else {
       final body = response.body;
-      log.warning(
-          'API request failed with status ${response.statusCode}: $body');
+      log.warning('API request failed with status ${response.statusCode}: $body');
       throw Exception('API request failed (${response.statusCode}): $body');
     }
   }
