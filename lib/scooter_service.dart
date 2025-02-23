@@ -19,9 +19,15 @@ import '../domain/scooter_state.dart';
 import '../flutter/blue_plus_mockable.dart';
 import '../infrastructure/characteristic_repository.dart';
 import '../infrastructure/scooter_reader.dart';
+import 'ble_command_service.dart';
+import 'cloud_command_service.dart';
+import 'cloud_service.dart';
+import 'command_service.dart';
 
 const bootingTimeSeconds = 25;
 const keylessCooldownSeconds = 60;
+
+typedef ConfirmationCallback = Future<bool> Function();
 
 class ScooterService with ChangeNotifier {
   final log = Logger('ScooterService');
@@ -44,6 +50,8 @@ class ScooterService with ChangeNotifier {
   // currently selected scooter
   String? _currentScooterId;
   String? get currentScooterId => _currentScooterId;
+  BLECommandService? _bleCommands;
+  late CloudCommandService _cloudCommands;
 
   final FlutterBluePlusMockable flutterBluePlus;
 
@@ -76,6 +84,10 @@ class ScooterService with ChangeNotifier {
       seedStreamsWithCache();
       restoreCachedSettings();
     });
+
+    // _bleCommands inited on BT connect
+    _cloudCommands =
+        CloudCommandService(CloudService(this), getCurrentCloudScooterId());
 
     // update the "scanning" listener
     flutterBluePlus.isScanning.listen((isScanning) {
@@ -486,7 +498,7 @@ class ScooterService with ChangeNotifier {
       updateBackgroundService({
         "mostRecent": id,
         "scooterName": savedScooters[myScooter!.remoteId.toString()]?.name,
-        "lastPing": DateTime.now(),
+        "lastPing": DateTime.now().millisecondsSinceEpoch,
       });
       addSavedScooter(myScooter!.remoteId.toString());
       try {
@@ -645,6 +657,8 @@ class ScooterService with ChangeNotifier {
       characteristicRepository = CharacteristicRepository(myScooter!);
       await characteristicRepository.findAll();
 
+      _bleCommands = BLECommandService(myScooter, characteristicRepository);
+
       log.info(
           "Found all characteristics! StateCharacteristic is: ${characteristicRepository.stateCharacteristic}");
       _scooterReader = ScooterReader(
@@ -667,7 +681,7 @@ class ScooterService with ChangeNotifier {
   // SCOOTER ACTIONS
 
   Future<void> unlock() async {
-    _sendCommand("scooter:state unlock");
+    await executeCommand(CommandType.unlock);
     HapticFeedback.heavyImpact();
 
     if (_hazardLocking) {
@@ -716,7 +730,7 @@ class ScooterService with ChangeNotifier {
     }
 
     // send the command
-    _sendCommand("scooter:state lock");
+    await executeCommand(CommandType.lock);
     HapticFeedback.heavyImpact();
 
     if (_hazardLocking) {
@@ -736,27 +750,35 @@ class ScooterService with ChangeNotifier {
     _autoUnlockCooldown = false;
   }
 
-  void openSeat() {
-    _sendCommand("scooter:seatbox open");
+  Future<void> openSeat() async {
+    await executeCommand(CommandType.openSeat);
   }
 
-  void blink({required bool left, required bool right}) {
+  Future<void> blink({required bool left, required bool right}) async {
     if (left && !right) {
-      _sendCommand("scooter:blinker left");
+      await executeCommand(CommandType.blinkerLeft);
     } else if (!left && right) {
-      _sendCommand("scooter:blinker right");
+      await executeCommand(CommandType.blinkerRight);
     } else if (left && right) {
-      _sendCommand("scooter:blinker both");
+      await executeCommand(CommandType.blinkerBoth);
     } else {
-      _sendCommand("scooter:blinker off");
+      await executeCommand(CommandType.blinkerOff);
     }
   }
 
   Future<void> hazard({int times = 1}) async {
-    blink(left: true, right: true);
-    await _sleepSeconds((0.6) * times);
-    blink(left: false, right: false);
+    await executeCommand(CommandType.blinkerBoth);
+    await _sleepSeconds(0.6 * times);
+    await executeCommand(CommandType.blinkerOff);
   }
+
+  // Future<void> wakeUp() async {
+  //   await executeCommand(CommandType.wakeUp);
+  // }
+
+  // Future<void> hibernate() async {
+  //   await executeCommand(CommandType.hibernate);
+  // }
 
   Future<void> wakeUp() async {
     _sendCommand("wakeup",
@@ -1088,6 +1110,46 @@ class ScooterService with ChangeNotifier {
       _currentScooterId = id;
       notifyListeners();
     }
+  }
+
+  Future<void> executeCommand(
+    CommandType command, {
+    ConfirmationCallback? onNeedConfirmation,
+  }) async {
+    log.info("Executing command: $command");
+
+    if (_bleCommands != null && await _bleCommands!.isAvailable(command)) {
+      log.info("BLE exec: $command");
+      if (!await _bleCommands!.execute(command)) {
+        throw Exception("BLE command failed: $command");
+      }
+      return;
+    }
+
+    // Fall back to cloud if available
+    if (await _cloudCommands.isAvailable(command)) {
+      log.info("Cloud exec: $command");
+      if (await _cloudCommands.needsConfirmation(command)) {
+        // If confirmation callback provided, use it
+        if (onNeedConfirmation != null) {
+          bool confirmed = await onNeedConfirmation();
+          if (!confirmed) {
+            return;
+          }
+        } else {
+          // No confirmation callback = deny command
+          throw Exception(
+              "Command requires confirmation but no callback provided");
+        }
+      }
+
+      if (!await _cloudCommands.execute(command)) {
+        throw Exception("Cloud command failed: $command");
+      }
+      return;
+    }
+
+    throw Exception("Command not available: $command");
   }
 
   @override
