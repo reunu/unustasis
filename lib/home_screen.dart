@@ -234,7 +234,19 @@ class _HomeScreenState extends State<HomeScreen> {
                           winter: _snowing,
                         ),
                       ),
+                      ScooterActionButton(
+                          onPressed: () {
+                            try {
+                              context.read<ScooterService>().start();
+                            } catch (e) {
+                              print(e.toString());
+                            }
+                          },
+                          icon: Icons.refresh_rounded,
+                          label: FlutterI18n.translate(
+                              context, "home_reconnect_button")),
                       const SizedBox(height: 16),
+                      // main action buttons
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         mainAxisSize: MainAxisSize.max,
@@ -245,7 +257,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               builder: (context, state, _) {
                                 return Expanded(
                                   child: ScooterPowerButton(
-                                    action: state?.isReadyForLockChange == true
+                                    action: true ||
+                                            state?.isReadyForLockChange == true
                                         ? () => _handlePowerButtonPress(state)
                                         : null,
                                     icon: state?.isOn == true
@@ -259,48 +272,62 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 );
                               }),
-                          Selector<ScooterService,
-                                  ({bool scanning, bool connected})>(
-                              selector: (context, service) => (
-                                    scanning: service.scanning,
-                                    connected: service.connected
-                                  ),
-                              builder: (context, state, _) {
-                                return Expanded(
-                                  child: ScooterActionButton(
-                                      onPressed: !state.scanning
-                                          ? () {
-                                              if (!state.connected) {
-                                                print(
-                                                    "Manually reconnecting...");
-                                                try {
-                                                  context
-                                                      .read<ScooterService>()
-                                                      .start();
-                                                } catch (e) {
-                                                  print(e.toString());
-                                                }
-                                              } else {
-                                                Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder: (context) =>
-                                                        const ControlScreen(),
-                                                  ),
-                                                );
-                                              }
-                                            }
-                                          : null,
-                                      icon: !state.connected
-                                          ? Icons.refresh_rounded
-                                          : Icons.more_vert_rounded,
-                                      label: !state.connected
-                                          ? FlutterI18n.translate(
-                                              context, "home_reconnect_button")
-                                          : FlutterI18n.translate(
-                                              context, "home_controls_button")),
-                                );
-                              }),
+                          Expanded(
+                              child: ScooterActionButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const ControlScreen(),
+                                      ),
+                                    );
+                                  },
+                                  icon: Icons.more_vert_rounded,
+                                  label: FlutterI18n.translate(
+                                      context, "home_controls_button"))),
+                          // Selector<ScooterService,
+                          //         ({bool scanning, bool connected})>(
+                          //     selector: (context, service) => (
+                          //           scanning: service.scanning,
+                          //           connected: service.connected
+                          //         ),
+                          //     builder: (context, state, _) {
+                          //       return Expanded(
+                          //         child: ScooterActionButton(
+                          //             onPressed: !state.scanning
+                          //                 ? () {
+                          //                     if (!state.connected) {
+                          //                       print(
+                          //                           "Manually reconnecting...");
+                          //                       try {
+                          //                         context
+                          //                             .read<ScooterService>()
+                          //                             .start();
+                          //                       } catch (e) {
+                          //                         print(e.toString());
+                          //                       }
+                          //                     } else {
+                          //                       Navigator.push(
+                          //                         context,
+                          //                         MaterialPageRoute(
+                          //                           builder: (context) =>
+                          //                               const ControlScreen(),
+                          //                         ),
+                          //                       );
+                          //                     }
+                          //                   }
+                          //                 : null,
+                          //             icon: !state.connected
+                          //                 ? Icons.refresh_rounded
+                          //                 : Icons.more_vert_rounded,
+                          //             label: !state.connected
+                          //                 ? FlutterI18n.translate(
+                          //                     context, "home_reconnect_button")
+                          //                 : FlutterI18n.translate(
+                          //                     context, "home_controls_button")),
+                          //       );
+                          //     }),
                         ],
                       )
                     ],
@@ -484,28 +511,33 @@ class SeatButton extends StatelessWidget {
         selector: (context, service) =>
             (seatClosed: service.seatClosed, state: service.state),
         builder: (context, data, _) {
-          final bool enabled = context
-                  .select((ScooterService service) => service.connected) &&
-              data.state != null &&
-              data.seatClosed == true &&
-              context.select((ScooterService service) => service.scanning) ==
-                  false &&
-              data.state!.isReadyForSeatOpen == true;
-
           return Expanded(
-            child: ScooterActionButton(
-              onPressed: enabled ? onPressed : null,
-              label: data.seatClosed == false
-                  ? FlutterI18n.translate(context, "home_seat_button_open")
-                  : FlutterI18n.translate(context, "home_seat_button_closed"),
-              icon: data.seatClosed == false
-                  ? Icomoon.seat_open
-                  : Icomoon.seat_closed,
-              iconColor: data.seatClosed == false
-                  ? Theme.of(context).colorScheme.error
-                  : null,
-            ),
-          );
+              child: FutureBuilder<bool>(
+                  future: context
+                      .read<ScooterService>()
+                      .isCommandAvailable(CommandType.openSeat),
+                  builder: (context, snapshot) {
+                    final bool enabled = true ||
+                        (snapshot.data == true) &&
+                            data.state != null &&
+                            data.seatClosed == true &&
+                            data.state!.isReadyForSeatOpen == true;
+
+                    return ScooterActionButton(
+                      onPressed: enabled ? onPressed : null,
+                      label: data.seatClosed == false
+                          ? FlutterI18n.translate(
+                              context, "home_seat_button_open")
+                          : FlutterI18n.translate(
+                              context, "home_seat_button_closed"),
+                      icon: data.seatClosed == false
+                          ? Icomoon.seat_open
+                          : Icomoon.seat_closed,
+                      iconColor: data.seatClosed == false
+                          ? Theme.of(context).colorScheme.error
+                          : null,
+                    );
+                  }));
         });
   }
 }
