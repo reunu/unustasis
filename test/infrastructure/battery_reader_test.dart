@@ -27,7 +27,7 @@ void main() {
         BatteryReader batteryReader =
             BatteryReader(ScooterBattery.primary, lastPingController);
 
-        await batteryReader.readAndSubscribeSOC(mockCharacteristic, controller);
+        batteryReader.readAndSubscribeSOC(mockCharacteristic, controller);
 
         await expectCharacteristicEmitting(
             mockCharacteristic, controller, [40]);
@@ -47,7 +47,7 @@ void main() {
         BatteryReader batteryReader =
             BatteryReader(ScooterBattery.primary, lastPingController);
 
-        await batteryReader.readAndSubscribeSOC(mockCharacteristic, controller);
+        batteryReader.readAndSubscribeSOC(mockCharacteristic, controller);
 
         await expectCharacteristicEmitting(mockCharacteristic, controller, []);
 
@@ -66,7 +66,7 @@ void main() {
         BatteryReader batteryReader =
             BatteryReader(ScooterBattery.primary, lastPingController);
 
-        await batteryReader.readAndSubscribeSOC(mockCharacteristic, controller);
+        batteryReader.readAndSubscribeSOC(mockCharacteristic, controller);
 
         await expectCharacteristicEmitting(mockCharacteristic, controller, []);
       });
@@ -84,7 +84,7 @@ void main() {
           BatteryReader batteryReader =
               BatteryReader(ScooterBattery.primary, lastPingController);
 
-          await batteryReader.readAndSubscribeSOC(
+          batteryReader.readAndSubscribeSOC(
               mockCharacteristic, controller);
 
           // We wrap our test in a fakeAsync to control the time in called code
@@ -115,7 +115,7 @@ void main() {
         BatteryReader batteryReader =
             BatteryReader(ScooterBattery.primary, lastPingController);
 
-        await batteryReader.readAndSubscribeSOC(mockCharacteristic, controller);
+        batteryReader.readAndSubscribeSOC(mockCharacteristic, controller);
 
         await expectCharacteristicEmitting(
             mockCharacteristic, controller, [30]);
