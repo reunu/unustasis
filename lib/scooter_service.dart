@@ -1112,6 +1112,15 @@ class ScooterService with ChangeNotifier {
     }
   }
 
+  Future<bool> isCommandAvailable(CommandType command) async {
+    // Check BLE first if initialized
+    if (_bleCommands != null && await _bleCommands!.isAvailable(command)) {
+      return true;
+    }
+    // Check cloud availability
+    return await _cloudCommands.isAvailable(command);
+  }
+
   Future<void> executeCommand(
     CommandType command, {
     ConfirmationCallback? onNeedConfirmation,
