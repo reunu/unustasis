@@ -37,7 +37,6 @@ class CloudService {
   }
 
   Future<bool> get isAuthenticated async {
-    await init();
     return _token != null && _cachedScooters != null;
   }
 
