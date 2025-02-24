@@ -1,20 +1,21 @@
 import 'dart:io';
 
+import 'package:easy_dynamic_theme/easy_dynamic_theme.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
-import 'package:easy_dynamic_theme/easy_dynamic_theme.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'background/bg_service.dart';
 import '../domain/log_helper.dart';
 import '../flutter/blue_plus_mockable.dart';
 import '../home_screen.dart';
 import '../scooter_service.dart';
+import 'background/bg_service.dart';
 
 void main() async {
   LogHelper().initialize();
@@ -58,7 +59,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Unustasis',
+      title: (kDebugMode ? 'Unustasis Dev' : 'Unustasis'),
       theme: ThemeData(
         appBarTheme: const AppBarTheme(
           centerTitle: true,
