@@ -226,5 +226,11 @@
     "cloud_select_cancel": "Cancel",
     "cloud_view_scooter": "View in Cloud",
     "cloud_last_sync": "Last synced {time}",
-    "cloud_never_synced": "Never synced"
+    "cloud_never_synced": "Never synced",
+    "controls_cloud_title": "Cloud Controls",
+    "controls_honk": "Honk",
+    "controls_locate": "Locate",
+    "controls_alarm": "Alarm",
+    "controls_ping": "Check Connection",
+    "controls_refresh": "Update Status"  
 }

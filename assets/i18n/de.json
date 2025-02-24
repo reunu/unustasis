@@ -226,5 +226,11 @@
     "cloud_select_cancel": "Abbrechen",
     "cloud_view_scooter": "In Cloud anzeigen",
     "cloud_last_sync": "Letzte Synchronisation {time}",
-    "cloud_never_synced": "Nie synchronisiert"
+    "cloud_never_synced": "Nie synchronisiert",
+    "controls_cloud_title": "Cloud-Steuerung",
+    "controls_honk": "Hupen",
+    "controls_locate": "Finden",
+    "controls_alarm": "Alarm",
+    "controls_ping": "Verbindung prüfen",
+    "controls_refresh": "Status aktualisieren"  
 }

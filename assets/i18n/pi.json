@@ -226,5 +226,11 @@
     "cloud_select_cancel": "Abandon Mission",
     "cloud_view_scooter": "View from th' Crow's Nest",
     "cloud_last_sync": "Last sailed {time} ago",
-    "cloud_never_synced": "Never sailed"
+    "cloud_never_synced": "Never sailed",
+    "controls_cloud_title": "Sky Magic Controls",
+    "controls_honk": "Foghorn",
+    "controls_locate": "Sextant",
+    "controls_alarm": "Alarm!",
+    "controls_ping": "Test the Winds",
+    "controls_refresh": "Lookout"
 }

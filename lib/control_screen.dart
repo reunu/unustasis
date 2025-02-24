@@ -184,6 +184,96 @@ class _ControlScreenState extends State<ControlScreen> {
                   ),
                 ]),
           ),
+          FutureBuilder<bool>(
+            future: context.read<ScooterService>().isCommandAvailable(CommandType.honk),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData || !snapshot.data!) {
+                return Container(); // Don't show cloud section if not available
+              }
+
+              return Column(
+                children: [
+                  Header(FlutterI18n.translate(context, "controls_cloud_title")),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Expanded(
+                          child: ScooterActionButton(
+                            onPressed: () async {
+                              await context.read<ScooterService>().executeCommand(
+                                CommandType.honk,
+                                onNeedConfirmation: () => showCloudConfirmationDialog(context),
+                              );
+                            },
+                            icon: Icons.volume_up_outlined,
+                            label: FlutterI18n.translate(context, "controls_honk"),
+                          ),
+                        ),
+                        Expanded(
+                          child: ScooterActionButton(
+                            onPressed: () async {
+                              await context.read<ScooterService>().executeCommand(
+                                CommandType.locate,
+                                onNeedConfirmation: () => showCloudConfirmationDialog(context),
+                              );
+                            },
+                            icon: Icons.search_outlined,
+                            label: FlutterI18n.translate(context, "controls_locate"),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Expanded(
+                          child: ScooterActionButton(
+                            onPressed: () async {
+                              await context.read<ScooterService>().executeCommand(
+                                CommandType.alarm,
+                                onNeedConfirmation: () => showCloudConfirmationDialog(context),
+                              );
+                            },
+                            icon: Icons.notification_important_outlined,
+                            label: FlutterI18n.translate(context, "controls_alarm"),
+                          ),
+                        ),
+                        Expanded(
+                          child: ScooterActionButton(
+                            onPressed: () async {
+                              await context.read<ScooterService>().executeCommand(
+                                CommandType.ping,
+                                onNeedConfirmation: () => showCloudConfirmationDialog(context),
+                              );
+                            },
+                            icon: Icons.cloud_sync_outlined,
+                            label: FlutterI18n.translate(context, "controls_ping"),
+                          ),
+                        ),
+                        Expanded(
+                          child: ScooterActionButton(
+                            onPressed: () async {
+                              await context.read<ScooterService>().executeCommand(
+                                CommandType.getState,
+                                onNeedConfirmation: () => showCloudConfirmationDialog(context),
+                              );
+                            },
+                            icon: Icons.refresh_outlined,
+                            label: FlutterI18n.translate(context, "controls_refresh"),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
         ],
       ),
     );
