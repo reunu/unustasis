@@ -617,7 +617,10 @@ class StatusText extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _buildCloudStatus(context),
+        Selector<ScooterService, String?>(
+          selector: (_, service) => service.currentScooterId,
+          builder: (context, currentScooterId, _) => _buildCloudStatus(context),
+        ),
         Selector<ScooterService,
                 ({bool connected, bool scanning, ScooterState? state})>(
             selector: (context, service) => (
@@ -653,26 +656,37 @@ class StatusText extends StatelessWidget {
 
   Widget _buildCloudStatus(BuildContext context) {
     final cloudService = CloudService(context.read<ScooterService>());
+    final log = Logger('HomeScreen/CloudStatus');
 
-    return FutureBuilder<bool>(
-        future: cloudService.isAuthenticated,
-        builder: (context, authSnapshot) {
-          if (!authSnapshot.hasData || !authSnapshot.data!) return Container();
+    return StreamBuilder<bool>(
+      stream: Stream.periodic(const Duration(seconds: 5))
+          .asyncMap((_) => cloudService.isAuthenticated),
+      initialData: false,
+      builder: (context, authSnapshot) {
+        if (!authSnapshot.hasData || !authSnapshot.data!) return Container();
 
-          return FutureBuilder<Map<String, dynamic>?>(
-            future: _getCurrentCloudScooter(context, cloudService),
-            builder: (context, AsyncSnapshot<Map<String, dynamic>?> snapshot) {
-              return Text(
-                FlutterI18n.translate(
-                    context,
-                    (!snapshot.hasData || snapshot.data == null)
-                        ? "cloud_no_linked_scooter"
-                        : "cloud_scooter_linked"),
-                style: Theme.of(context).textTheme.titleMedium,
+        return FutureBuilder<Map<String, dynamic>?>(
+          future: _getCurrentCloudScooter(context, cloudService),
+          builder: (context, AsyncSnapshot<Map<String, dynamic>?> snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
               );
-            },
-          );
-        });
+            }
+            return Text(
+              FlutterI18n.translate(
+                  context,
+                  (!snapshot.hasData || snapshot.data == null)
+                      ? "cloud_no_linked_scooter"
+                      : "cloud_scooter_linked"),
+              style: Theme.of(context).textTheme.titleMedium,
+            );
+          },
+        );
+      },
+    );
   }
 
   Future<Map<String, dynamic>?> _getCurrentCloudScooter(

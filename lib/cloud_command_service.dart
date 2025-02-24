@@ -5,14 +5,19 @@ import 'command_service.dart';
 
 class CloudCommandService implements CommandService {
   final CloudService cloudService;
-  final int? cloudScooterId;
+  final int? Function() getCloudScooterId;
   final Logger log = Logger('CloudCommandService');
 
-  CloudCommandService(this.cloudService, this.cloudScooterId);
+  CloudCommandService(this.cloudService, this.getCloudScooterId);
 
   @override
   Future<bool> isAvailable(CommandType command) async {
-    if (!await cloudService.isAuthenticated || cloudScooterId == null) {
+    log.info([
+      "CloudCommandService.isAvailable",
+      await cloudService.isAuthenticated,
+      getCloudScooterId()
+    ]);
+    if (!await cloudService.isAuthenticated || getCloudScooterId() == null) {
       return false;
     }
     return true; // All commands available via cloud
@@ -24,32 +29,39 @@ class CloudCommandService implements CommandService {
       return false;
     }
 
+    final currentId = getCloudScooterId();
+    if (currentId == null) {
+      return false;
+    }
+
+    log.info(["executing command", command]);
+
     try {
       switch (command) {
         case CommandType.lock:
-          return await cloudService.lock(cloudScooterId!);
+          return await cloudService.lock(currentId);
         case CommandType.unlock:
-          return await cloudService.unlock(cloudScooterId!);
+          return await cloudService.unlock(currentId);
         case CommandType.openSeat:
-          return await cloudService.openSeatbox(cloudScooterId!);
+          return await cloudService.openSeatbox(currentId);
         case CommandType.blinkerLeft:
-          return await cloudService.blinkers(cloudScooterId!, "left");
+          return await cloudService.blinkers(currentId, "left");
         case CommandType.blinkerRight:
-          return await cloudService.blinkers(cloudScooterId!, "right");
+          return await cloudService.blinkers(currentId, "right");
         case CommandType.blinkerBoth:
-          return await cloudService.blinkers(cloudScooterId!, "both");
+          return await cloudService.blinkers(currentId, "both");
         case CommandType.blinkerOff:
-          return await cloudService.blinkers(cloudScooterId!, "off");
+          return await cloudService.blinkers(currentId, "off");
         case CommandType.honk:
-          return await cloudService.honk(cloudScooterId!);
+          return await cloudService.honk(currentId);
         case CommandType.locate:
-          return await cloudService.locate(cloudScooterId!);
+          return await cloudService.locate(currentId);
         case CommandType.alarm:
-          return await cloudService.alarm(cloudScooterId!);
+          return await cloudService.alarm(currentId);
         case CommandType.ping:
-          return await cloudService.ping(cloudScooterId!);
+          return await cloudService.ping(currentId);
         case CommandType.getState:
-          return await cloudService.getState(cloudScooterId!);
+          return await cloudService.getState(currentId);
         // case CommandType.hibernate:
         // case CommandType.wakeUp:
         //   return false; // These commands are BLE-only

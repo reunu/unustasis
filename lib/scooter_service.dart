@@ -65,10 +65,13 @@ class ScooterService with ChangeNotifier {
   }
 
   Future<void> _initializeCurrentScooter() async {
-    SavedScooter? mostRecentScooter = await getMostRecentScooter();
-    if (mostRecentScooter != null) {
-      _currentScooterId = mostRecentScooter.id;
-      notifyListeners();
+    // Only try to get most recent if we don't already have a current scooter
+    if (_currentScooterId == null) {
+      SavedScooter? mostRecentScooter = await getMostRecentScooter();
+      if (mostRecentScooter != null) {
+        _currentScooterId = mostRecentScooter.id;
+        notifyListeners();
+      }
     }
   }
 
@@ -79,6 +82,7 @@ class ScooterService with ChangeNotifier {
       this.prefs = prefs;
 
       savedScooters = getSavedScooters();
+      log.info(["savedScooters", savedScooters]);
 
       _initializeCurrentScooter();
       seedStreamsWithCache();
@@ -86,8 +90,10 @@ class ScooterService with ChangeNotifier {
     });
 
     // _bleCommands inited on BT connect
-    _cloudCommands =
-        CloudCommandService(CloudService(this), getCurrentCloudScooterId());
+
+    _cloudCommands = CloudCommandService(CloudService(this), () => getCurrentCloudScooterId());
+    log.info(
+        ["setting _cloudCommands", _cloudCommands, getCurrentCloudScooterId()]);
 
     // update the "scanning" listener
     flutterBluePlus.isScanning.listen((isScanning) {
@@ -141,6 +147,7 @@ class ScooterService with ChangeNotifier {
   }
 
   SavedScooter? getCurrentSavedScooter() {
+    log.info(["getCurrentSavedScooter", _currentScooterId]);
     if (_currentScooterId == null) return null;
     return savedScooters[_currentScooterId];
   }
@@ -154,6 +161,7 @@ class ScooterService with ChangeNotifier {
   }
 
   int? getCurrentCloudScooterId() {
+    log.info(["getCurrentCloudScooterId", getCurrentSavedScooter()?.cloudScooterId]);
     return getCurrentSavedScooter()?.cloudScooterId;
   }
 
@@ -476,11 +484,14 @@ class ScooterService with ChangeNotifier {
     String id, {
     bool initialConnect = false,
   }) async {
-    _foundSth = true;
-    state = ScooterState.linking;
+    log.info(["connectToScooterId", id, initialConnect]);
     // Set the current scooter ID
     _currentScooterId = id;
     notifyListeners();
+
+    _foundSth = true;
+    state = ScooterState.linking;
+
     try {
       // attempt to connect to what we found
       BluetoothDevice attemptedScooter = BluetoothDevice.fromId(id);
@@ -492,6 +503,7 @@ class ScooterService with ChangeNotifier {
         log.info("Bond established");
       }
       log.info("Connected to ${attemptedScooter.remoteId}");
+
       // Set up this scooter as ours
       myScooter = attemptedScooter;
       setMostRecentScooter(id);
@@ -501,6 +513,7 @@ class ScooterService with ChangeNotifier {
         "lastPing": DateTime.now().millisecondsSinceEpoch,
       });
       addSavedScooter(myScooter!.remoteId.toString());
+
       try {
         await setUpCharacteristics(myScooter!);
       } on UnavailableCharacteristicsException {
@@ -516,6 +529,7 @@ class ScooterService with ChangeNotifier {
       connected = true;
       scooterName = savedScooters[myScooter!.remoteId.toString()]?.name;
       scooterColor = savedScooters[myScooter!.remoteId.toString()]?.color;
+
       // listen for disconnects
       myScooter!.connectionState.listen((BluetoothConnectionState state) async {
         if (state == BluetoothConnectionState.disconnected) {
@@ -1050,10 +1064,12 @@ class ScooterService with ChangeNotifier {
 
       // If the current scooter was forgotten, select a new one
       if (_currentScooterId == id) {
+        _currentScooterId = null; // Clear current selection
         await _initializeCurrentScooter();
       }
     }
     connected = false;
+    notifyListeners();
     if (Platform.isAndroid) {}
   }
 
@@ -1105,8 +1121,9 @@ class ScooterService with ChangeNotifier {
     prefs!.setString("savedScooters", jsonEncode(savedScooters));
     scooterName = "Scooter Pro";
 
-    // If this is the first scooter, set it as the current scooter
-    if (savedScooters.length == 1) {
+    // If this is the first scooter or we don't have a current selection,
+    // set it as the current scooter
+    if (savedScooters.length == 1 || _currentScooterId == null) {
       _currentScooterId = id;
       notifyListeners();
     }
@@ -1151,6 +1168,8 @@ class ScooterService with ChangeNotifier {
               "Command requires confirmation but no callback provided");
         }
       }
+
+      log.info("exec 2");
 
       if (!await _cloudCommands.execute(command)) {
         throw Exception("Cloud command failed: $command");
