@@ -15,6 +15,7 @@ import '../domain/theme_helper.dart';
 import '../domain/scooter_keyless_distance.dart';
 import '../scooter_service.dart';
 import '../support_screen.dart';
+import '../stats/cloud_settings_section.dart';
 
 class SettingsSection extends StatefulWidget {
   const SettingsSection({super.key});
@@ -274,6 +275,8 @@ class _SettingsSectionState extends State<SettingsSection> {
                   seasonal = value;
                 });
               }),
+        Header(FlutterI18n.translate(context, "stats_settings_section_cloud")),
+        const CloudSettingsSection(),
         Header(FlutterI18n.translate(context, "stats_settings_section_about")),
         ListTile(
           leading: const Icon(Icons.help_outline),
@@ -347,7 +350,7 @@ class _SettingsSectionState extends State<SettingsSection> {
         indent: 16,
         endIndent: 16,
         height: 24,
-        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
       ),
       itemBuilder: (context, index) => settingsItems()[index],
     );
