@@ -227,10 +227,14 @@
     "cloud_view_scooter": "In Cloud anzeigen",
     "cloud_last_sync": "Letzte Synchronisation {time}",
     "cloud_never_synced": "Nie synchronisiert",
+    "cloud_command_confirm_title": "Cloud-Befehl",
+    "cloud_command_confirm_body": "Befehl über Cloud ausführen?",
+    "cloud_command_confirm_confirm": "Ausführen",
+    "cloud_command_confirm_cancel": "Abbrechen",
     "controls_cloud_title": "Cloud-Steuerung",
     "controls_honk": "Hupen",
     "controls_locate": "Finden",
     "controls_alarm": "Alarm",
     "controls_ping": "Verbindung prüfen",
-    "controls_refresh": "Status aktualisieren"  
+    "controls_refresh": "Status aktualisieren"
 }

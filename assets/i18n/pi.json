@@ -227,10 +227,14 @@
     "cloud_view_scooter": "View from th' Crow's Nest",
     "cloud_last_sync": "Last sailed {time} ago",
     "cloud_never_synced": "Never sailed",
-    "controls_cloud_title": "Sky Magic Controls",
-    "controls_honk": "Foghorn",
-    "controls_locate": "Sextant",
-    "controls_alarm": "Alarm!",
+    "cloud_command_confirm_title": "Sky Magic Orders",
+    "cloud_command_confirm_body": "Send orders through the sky magic?",
+    "cloud_command_confirm_confirm": "Aye!",
+    "cloud_command_confirm_cancel": "Belay that!",
+    "controls_cloud_title": "Command th' Clouds",
+    "controls_honk": "Blow Foghorn",
+    "controls_locate": "Find yer Ship",
+    "controls_alarm": "Sound Alarm",
     "controls_ping": "Test the Winds",
-    "controls_refresh": "Lookout"
+    "controls_refresh": "Demand Update"
 }

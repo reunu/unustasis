@@ -438,11 +438,11 @@ class _HomeScreenState extends State<HomeScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: Text(FlutterI18n.translate(context, "cancel")),
+                child: Text(FlutterI18n.translate(context, "cloud_command_confirm_cancel")),
               ),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                child: Text(FlutterI18n.translate(context, "confirm")),
+                child: Text(FlutterI18n.translate(context, "cloud_command_confirm_confirm")),
               ),
             ],
           ),
