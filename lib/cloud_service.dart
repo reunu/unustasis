@@ -68,6 +68,11 @@ class CloudService {
     return _cachedScooters ?? [];
   }
 
+  Future<List<Map<String, dynamic>>> refreshScooters() async {
+    await _refreshScooters();
+    return _cachedScooters ?? [];
+  }
+
   Future<void> _refreshScooters() async {
     if (_token == null) {
       throw Exception('Not authenticated');

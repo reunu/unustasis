@@ -64,7 +64,7 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
 
   Future<void> _refreshScooters() async {
     try {
-      final scooters = await _cloudService.getScooters();
+      final scooters = await _cloudService.refreshScooters();
       setState(() {
         _cloudScooters = scooters;
       });
