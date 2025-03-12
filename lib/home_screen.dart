@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:home_widget/home_widget.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
@@ -45,6 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
       redirectOrStart();
     }
     _startSeasonal();
+    _showOnboardings();
   }
 
   Future<void> _startSeasonal() async {
@@ -59,6 +62,58 @@ class _HomeScreenState extends State<HomeScreen> {
         // who knows what else might be in the future?
       }
     }
+  }
+
+  Future<void> _showOnboardings() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (Platform.isAndroid && prefs.getBool("widgetOnboarded") != true) {
+      await showWidgetOnboarding();
+      prefs.setBool("widgetOnboarded", true);
+    }
+  }
+
+  Future<void> showWidgetOnboarding() async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title:
+              Text(FlutterI18n.translate(context, "widget_onboarding_title")),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text(FlutterI18n.translate(context, "widget_onboarding_body")),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text(
+                  FlutterI18n.translate(context, "widget_onboarding_place")),
+              onPressed: () async {
+                if ((await HomeWidget.isRequestPinWidgetSupported()) == true) {
+                  HomeWidget.requestPinWidget(
+                    name: 'HomeWidgetReceiver',
+                    androidName: 'HomeWidgetReceiver',
+                    qualifiedAndroidName:
+                        'de.freal.unustasis.HomeWidgetReceiver',
+                  );
+                }
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text(
+                  FlutterI18n.translate(context, "widget_onboarding_dismiss")),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _flashHazards(int times) async {

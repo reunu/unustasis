@@ -11,6 +11,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:logging/logging.dart';
+import 'package:pausable_timer/pausable_timer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../domain/saved_scooter.dart';
@@ -35,7 +36,8 @@ class ScooterService with ChangeNotifier {
   bool _hazardLocking = false;
   bool _autoUnlockCooldown = false;
   SharedPreferences? prefs;
-  late Timer _locationTimer, _rssiTimer, _manualRefreshTimer;
+  late Timer _locationTimer, _manualRefreshTimer;
+  late PausableTimer rssiTimer;
   bool optionalAuth = false;
   late CharacteristicRepository characteristicRepository;
   late ScooterReader _scooterReader;
@@ -76,7 +78,7 @@ class ScooterService with ChangeNotifier {
         _pollLocation();
       }
     });
-    _rssiTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
+    rssiTimer = PausableTimer.periodic(const Duration(seconds: 3), () async {
       if (myScooter != null && myScooter!.isConnected && _autoUnlock) {
         try {
           rssi = await myScooter!.readRssi();
@@ -96,7 +98,8 @@ class ScooterService with ChangeNotifier {
           _autoUnlockCooldown = false;
         }
       }
-    });
+    })
+      ..start();
     _manualRefreshTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
       if (myScooter != null && myScooter!.isConnected) {
         // only refresh state and seatbox, for now
@@ -699,9 +702,19 @@ class ScooterService with ChangeNotifier {
     });
 
     // don't immediately unlock again automatically
-    _autoUnlockCooldown = true;
-    await _sleepSeconds(keylessCooldownSeconds.toDouble());
+    autoUnlockCooldown();
+  }
+
+  void autoUnlockCooldown() {
+    try {
+      FlutterBackgroundService().invoke("autoUnlockCooldown");
+    } catch (e) {
+      // closing the loop
+    }
     _autoUnlockCooldown = false;
+    Future.delayed(const Duration(seconds: keylessCooldownSeconds), () {
+      _autoUnlockCooldown = false;
+    });
   }
 
   void openSeat() {
@@ -1050,7 +1063,7 @@ class ScooterService with ChangeNotifier {
   @override
   void dispose() {
     _locationTimer.cancel();
-    _rssiTimer.cancel();
+    rssiTimer.cancel();
     _manualRefreshTimer.cancel();
     super.dispose();
   }

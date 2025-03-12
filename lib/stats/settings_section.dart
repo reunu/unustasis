@@ -1,5 +1,6 @@
 import 'package:easy_dynamic_theme/easy_dynamic_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:local_auth/local_auth.dart';
@@ -25,6 +26,7 @@ class SettingsSection extends StatefulWidget {
 
 class _SettingsSectionState extends State<SettingsSection> {
   final log = Logger('SettingsSection');
+  bool backgroundScan = true;
   bool biometrics = false;
   bool autoUnlock = false;
   bool seasonal = true;
@@ -37,6 +39,7 @@ class _SettingsSectionState extends State<SettingsSection> {
     ScooterService service = context.read<ScooterService>();
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
+      backgroundScan = prefs.getBool("backgroundScan") ?? true;
       biometrics = prefs.getBool("biometrics") ?? false;
       autoUnlock = service.autoUnlock;
       autoUnlockDistance =
@@ -126,6 +129,24 @@ class _SettingsSectionState extends State<SettingsSection> {
           },
         ),
         Header(FlutterI18n.translate(context, "stats_settings_section_app")),
+        SwitchListTile(
+          secondary: const Icon(Icons.find_replace_outlined),
+          title:
+              Text(FlutterI18n.translate(context, "settings_background_scan")),
+          subtitle: Text(FlutterI18n.translate(
+              context, "settings_background_scan_description")),
+          value: backgroundScan,
+          onChanged: (value) async {
+            SharedPreferences prefs = await SharedPreferences.getInstance();
+            prefs.setBool("backgroundScan", value);
+            // inform the service!
+            FlutterBackgroundService()
+                .invoke("update", {"backgroundScan": value});
+            setState(() {
+              backgroundScan = value;
+            });
+          },
+        ),
         FutureBuilder<List<BiometricType>>(
             future: LocalAuthentication().getAvailableBiometrics(),
             builder: (context, biometricsOptionsSnap) {
