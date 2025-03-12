@@ -143,6 +143,7 @@
     "settings_auto_unlock": "Ghost ship",
     "settings_auto_unlock_description": "Automatically unlock yer ship when the app be open and the ship be right next to ye. Beware: Might slow down the connection to yer ship on iOS",
     "settings_auto_unlock_threshold": "Ghost ship distance",
+    "settings_auto_unlock_threshold_explainer": "Current distance (light line): {rssi} dBm",
     "auto_unlock_threshold_very_far": "On the horizon",
     "auto_unlock_threshold_far": "In sight",
     "auto_unlock_threshold_regular": "Good middle",

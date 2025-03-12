@@ -78,26 +78,40 @@ class _SettingsSectionState extends State<SettingsSection> {
           ListTile(
             title: Text(
                 "${FlutterI18n.translate(context, "settings_auto_unlock_threshold")}: ${autoUnlockDistance.name(context)}"),
-            subtitle: Slider(
-              value: autoUnlockDistance.threshold.toDouble(),
-              min: ScooterKeylessDistance.getMinThresholdDistance()
-                  .threshold
-                  .toDouble(),
-              max: ScooterKeylessDistance.getMaxThresholdDistance()
-                  .threshold
-                  .toDouble(),
-              divisions: ScooterKeylessDistance.values.length - 1,
-              label: autoUnlockDistance.getFormattedThreshold(),
-              onChanged: (threshold) async {
-                var distance =
-                    ScooterKeylessDistance.fromThreshold(threshold.toInt());
-                context
-                    .read<ScooterService>()
-                    .setAutoUnlockThreshold(threshold.toInt());
-                setState(() {
-                  autoUnlockDistance = distance;
-                });
-              },
+            subtitle: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Slider(
+                  value: autoUnlockDistance.threshold.toDouble(),
+                  min: ScooterKeylessDistance.getMinThresholdDistance()
+                      .threshold
+                      .toDouble(),
+                  max: ScooterKeylessDistance.getMaxThresholdDistance()
+                      .threshold
+                      .toDouble(),
+                  secondaryTrackValue:
+                      context.read<ScooterService>().rssi?.toDouble(),
+                  divisions: ScooterKeylessDistance.values.length - 1,
+                  label: autoUnlockDistance.getFormattedThreshold(),
+                  onChanged: (value) async {
+                    var distance =
+                        ScooterKeylessDistance.fromThreshold(value.toInt());
+                    context
+                        .read<ScooterService>()
+                        .setAutoUnlockThreshold(value.toInt());
+                    setState(() {
+                      autoUnlockDistance = distance;
+                    });
+                  },
+                ),
+                if (context.read<ScooterService>().rssi != null)
+                  Text(FlutterI18n.translate(
+                      context, "settings_auto_unlock_threshold_explainer",
+                      translationParams: {
+                        "rssi": context.read<ScooterService>().rssi.toString()
+                      })),
+              ],
             ),
           ),
         SwitchListTile(
@@ -202,6 +216,9 @@ class _SettingsSectionState extends State<SettingsSection> {
                 },
                 selected: {EasyDynamicTheme.of(context).themeMode!},
                 style: ButtonStyle(
+                  iconColor: WidgetStateProperty.resolveWith<Color>((states) {
+                    return Theme.of(context).colorScheme.onTertiary;
+                  }),
                   foregroundColor:
                       WidgetStateProperty.resolveWith<Color>((states) {
                     if (states.contains(WidgetState.selected)) {
@@ -236,35 +253,40 @@ class _SettingsSectionState extends State<SettingsSection> {
         ListTile(
           leading: const Icon(Icons.language_outlined),
           title: Text(FlutterI18n.translate(context, "settings_language")),
-          subtitle: DropdownButtonFormField(
+          subtitle: Padding(
             padding: const EdgeInsets.only(top: 8),
-            value: Locale(FlutterI18n.currentLocale(context)!.languageCode),
-            isExpanded: true,
-            decoration: const InputDecoration(
-              contentPadding: EdgeInsets.all(16),
-              border: OutlineInputBorder(),
+            child: DropdownButtonFormField(
+              value: Locale(FlutterI18n.currentLocale(context)!.languageCode),
+              isExpanded: true,
+              decoration: const InputDecoration(
+                contentPadding: EdgeInsets.all(16),
+                border: OutlineInputBorder(),
+              ),
+              dropdownColor: Theme.of(context).colorScheme.surfaceContainer,
+              items: [
+                DropdownMenuItem<Locale>(
+                  value: const Locale("en"),
+                  child:
+                      Text(FlutterI18n.translate(context, "language_english")),
+                ),
+                DropdownMenuItem<Locale>(
+                  value: const Locale("de"),
+                  child:
+                      Text(FlutterI18n.translate(context, "language_german")),
+                ),
+                DropdownMenuItem<Locale>(
+                  value: const Locale("pi"),
+                  child:
+                      Text(FlutterI18n.translate(context, "language_pirate")),
+                ),
+              ],
+              onChanged: (newLanguage) async {
+                await FlutterI18n.refresh(context, newLanguage);
+                SharedPreferences prefs = await SharedPreferences.getInstance();
+                prefs.setString("savedLocale", newLanguage!.languageCode);
+                setState(() {});
+              },
             ),
-            dropdownColor: Theme.of(context).colorScheme.surfaceContainer,
-            items: [
-              DropdownMenuItem<Locale>(
-                value: const Locale("en"),
-                child: Text(FlutterI18n.translate(context, "language_english")),
-              ),
-              DropdownMenuItem<Locale>(
-                value: const Locale("de"),
-                child: Text(FlutterI18n.translate(context, "language_german")),
-              ),
-              DropdownMenuItem<Locale>(
-                value: const Locale("pi"),
-                child: Text(FlutterI18n.translate(context, "language_pirate")),
-              ),
-            ],
-            onChanged: (newLanguage) async {
-              await FlutterI18n.refresh(context, newLanguage);
-              SharedPreferences prefs = await SharedPreferences.getInstance();
-              prefs.setString("savedLocale", newLanguage!.languageCode);
-              setState(() {});
-            },
           ),
         ),
         SwitchListTile(
