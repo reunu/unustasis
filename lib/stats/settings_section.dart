@@ -347,7 +347,7 @@ class _SettingsSectionState extends State<SettingsSection> {
         indent: 16,
         endIndent: 16,
         height: 24,
-        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
       ),
       itemBuilder: (context, index) => settingsItems()[index],
     );

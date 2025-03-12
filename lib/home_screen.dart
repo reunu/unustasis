@@ -103,8 +103,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 SnowfallBackground(
                   backgroundColor: Colors.transparent,
                   snowflakeColor: context.isDarkMode
-                      ? Colors.white.withOpacity(0.15)
-                      : Colors.black.withOpacity(0.05),
+                      ? Colors.white.withValues(alpha: 0.15)
+                      : Colors.black.withValues(alpha: 0.05),
                 ),
               SafeArea(
                 child: Padding(
@@ -188,8 +188,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 return Expanded(
                                   child: ScooterPowerButton(
                                       action: state != null &&
-                                              state!.isReadyForLockChange
-                                          ? (state!.isOn
+                                              state.isReadyForLockChange
+                                          ? (state.isOn
                                               ? () async {
                                                   try {
                                                     await context
@@ -513,7 +513,7 @@ class BatteryBars extends StatelessWidget {
                         ? Theme.of(context)
                             .colorScheme
                             .onSurface
-                            .withOpacity(0.4)
+                            .withValues(alpha: 0.4)
                         : data.primarySOC! <= 15
                             ? Theme.of(context).colorScheme.error
                             : Theme.of(context).colorScheme.primary,
@@ -533,7 +533,7 @@ class BatteryBars extends StatelessWidget {
                           ? Theme.of(context)
                               .colorScheme
                               .onSurface
-                              .withOpacity(0.4)
+                              .withValues(alpha: 0.4)
                           : data.secondarySOC! <= 15
                               ? Theme.of(context).colorScheme.error
                               : Theme.of(context).colorScheme.primary,
@@ -630,7 +630,7 @@ class StateCircle extends StatelessWidget {
               : Theme.of(context)
                   .colorScheme
                   .surfaceContainer
-                  .withOpacity(context.isDarkMode ? 0.5 : 0.7),
+                  .withValues(alpha: context.isDarkMode ? 0.5 : 0.7),
         ),
       ),
     );
@@ -662,7 +662,7 @@ class _ScooterPowerButtonState extends State<ScooterPowerButton> {
   @override
   Widget build(BuildContext context) {
     Color mainColor = widget._action == null
-        ? Theme.of(context).colorScheme.onSurface.withOpacity(0.2)
+        ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2)
         : Theme.of(context).colorScheme.primary;
     return Column(
       children: [
@@ -748,7 +748,7 @@ class ScooterActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     Color mainColor = _iconColor ??
         (_onPressed == null
-            ? Theme.of(context).colorScheme.onSurface.withOpacity(0.2)
+            ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2)
             : Theme.of(context).colorScheme.onSurface);
     return Column(
       children: [

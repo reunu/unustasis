@@ -38,7 +38,7 @@ class _StatsScreenState extends State<StatsScreen> {
                   tabAlignment: TabAlignment.center,
                   labelPadding: const EdgeInsets.symmetric(horizontal: 24),
                   unselectedLabelColor:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+                      Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
                   labelColor: Theme.of(context).colorScheme.onSurface,
                   indicatorColor: Theme.of(context).colorScheme.onSurface,
                   dividerColor: Colors.transparent,
@@ -158,7 +158,7 @@ class LastPingInfo extends StatelessWidget {
               style: TextStyle(
                 fontWeight: FontWeight.w900,
                 fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(
@@ -166,7 +166,7 @@ class LastPingInfo extends StatelessWidget {
             ),
             Icon(
               Icons.schedule_rounded,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
               size: 24,
             ),
             const SizedBox(
