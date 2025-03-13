@@ -175,7 +175,7 @@
     "stats_no_location": "Tippe zum Anzeigen",
     "stats_no_batteries": "Keine Akkus eingesetzt",
     "stats_total_range": "Reichweite",
-    "stats_range_until_throttled": "{range} km ohne Drosslung",
+    "stats_range_until_throttled": "Drosselung nach {range} km",
     "stats_range_throttled": "bei reduzierter Leistung",
     "controls_title": "Steuerung",
     "controls_state_title": "Zustand",

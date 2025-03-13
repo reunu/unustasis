@@ -175,7 +175,7 @@
     "stats_no_location": "Tap to view on map",
     "stats_no_batteries": "No batteries inserted",
     "stats_total_range": "total range",
-    "stats_range_until_throttled": "{range} km without throttling",
+    "stats_range_until_throttled": "Throttling after {range} km",
     "stats_range_throttled": "at reduced power",
     "controls_title": "Controls",
     "controls_state_title": "State",
