@@ -39,11 +39,15 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _connected = false;
   bool _scanning = false;
   bool _hazards = false;
-  bool _snowing = false;
   bool? _seatClosed;
   bool? _handlebarsLocked;
   int? _primarySOC;
   int? _secondarySOC;
+
+  // Seasonal
+  bool _snowing = false;
+  bool _forceHover = false;
+  bool _spring = false;
 
   StreamSubscription? _stateSubscription;
   StreamSubscription? _connectedSubscription;
@@ -109,9 +113,15 @@ class _HomeScreenState extends State<HomeScreen> {
       switch (DateTime.now().month) {
         case 12:
           // December, snow season!
-          setState(() {
-            _snowing = true;
-          });
+          setState(() => _snowing = true);
+        case 4:
+          if (DateTime.now().day == 1) {
+            // April fools calls for flying scooters!
+            setState(() => _forceHover = true);
+          } else {
+            // Easter season, place some easter eggs!
+            setState(() => _spring = true);
+          }
         // who knows what else might be in the future?
       }
     }
@@ -314,6 +324,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   blinkerLeft: _hazards,
                                   blinkerRight: _hazards,
                                   winter: _snowing,
+                                  aprilFools: _forceHover,
                                 );
                               })),
                       const SizedBox(height: 16),
@@ -643,13 +654,16 @@ class ScooterPowerButton extends StatefulWidget {
     Widget? child,
     required IconData icon,
     required String label,
+    bool? easterEgg,
   })  : _action = action,
         _icon = icon,
-        _label = label;
+        _label = label,
+        _easterEgg = easterEgg;
 
   final void Function()? _action;
   final String _label;
   final IconData _icon;
+  final bool? _easterEgg;
 
   @override
   State<ScooterPowerButton> createState() => _ScooterPowerButtonState();
@@ -696,19 +710,25 @@ class _ScooterPowerButtonState extends State<ScooterPowerButton> {
                         });
                       });
                     },
-              child: loading
-                  ? SizedBox(
-                      height: 24,
-                      width: 24,
-                      child: CircularProgressIndicator(
-                        color: mainColor,
-                        strokeWidth: 2,
+              child: Container(
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  image: DecorationImage(image: AssetImage("assetName")),
+                ),
+                child: loading
+                    ? SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(
+                          color: mainColor,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : Icon(
+                        widget._icon,
+                        color: Theme.of(context).colorScheme.surface,
                       ),
-                    )
-                  : Icon(
-                      widget._icon,
-                      color: Theme.of(context).colorScheme.surface,
-                    ),
+              ),
             ),
           ),
         ),
