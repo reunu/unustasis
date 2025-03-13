@@ -81,7 +81,7 @@ class _BatterySectionState extends State<BatterySection> {
                           borderRadius: BorderRadius.circular(16.0),
                           minHeight: 24,
                           backgroundColor:
-                              Theme.of(context).colorScheme.surface,
+                              Theme.of(context).colorScheme.surfaceContainer,
                           color: widget.dataIsOld
                               ? Theme.of(context)
                                   .colorScheme
@@ -99,7 +99,8 @@ class _BatterySectionState extends State<BatterySection> {
                         value: (data.primarySOC ?? 0) / 100,
                         borderRadius: BorderRadius.circular(16.0),
                         minHeight: 24,
-                        backgroundColor: Theme.of(context).colorScheme.surface,
+                        backgroundColor:
+                            Theme.of(context).colorScheme.surfaceContainer,
                         color: widget.dataIsOld
                             ? Theme.of(context)
                                 .colorScheme
@@ -172,7 +173,8 @@ class _BatterySectionState extends State<BatterySection> {
             height: 40,
             indent: 0,
             endIndent: 0,
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+            color:
+                Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
           ),
         if (nfcBattery != 0 && nfcBattery != null && !nfcScanning)
           _batteryCard(
@@ -348,8 +350,10 @@ class _BatterySectionState extends State<BatterySection> {
               style: TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 12,
-                  color:
-                      Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.5)),
             ),
             Text(
               type.description(context),
@@ -357,8 +361,10 @@ class _BatterySectionState extends State<BatterySection> {
               style: TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 12,
-                  color:
-                      Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.5)),
             ),
             const SizedBox(height: 8),
             Padding(

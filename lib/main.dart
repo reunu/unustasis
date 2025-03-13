@@ -10,7 +10,7 @@ import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'background/bg_service.dart';
+import '../background/bg_service.dart';
 import '../domain/log_helper.dart';
 import '../flutter/blue_plus_mockable.dart';
 import '../home_screen.dart';
@@ -35,7 +35,9 @@ void main() async {
   }
 
   // here goes nothing...
-  setupBackgroundService();
+  if (Platform.isAndroid) {
+    setupBackgroundService();
+  }
 
   runApp(ChangeNotifierProvider(
       create: (context) => ScooterService(FlutterBluePlusMockable()),
