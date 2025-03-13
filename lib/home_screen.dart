@@ -713,7 +713,7 @@ class _ScooterPowerButtonState extends State<ScooterPowerButton> {
               child: Container(
                 decoration: const BoxDecoration(
                   shape: BoxShape.circle,
-                  image: DecorationImage(image: AssetImage("assetName")),
+                  image: DecorationImage(image: AssetImage("images/icon.png")),
                 ),
                 child: loading
                     ? SizedBox(
