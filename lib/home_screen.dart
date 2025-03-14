@@ -11,6 +11,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:logging/logging.dart';
 import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unustasis/helper_widgets.dart/grassscape.dart';
 
 import '../control_screen.dart';
 import '../domain/icomoon.dart';
@@ -172,14 +173,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       : Colors.black.withOpacity(0.05),
                 ),
               if (_spring)
-                Opacity(
-                  opacity: 0.1,
-                  child: Container(
-                    constraints: BoxConstraints.expand(),
-                    alignment: Alignment.bottomCenter,
-                    child: Image.asset('images/decoration/grass.png'),
-                  ),
-                ),
+                StreamBuilder<bool?>(
+                    stream: widget.scooterService.connected,
+                    builder: (context, snapshot) {
+                      return AnimatedOpacity(
+                        opacity: snapshot.data == true ? 1.0 : 0.0,
+                        duration: Duration(milliseconds: 500),
+                        child: GrassScape(),
+                      );
+                    }),
               SafeArea(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
@@ -750,7 +752,7 @@ class _ScooterPowerButtonState extends State<ScooterPowerButton> {
                                 : Colors.transparent),
                         image: DecorationImage(
                             image: AssetImage(
-                                "images/decoration/egg_$randomEgg.png"),
+                                "images/decoration/egg_$randomEgg.webp"),
                             fit: BoxFit.cover,
                             opacity: disabled ? 0.3 : 1),
                       )
@@ -769,7 +771,7 @@ class _ScooterPowerButtonState extends State<ScooterPowerButton> {
                         color: widget._easterEgg == true && !context.isDarkMode
                             ? (disabled ? Colors.black26 : Colors.black87)
                             : Theme.of(context).colorScheme.surface,
-                        size: 32,
+                        size: 28,
                       ),
               ),
             ),
