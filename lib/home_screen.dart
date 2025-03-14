@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:math' show Random;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
@@ -140,16 +142,17 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       body: AnnotatedRegion<SystemUiOverlayStyle>(
         value: context.isDarkMode
             ? const SystemUiOverlayStyle(
                 statusBarColor: Colors.transparent,
                 statusBarIconBrightness: Brightness.light,
-                systemNavigationBarColor: Color.fromARGB(255, 20, 20, 20))
+                systemNavigationBarColor: Colors.transparent)
             : const SystemUiOverlayStyle(
                 statusBarColor: Colors.transparent,
                 statusBarIconBrightness: Brightness.dark,
-                systemNavigationBarColor: Colors.white),
+                systemNavigationBarColor: Colors.transparent),
         child: Container(
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
@@ -167,6 +170,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   snowflakeColor: context.isDarkMode
                       ? Colors.white.withOpacity(0.15)
                       : Colors.black.withOpacity(0.05),
+                ),
+              if (_spring)
+                Opacity(
+                  opacity: 0.1,
+                  child: Container(
+                    constraints: BoxConstraints.expand(),
+                    alignment: Alignment.bottomCenter,
+                    child: Image.asset('images/decoration/grass.png'),
+                  ),
                 ),
               SafeArea(
                 child: Padding(
@@ -356,66 +368,66 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           Expanded(
                             child: ScooterPowerButton(
-                                action: _scooterState != null &&
-                                        _scooterState!.isReadyForLockChange
-                                    ? (_scooterState!.isOn
-                                        ? () async {
-                                            try {
-                                              await widget.scooterService
-                                                  .lock();
-                                              if (widget.scooterService
-                                                  .hazardLocking) {
-                                                _flashHazards(1);
-                                              }
-                                            } on SeatOpenException catch (_) {
-                                              log.warning(
-                                                  "Seat is open, showing alert");
-                                              showSeatWarning();
-                                            } on HandlebarLockException catch (_) {
-                                              log.warning(
-                                                  "Handlebars are still unlocked, showing alert");
-                                              showHandlebarWarning(
-                                                didNotUnlock: false,
-                                              );
-                                            } catch (e, stack) {
-                                              log.severe(
-                                                  "Problem opening the seat",
-                                                  e,
-                                                  stack);
-                                              Fluttertoast.showToast(
-                                                  msg: e.toString());
+                              action: _scooterState != null &&
+                                      _scooterState!.isReadyForLockChange
+                                  ? (_scooterState!.isOn
+                                      ? () async {
+                                          try {
+                                            await widget.scooterService.lock();
+                                            if (widget
+                                                .scooterService.hazardLocking) {
+                                              _flashHazards(1);
                                             }
+                                          } on SeatOpenException catch (_) {
+                                            log.warning(
+                                                "Seat is open, showing alert");
+                                            showSeatWarning();
+                                          } on HandlebarLockException catch (_) {
+                                            log.warning(
+                                                "Handlebars are still unlocked, showing alert");
+                                            showHandlebarWarning(
+                                              didNotUnlock: false,
+                                            );
+                                          } catch (e, stack) {
+                                            log.severe(
+                                                "Problem opening the seat",
+                                                e,
+                                                stack);
+                                            Fluttertoast.showToast(
+                                                msg: e.toString());
                                           }
-                                        : (_scooterState == ScooterState.standby
-                                            ? () async {
-                                                try {
-                                                  await widget.scooterService
-                                                      .unlock();
-                                                  if (widget.scooterService
-                                                      .hazardLocking) {
-                                                    _flashHazards(2);
-                                                  }
-                                                } on HandlebarLockException catch (_) {
-                                                  log.warning(
-                                                      "Handlebars are still locked, showing alert");
-                                                  showHandlebarWarning(
-                                                    didNotUnlock: true,
-                                                  );
+                                        }
+                                      : (_scooterState == ScooterState.standby
+                                          ? () async {
+                                              try {
+                                                await widget.scooterService
+                                                    .unlock();
+                                                if (widget.scooterService
+                                                    .hazardLocking) {
+                                                  _flashHazards(2);
                                                 }
+                                              } on HandlebarLockException catch (_) {
+                                                log.warning(
+                                                    "Handlebars are still locked, showing alert");
+                                                showHandlebarWarning(
+                                                  didNotUnlock: true,
+                                                );
                                               }
-                                            : widget.scooterService
-                                                .wakeUpAndUnlock))
-                                    : null,
-                                icon:
-                                    _scooterState != null && _scooterState!.isOn
-                                        ? Icons.lock_open
-                                        : Icons.lock_outline,
-                                label: _scooterState != null &&
-                                        _scooterState!.isOn
-                                    ? FlutterI18n.translate(
-                                        context, "home_lock_button")
-                                    : FlutterI18n.translate(
-                                        context, "home_unlock_button")),
+                                            }
+                                          : widget
+                                              .scooterService.wakeUpAndUnlock))
+                                  : null,
+                              icon: _scooterState != null && _scooterState!.isOn
+                                  ? Icons.lock_open
+                                  : Icons.lock_outline,
+                              label:
+                                  _scooterState != null && _scooterState!.isOn
+                                      ? FlutterI18n.translate(
+                                          context, "home_lock_button")
+                                      : FlutterI18n.translate(
+                                          context, "home_unlock_button"),
+                              easterEgg: _spring,
+                            ),
                           ),
                           Expanded(
                             child: ScooterActionButton(
@@ -551,7 +563,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void redirectOrStart() async {
     List<String> ids = await widget.scooterService.getSavedScooterIds();
     log.info("Saved scooters: $ids");
-    if (ids.isEmpty) {
+    if (ids.isEmpty && !kDebugMode) {
       FlutterNativeSplash.remove();
       Navigator.pushReplacement(
         context,
@@ -671,12 +683,23 @@ class ScooterPowerButton extends StatefulWidget {
 
 class _ScooterPowerButtonState extends State<ScooterPowerButton> {
   bool loading = false;
+  bool disabled = false;
+  late int randomEgg;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget._easterEgg == true) {
+      randomEgg = Random().nextInt(8);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     Color mainColor = widget._action == null
-        ? Theme.of(context).colorScheme.onSurface.withOpacity(0.2)
+        ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2)
         : Theme.of(context).colorScheme.primary;
+    disabled = widget._action == null;
     return Column(
       children: [
         Container(
@@ -689,15 +712,19 @@ class _ScooterPowerButtonState extends State<ScooterPowerButton> {
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
                 elevation: 0,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-                backgroundColor:
-                    loading ? Theme.of(context).colorScheme.surface : mainColor,
+                padding: EdgeInsets.zero,
+                backgroundColor: loading
+                    ? Theme.of(context).colorScheme.surface
+                    : (widget._easterEgg == true
+                        ? disabled
+                            ? Colors.white38
+                            : Colors.white
+                        : mainColor),
               ),
               onPressed: () {
                 Fluttertoast.showToast(msg: widget._label);
               },
-              onLongPress: widget._action == null
+              onLongPress: disabled
                   ? null
                   : () {
                       setState(() {
@@ -711,10 +738,23 @@ class _ScooterPowerButtonState extends State<ScooterPowerButton> {
                       });
                     },
               child: Container(
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  image: DecorationImage(image: AssetImage("images/icon.png")),
-                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                decoration: widget._easterEgg == true
+                    ? BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                            width: 2,
+                            color: !disabled && widget._easterEgg == true
+                                ? mainColor
+                                : Colors.transparent),
+                        image: DecorationImage(
+                            image: AssetImage(
+                                "images/decoration/egg_$randomEgg.png"),
+                            fit: BoxFit.cover,
+                            opacity: disabled ? 0.3 : 1),
+                      )
+                    : null,
                 child: loading
                     ? SizedBox(
                         height: 24,
@@ -726,7 +766,10 @@ class _ScooterPowerButtonState extends State<ScooterPowerButton> {
                       )
                     : Icon(
                         widget._icon,
-                        color: Theme.of(context).colorScheme.surface,
+                        color: widget._easterEgg == true && !context.isDarkMode
+                            ? (disabled ? Colors.black26 : Colors.black87)
+                            : Theme.of(context).colorScheme.surface,
+                        size: 32,
                       ),
               ),
             ),
