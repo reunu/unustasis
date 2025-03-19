@@ -42,6 +42,7 @@
     "unlocked_handlebar_alert_title": "Handlebars did not lock!",
     "unlocked_handlebar_alert_body": "Turn your handlebars all the way to the left, and lock the scooter again.",
     "unlocked_handlebar_alert_action": "Turn on scooter",
+    "unlocked_handlebar_alert_ignore": "Don't warn again",
     "state_name_standby": "Standby",
     "state_name_off": "Powered off",
     "state_name_parked": "Parked",

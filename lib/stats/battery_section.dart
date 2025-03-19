@@ -525,38 +525,6 @@ class _BatterySectionState extends State<BatterySection> {
       ),
     );
   }
-
-  Widget _splitProgressBar(
-      {required int maxSteps,
-      required int currentStep,
-      required BuildContext context,
-      required bool old}) {
-    List<Widget> bars = [];
-    for (int i = 0; i < maxSteps; i++) {
-      bars.add(
-        Expanded(
-          child: Container(
-            height: 16,
-            decoration: BoxDecoration(
-              color: i < currentStep
-                  ? (old
-                      ? Theme.of(context).colorScheme.onSurface.withOpacity(0.4)
-                      : Theme.of(context).colorScheme.primary)
-                  : Theme.of(context).colorScheme.onTertiary.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-        ),
-      );
-      if (i < maxSteps - 1) {
-        bars.add(const SizedBox(width: 8));
-      }
-    }
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: bars,
-    );
-  }
 }
 
 enum BatteryType { primary, secondary, cbb, aux, nfc }

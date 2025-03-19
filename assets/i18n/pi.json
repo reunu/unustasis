@@ -42,6 +42,7 @@
     "unlocked_handlebar_alert_title": "Yar helm ain't secured!",
     "unlocked_handlebar_alert_body": "Turn ye helm all the way to the left, and secure ye ship again.",
     "unlocked_handlebar_alert_action": "Power up ship",
+    "unlocked_handlebar_alert_ignore": "Don't warn again",
     "state_name_standby": "Sleepin' like a drunken sailor",
     "state_name_off": "Powered off, like a sunken ship",
     "state_name_parked": "Docked and ready for plunderin'",

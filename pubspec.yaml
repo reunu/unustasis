@@ -20,7 +20,7 @@ version: 1.2.6+20
 
 environment:
   sdk: '>=3.3.2 <4.0.0'
-  flutter: 3.22.3
+  flutter: 3.29.1
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -39,14 +39,14 @@ dependencies:
   flutter_blue_plus: ^1.31.17
   shared_preferences: ^2.2.2
   google_fonts: ^6.2.1
-  rxdart: ^0.27.7
+  rxdart: ^0.28.0
   fluttertoast: ^8.0.8
-  flutter_i18n: ^0.35.1
-  flutter_map: ^6.1.0
-  geolocator: ^11.0.0
+  flutter_i18n: ^0.36.2
+  flutter_map: ^8.0.0
+  geolocator: ^13.0.2
   latlong2: ^0.9.1
   nfc_manager: ^3.4.0
-  package_info_plus: ^7.0.0
+  package_info_plus: ^8.2.1
   http: ^1.2.1
   local_auth: ^2.2.0
   url_launcher: ^6.2.6
@@ -57,8 +57,8 @@ dependencies:
   shimmer: ^3.0.0
   logging: ^1.2.0
   path_provider: ^2.1.4
-  flutter_email_sender: ^6.0.3
-  device_info_plus: ^10.1.2
+  flutter_email_sender: ^7.0.0
+  device_info_plus: ^11.3.0
   appcheck: ^1.5.2
 
 dev_dependencies:
@@ -66,7 +66,7 @@ dev_dependencies:
     sdk: flutter
   mockito: ^5.4.4
   build_runner: ^2.4.9
-  flutter_string_extractor: ^0.1.1
+  flutter_string_extractor: ^1.1.2
   change_app_package_name: ^1.1.0
 
   # The "flutter_lints" package below contains a set of recommended lints to
@@ -74,7 +74,7 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^3.0.0
+  flutter_lints: ^5.0.0
   flutter_launcher_icons:
     git: https://github.com/fluttercommunity/flutter_launcher_icons
 
@@ -99,50 +99,12 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - images/scooter/base_0.webp
-    - images/scooter/base_1.webp
-    - images/scooter/base_2.webp
-    - images/scooter/base_3.webp
-    - images/scooter/base_4.webp
-    - images/scooter/base_5.webp
-    - images/scooter/base_6.webp
-    - images/scooter/base_7.webp
-    - images/scooter/base_8.webp
-    - images/scooter/base_9.webp
-    - images/scooter/side_0.webp
-    - images/scooter/side_1.webp
-    - images/scooter/side_2.webp
-    - images/scooter/side_3.webp
-    - images/scooter/side_4.webp
-    - images/scooter/side_5.webp
-    - images/scooter/side_6.webp
-    - images/scooter/side_7.webp
-    - images/scooter/side_8.webp
-    - images/scooter/side_9.webp
-    - images/scooter/disconnected.webp
-    - images/scooter/light_beam.webp
-    - images/scooter/light_ring.webp
-    - images/scooter/blinker_l.webp
-    - images/scooter/blinker_r.webp
-    - images/scooter/seasonal/winter_on.webp
-    - images/scooter/seasonal/winter_off.webp
-    - images/battery/batt_full.webp
-    - images/battery/batt_75.webp
-    - images/battery/batt_50.webp
-    - images/battery/batt_25.webp
-    - images/battery/batt_empty.webp
-    - images/battery/batt_cbb.webp
-    - images/battery/batt_aux.webp
-    - images/battery/batt_internal.webp
-    - assets/i18n/en.json
-    - assets/i18n/de.json
-    - assets/i18n/pi.json
-    - assets/faq_en.json
-    - assets/faq_de.json
-    - assets/faq_pi.json
-    - assets/anim/scanning.json
-    - assets/anim/found.json
-    - assets/anim/handlebars.json
+    - images/scooter/
+    - images/battery/
+    - images/decoration/
+    - assets/i18n/
+    - assets/
+    - assets/anim/
 
   fonts:
     - family: icomoon
