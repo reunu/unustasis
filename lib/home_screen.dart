@@ -9,9 +9,9 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:logging/logging.dart';
-import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:unustasis/helper_widgets.dart/grassscape.dart';
+import 'package:unustasis/handlebar_warning.dart';
+import 'package:unustasis/helper_widgets/grassscape.dart';
 
 import '../control_screen.dart';
 import '../domain/icomoon.dart';
@@ -21,7 +21,7 @@ import '../scooter_service.dart';
 import '../domain/scooter_state.dart';
 import '../scooter_visual.dart';
 import '../stats/stats_screen.dart';
-import 'helper_widgets.dart/snowfall.dart';
+import 'helper_widgets/snowfall.dart';
 
 class HomeScreen extends StatefulWidget {
   final ScooterService scooterService;
@@ -200,15 +200,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                         ),
-                        // Hidden for stable release
-                        // onLongPress: () => Navigator.push(
-                        //   context,
-                        //   MaterialPageRoute(
-                        //     builder: (context) => DrivingScreen(
-                        //       service: widget.scooterService,
-                        //     ),
-                        //   ),
-                        // ),
+                        // Hidden for stable release, but useful for various debugging
+                        // onLongPress: () =>
+                        //     showHandlebarWarning(didNotUnlock: false),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -300,6 +294,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                             MediaQuery.of(context).size.width /
                                                 6,
                                         child: LinearProgressIndicator(
+                                          backgroundColor: Colors.black26,
                                           minHeight: 8,
                                           borderRadius:
                                               BorderRadius.circular(8),
@@ -309,7 +304,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                   .colorScheme
                                                   .onSurface
                                                   .withOpacity(0.4)
-                                              : _secondarySOC! <= 15
+                                              : _primarySOC! <= 15
                                                   ? Theme.of(context)
                                                       .colorScheme
                                                       .error
@@ -512,54 +507,22 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void showHandlebarWarning({required bool didNotUnlock}) {
-    showDialog<void>(
+    showDialog<bool>(
       context: context,
       barrierDismissible: false, // user must tap button!
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Lottie.asset(
-                "assets/anim/handlebars.json",
-                height: 160,
-              ),
-              const SizedBox(height: 24),
-              Text(FlutterI18n.translate(context,
-                  "${didNotUnlock ? "locked" : "unlocked"}_handlebar_alert_title")),
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: <Widget>[
-                Text(FlutterI18n.translate(context,
-                    "${didNotUnlock ? "locked" : "unlocked"}_handlebar_alert_body")),
-              ],
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('OK'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: Text(FlutterI18n.translate(context,
-                  "${didNotUnlock ? "locked" : "unlocked"}_handlebar_alert_action")),
-              onPressed: () {
-                if (didNotUnlock) {
-                  widget.scooterService.lock();
-                } else {
-                  widget.scooterService.unlock();
-                }
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
+        return HandlebarWarning(
+          service: widget.scooterService,
+          didNotUnlock: didNotUnlock,
         );
       },
-    );
+    ).then((dontShowAgain) async {
+      if (dontShowAgain == true) {
+        Logger("").info("Not showing unlocked handlebar warning again");
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        prefs.setBool("unlockedHandlebarsWarning", true);
+      }
+    });
   }
 
   void redirectOrStart() async {

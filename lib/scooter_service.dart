@@ -21,6 +21,7 @@ import '../infrastructure/scooter_reader.dart';
 
 const bootingTimeSeconds = 25;
 const keylessCooldownSeconds = 60;
+const handlebarCheckSeconds = 4;
 
 class ScooterService {
   final log = Logger('ScooterService');
@@ -33,6 +34,7 @@ class ScooterService {
   int _autoUnlockThreshold = ScooterKeylessDistance.regular.threshold;
   bool _openSeatOnUnlock = false;
   bool _hazardLocking = false;
+  bool _warnOfUnlockedHandlebars = true;
   bool _autoUnlockCooldown = false;
   SharedPreferences? prefs;
   late Timer _locationTimer, _rssiTimer, _manualRefreshTimer;
@@ -108,6 +110,8 @@ class ScooterService {
     optionalAuth = !(prefs?.getBool("biometrics") ?? false);
     _openSeatOnUnlock = prefs?.getBool("openSeatOnUnlock") ?? false;
     _hazardLocking = prefs?.getBool("hazardLocking") ?? false;
+    _warnOfUnlockedHandlebars =
+        prefs?.getBool("unlockedHandlebarsWarning") ?? true;
   }
 
   void seedStreamsWithCache() {
@@ -532,7 +536,7 @@ class ScooterService {
       openSeat();
     }
 
-    await Future.delayed(const Duration(seconds: 3), () {
+    await Future.delayed(const Duration(seconds: handlebarCheckSeconds), () {
       if (_handlebarController.value == true) {
         log.warning("Handlebars didn't unlock, sending warning");
         throw HandlebarLockException();
@@ -574,8 +578,8 @@ class ScooterService {
       hazard(times: 1);
     }
 
-    await Future.delayed(const Duration(seconds: 3), () {
-      if (_handlebarController.value == false) {
+    await Future.delayed(const Duration(seconds: handlebarCheckSeconds), () {
+      if (_handlebarController.value == false && _warnOfUnlockedHandlebars) {
         log.warning("Handlebars didn't lock, sending warning");
         throw HandlebarLockException();
       }

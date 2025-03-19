@@ -42,6 +42,7 @@
     "unlocked_handlebar_alert_title": "Lenker ist nicht verriegelt!",
     "unlocked_handlebar_alert_body": "Dreh den Lenker ganz nach links, und starte dann den Roller neu.",
     "unlocked_handlebar_alert_action": "Roller einschalten",
+    "unlocked_handlebar_alert_ignore": "Nicht erneut warnen",
     "state_name_standby": "Standby",
     "state_name_off": "Ausgeschaltet",
     "state_name_parked": "Geparkt",
