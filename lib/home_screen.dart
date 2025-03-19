@@ -722,8 +722,8 @@ class _ScooterPowerButtonState extends State<ScooterPowerButton> {
                     : null,
                 child: loading
                     ? SizedBox(
-                        height: 24,
-                        width: 24,
+                        height: 28,
+                        width: 28,
                         child: CircularProgressIndicator(
                           color: mainColor,
                           strokeWidth: 2,
