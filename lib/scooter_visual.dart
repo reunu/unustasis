@@ -13,6 +13,7 @@ class ScooterVisual extends StatelessWidget {
   final bool blinkerRight;
   final int? color;
   final bool winter;
+  final bool aprilFools;
 
   const ScooterVisual(
       {required this.state,
@@ -20,6 +21,7 @@ class ScooterVisual extends StatelessWidget {
       required this.blinkerLeft,
       required this.blinkerRight,
       this.winter = false,
+      this.aprilFools = false,
       this.color,
       super.key});
 
@@ -58,7 +60,7 @@ class ScooterVisual extends StatelessWidget {
                       opacity: 1,
                       child: Image(
                         image: AssetImage(
-                            "images/scooter/base_${color ?? 1}.webp"),
+                            "images/scooter/base_${aprilFools ? 9 : color ?? 1}.webp"),
                       ),
                     ),
                     crossFadeState: state == ScooterState.disconnected

@@ -179,12 +179,16 @@ class SavedScooterCard extends StatelessWidget {
           builder: (context, snapshot) {
             bool showOnboarding =
                 snapshot.data?.getBool("color_onboarded") != true;
+            // Check for april fools
+            bool forceHover = snapshot.data?.getBool("seasonal") == true &&
+                DateTime.now().month == 4 &&
+                DateTime.now().day == 1;
             return Column(
               children: [
                 const SizedBox(height: 4),
                 GestureDetector(
                   child: Image.asset(
-                    "images/scooter/side_${savedScooter.color}.webp",
+                    "images/scooter/side_${forceHover ? 9 : savedScooter.color}.webp",
                     height: 160,
                   ),
                   onTap: () async {

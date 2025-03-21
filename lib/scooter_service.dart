@@ -21,6 +21,7 @@ import '../infrastructure/scooter_reader.dart';
 
 const bootingTimeSeconds = 25;
 const keylessCooldownSeconds = 60;
+const handlebarCheckSeconds = 4;
 
 class ScooterService {
   final log = Logger('ScooterService');
@@ -33,6 +34,7 @@ class ScooterService {
   int _autoUnlockThreshold = ScooterKeylessDistance.regular.threshold;
   bool _openSeatOnUnlock = false;
   bool _hazardLocking = false;
+  bool _warnOfUnlockedHandlebars = true;
   bool _autoUnlockCooldown = false;
   SharedPreferences? prefs;
   late Timer _locationTimer, _rssiTimer, _manualRefreshTimer;
@@ -74,6 +76,7 @@ class ScooterService {
         int? rssi;
         try {
           rssi = await myScooter!.readRssi();
+          _rssiController.add(rssi);
         } catch (e) {
           // probably not connected anymore
         }
@@ -107,6 +110,8 @@ class ScooterService {
     optionalAuth = !(prefs?.getBool("biometrics") ?? false);
     _openSeatOnUnlock = prefs?.getBool("openSeatOnUnlock") ?? false;
     _hazardLocking = prefs?.getBool("hazardLocking") ?? false;
+    _warnOfUnlockedHandlebars =
+        prefs?.getBool("unlockedHandlebarsWarning") ?? true;
   }
 
   void seedStreamsWithCache() {
@@ -232,12 +237,8 @@ class ScooterService {
 
   Stream<bool> get scanning => flutterBluePlus.isScanning;
 
-  Stream<int?> get rssi => flutterBluePlus.events.onReadRssi.asyncMap((event) {
-        if (event.device.remoteId == myScooter?.remoteId) {
-          return event.rssi;
-        }
-        return null;
-      });
+  final BehaviorSubject<int?> _rssiController = BehaviorSubject<int?>();
+  Stream<int?> get rssi => _rssiController.stream;
 
   // MAIN FUNCTIONS
 
@@ -523,7 +524,7 @@ class ScooterService {
 
   // SCOOTER ACTIONS
 
-  void unlock() {
+  Future<void> unlock() async {
     _sendCommand("scooter:state unlock");
     HapticFeedback.heavyImpact();
 
@@ -534,6 +535,13 @@ class ScooterService {
     if (_openSeatOnUnlock) {
       openSeat();
     }
+
+    await Future.delayed(const Duration(seconds: handlebarCheckSeconds), () {
+      if (_handlebarController.value == true) {
+        log.warning("Handlebars didn't unlock, sending warning");
+        throw HandlebarLockException();
+      }
+    });
   }
 
   Future<void> wakeUpAndUnlock() async {
@@ -548,6 +556,7 @@ class ScooterService {
   }
 
   Future<void> lock() async {
+    // double-check for open seat
     if (_seatClosedController.value == false) {
       log.warning("Seat seems to be open, checking again...");
       // make really sure nothing has changed
@@ -560,12 +569,21 @@ class ScooterService {
             "Seat state was ${_seatClosedController.value} this time, proceeding...");
       }
     }
+
+    // send the command
     _sendCommand("scooter:state lock");
     HapticFeedback.heavyImpact();
 
     if (_hazardLocking) {
       hazard(times: 1);
     }
+
+    await Future.delayed(const Duration(seconds: handlebarCheckSeconds), () {
+      if (_handlebarController.value == false && _warnOfUnlockedHandlebars) {
+        log.warning("Handlebars didn't lock, sending warning");
+        throw HandlebarLockException();
+      }
+    });
 
     // don't immediately unlock again automatically
     _autoUnlockCooldown = true;
@@ -900,3 +918,5 @@ class ScooterService {
 class SeatOpenException {}
 
 class UnavailableCharacteristicsException {}
+
+class HandlebarLockException {}
