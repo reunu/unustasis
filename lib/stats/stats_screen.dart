@@ -4,6 +4,7 @@ import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 
+import '../stats/support_section.dart';
 import '../stats/settings_section.dart';
 import '../scooter_service.dart';
 import '../stats/battery_section.dart';
@@ -25,7 +26,7 @@ class _StatsScreenState extends State<StatsScreen> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         extendBodyBehindAppBar: true,
         appBar: AppBar(
@@ -37,8 +38,10 @@ class _StatsScreenState extends State<StatsScreen> {
                   isScrollable: true,
                   tabAlignment: TabAlignment.center,
                   labelPadding: const EdgeInsets.symmetric(horizontal: 24),
-                  unselectedLabelColor:
-                      Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
+                  unselectedLabelColor: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.3),
                   labelColor: Theme.of(context).colorScheme.onSurface,
                   indicatorColor: Theme.of(context).colorScheme.onSurface,
                   dividerColor: Colors.transparent,
@@ -67,6 +70,14 @@ class _StatsScreenState extends State<StatsScreen> {
                         ),
                       ),
                     ),
+                    Tab(
+                      child: Text(
+                        FlutterI18n.translate(context, 'stats_title_support'),
+                        style: const TextStyle(
+                          fontSize: 16,
+                        ),
+                      ),
+                    )
                   ])),
           actions: [
             Selector<ScooterService, DateTime?>(
@@ -105,6 +116,8 @@ class _StatsScreenState extends State<StatsScreen> {
                       ScooterSection(dataIsOld: dataIsOld),
                       // SETTINGS TAB
                       const SettingsSection(),
+                      // SUPPORT TAB
+                      const SupportSection(),
                     ],
                   );
                 }),
@@ -158,7 +171,10 @@ class LastPingInfo extends StatelessWidget {
               style: TextStyle(
                 fontWeight: FontWeight.w900,
                 fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(
@@ -166,7 +182,10 @@ class LastPingInfo extends StatelessWidget {
             ),
             Icon(
               Icons.schedule_rounded,
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withValues(alpha: 0.7),
               size: 24,
             ),
             const SizedBox(

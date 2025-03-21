@@ -219,7 +219,7 @@ void onStart(ServiceInstance service) async {
         if (data!["backgroundScan"] == false && backgroundScanEnabled) {
           // was true, now is false. Shut it down!
           _disableScanning();
-        } else if (data!["backgroundScan"] == true && !backgroundScanEnabled) {
+        } else if (data["backgroundScan"] == true && !backgroundScanEnabled) {
           // was false, now is true. Start it up!
           _enableScanning();
         }

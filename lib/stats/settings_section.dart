@@ -323,23 +323,6 @@ class _SettingsSectionState extends State<SettingsSection> {
               }),
         Header(FlutterI18n.translate(context, "stats_settings_section_about")),
         ListTile(
-          leading: const Icon(Icons.help_outline),
-          title: Text(FlutterI18n.translate(context, "settings_support")),
-          onTap: () {
-            Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => const SupportScreen()));
-          },
-          trailing: const Icon(Icons.chevron_right),
-        ),
-        ListTile(
-          leading: const Icon(Icons.bug_report_outlined),
-          title: Text(FlutterI18n.translate(context, "settings_report")),
-          onTap: () {
-            LogHelper.startBugReport(context);
-          },
-          trailing: const Icon(Icons.chevron_right),
-        ),
-        ListTile(
           leading: const Icon(Icons.privacy_tip_outlined),
           title:
               Text(FlutterI18n.translate(context, "settings_privacy_policy")),
