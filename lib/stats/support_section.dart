@@ -191,7 +191,7 @@ class GarageWidget extends StatelessWidget {
     final response = await http
         .get(Uri.parse('https://unumotors.com/page-data/sq/d/2596243890.json'));
     if (response.statusCode == 200) {
-      Map<String, dynamic> json = jsonDecode(response.body);
+      Map<String, dynamic> json = jsonDecode(utf8.decode(response.bodyBytes));
       Map<String, dynamic> data = json['data'];
       Map<String, dynamic> content = data['contentfulGaragesJson'];
       List<dynamic> garages = content['garages'];
