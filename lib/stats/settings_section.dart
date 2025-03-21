@@ -306,7 +306,8 @@ class _SettingsSectionState extends State<SettingsSection> {
             });
           },
         ),
-        if (DateTime.now().month == 12) // All seasonal months
+        if (DateTime.now().month == 12 ||
+            DateTime.now().month == 4) // All seasonal months
           SwitchListTile(
               secondary: const Icon(Icons.star),
               title: Text(FlutterI18n.translate(context, "settings_seasonal")),
