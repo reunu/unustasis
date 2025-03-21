@@ -4,19 +4,23 @@ import 'package:logging/logging.dart';
 class CharacteristicRepository {
   final log = Logger("CharacteristicRepository");
   BluetoothDevice scooter;
-  BluetoothCharacteristic? commandCharacteristic;
-  BluetoothCharacteristic? hibernationCommandCharacteristic;
-  BluetoothCharacteristic? stateCharacteristic;
-  BluetoothCharacteristic? powerStateCharacteristic;
-  BluetoothCharacteristic? seatCharacteristic;
-  BluetoothCharacteristic? handlebarCharacteristic;
-  BluetoothCharacteristic? auxSOCCharacteristic;
-  BluetoothCharacteristic? cbbSOCCharacteristic;
-  BluetoothCharacteristic? cbbChargingCharacteristic;
-  BluetoothCharacteristic? primaryCyclesCharacteristic;
-  BluetoothCharacteristic? primarySOCCharacteristic;
-  BluetoothCharacteristic? secondaryCyclesCharacteristic;
-  BluetoothCharacteristic? secondarySOCCharacteristic;
+  late BluetoothCharacteristic? commandCharacteristic;
+  late BluetoothCharacteristic? hibernationCommandCharacteristic;
+  late BluetoothCharacteristic? stateCharacteristic;
+  late BluetoothCharacteristic? powerStateCharacteristic;
+  late BluetoothCharacteristic? seatCharacteristic;
+  late BluetoothCharacteristic? handlebarCharacteristic;
+  late BluetoothCharacteristic? auxSOCCharacteristic;
+  late BluetoothCharacteristic? auxVoltageCharacteristic;
+  late BluetoothCharacteristic? auxChargingCharacteristic;
+  late BluetoothCharacteristic? cbbSOCCharacteristic;
+  late BluetoothCharacteristic? cbbVoltageCharacteristic;
+  late BluetoothCharacteristic? cbbCapacityCharacteristic;
+  late BluetoothCharacteristic? cbbChargingCharacteristic;
+  late BluetoothCharacteristic? primaryCyclesCharacteristic;
+  late BluetoothCharacteristic? primarySOCCharacteristic;
+  late BluetoothCharacteristic? secondaryCyclesCharacteristic;
+  late BluetoothCharacteristic? secondarySOCCharacteristic;
 
   CharacteristicRepository(this.scooter);
 
@@ -52,10 +56,26 @@ class CharacteristicRepository {
         scooter,
         "9a590040-6e67-5d0d-aab9-ad9126b66f91",
         "9a590044-6e67-5d0d-aab9-ad9126b66f91");
+    auxVoltageCharacteristic = findCharacteristic(
+        scooter,
+        "9a590040-6e67-5d0d-aab9-ad9126b66f91",
+        "9a590041-6e67-5d0d-aab9-ad9126b66f91");
+    auxChargingCharacteristic = findCharacteristic(
+        scooter,
+        "9a590040-6e67-5d0d-aab9-ad9126b66f91",
+        "9a590043-6e67-5d0d-aab9-ad9126b66f91");
     cbbSOCCharacteristic = findCharacteristic(
         scooter,
         "9a590060-6e67-5d0d-aab9-ad9126b66f91",
         "9a590061-6e67-5d0d-aab9-ad9126b66f91");
+    cbbVoltageCharacteristic = findCharacteristic(
+        scooter,
+        "9a590060-6e67-5d0d-aab9-ad9126b66f91",
+        "9a590065-6e67-5d0d-aab9-ad9126b66f91");
+    cbbCapacityCharacteristic = findCharacteristic(
+        scooter,
+        "9a590060-6e67-5d0d-aab9-ad9126b66f91",
+        "9a590063-6e67-5d0d-aab9-ad9126b66f91");
     cbbChargingCharacteristic = findCharacteristic(
         scooter,
         "9a590060-6e67-5d0d-aab9-ad9126b66f91",

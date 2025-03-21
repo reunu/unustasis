@@ -14,6 +14,7 @@ import 'package:logging/logging.dart';
 import 'package:pausable_timer/pausable_timer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../domain/scooter_battery.dart';
 import '../domain/saved_scooter.dart';
 import '../domain/scooter_keyless_distance.dart';
 import '../domain/scooter_state.dart';
@@ -194,14 +195,18 @@ class ScooterService with ChangeNotifier {
     _primarySOC = 53;
     _secondarySOC = 100;
     _cbbSOC = 98;
+    _cbbVoltage = 15000;
+    _cbbCapacity = 33000;
+    _cbbCharging = false;
     _auxSOC = 100;
+    _auxVoltage = 15000;
+    _auxCharging = AUXChargingState.absorptionCharge;
     _primaryCycles = 190;
     _secondaryCycles = 75;
     _connected = true;
     _state = ScooterState.parked;
     _seatClosed = true;
     _handlebarsLocked = false;
-    _cbbCharging = false;
     _lastPing = DateTime.now();
     _scooterName = "Demo Scooter";
 
@@ -244,6 +249,20 @@ class ScooterService with ChangeNotifier {
     notifyListeners();
   }
 
+  int? _auxVoltage;
+  int? get auxVoltage => _auxVoltage;
+  set auxVoltage(int? auxVoltage) {
+    _auxVoltage = auxVoltage;
+    notifyListeners();
+  }
+
+  AUXChargingState? _auxCharging;
+  AUXChargingState? get auxCharging => _auxCharging;
+  set auxCharging(AUXChargingState? auxCharging) {
+    _auxCharging = auxCharging;
+    notifyListeners();
+  }
+
   double? _cbbHealth;
   double? get cbbHealth => _cbbHealth;
   set cbbHealth(double? cbbHealth) {
@@ -255,6 +274,20 @@ class ScooterService with ChangeNotifier {
   int? get cbbSOC => _cbbSOC;
   set cbbSOC(int? cbbSOC) {
     _cbbSOC = cbbSOC;
+    notifyListeners();
+  }
+
+  int? _cbbVoltage;
+  int? get cbbVoltage => _cbbVoltage;
+  set cbbVoltage(int? cbbVoltage) {
+    _cbbVoltage = cbbVoltage;
+    notifyListeners();
+  }
+
+  int? _cbbCapacity;
+  int? get cbbCapacity => _cbbCapacity;
+  set cbbCapacity(int? cbbCapacity) {
+    _cbbCapacity = cbbCapacity;
     notifyListeners();
   }
 
