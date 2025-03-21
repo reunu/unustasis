@@ -212,35 +212,40 @@ class _SettingsSectionState extends State<SettingsSection> {
         ListTile(
           leading: const Icon(Icons.language_outlined),
           title: Text(FlutterI18n.translate(context, "settings_language")),
-          subtitle: DropdownButtonFormField(
+          subtitle: Padding(
             padding: const EdgeInsets.only(top: 8),
-            value: Locale(FlutterI18n.currentLocale(context)!.languageCode),
-            isExpanded: true,
-            decoration: const InputDecoration(
-              contentPadding: EdgeInsets.all(16),
-              border: OutlineInputBorder(),
+            child: DropdownButtonFormField(
+              value: Locale(FlutterI18n.currentLocale(context)!.languageCode),
+              isExpanded: true,
+              decoration: const InputDecoration(
+                contentPadding: EdgeInsets.all(16),
+                border: OutlineInputBorder(),
+              ),
+              dropdownColor: Theme.of(context).colorScheme.surfaceContainer,
+              items: [
+                DropdownMenuItem<Locale>(
+                  value: const Locale("en"),
+                  child:
+                      Text(FlutterI18n.translate(context, "language_english")),
+                ),
+                DropdownMenuItem<Locale>(
+                  value: const Locale("de"),
+                  child:
+                      Text(FlutterI18n.translate(context, "language_german")),
+                ),
+                DropdownMenuItem<Locale>(
+                  value: const Locale("pi"),
+                  child:
+                      Text(FlutterI18n.translate(context, "language_pirate")),
+                ),
+              ],
+              onChanged: (newLanguage) async {
+                await FlutterI18n.refresh(context, newLanguage);
+                SharedPreferences prefs = await SharedPreferences.getInstance();
+                prefs.setString("savedLocale", newLanguage!.languageCode);
+                setState(() {});
+              },
             ),
-            dropdownColor: Theme.of(context).colorScheme.surfaceContainer,
-            items: [
-              DropdownMenuItem<Locale>(
-                value: const Locale("en"),
-                child: Text(FlutterI18n.translate(context, "language_english")),
-              ),
-              DropdownMenuItem<Locale>(
-                value: const Locale("de"),
-                child: Text(FlutterI18n.translate(context, "language_german")),
-              ),
-              DropdownMenuItem<Locale>(
-                value: const Locale("pi"),
-                child: Text(FlutterI18n.translate(context, "language_pirate")),
-              ),
-            ],
-            onChanged: (newLanguage) async {
-              await FlutterI18n.refresh(context, newLanguage);
-              SharedPreferences prefs = await SharedPreferences.getInstance();
-              prefs.setString("savedLocale", newLanguage!.languageCode);
-              setState(() {});
-            },
           ),
         ),
         SwitchListTile(
@@ -273,23 +278,6 @@ class _SettingsSectionState extends State<SettingsSection> {
                 });
               }),
         Header(FlutterI18n.translate(context, "stats_settings_section_about")),
-        ListTile(
-          leading: const Icon(Icons.help_outline),
-          title: Text(FlutterI18n.translate(context, "settings_support")),
-          onTap: () {
-            Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => const SupportScreen()));
-          },
-          trailing: const Icon(Icons.chevron_right),
-        ),
-        ListTile(
-          leading: const Icon(Icons.bug_report_outlined),
-          title: Text(FlutterI18n.translate(context, "settings_report")),
-          onTap: () {
-            LogHelper.startBugReport(context);
-          },
-          trailing: const Icon(Icons.chevron_right),
-        ),
         ListTile(
           leading: const Icon(Icons.privacy_tip_outlined),
           title:
