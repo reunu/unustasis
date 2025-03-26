@@ -24,7 +24,7 @@ import '../infrastructure/scooter_reader.dart';
 
 const bootingTimeSeconds = 25;
 const keylessCooldownSeconds = 60;
-const handlebarCheckSeconds = 4;
+const handlebarCheckSeconds = 5;
 
 class ScooterService with ChangeNotifier {
   final log = Logger('ScooterService');
