@@ -1,7 +1,8 @@
 ### Changes:
-- Fixed multiple pairing errors!
-- Using system language on first launch
-- Added auto-connect controls for users with multiple scooters linked
-- Fixed warning for open seat when attempting to lock
-- Fixed an error with older scooters
-- Adding seasonal effect for December
+- Homescreen widget for Android
+- App can now connect to the Scooter in the background
+- Spring update
+- Improved scooter images
+- Improved clarity of some strings
+- New support section
+- Various other minor fixes

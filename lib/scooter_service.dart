@@ -11,8 +11,10 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:logging/logging.dart';
+import 'package:pausable_timer/pausable_timer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../domain/scooter_battery.dart';
 import '../domain/saved_scooter.dart';
 import '../domain/scooter_keyless_distance.dart';
 import '../domain/scooter_state.dart';
@@ -22,6 +24,7 @@ import '../infrastructure/scooter_reader.dart';
 
 const bootingTimeSeconds = 25;
 const keylessCooldownSeconds = 60;
+const handlebarCheckSeconds = 5;
 
 class ScooterService with ChangeNotifier {
   final log = Logger('ScooterService');
@@ -33,9 +36,11 @@ class ScooterService with ChangeNotifier {
   int _autoUnlockThreshold = ScooterKeylessDistance.regular.threshold;
   bool _openSeatOnUnlock = false;
   bool _hazardLocking = false;
+  bool _warnOfUnlockedHandlebars = true;
   bool _autoUnlockCooldown = false;
   SharedPreferences? prefs;
-  late Timer _locationTimer, _rssiTimer, _manualRefreshTimer;
+  late Timer _locationTimer, _manualRefreshTimer;
+  late PausableTimer rssiTimer;
   bool optionalAuth = false;
   late CharacteristicRepository characteristicRepository;
   late ScooterReader _scooterReader;
@@ -76,7 +81,7 @@ class ScooterService with ChangeNotifier {
         _pollLocation();
       }
     });
-    _rssiTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
+    rssiTimer = PausableTimer.periodic(const Duration(seconds: 3), () async {
       if (myScooter != null && myScooter!.isConnected && _autoUnlock) {
         try {
           rssi = await myScooter!.readRssi();
@@ -96,7 +101,8 @@ class ScooterService with ChangeNotifier {
           _autoUnlockCooldown = false;
         }
       }
-    });
+    })
+      ..start();
     _manualRefreshTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
       if (myScooter != null && myScooter!.isConnected) {
         // only refresh state and seatbox, for now
@@ -114,6 +120,8 @@ class ScooterService with ChangeNotifier {
     optionalAuth = !(prefs?.getBool("biometrics") ?? false);
     _openSeatOnUnlock = prefs?.getBool("openSeatOnUnlock") ?? false;
     _hazardLocking = prefs?.getBool("hazardLocking") ?? false;
+    _warnOfUnlockedHandlebars =
+        prefs?.getBool("unlockedHandlebarsWarning") ?? true;
   }
 
   Future<SavedScooter?> getMostRecentScooter() async {
@@ -187,14 +195,18 @@ class ScooterService with ChangeNotifier {
     _primarySOC = 53;
     _secondarySOC = 100;
     _cbbSOC = 98;
+    _cbbVoltage = 15000;
+    _cbbCapacity = 33000;
+    _cbbCharging = false;
     _auxSOC = 100;
+    _auxVoltage = 15000;
+    _auxCharging = AUXChargingState.absorptionCharge;
     _primaryCycles = 190;
     _secondaryCycles = 75;
     _connected = true;
     _state = ScooterState.parked;
     _seatClosed = true;
     _handlebarsLocked = false;
-    _cbbCharging = false;
     _lastPing = DateTime.now();
     _scooterName = "Demo Scooter";
 
@@ -237,6 +249,20 @@ class ScooterService with ChangeNotifier {
     notifyListeners();
   }
 
+  int? _auxVoltage;
+  int? get auxVoltage => _auxVoltage;
+  set auxVoltage(int? auxVoltage) {
+    _auxVoltage = auxVoltage;
+    notifyListeners();
+  }
+
+  AUXChargingState? _auxCharging;
+  AUXChargingState? get auxCharging => _auxCharging;
+  set auxCharging(AUXChargingState? auxCharging) {
+    _auxCharging = auxCharging;
+    notifyListeners();
+  }
+
   double? _cbbHealth;
   double? get cbbHealth => _cbbHealth;
   set cbbHealth(double? cbbHealth) {
@@ -248,6 +274,20 @@ class ScooterService with ChangeNotifier {
   int? get cbbSOC => _cbbSOC;
   set cbbSOC(int? cbbSOC) {
     _cbbSOC = cbbSOC;
+    notifyListeners();
+  }
+
+  int? _cbbVoltage;
+  int? get cbbVoltage => _cbbVoltage;
+  set cbbVoltage(int? cbbVoltage) {
+    _cbbVoltage = cbbVoltage;
+    notifyListeners();
+  }
+
+  int? _cbbCapacity;
+  int? get cbbCapacity => _cbbCapacity;
+  set cbbCapacity(int? cbbCapacity) {
+    _cbbCapacity = cbbCapacity;
     notifyListeners();
   }
 
@@ -650,7 +690,7 @@ class ScooterService with ChangeNotifier {
       });
     }
 
-    await Future.delayed(const Duration(seconds: 4), () {
+    await Future.delayed(const Duration(seconds: handlebarCheckSeconds), () {
       if (_handlebarsLocked == true) {
         log.warning("Handlebars didn't unlock, sending warning");
         throw HandlebarLockException();
@@ -691,17 +731,27 @@ class ScooterService with ChangeNotifier {
       hazard(times: 1);
     }
 
-    await Future.delayed(const Duration(seconds: 4), () {
-      if (_handlebarsLocked == false) {
+    await Future.delayed(const Duration(seconds: handlebarCheckSeconds), () {
+      if (_handlebarsLocked == false && _warnOfUnlockedHandlebars) {
         log.warning("Handlebars didn't lock, sending warning");
         throw HandlebarLockException();
       }
     });
 
     // don't immediately unlock again automatically
-    _autoUnlockCooldown = true;
-    await _sleepSeconds(keylessCooldownSeconds.toDouble());
+    autoUnlockCooldown();
+  }
+
+  void autoUnlockCooldown() {
+    try {
+      FlutterBackgroundService().invoke("autoUnlockCooldown");
+    } catch (e) {
+      // closing the loop
+    }
     _autoUnlockCooldown = false;
+    Future.delayed(const Duration(seconds: keylessCooldownSeconds), () {
+      _autoUnlockCooldown = false;
+    });
   }
 
   void openSeat() {
@@ -1050,7 +1100,7 @@ class ScooterService with ChangeNotifier {
   @override
   void dispose() {
     _locationTimer.cancel();
-    _rssiTimer.cancel();
+    rssiTimer.cancel();
     _manualRefreshTimer.cancel();
     super.dispose();
   }

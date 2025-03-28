@@ -75,17 +75,26 @@ class ScooterReader {
   }
 
   void _subscribeBatteries() {
-    var auxBatterReader = BatteryReader(ScooterBattery.aux, _service);
-    auxBatterReader
+    var auxBatteryReader = BatteryReader(ScooterBatteryType.aux, _service);
+    auxBatteryReader
         .readAndSubscribeSOC(_characteristicRepository.auxSOCCharacteristic!);
+    auxBatteryReader.readAndSubscribeCharging(
+        _characteristicRepository.auxChargingCharacteristic!);
+    auxBatteryReader.readAndSubscribeVoltage(
+        _characteristicRepository.auxVoltageCharacteristic!);
 
-    var cbbBatteryReader = BatteryReader(ScooterBattery.cbb, _service);
+    var cbbBatteryReader = BatteryReader(ScooterBatteryType.cbb, _service);
     cbbBatteryReader
         .readAndSubscribeSOC(_characteristicRepository.cbbSOCCharacteristic!);
     cbbBatteryReader.readAndSubscribeCharging(
         _characteristicRepository.cbbChargingCharacteristic!);
+    cbbBatteryReader.readAndSubscribeVoltage(
+        _characteristicRepository.cbbVoltageCharacteristic!);
+    cbbBatteryReader.readAndSubscribeCapacity(
+        _characteristicRepository.cbbCapacityCharacteristic!);
 
-    var primaryBatteryReader = BatteryReader(ScooterBattery.primary, _service);
+    var primaryBatteryReader =
+        BatteryReader(ScooterBatteryType.primary, _service);
     primaryBatteryReader.readAndSubscribeSOC(
       _characteristicRepository.primarySOCCharacteristic!,
     );
@@ -94,7 +103,7 @@ class ScooterReader {
     );
 
     var secondaryBatteryReader =
-        BatteryReader(ScooterBattery.secondary, _service);
+        BatteryReader(ScooterBatteryType.secondary, _service);
     secondaryBatteryReader.readAndSubscribeSOC(
       _characteristicRepository.secondarySOCCharacteristic!,
     );

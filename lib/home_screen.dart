@@ -1,16 +1,22 @@
 import 'dart:async';
+import 'dart:io';
+import 'dart:math' show Random;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:home_widget/home_widget.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
-import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../handlebar_warning.dart';
+import '../helper_widgets/grassscape.dart';
+import '../helper_widgets/snowfall.dart';
 import '../control_screen.dart';
 import '../domain/icomoon.dart';
 import '../domain/theme_helper.dart';
@@ -19,7 +25,6 @@ import '../scooter_service.dart';
 import '../domain/scooter_state.dart';
 import '../scooter_visual.dart';
 import '../stats/stats_screen.dart';
-import 'helper_widgets/snowfall.dart';
 
 class HomeScreen extends StatefulWidget {
   final bool? forceOpen;
@@ -35,7 +40,11 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final log = Logger('HomeScreen');
   bool _hazards = false;
+
+  // Seasonal
   bool _snowing = false;
+  bool _forceHover = false;
+  bool _spring = false;
 
   @override
   void initState() {
@@ -45,6 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
       redirectOrStart();
     }
     _startSeasonal();
+    _showOnboardings();
   }
 
   Future<void> _startSeasonal() async {
@@ -53,12 +63,70 @@ class _HomeScreenState extends State<HomeScreen> {
       switch (DateTime.now().month) {
         case 12:
           // December, snow season!
-          setState(() {
-            _snowing = true;
-          });
+          setState(() => _snowing = true);
+        case 4:
+          if (DateTime.now().day == 1) {
+            // April fools calls for flying scooters!
+            setState(() => _forceHover = true);
+          } else {
+            // Easter season, place some easter eggs!
+            setState(() => _spring = true);
+          }
         // who knows what else might be in the future?
       }
     }
+  }
+
+  Future<void> _showOnboardings() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (Platform.isAndroid && prefs.getBool("widgetOnboarded") != true) {
+      await showWidgetOnboarding();
+      prefs.setBool("widgetOnboarded", true);
+    }
+  }
+
+  Future<void> showWidgetOnboarding() async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title:
+              Text(FlutterI18n.translate(context, "widget_onboarding_title")),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text(FlutterI18n.translate(context, "widget_onboarding_body")),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text(
+                  FlutterI18n.translate(context, "widget_onboarding_place")),
+              onPressed: () async {
+                if ((await HomeWidget.isRequestPinWidgetSupported()) == true) {
+                  HomeWidget.requestPinWidget(
+                    name: 'HomeWidgetReceiver',
+                    androidName: 'HomeWidgetReceiver',
+                    qualifiedAndroidName:
+                        'de.freal.unustasis.HomeWidgetReceiver',
+                  );
+                }
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text(
+                  FlutterI18n.translate(context, "widget_onboarding_dismiss")),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _flashHazards(int times) async {
@@ -74,16 +142,17 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       body: AnnotatedRegion<SystemUiOverlayStyle>(
         value: context.isDarkMode
             ? const SystemUiOverlayStyle(
                 statusBarColor: Colors.transparent,
                 statusBarIconBrightness: Brightness.light,
-                systemNavigationBarColor: Color.fromARGB(255, 20, 20, 20))
+                systemNavigationBarColor: Colors.transparent)
             : const SystemUiOverlayStyle(
                 statusBarColor: Colors.transparent,
                 statusBarIconBrightness: Brightness.dark,
-                systemNavigationBarColor: Colors.white),
+                systemNavigationBarColor: Colors.transparent),
         child: Container(
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
@@ -106,6 +175,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       ? Colors.white.withValues(alpha: 0.15)
                       : Colors.black.withValues(alpha: 0.05),
                 ),
+              if (_spring)
+                AnimatedOpacity(
+                  opacity: context.watch<ScooterService>().connected == true
+                      ? 1.0
+                      : 0.0,
+                  duration: Duration(milliseconds: 500),
+                  child: GrassScape(),
+                ),
               SafeArea(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
@@ -122,15 +199,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             builder: (context) => const StatsScreen(),
                           ),
                         ),
-                        // Hidden for stable release
-                        // onLongPress: () => Navigator.push(
-                        //   context,
-                        //   MaterialPageRoute(
-                        //     builder: (context) => DrivingScreen(
-                        //       service: widget.scooterService,
-                        //     ),
-                        //   ),
-                        // ),
+                        // Hidden for stable release, but useful for various debugging
+                        // onLongPress: () =>
+                        //     showHandlebarWarning(didNotUnlock: false),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -174,6 +245,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           blinkerLeft: _hazards,
                           blinkerRight: _hazards,
                           winter: _snowing,
+                          aprilFools: _forceHover,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -347,61 +419,28 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void showHandlebarWarning({required bool didNotUnlock}) {
-    showDialog<void>(
+    showDialog<bool>(
       context: context,
       barrierDismissible: false, // user must tap button!
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Lottie.asset(
-                "assets/anim/handlebars.json",
-                height: 160,
-              ),
-              const SizedBox(height: 24),
-              Text(FlutterI18n.translate(context,
-                  "${didNotUnlock ? "locked" : "unlocked"}_handlebar_alert_title")),
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: <Widget>[
-                Text(FlutterI18n.translate(context,
-                    "${didNotUnlock ? "locked" : "unlocked"}_handlebar_alert_body")),
-              ],
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('OK'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: Text(FlutterI18n.translate(context,
-                  "${didNotUnlock ? "locked" : "unlocked"}_handlebar_alert_action")),
-              onPressed: () {
-                if (didNotUnlock) {
-                  context.read<ScooterService>().lock();
-                } else {
-                  context.read<ScooterService>().unlock();
-                }
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
+        return HandlebarWarning(
+          didNotUnlock: didNotUnlock,
         );
       },
-    );
+    ).then((dontShowAgain) async {
+      if (dontShowAgain == true) {
+        Logger("").info("Not showing unlocked handlebar warning again");
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        prefs.setBool("unlockedHandlebarsWarning", true);
+      }
+    });
   }
 
   void redirectOrStart() async {
     List<String> ids =
         await context.read<ScooterService>().getSavedScooterIds();
     log.info("Saved scooters: $ids");
-    if (mounted && ids.isEmpty) {
+    if (mounted && ids.isEmpty && !kDebugMode) {
       FlutterNativeSplash.remove();
       Navigator.pushReplacement(
         context,
@@ -526,6 +565,7 @@ class BatteryBars extends StatelessWidget {
                 SizedBox(
                     width: MediaQuery.of(context).size.width / 6,
                     child: LinearProgressIndicator(
+                      backgroundColor: Colors.black26,
                       minHeight: 8,
                       borderRadius: BorderRadius.circular(8),
                       value: data.secondarySOC! / 100.0,
@@ -644,13 +684,16 @@ class ScooterPowerButton extends StatefulWidget {
     Widget? child,
     required IconData icon,
     required String label,
+    bool? easterEgg,
   })  : _action = action,
         _icon = icon,
-        _label = label;
+        _label = label,
+        _easterEgg = easterEgg;
 
   final void Function()? _action;
   final String _label;
   final IconData _icon;
+  final bool? _easterEgg;
 
   @override
   State<ScooterPowerButton> createState() => _ScooterPowerButtonState();
@@ -658,12 +701,23 @@ class ScooterPowerButton extends StatefulWidget {
 
 class _ScooterPowerButtonState extends State<ScooterPowerButton> {
   bool loading = false;
+  bool disabled = false;
+  late int randomEgg;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget._easterEgg == true) {
+      randomEgg = Random().nextInt(8);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     Color mainColor = widget._action == null
         ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2)
         : Theme.of(context).colorScheme.primary;
+    disabled = widget._action == null;
     return Column(
       children: [
         Container(
@@ -676,15 +730,19 @@ class _ScooterPowerButtonState extends State<ScooterPowerButton> {
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
                 elevation: 0,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-                backgroundColor:
-                    loading ? Theme.of(context).colorScheme.surface : mainColor,
+                padding: EdgeInsets.zero,
+                backgroundColor: loading
+                    ? Theme.of(context).colorScheme.surface
+                    : (widget._easterEgg == true
+                        ? disabled
+                            ? Colors.white38
+                            : Colors.white
+                        : mainColor),
               ),
               onPressed: () {
                 Fluttertoast.showToast(msg: widget._label);
               },
-              onLongPress: widget._action == null
+              onLongPress: disabled
                   ? null
                   : () {
                       setState(() {
@@ -697,19 +755,41 @@ class _ScooterPowerButtonState extends State<ScooterPowerButton> {
                         });
                       });
                     },
-              child: loading
-                  ? SizedBox(
-                      height: 24,
-                      width: 24,
-                      child: CircularProgressIndicator(
-                        color: mainColor,
-                        strokeWidth: 2,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                decoration: widget._easterEgg == true
+                    ? BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                            width: 2,
+                            color: !disabled && widget._easterEgg == true
+                                ? mainColor
+                                : Colors.transparent),
+                        image: DecorationImage(
+                            image: AssetImage(
+                                "images/decoration/egg_$randomEgg.webp"),
+                            fit: BoxFit.cover,
+                            opacity: disabled ? 0.3 : 1),
+                      )
+                    : null,
+                child: loading
+                    ? SizedBox(
+                        height: 28,
+                        width: 28,
+                        child: CircularProgressIndicator(
+                          color: mainColor,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : Icon(
+                        widget._icon,
+                        color: widget._easterEgg == true && !context.isDarkMode
+                            ? (disabled ? Colors.black26 : Colors.black87)
+                            : Theme.of(context).colorScheme.surface,
+                        size: 28,
                       ),
-                    )
-                  : Icon(
-                      widget._icon,
-                      color: Theme.of(context).colorScheme.surface,
-                    ),
+              ),
             ),
           ),
         ),

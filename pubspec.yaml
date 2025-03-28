@@ -16,11 +16,11 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.2.5+19
+version: 1.3.0+23
 
 environment:
   sdk: '>=3.3.2 <4.0.0'
-  flutter: 3.24.5
+  flutter: 3.29.1
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -60,6 +60,7 @@ dependencies:
   flutter_local_notifications: ^18.0.1
   appcheck: ^1.5.2
   home_widget: ^0.7.0
+  pausable_timer: ^3.1.0+3
 
 dev_dependencies:
   flutter_test:
@@ -99,50 +100,12 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - images/scooter/base_0.webp
-    - images/scooter/base_1.webp
-    - images/scooter/base_2.webp
-    - images/scooter/base_3.webp
-    - images/scooter/base_4.webp
-    - images/scooter/base_5.webp
-    - images/scooter/base_6.webp
-    - images/scooter/base_7.webp
-    - images/scooter/base_8.webp
-    - images/scooter/base_9.webp
-    - images/scooter/side_0.webp
-    - images/scooter/side_1.webp
-    - images/scooter/side_2.webp
-    - images/scooter/side_3.webp
-    - images/scooter/side_4.webp
-    - images/scooter/side_5.webp
-    - images/scooter/side_6.webp
-    - images/scooter/side_7.webp
-    - images/scooter/side_8.webp
-    - images/scooter/side_9.webp
-    - images/scooter/disconnected.webp
-    - images/scooter/light_beam.webp
-    - images/scooter/light_ring.webp
-    - images/scooter/blinker_l.webp
-    - images/scooter/blinker_r.webp
-    - images/scooter/seasonal/winter_on.webp
-    - images/scooter/seasonal/winter_off.webp
-    - images/battery/batt_full.webp
-    - images/battery/batt_75.webp
-    - images/battery/batt_50.webp
-    - images/battery/batt_25.webp
-    - images/battery/batt_empty.webp
-    - images/battery/batt_cbb.webp
-    - images/battery/batt_aux.webp
-    - images/battery/batt_internal.webp
-    - assets/i18n/en.json
-    - assets/i18n/de.json
-    - assets/i18n/pi.json
-    - assets/faq_en.json
-    - assets/faq_de.json
-    - assets/faq_pi.json
-    - assets/anim/scanning.json
-    - assets/anim/found.json
-    - assets/anim/handlebars.json
+    - images/scooter/
+    - images/battery/
+    - images/decoration/
+    - assets/i18n/
+    - assets/
+    - assets/anim/
 
   fonts:
     - family: icomoon

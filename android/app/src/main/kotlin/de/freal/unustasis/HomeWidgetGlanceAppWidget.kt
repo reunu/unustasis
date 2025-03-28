@@ -390,7 +390,8 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                 } else if (locked == true && enabled){
                     actionRunCallback<UnlockAction>()
                 } else {
-                    actionRunCallback<ScanAction>()
+                    // not connected, attempt anyways
+                    actionRunCallback<UnlockAction>()
                 },
                 backgroundColor = if(enabled) GlanceTheme.colors.primary else GlanceTheme.colors.surfaceVariant,
                 modifier = GlanceModifier
@@ -496,7 +497,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                             onClick = if(enabled && seatOpenable){
                                 actionRunCallback<OpenSeatAction>()
                             } else if (!enabled){
-                                actionRunCallback<ScanAction>()
+                                actionRunCallback<OpenSeatAction>()
                             } else {
                                actionRunCallback<VoidAction>()
                             },
@@ -544,7 +545,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                                 } else if (locked == true && enabled){
                                     actionRunCallback<UnlockAction>()
                                 } else {
-                                    actionRunCallback<ScanAction>()
+                                    actionRunCallback<UnlockAction>()
                                 },
                                 modifier = GlanceModifier
                                     .fillMaxSize(),
@@ -557,13 +558,6 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
 
 
 
-}
-
-class ScanAction : ActionCallback {
-    override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
-        val backgroundIntent = HomeWidgetBackgroundIntent.getBroadcast(context, Uri.parse("unustasis://scan"))
-        backgroundIntent.send()
-    }
 }
 
 class LockAction : ActionCallback {
