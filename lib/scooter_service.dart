@@ -528,12 +528,16 @@ class ScooterService {
     _sendCommand("scooter:state unlock");
     HapticFeedback.heavyImpact();
 
-    if (_hazardLocking) {
-      hazard(times: 2);
+    if (_openSeatOnUnlock) {
+      await Future.delayed(const Duration(seconds: 1), () {
+        openSeat();
+      });
     }
 
-    if (_openSeatOnUnlock) {
-      openSeat();
+    if (_hazardLocking) {
+      await Future.delayed(const Duration(seconds: 2), () {
+        hazard(times: 2);
+      });
     }
 
     await Future.delayed(const Duration(seconds: handlebarCheckSeconds), () {
@@ -575,7 +579,9 @@ class ScooterService {
     HapticFeedback.heavyImpact();
 
     if (_hazardLocking) {
-      hazard(times: 1);
+      Future.delayed(const Duration(seconds: 1), () {
+        hazard(times: 1);
+      });
     }
 
     await Future.delayed(const Duration(seconds: handlebarCheckSeconds), () {
