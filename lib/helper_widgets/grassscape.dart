@@ -6,21 +6,19 @@ class GrassScape extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Stack(
-        children: [
-          Container(
-            constraints: BoxConstraints.expand(),
-            alignment: Alignment.center,
-            child: Image.asset(
-                'images/decoration/grass_area_${context.isDarkMode ? "dark" : "light"}.webp'),
-          ),
-          CustomPaint(
-            painter: LandPainter(context),
-            size: MediaQuery.of(context).size,
-          )
-        ],
-      ),
+    return Stack(
+      children: [
+        Container(
+          constraints: BoxConstraints.expand(),
+          alignment: Alignment.center,
+          child: Image.asset(
+              'images/decoration/grass_area_${context.isDarkMode ? "dark" : "light"}.webp'),
+        ),
+        CustomPaint(
+          painter: LandPainter(context),
+          size: MediaQuery.of(context).size,
+        )
+      ],
     );
   }
 }
