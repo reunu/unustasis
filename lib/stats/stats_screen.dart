@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
+import '../stats/support_section.dart';
 import '../stats/settings_section.dart';
 import '../scooter_service.dart';
 import '../stats/battery_section.dart';
@@ -28,7 +29,7 @@ class _StatsScreenState extends State<StatsScreen> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         extendBodyBehindAppBar: true,
         appBar: AppBar(
@@ -70,6 +71,14 @@ class _StatsScreenState extends State<StatsScreen> {
                         ),
                       ),
                     ),
+                    Tab(
+                      child: Text(
+                        FlutterI18n.translate(context, 'stats_title_support'),
+                        style: const TextStyle(
+                          fontSize: 16,
+                        ),
+                      ),
+                    )
                   ])),
           actions: [
             LastPingInfo(
@@ -110,6 +119,8 @@ class _StatsScreenState extends State<StatsScreen> {
                           service: widget.service, dataIsOld: dataIsOld),
                       // SETTINGS TAB
                       SettingsSection(service: widget.service),
+                      // SUPPORT TAB
+                      const SupportSection(),
                     ],
                   );
                 }),
@@ -202,19 +213,13 @@ extension DateTimeExtension on DateTime {
     final difference = originalDate.difference(this);
 
     if ((difference.inDays / 7).floor() >= 1) {
-      return '1W';
-    } else if (difference.inDays >= 2) {
-      return '${difference.inDays}D';
+      return '${(difference.inDays / 7).floor()}W';
     } else if (difference.inDays >= 1) {
-      return '1D';
-    } else if (difference.inHours >= 2) {
-      return '${difference.inHours}H';
+      return '${difference.inDays}D';
     } else if (difference.inHours >= 1) {
-      return '1H';
-    } else if (difference.inMinutes >= 2) {
-      return '${difference.inMinutes}M';
+      return '${difference.inHours}H';
     } else if (difference.inMinutes >= 1) {
-      return '1M';
+      return '${difference.inMinutes}M';
     } else {
       return FlutterI18n.translate(context, "stats_last_ping_now");
     }

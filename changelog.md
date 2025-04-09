@@ -1,7 +1,5 @@
 ### Changes:
-- Fixed multiple pairing errors!
-- Using system language on first launch
-- Added auto-connect controls for users with multiple scooters linked
-- Fixed warning for open seat when attempting to lock
-- Fixed an error with older scooters
-- Adding seasonal effect for December
+- Adding warnings for accidentally (un)locked handlebars
+- Adding RSSI display for keyless unlock
+- Fixing "last connected" display getting stuck at 1W
+- Flutter version bump

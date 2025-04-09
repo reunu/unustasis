@@ -8,12 +8,10 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../domain/log_helper.dart';
 import '../control_screen.dart';
 import '../domain/theme_helper.dart';
 import '../domain/scooter_keyless_distance.dart';
 import '../scooter_service.dart';
-import '../support_screen.dart';
 
 class SettingsSection extends StatefulWidget {
   const SettingsSection({required this.service, super.key});
@@ -33,27 +31,6 @@ class _SettingsSectionState extends State<SettingsSection> {
   bool openSeatOnUnlock = false;
   bool hazardLocking = false;
   bool osmConsent = true;
-
-  void getInitialSettings() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      biometrics = prefs.getBool("biometrics") ?? false;
-      autoUnlock = widget.service.autoUnlock;
-      autoUnlockDistance = ScooterKeylessDistance.fromThreshold(
-              widget.service.autoUnlockThreshold) ??
-          ScooterKeylessDistance.regular.threshold;
-      openSeatOnUnlock = widget.service.openSeatOnUnlock;
-      hazardLocking = widget.service.hazardLocking;
-      osmConsent = prefs.getBool("osmConsent") ?? true;
-      seasonal = prefs.getBool("seasonal") ?? true;
-    });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    getInitialSettings();
-  }
 
   List<Widget> settingsItems() => [
         Header(
@@ -75,25 +52,42 @@ class _SettingsSectionState extends State<SettingsSection> {
           ListTile(
             title: Text(
                 "${FlutterI18n.translate(context, "settings_auto_unlock_threshold")}: ${autoUnlockDistance.name(context)}"),
-            subtitle: Slider(
-              value: autoUnlockDistance.threshold.toDouble(),
-              min: ScooterKeylessDistance.getMinThresholdDistance()
-                  .threshold
-                  .toDouble(),
-              max: ScooterKeylessDistance.getMaxThresholdDistance()
-                  .threshold
-                  .toDouble(),
-              divisions: ScooterKeylessDistance.values.length - 1,
-              label: autoUnlockDistance.getFormattedThreshold(),
-              onChanged: (value) async {
-                var distance =
-                    ScooterKeylessDistance.fromThreshold(value.toInt());
-                widget.service.setAutoUnlockThreshold(distance);
-                setState(() {
-                  autoUnlockDistance = distance;
-                });
-              },
-            ),
+            subtitle: StreamBuilder<int?>(
+                stream: widget.service.rssi,
+                builder: (context, snapshot) {
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Slider(
+                        value: autoUnlockDistance.threshold.toDouble(),
+                        min: ScooterKeylessDistance.getMinThresholdDistance()
+                            .threshold
+                            .toDouble(),
+                        max: ScooterKeylessDistance.getMaxThresholdDistance()
+                            .threshold
+                            .toDouble(),
+                        secondaryTrackValue: snapshot.data?.toDouble(),
+                        divisions: ScooterKeylessDistance.values.length - 1,
+                        label: autoUnlockDistance.getFormattedThreshold(),
+                        onChanged: (value) async {
+                          var distance = ScooterKeylessDistance.fromThreshold(
+                              value.toInt());
+                          widget.service.setAutoUnlockThreshold(distance);
+                          setState(() {
+                            autoUnlockDistance = distance;
+                          });
+                        },
+                      ),
+                      if (snapshot.hasData)
+                        Text(FlutterI18n.translate(
+                            context, "settings_auto_unlock_threshold_explainer",
+                            translationParams: {
+                              "rssi": snapshot.data!.toString()
+                            })),
+                    ],
+                  );
+                }),
           ),
         SwitchListTile(
           secondary: const Icon(Icons.work_outline),
@@ -179,6 +173,9 @@ class _SettingsSectionState extends State<SettingsSection> {
                 },
                 selected: {EasyDynamicTheme.of(context).themeMode!},
                 style: ButtonStyle(
+                  iconColor: WidgetStateProperty.resolveWith<Color>((states) {
+                    return Theme.of(context).colorScheme.onTertiary;
+                  }),
                   foregroundColor:
                       WidgetStateProperty.resolveWith<Color>((states) {
                     if (states.contains(WidgetState.selected)) {
@@ -213,35 +210,40 @@ class _SettingsSectionState extends State<SettingsSection> {
         ListTile(
           leading: const Icon(Icons.language_outlined),
           title: Text(FlutterI18n.translate(context, "settings_language")),
-          subtitle: DropdownButtonFormField(
+          subtitle: Padding(
             padding: const EdgeInsets.only(top: 8),
-            value: Locale(FlutterI18n.currentLocale(context)!.languageCode),
-            isExpanded: true,
-            decoration: const InputDecoration(
-              contentPadding: EdgeInsets.all(16),
-              border: OutlineInputBorder(),
+            child: DropdownButtonFormField(
+              value: Locale(FlutterI18n.currentLocale(context)!.languageCode),
+              isExpanded: true,
+              decoration: const InputDecoration(
+                contentPadding: EdgeInsets.all(16),
+                border: OutlineInputBorder(),
+              ),
+              dropdownColor: Theme.of(context).colorScheme.surfaceContainer,
+              items: [
+                DropdownMenuItem<Locale>(
+                  value: const Locale("en"),
+                  child:
+                      Text(FlutterI18n.translate(context, "language_english")),
+                ),
+                DropdownMenuItem<Locale>(
+                  value: const Locale("de"),
+                  child:
+                      Text(FlutterI18n.translate(context, "language_german")),
+                ),
+                DropdownMenuItem<Locale>(
+                  value: const Locale("pi"),
+                  child:
+                      Text(FlutterI18n.translate(context, "language_pirate")),
+                ),
+              ],
+              onChanged: (newLanguage) async {
+                await FlutterI18n.refresh(context, newLanguage);
+                SharedPreferences prefs = await SharedPreferences.getInstance();
+                prefs.setString("savedLocale", newLanguage!.languageCode);
+                setState(() {});
+              },
             ),
-            dropdownColor: Theme.of(context).colorScheme.surfaceContainer,
-            items: [
-              DropdownMenuItem<Locale>(
-                value: const Locale("en"),
-                child: Text(FlutterI18n.translate(context, "language_english")),
-              ),
-              DropdownMenuItem<Locale>(
-                value: const Locale("de"),
-                child: Text(FlutterI18n.translate(context, "language_german")),
-              ),
-              DropdownMenuItem<Locale>(
-                value: const Locale("pi"),
-                child: Text(FlutterI18n.translate(context, "language_pirate")),
-              ),
-            ],
-            onChanged: (newLanguage) async {
-              await FlutterI18n.refresh(context, newLanguage);
-              SharedPreferences prefs = await SharedPreferences.getInstance();
-              prefs.setString("savedLocale", newLanguage!.languageCode);
-              setState(() {});
-            },
           ),
         ),
         SwitchListTile(
@@ -258,7 +260,8 @@ class _SettingsSectionState extends State<SettingsSection> {
             });
           },
         ),
-        if (DateTime.now().month == 12) // All seasonal months
+        if (DateTime.now().month == 12 ||
+            DateTime.now().month == 4) // All seasonal months
           SwitchListTile(
               secondary: const Icon(Icons.star),
               title: Text(FlutterI18n.translate(context, "settings_seasonal")),
@@ -273,23 +276,6 @@ class _SettingsSectionState extends State<SettingsSection> {
                 });
               }),
         Header(FlutterI18n.translate(context, "stats_settings_section_about")),
-        ListTile(
-          leading: const Icon(Icons.help_outline),
-          title: Text(FlutterI18n.translate(context, "settings_support")),
-          onTap: () {
-            Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => const SupportScreen()));
-          },
-          trailing: const Icon(Icons.chevron_right),
-        ),
-        ListTile(
-          leading: const Icon(Icons.bug_report_outlined),
-          title: Text(FlutterI18n.translate(context, "settings_report")),
-          onTap: () {
-            LogHelper.startBugReport(context);
-          },
-          trailing: const Icon(Icons.chevron_right),
-        ),
         ListTile(
           leading: const Icon(Icons.privacy_tip_outlined),
           title:
@@ -334,6 +320,27 @@ class _SettingsSectionState extends State<SettingsSection> {
               );
             }),
       ];
+
+  void getInitialSettings() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      biometrics = prefs.getBool("biometrics") ?? false;
+      autoUnlock = widget.service.autoUnlock;
+      autoUnlockDistance = ScooterKeylessDistance.fromThreshold(
+              widget.service.autoUnlockThreshold) ??
+          ScooterKeylessDistance.regular.threshold;
+      openSeatOnUnlock = widget.service.openSeatOnUnlock;
+      hazardLocking = widget.service.hazardLocking;
+      osmConsent = prefs.getBool("osmConsent") ?? true;
+      seasonal = prefs.getBool("seasonal") ?? true;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getInitialSettings();
+  }
 
   @override
   Widget build(BuildContext context) {
