@@ -4,11 +4,6 @@
         "Do I have to uninstall the old Unu app?": "No, both apps can run completely independently. You should, however, disable background connection in the old app. On iOS you might also have to remove the scooter from your saved devices in the system settings in order to be able to pair it again via the new app.",
         "Can multiple devices control the same scooter?": "Yes! You can pair the scooter with up to six devices at the same time. This means that with shared scooters, anyone can pair their own cell phone with the scooter to unlock it. However, only one app can control the scooter at a time. So while you have this app open, no other app (and no other device) has access to the scooter."
     },
-    "Frequently asked questions": {
-        "Can this app fix the clock in my display?": "Unfortunately not. The scooter can only get its time from the Unu cloud, which has been shut down. This app can only control the scooter via Bluetooth, through which the time cannot be set.",
-        "Why doesn't this app display driving statistics?": "The scooter does not provide any information about the driving statistics via Bluetooth. While the scooter outputs some data via Bluetooth, it does not include things like odometer, speed or power output.",
-        "My scooter's been having issues since installing this app": "Unustasis only communicates with the scooter via Bluetooth. It does not change any settings on the scooter, and it does not have any influence on the scooter's behavior. If you are experiencing issues with your scooter, it is likely not related to Unustasis. If you are unsure, you can always uninstall the app to see if the issues persist."
-    },
     "About the app": {
         "Can this app fix the clock in my display?": "Unfortunately not. The scooter can only get its time from the unu cloud, which has been shut down for the time being. This app can only control the scooter via Bluetooth, through which the time cannot be set.",
         "Is this app made by Unu?": "This is the official app for the unu Scooter Pro. It was originally created by independent unu drivers, but has since been officialy endorsed, supported and released by emco Elektroroller GmbH.",
