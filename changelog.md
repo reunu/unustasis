@@ -1,5 +1,7 @@
 ### Changes:
-- Adding warnings for accidentally (un)locked handlebars
-- Adding RSSI display for keyless unlock
-- Fixing "last connected" display getting stuck at 1W
-- Flutter version bump
+- Adding a new support screen to make it easier to get help with your scooter
+- Improving all graphics across the app
+- Clarified some texts
+- Seasonal effect for April
+- Updated Flutter version
+- Various connection fixes
