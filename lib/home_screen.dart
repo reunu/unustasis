@@ -649,15 +649,7 @@ class ScooterPowerButton extends StatefulWidget {
 class _ScooterPowerButtonState extends State<ScooterPowerButton> {
   bool loading = false;
   bool disabled = false;
-  late int randomEgg;
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget._easterEgg == true) {
-      randomEgg = Random().nextInt(8);
-    }
-  }
+  int? randomEgg = Random().nextInt(8);
 
   @override
   Widget build(BuildContext context) {
