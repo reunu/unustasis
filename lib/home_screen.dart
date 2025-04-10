@@ -304,7 +304,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                   .colorScheme
                                                   .onSurface
                                                   .withOpacity(0.4)
-                                              : _primarySOC! <= 15
+                                              : _secondarySOC! <= 15
                                                   ? Theme.of(context)
                                                       .colorScheme
                                                       .error
