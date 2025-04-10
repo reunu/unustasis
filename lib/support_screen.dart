@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
-import 'package:unustasis/stats/support_section.dart';
+
+import '../stats/support_section.dart';
 
 class SupportScreen extends StatelessWidget {
   const SupportScreen({super.key});

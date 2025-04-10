@@ -10,8 +10,9 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:logging/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:unustasis/handlebar_warning.dart';
-import 'package:unustasis/helper_widgets/grassscape.dart';
+
+import '../handlebar_warning.dart';
+import '../helper_widgets/grassscape.dart';
 
 import '../control_screen.dart';
 import '../domain/icomoon.dart';
@@ -304,7 +305,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                   .colorScheme
                                                   .onSurface
                                                   .withOpacity(0.4)
-                                              : _primarySOC! <= 15
+                                              : _secondarySOC! <= 15
                                                   ? Theme.of(context)
                                                       .colorScheme
                                                       .error
