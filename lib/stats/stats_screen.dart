@@ -33,7 +33,7 @@ class _StatsScreenState extends State<StatsScreen> {
       child: Scaffold(
         extendBodyBehindAppBar: true,
         appBar: AppBar(
-          title: Text(FlutterI18n.translate(context, 'stats_title_support')),
+          title: Text(FlutterI18n.translate(context, 'stats_title')),
           backgroundColor: Theme.of(context).colorScheme.surface,
           bottom: PreferredSize(
               preferredSize: const Size.fromHeight(50.0),

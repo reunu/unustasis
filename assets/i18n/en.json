@@ -154,11 +154,12 @@
     "stats_title_support": "Support",
     "support_faqs": "Common issues",
     "support_garages": "Garages",
-    "support_garages_description": "Partnered garages near you",
+    "support_garages_description": "Unu-savy garages near you",
     "support_garages_none": "None found. There might be an issue with your location.",
     "support_garage_distance": "{dist} km away",
     "support_garage_map": "Map",
     "support_garage_call": "Call",
+    "support_replacement_parts": "Get replacement parts",
     "support_get_help": "Get support",
     "settings_licenses": "Licenses",
     "settings_add_scooter": "Add new scooter",
@@ -202,5 +203,6 @@
     "settings_report_proceed": "Continue",
     "settings_report_cancel": "Cancel",
     "report_subject": "Issue report",
-    "report_placeholder": "Please describe the issue you're having, and how to reproduce it, above the line:"
+    "report_placeholder": "Please describe the issue you're having, and how to reproduce it, above the line:",
+    "support_contact_emco": "Report an issue with the scooter"
 }

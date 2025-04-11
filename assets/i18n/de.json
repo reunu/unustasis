@@ -154,11 +154,12 @@
     "stats_title_support": "Hilfe",
     "support_faqs": "Hilfethemen",
     "support_garages": "Werkstätten",
-    "support_garages_description": "Partnerwerkstätten in der Nähe",
+    "support_garages_description": "Empfohlene Werkstätten in der Nähe",
     "support_garages_none": "Keine Werkstätten gefunden. Eventuell konnte dein Standort nicht erkannt werden.",
     "support_garage_distance": "{dist} km entfernt",
     "support_garage_map": "Karte",
     "support_garage_call": "Anrufen",
+    "support_replacement_parts": "Ersatzteile und Zubehör",
     "support_get_help": "Hilfe erhalten",
     "settings_licenses": "Lizenzen",
     "settings_add_scooter": "Neuen Roller hinzufügen",
@@ -202,5 +203,6 @@
     "settings_report_proceed": "Fortsetzen",
     "settings_report_cancel": "Abbrechen",
     "report_subject": "Fehlerbericht",
-    "report_placeholder": "Bitte beschreibe über den Linie den Fehler, den du hast, und wie man ihn reproduzieren kann:"
+    "report_placeholder": "Bitte beschreibe über den Linie den Fehler, den du hast, und wie man ihn reproduzieren kann:",
+    "support_contact_emco": "Problem mit dem Roller melden"
 }

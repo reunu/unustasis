@@ -11,6 +11,7 @@
 		],
 		"i18n-ally.localesPaths": [
 			"assets/i18n"
-		]
+		],
+		"i18n-ally.keystyle": "flat"
 	}
 }
