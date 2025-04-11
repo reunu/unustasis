@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
-import 'package:unustasis/scooter_service.dart';
+import '../scooter_service.dart';
 
 class HandlebarWarning extends StatefulWidget {
   const HandlebarWarning({

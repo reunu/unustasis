@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:unustasis/domain/theme_helper.dart';
+
+import '../domain/theme_helper.dart';
 
 class GrassScape extends StatelessWidget {
   const GrassScape({super.key});

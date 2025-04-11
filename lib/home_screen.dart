@@ -15,8 +15,6 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../handlebar_warning.dart';
-import '../helper_widgets/grassscape.dart';
-import '../helper_widgets/snowfall.dart';
 import '../control_screen.dart';
 import '../domain/icomoon.dart';
 import '../domain/theme_helper.dart';
@@ -25,6 +23,8 @@ import '../scooter_service.dart';
 import '../domain/scooter_state.dart';
 import '../scooter_visual.dart';
 import '../stats/stats_screen.dart';
+import '../helper_widgets/snowfall.dart';
+import '../helper_widgets/grassscape.dart';
 
 class HomeScreen extends StatefulWidget {
   final bool? forceOpen;
@@ -702,15 +702,7 @@ class ScooterPowerButton extends StatefulWidget {
 class _ScooterPowerButtonState extends State<ScooterPowerButton> {
   bool loading = false;
   bool disabled = false;
-  late int randomEgg;
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget._easterEgg == true) {
-      randomEgg = Random().nextInt(8);
-    }
-  }
+  int? randomEgg = Random().nextInt(8);
 
   @override
   Widget build(BuildContext context) {

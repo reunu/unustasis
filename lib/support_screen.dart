@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
-import 'package:unustasis/stats/support_section.dart';
+
+import '../stats/support_section.dart';
 
 class SupportScreen extends StatelessWidget {
   const SupportScreen({super.key});
@@ -10,7 +11,7 @@ class SupportScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          FlutterI18n.translate(context, "settings_support"),
+          FlutterI18n.translate(context, "stats_title_support"),
         ),
       ),
       body: const SupportSection(),
