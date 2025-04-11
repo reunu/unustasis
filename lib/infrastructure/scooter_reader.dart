@@ -51,10 +51,17 @@ class ScooterReader {
   }
 
   Future<void> _updateScooterState() async {
+    ScooterState? oldState = _service.state;
     ScooterState? newState =
         ScooterState.fromStateAndPowerState(_state, _powerState);
     _service.state = newState;
     _service.ping();
+
+    // if someone just locked the scooter with their keycard, stop keyless from unlocking again
+    // this might (will) cause the cooldown to run even on app locks, but that's okay
+    if (oldState?.isOn == true && newState?.isOn == false) {
+      _service.autoUnlockCooldown();
+    }
   }
 
   void _subscribeSeat() {

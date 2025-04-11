@@ -96,9 +96,7 @@ class ScooterService with ChangeNotifier {
             !_autoUnlockCooldown &&
             optionalAuth) {
           unlock();
-          _autoUnlockCooldown = true;
-          await Future.delayed(const Duration(seconds: keylessCooldownSeconds));
-          _autoUnlockCooldown = false;
+          autoUnlockCooldown();
         }
       }
     })
@@ -750,7 +748,7 @@ class ScooterService with ChangeNotifier {
     } catch (e) {
       // closing the loop
     }
-    _autoUnlockCooldown = false;
+    _autoUnlockCooldown = true;
     Future.delayed(const Duration(seconds: keylessCooldownSeconds), () {
       _autoUnlockCooldown = false;
     });
