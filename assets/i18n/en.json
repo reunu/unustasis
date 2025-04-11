@@ -135,6 +135,7 @@
   "language_english": "🇺🇸   English",
   "language_german": "🇩🇪   German",
   "language_pirate": "🏴‍☠️   Pirate",
+  "language_french": "🇫🇷   French",
   "settings_biometrics": "Biometric authentication",
   "settings_biometrics_description": "Require fingerprint or face recognition to access the app.",
   "biometrics_message": "Authenticate to access app",

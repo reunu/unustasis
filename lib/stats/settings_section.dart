@@ -232,6 +232,11 @@ class _SettingsSectionState extends State<SettingsSection> {
                       Text(FlutterI18n.translate(context, "language_german")),
                 ),
                 DropdownMenuItem<Locale>(
+                  value: const Locale("fr"),
+                  child:
+                      Text(FlutterI18n.translate(context, "language_french")),
+                ),
+                DropdownMenuItem<Locale>(
                   value: const Locale("pi"),
                   child:
                       Text(FlutterI18n.translate(context, "language_pirate")),
