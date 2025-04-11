@@ -57,6 +57,44 @@ class _SupportSectionState extends State<SupportSection> {
           color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
         ),
         ListTile(
+          leading: const Icon(Icons.build_outlined),
+          title: Text(FlutterI18n.translate(
+            context,
+            "support_replacement_parts",
+          )),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () {
+            launchUrl(Uri.parse("https://shop.unumotors.com/collections/all"));
+          },
+        ),
+        Divider(
+          indent: 16,
+          endIndent: 16,
+          height: 24,
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+        ),
+        ListTile(
+          leading: const Icon(Icons.contact_support_outlined),
+          title: Text(FlutterI18n.translate(context, "support_contact_emco")),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () async {
+            launchUrl(Uri.parse("https://unumotors.com/en-de/service-hub/"));
+            // alternative:
+            // final Email email = Email(
+            //   subject: "Unu Scooter support",
+            //   recipients: ['unu@emco-eroller.de'],
+            //   isHTML: false,
+            // );
+            // await FlutterEmailSender.send(email);
+          },
+        ),
+        Divider(
+          indent: 16,
+          endIndent: 16,
+          height: 24,
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+        ),
+        ListTile(
           leading: const Icon(Icons.bug_report_outlined),
           title: Text(FlutterI18n.translate(context, "settings_report")),
           trailing: const Icon(Icons.chevron_right),
@@ -148,7 +186,7 @@ class FaqWidget extends StatelessWidget {
                     ? const Icon(Icons.bluetooth)
                     : index == 1
                         ? const Icon(Icons.question_answer_outlined)
-                        : const Icon(Icons.info),
+                        : const Icon(Icons.info_outline),
                 tilePadding: const EdgeInsets.only(left: 20, right: 20),
                 title: Text(
                   category.key.toString(),

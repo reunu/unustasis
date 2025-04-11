@@ -8,12 +8,10 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../domain/log_helper.dart';
 import '../control_screen.dart';
 import '../domain/theme_helper.dart';
 import '../domain/scooter_keyless_distance.dart';
 import '../scooter_service.dart';
-import '../support_screen.dart';
 
 class SettingsSection extends StatefulWidget {
   const SettingsSection({required this.service, super.key});

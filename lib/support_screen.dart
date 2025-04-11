@@ -11,7 +11,7 @@ class SupportScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          FlutterI18n.translate(context, "settings_support"),
+          FlutterI18n.translate(context, "stats_title_support"),
         ),
       ),
       body: const SupportSection(),
