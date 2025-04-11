@@ -20,7 +20,7 @@ import '../scooter_service.dart';
 import '../domain/scooter_state.dart';
 import '../scooter_visual.dart';
 import '../stats/stats_screen.dart';
-import 'helper_widgets/snowfall.dart';
+import '../helper_widgets/snowfall.dart';
 import '../helper_widgets/grassscape.dart';
 
 class HomeScreen extends StatefulWidget {
