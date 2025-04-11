@@ -8,6 +8,9 @@
 		"java.configuration.updateBuildConfiguration": "disabled",
 		"dart.analysisExcludedFolders": [
 			"./test",
+		],
+		"i18n-ally.localesPaths": [
+			"assets/i18n"
 		]
 	}
 }
