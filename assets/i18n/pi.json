@@ -216,5 +216,6 @@
     "widget_onboarding_title": "New: Ship Deck Widget!",
     "widget_onboarding_body": "Ye can now steer yer scooter straight from yer shipdeck without botherin' with that blasted app! And the 'Ghost Ship' trick now works straight from yer pocket, matey!",
     "widget_onboarding_place": "Give it a whirl",
-    "widget_onboarding_dismiss": "Not now"
+    "widget_onboarding_dismiss": "Not now",
+    "stats_nfc_error": "Couldn't scan yer NFC tag"
 }

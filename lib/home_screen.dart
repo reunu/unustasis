@@ -53,8 +53,6 @@ class _HomeScreenState extends State<HomeScreen> {
       log.fine("Redirecting or starting");
       redirectOrStart();
     }
-    _startSeasonal();
-    _showOnboardings();
   }
 
   Future<void> _startSeasonal() async {
@@ -113,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         'de.freal.unustasis.HomeWidgetReceiver',
                   );
                 }
-                Navigator.of(context).pop();
+                if (context.mounted) Navigator.of(context).pop();
               },
             ),
             TextButton(
@@ -267,9 +265,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                                     await context
                                                         .read<ScooterService>()
                                                         .lock();
-                                                    if (context
-                                                        .read<ScooterService>()
-                                                        .hazardLocking) {
+                                                    if (context.mounted &&
+                                                        context
+                                                            .read<
+                                                                ScooterService>()
+                                                            .hazardLocking) {
                                                       _flashHazards(1);
                                                     }
                                                   } on SeatOpenException catch (_) {
@@ -298,10 +298,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                                             .read<
                                                                 ScooterService>()
                                                             .unlock();
-                                                        if (context
-                                                            .read<
-                                                                ScooterService>()
-                                                            .hazardLocking) {
+                                                        if (context.mounted &&
+                                                            context
+                                                                .read<
+                                                                    ScooterService>()
+                                                                .hazardLocking) {
                                                           _flashHazards(2);
                                                         }
                                                       } on HandlebarLockException catch (_) {
@@ -348,14 +349,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                       onPressed: !state.scanning
                                           ? () {
                                               if (!state.connected) {
-                                                print(
+                                                log.info(
                                                     "Manually reconnecting...");
                                                 try {
                                                   context
                                                       .read<ScooterService>()
                                                       .start();
-                                                } catch (e) {
-                                                  print(e.toString());
+                                                } catch (e, stack) {
+                                                  log.severe(
+                                                      "Reconnect button failed",
+                                                      e,
+                                                      stack);
                                                 }
                                               } else {
                                                 Navigator.push(
@@ -449,7 +453,10 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
     } else {
-      // check if we're not coming from onboarding
+      // already onboarded, set up and proceed with home page
+      _startSeasonal();
+      _showOnboardings();
+      // start the scooter service if we're not coming from onboarding
       if (mounted && context.read<ScooterService>().myScooter == null) {
         context.read<ScooterService>().start();
       }
@@ -462,6 +469,7 @@ class _HomeScreenState extends State<HomeScreen> {
         final bool didAuthenticate = await auth.authenticate(
           localizedReason: FlutterI18n.translate(context, "biometrics_message"),
         );
+        if (!mounted) return;
         if (!didAuthenticate) {
           Fluttertoast.showToast(
               msg: FlutterI18n.translate(context, "biometrics_failed"));
@@ -472,13 +480,15 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       } catch (e, stack) {
         log.info("Biometrics failed", e, stack);
+
         Fluttertoast.showToast(
             msg: FlutterI18n.translate(context, "biometrics_failed"));
         Navigator.of(context).pop();
+
         SystemNavigator.pop();
       }
     } else {
-      context.read<ScooterService>().optionalAuth = true;
+      if (mounted) context.read<ScooterService>().optionalAuth = true;
     }
   }
 }

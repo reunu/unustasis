@@ -5,6 +5,7 @@ import 'package:flutter_background_service/flutter_background_service.dart';
 import 'dart:async';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:home_widget/home_widget.dart';
+import 'package:logging/logging.dart';
 import 'package:pausable_timer/pausable_timer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -30,6 +31,7 @@ startBackgroundService() {
 }
 
 Future<void> setupBackgroundService() async {
+  final log = Logger("setupBackgroundService");
   final service = FlutterBackgroundService();
 
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -37,7 +39,7 @@ Future<void> setupBackgroundService() async {
 
   backgroundScanEnabled =
       (await SharedPreferences.getInstance()).getBool("backgroundScan") ?? true;
-  print("Background scan: $backgroundScanEnabled");
+  log.info("Background scan: $backgroundScanEnabled");
 
   flutterLocalNotificationsPlugin
       .resolvePlatformSpecificImplementation<
@@ -154,7 +156,8 @@ void dismissNotification() async {
 
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {
-  print("Background service started!");
+  Logger log = Logger("BackgroundService");
+  log.info("Background service started!");
   DartPluginRegistrant.ensureInitialized();
 
   backgroundScanEnabled =
@@ -163,17 +166,17 @@ void onStart(ServiceInstance service) async {
   if (service is AndroidServiceInstance &&
       await service.isForegroundService()) {
     if (backgroundScanEnabled) {
-      print("Running first connection cycle");
+      log.info("Running first connection cycle");
       _enableScanning();
     } else {
-      print("Dismissing initial notification");
+      log.info("Dismissing initial notification");
       dismissNotification();
       _disableScanning();
     }
   }
 
   // seed widget
-  print("Seeding: Most recent scooter is ${scooterService.scooterName}");
+  log.info("Seeding: Most recent scooter is ${scooterService.scooterName}");
   passToWidget(
     connected: scooterService.connected,
     lastPing: scooterService.lastPing,
@@ -186,13 +189,13 @@ void onStart(ServiceInstance service) async {
   );
 
   service.on("autoUnlockCooldown").listen((data) async {
-    print("Received autoUnlockCooldown command");
+    log.info("Received autoUnlockCooldown command");
     scooterService.autoUnlockCooldown();
   });
 
   // listen for commands
   service.on('update').listen((data) async {
-    print("Received update command: $data");
+    log.info("Received update command: $data");
     try {
       if (data?["autoUnlock"] != null) {
         scooterService.setAutoUnlock(data!["autoUnlock"]);
@@ -224,18 +227,18 @@ void onStart(ServiceInstance service) async {
           _enableScanning();
         }
       }
-    } catch (e) {
-      print("Somethin happen");
+    } catch (e, stack) {
+      log.severe("Something bad happened on command", e, stack);
     }
   });
 
   service.on("lock").listen((data) async {
-    print("Received lock command");
+    log.info("Received lock command");
     scooterService.lock();
   });
 
   service.on("unlock").listen((data) async {
-    print("Received unlock command");
+    log.info("Received unlock command");
     if (scooterService.connected) {
       scooterService.unlock();
     } else {
@@ -247,13 +250,13 @@ void onStart(ServiceInstance service) async {
   });
 
   service.on("openseat").listen((data) async {
-    print("Received openseat command");
+    log.info("Received openseat command");
     scooterService.openSeat();
   });
 
   // listen to changes
   scooterService.addListener(() async {
-    print("ScooterService updated");
+    log.fine("ScooterService updated");
     passToWidget(
       connected: scooterService.connected,
       lastPing: scooterService.lastPing,
@@ -271,7 +274,8 @@ void onStart(ServiceInstance service) async {
 
   _rescanTimer = PausableTimer.periodic(const Duration(seconds: 35), () async {
     if (!backgroundScanEnabled) {
-      print("Timer killed itself");
+      log.info(
+          "Oh boy, the timer must've killed itself/been killed. Resetting!");
       _rescanTimer
         ?..pause()
         ..reset();
@@ -286,7 +290,8 @@ void onStart(ServiceInstance service) async {
         !scooterService.connected) {
       attemptConnectionCycle();
     } else {
-      print("Some conditions not met");
+      log.info(
+          "Some conditions for rescanning not met. backgroundScanEnabled: $backgroundScanEnabled, scooterService.scanning: ${scooterService.scanning}, scooterService.connected: ${scooterService.connected}");
     }
   });
 

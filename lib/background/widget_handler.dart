@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:logging/logging.dart';
 
 import '../background/bg_service.dart';
 import '../domain/scooter_state.dart';
@@ -17,6 +18,8 @@ int? _secondarySOC;
 String? _scooterName;
 LatLng? _lastLocation;
 bool? _seatClosed;
+
+Logger log = Logger("WidgetHandler");
 
 void passToWidget({
   bool connected = false,
@@ -40,7 +43,7 @@ void passToWidget({
       scooterName != _scooterName ||
       lastLocation != _lastLocation ||
       seatClosed != _seatClosed) {
-    print("Relevant values have changed");
+    log.fine("Relevant values have changed");
 
     await HomeWidget.saveWidgetData<bool>("connected", connected);
     if (scooterState != null) {
@@ -74,7 +77,7 @@ void passToWidget({
       qualifiedAndroidName: 'de.freal.unustasis.HomeWidgetReceiver',
     );
   } else {
-    print("No relevant changes");
+    log.fine("No relevant changes");
   }
 }
 
@@ -90,7 +93,7 @@ Future<void> setWidgetScanning(bool scanning) async {
 @pragma("vm:entry-point")
 FutureOr<void> backgroundCallback(Uri? data) async {
   await HomeWidget.setAppGroupId('de.freal.unustasis');
-  print("Received data: $data");
+  log.info("Received data: $data");
   switch (data?.host) {
     case "scan":
       setWidgetScanning(true);

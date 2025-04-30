@@ -85,7 +85,6 @@ class ScooterService with ChangeNotifier {
       if (myScooter != null && myScooter!.isConnected && _autoUnlock) {
         try {
           rssi = await myScooter!.readRssi();
-          print("rssi is $rssi");
         } catch (e) {
           // probably not connected anymore
         }
@@ -435,15 +434,15 @@ class ScooterService with ChangeNotifier {
       return;
     }
     if (savedScooters.isNotEmpty && preferSavedScooters) {
-      print(
+      log.info(
           "Looking for our scooters, since we have ${savedScooters.length} saved scooters");
       try {
         flutterBluePlus.startScan(
           withRemoteIds: savedScooterIds, // look for OUR scooter
           timeout: const Duration(seconds: 30),
         );
-      } catch (e) {
-        print("Failed to start scan");
+      } catch (e, stack) {
+        log.severe("Failed to start scan", e, stack);
       }
     } else {
       log.info("Looking for any scooter, since we have no saved scooters");
@@ -454,8 +453,8 @@ class ScooterService with ChangeNotifier {
           ], // if we don't have a saved scooter, look for ANY scooter
           timeout: const Duration(seconds: 30),
         );
-      } catch (e) {
-        print("Failed to start scan");
+      } catch (e, stack) {
+        log.severe("Failed to start scan", e, stack);
       }
     }
     await for (var scanResult in flutterBluePlus.onScanResults) {
@@ -543,10 +542,7 @@ class ScooterService with ChangeNotifier {
         .where((val) => val == BluetoothAdapterState.on)
         .first;
 
-    if (Platform.isAndroid) {
-      // await flutterBluePlus.turnOn();
-    }
-    // TODO: prompt the user to turn it on manually on iOS
+    // TODO: prompt users to turn on bluetooth manually
 
     // CLEANUP
     _foundSth = false;
@@ -577,8 +573,7 @@ class ScooterService with ChangeNotifier {
         // Guess this one is not happy with us
         // TODO: Handle errors more elegantly
         log.severe("Error during search or connect!", e, stack);
-        Fluttertoast.showToast(
-            msg: "Error during search or connect!"); // TODO: Localize
+        Fluttertoast.showToast(msg: "Error during search or connect!");
       }
     }
 

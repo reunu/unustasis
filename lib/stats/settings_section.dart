@@ -188,17 +188,21 @@ class _SettingsSectionState extends State<SettingsSection> {
                           biometrics = value;
                         });
                       } else {
+                        if (context.mounted) {
+                          Fluttertoast.showToast(
+                            msg: FlutterI18n.translate(
+                                context, "biometrics_failed"),
+                          );
+                        }
+                      }
+                    } catch (e, stack) {
+                      if (context.mounted) {
+                        log.warning("Biometrics error", e, stack);
                         Fluttertoast.showToast(
                           msg: FlutterI18n.translate(
                               context, "biometrics_failed"),
                         );
                       }
-                    } catch (e, stack) {
-                      log.warning("Biometrics error", e, stack);
-                      Fluttertoast.showToast(
-                        msg:
-                            FlutterI18n.translate(context, "biometrics_failed"),
-                      );
                     }
                   },
                 );

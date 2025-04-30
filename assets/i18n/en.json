@@ -216,5 +216,6 @@
     "widget_onboarding_title": "New: Homescreen Widget!",
     "widget_onboarding_body": "You can now control your scooter from your home screen, without having to open the app!\nThe feature \"Keyless Unlock\" now also works from your pocket.",
     "widget_onboarding_place": "Try",
-    "widget_onboarding_dismiss": "Not now"
+    "widget_onboarding_dismiss": "Not now",
+    "stats_nfc_error": "Couldn't scan NFC tag"
 }

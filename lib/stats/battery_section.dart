@@ -220,7 +220,8 @@ class _BatterySectionState extends State<BatterySection> {
                       ),
                       onPressed: () async {
                         // Check availability
-                        if (await NfcManager.instance.isAvailable() == false) {
+                        if (await NfcManager.instance.isAvailable() == false &&
+                            context.mounted) {
                           Fluttertoast.showToast(
                             msg: FlutterI18n.translate(
                                 context, "stats_nfc_not_available"),
@@ -244,10 +245,12 @@ class _BatterySectionState extends State<BatterySection> {
                         NfcManager.instance.startSession(
                           onError: (error) {
                             log.severe("NFC Error!", error.message);
-                            Fluttertoast.showToast(
-                              msg: FlutterI18n.translate(
-                                  context, "stats_nfc_error"),
-                            );
+                            if (mounted) {
+                              Fluttertoast.showToast(
+                                msg: FlutterI18n.translate(
+                                    context, "stats_nfc_error"),
+                              );
+                            }
                             setState(() {
                               nfcScanning = false;
                               showNfcNotice = false;
@@ -358,7 +361,7 @@ class _BatterySectionState extends State<BatterySection> {
                     color: Theme.of(context)
                         .colorScheme
                         .onSurface
-                        .withOpacity(0.5)),
+                        .withValues(alpha: 0.5)),
               ),
               Text(
                 type.description(context),
@@ -369,7 +372,7 @@ class _BatterySectionState extends State<BatterySection> {
                     color: Theme.of(context)
                         .colorScheme
                         .onSurface
-                        .withOpacity(0.5)),
+                        .withValues(alpha: 0.5)),
               ),
               const SizedBox(height: 8),
               Padding(

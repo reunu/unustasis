@@ -25,14 +25,14 @@ class _SupportSectionState extends State<SupportSection> {
           indent: 16,
           endIndent: 16,
           height: 24,
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
         ),
         const FaqWidget(),
         Divider(
           indent: 16,
           endIndent: 16,
           height: 24,
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
         ),
         Header(
           FlutterI18n.translate(context, "support_garages"),
@@ -47,14 +47,14 @@ class _SupportSectionState extends State<SupportSection> {
           indent: 16,
           endIndent: 16,
           height: 24,
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
         ),
         Header(FlutterI18n.translate(context, "support_get_help")),
         Divider(
           indent: 16,
           endIndent: 16,
           height: 24,
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
         ),
         ListTile(
           leading: const Icon(Icons.build_outlined),
@@ -71,7 +71,7 @@ class _SupportSectionState extends State<SupportSection> {
           indent: 16,
           endIndent: 16,
           height: 24,
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
         ),
         ListTile(
           leading: const Icon(Icons.contact_support_outlined),
@@ -92,7 +92,7 @@ class _SupportSectionState extends State<SupportSection> {
           indent: 16,
           endIndent: 16,
           height: 24,
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
         ),
         ListTile(
           leading: const Icon(Icons.bug_report_outlined),
@@ -106,7 +106,7 @@ class _SupportSectionState extends State<SupportSection> {
           indent: 16,
           endIndent: 16,
           height: 24,
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
         ),
         ListTile(
           leading: const Icon(Icons.discord_outlined),
@@ -120,7 +120,7 @@ class _SupportSectionState extends State<SupportSection> {
           indent: 16,
           endIndent: 16,
           height: 24,
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
         ),
       ];
 
@@ -174,7 +174,10 @@ class FaqWidget extends StatelessWidget {
               indent: 16,
               endIndent: 16,
               height: 24,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withValues(alpha: 0.1),
             ),
             itemBuilder: (context, index) {
               MapEntry category = faq.entries.elementAt(index);
@@ -210,7 +213,7 @@ class FaqWidget extends StatelessWidget {
                                   color: Theme.of(context)
                                       .colorScheme
                                       .onSurface
-                                      .withOpacity(0.6)),
+                                      .withValues(alpha: 0.6)),
                             ),
                           )
                         ]),

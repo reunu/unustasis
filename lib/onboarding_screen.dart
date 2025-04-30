@@ -98,7 +98,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     } else if (Platform.isIOS) {
       appInstalled = await appCheck.isAppInstalled('com.unumotors.app://');
     }
-    if (appInstalled) {
+    if (appInstalled && mounted) {
       showDialog<void>(
         context: context,
         barrierDismissible: false, // user must tap button!

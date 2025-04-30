@@ -216,5 +216,6 @@
     "widget_onboarding_title": "Neues Homescreen Widget!",
     "widget_onboarding_body": "Du kannst deinen Roller jetzt auch vom Homescreen aus steuern, ganz, ohne die App zu öffnen!\nDie Funktion \"Keyless Unlock\" funktioniert jetzt ebenfalls mit dem Handy in der Hosentasche.",
     "widget_onboarding_place": "Ausprobieren",
-    "widget_onboarding_dismiss": "Nicht jetzt"
+    "widget_onboarding_dismiss": "Nicht jetzt",
+    "stats_nfc_error": "Konnte NFC Tag nicht auslesen"
 }
