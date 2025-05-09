@@ -32,14 +32,6 @@ class _ScooterSectionState extends State<ScooterSection> {
   TextEditingController nameController = TextEditingController();
   FocusNode nameFocusNode = FocusNode();
 
-  void setColor(int newColor) async {
-    setState(() {
-      color = newColor;
-    });
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setInt("color", color);
-  }
-
   void setupInitialColor() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -163,6 +155,13 @@ class SavedScooterCard extends StatelessWidget {
     required this.rebuild,
   });
 
+  void setColor(int newColor, BuildContext context) async {
+    savedScooter.color = newColor;
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setInt("color", newColor);
+    if (context.mounted) context.read<ScooterService>().scooterColor = newColor;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -192,8 +191,8 @@ class SavedScooterCard extends StatelessWidget {
                     HapticFeedback.mediumImpact();
                     int? newColor = await showColorDialog(
                         savedScooter.color, savedScooter.name, context);
-                    if (newColor != null) {
-                      savedScooter.color = newColor;
+                    if (newColor != null && context.mounted) {
+                      setColor(newColor, context);
                       rebuild();
                     }
                     if (showOnboarding && snapshot.hasData) {

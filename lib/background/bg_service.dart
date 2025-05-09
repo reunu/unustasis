@@ -9,6 +9,8 @@ import 'package:logging/logging.dart';
 import 'package:pausable_timer/pausable_timer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../background/translate_static.dart';
+import '../domain/scooter_state.dart';
 import '../background/widget_handler.dart';
 import '../flutter/blue_plus_mockable.dart';
 import '../scooter_service.dart';
@@ -25,20 +27,25 @@ FlutterBluePlusMockable fbp = FlutterBluePlusMockable();
 ScooterService scooterService =
     ScooterService(fbp, isInBackgroundService: true);
 
-startBackgroundService() {
-  final service = FlutterBackgroundService();
-  service.startService();
-}
-
 Future<void> setupBackgroundService() async {
   final log = Logger("setupBackgroundService");
+  log.onRecord.listen((record) => print(record));
   final service = FlutterBackgroundService();
 
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
+  await flutterLocalNotificationsPlugin.initialize(
+    const InitializationSettings(
+      android: AndroidInitializationSettings("ic_bg_service_small"),
+    ),
+    onDidReceiveNotificationResponse: notificationTapBackground,
+    onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
+  );
+
   backgroundScanEnabled =
-      (await SharedPreferences.getInstance()).getBool("backgroundScan") ?? true;
+      (await SharedPreferences.getInstance()).getBool("backgroundScan") ??
+          false;
   log.info("Background scan: $backgroundScanEnabled");
 
   flutterLocalNotificationsPlugin
@@ -91,16 +98,56 @@ void updateNotification({String? debugText}) async {
       notificationId,
       "Unu Scooter",
       scooterService.state?.getNameStatic(),
-      const NotificationDetails(
+      NotificationDetails(
         android: AndroidNotificationDetails(
             notificationChannelId, notificationChannelName,
             icon: 'ic_bg_service_small',
             ongoing: true,
             importance: Importance.max,
             priority: Priority.high,
-            autoCancel: false),
+            autoCancel: false,
+            actions: getAndroidNotificationActions(scooterService.state)),
       ),
     );
+  }
+}
+
+List<AndroidNotificationAction> getAndroidNotificationActions(
+    ScooterState? state) {
+  switch (state) {
+    case ScooterState.standby:
+      return [
+        AndroidNotificationAction(
+            "unlock", getLocalizedNotificationAction("unlock")),
+        AndroidNotificationAction(
+            "openseat", getLocalizedNotificationAction("openseat"))
+      ];
+    case ScooterState.parked:
+      return [
+        AndroidNotificationAction(
+            "lock", getLocalizedNotificationAction("lock")),
+        AndroidNotificationAction(
+            "openseat", getLocalizedNotificationAction("openseat")),
+        AndroidNotificationAction(
+            "unlock", getLocalizedNotificationAction("unlock"))
+      ];
+    default:
+      return [];
+  }
+}
+
+@pragma('vm:entry-point')
+void notificationTapBackground(NotificationResponse notificationResponse) {
+  switch (notificationResponse.actionId) {
+    case "unlock":
+      FlutterBackgroundService().invoke("unlock");
+      break;
+    case "lock":
+      FlutterBackgroundService().invoke("lock");
+      break;
+    case "openseat":
+      FlutterBackgroundService().invoke("openseat");
+      break;
   }
 }
 
@@ -137,65 +184,64 @@ void _disableScanning() async {
 void dismissNotification() async {
   FlutterLocalNotificationsPlugin notifications =
       FlutterLocalNotificationsPlugin();
-  await notifications.initialize(const InitializationSettings(
-    android: AndroidInitializationSettings("ic_bg_service_small"),
-  ));
   await notifications.show(
       notificationId,
       "Unu Scooter",
       (PlatformDispatcher.instance.locale.languageCode == "de")
-          ? "Hintergrundverbindung deaktiviert. Du kannst diese Benachrichtigung schließen."
-          : "Background service disabled. You can close this notification.",
+          ? "Du kannst diese Benachrichtigung schließen."
+          : "You can close this notification.",
       const NotificationDetails(
           android: AndroidNotificationDetails(
         notificationChannelId,
         notificationChannelName,
       )));
   await notifications.cancel(notificationId);
+  await notifications.cancelAll();
 }
 
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {
-  Logger log = Logger("BackgroundService");
-  log.info("Background service started!");
+  print("Background service started!");
   DartPluginRegistrant.ensureInitialized();
 
   backgroundScanEnabled =
-      (await SharedPreferences.getInstance()).getBool("backgroundScan") ?? true;
+      (await SharedPreferences.getInstance()).getBool("backgroundScan") ??
+          false;
 
   if (service is AndroidServiceInstance &&
       await service.isForegroundService()) {
     if (backgroundScanEnabled) {
-      log.info("Running first connection cycle");
+      print("Running first connection cycle");
       _enableScanning();
     } else {
-      log.info("Dismissing initial notification");
+      print("Dismissing initial notification");
       dismissNotification();
       _disableScanning();
     }
   }
 
   // seed widget
-  log.info("Seeding: Most recent scooter is ${scooterService.scooterName}");
-  passToWidget(
-    connected: scooterService.connected,
-    lastPing: scooterService.lastPing,
-    scooterState: scooterService.state,
-    primarySOC: scooterService.primarySOC,
-    secondarySOC: scooterService.secondarySOC,
-    scooterName: scooterService.scooterName,
-    lastLocation: scooterService.lastLocation,
-    seatClosed: scooterService.seatClosed,
-  );
+  Future.delayed(const Duration(seconds: 5), () {
+    passToWidget(
+        connected: scooterService.connected,
+        lastPing: scooterService.lastPing,
+        scooterState: scooterService.state,
+        primarySOC: scooterService.primarySOC,
+        secondarySOC: scooterService.secondarySOC,
+        scooterName: scooterService.scooterName,
+        scooterColor: scooterService.scooterColor,
+        lastLocation: scooterService.lastLocation,
+        seatClosed: scooterService.seatClosed);
+  });
 
   service.on("autoUnlockCooldown").listen((data) async {
-    log.info("Received autoUnlockCooldown command");
+    print("Received autoUnlockCooldown command");
     scooterService.autoUnlockCooldown();
   });
 
   // listen for commands
   service.on('update').listen((data) async {
-    log.info("Received update command: $data");
+    print("Received update command: $data");
     try {
       if (data?["autoUnlock"] != null) {
         scooterService.setAutoUnlock(data!["autoUnlock"]);
@@ -212,6 +258,9 @@ void onStart(ServiceInstance service) async {
       if (data?["scooterName"] != null) {
         scooterService.scooterName = data!["scooterName"];
       }
+      if (data?["scooterColor"] != null) {
+        scooterService.scooterColor = data!["scooterColor"];
+      }
       if (data?["mostRecent"] != null) {
         scooterService.setMostRecentScooter(data!["mostRecent"]);
       }
@@ -224,21 +273,33 @@ void onStart(ServiceInstance service) async {
           _disableScanning();
         } else if (data["backgroundScan"] == true && !backgroundScanEnabled) {
           // was false, now is true. Start it up!
+          print("Enabling BG scanning");
           _enableScanning();
         }
       }
+      passToWidget(
+        connected: scooterService.connected,
+        lastPing: scooterService.lastPing,
+        scooterState: scooterService.state,
+        primarySOC: scooterService.primarySOC,
+        secondarySOC: scooterService.secondarySOC,
+        scooterName: scooterService.scooterName,
+        scooterColor: scooterService.scooterColor,
+        lastLocation: scooterService.lastLocation,
+        seatClosed: scooterService.seatClosed,
+      );
     } catch (e, stack) {
-      log.severe("Something bad happened on command", e, stack);
+      print("Something bad happened on command: $e");
     }
   });
 
   service.on("lock").listen((data) async {
-    log.info("Received lock command");
+    print("Received lock command");
     scooterService.lock();
   });
 
   service.on("unlock").listen((data) async {
-    log.info("Received unlock command");
+    print("Received unlock command");
     if (scooterService.connected) {
       scooterService.unlock();
     } else {
@@ -250,13 +311,13 @@ void onStart(ServiceInstance service) async {
   });
 
   service.on("openseat").listen((data) async {
-    log.info("Received openseat command");
+    print("Received openseat command");
     scooterService.openSeat();
   });
 
   // listen to changes
   scooterService.addListener(() async {
-    log.fine("ScooterService updated");
+    print("ScooterService updated");
     passToWidget(
       connected: scooterService.connected,
       lastPing: scooterService.lastPing,
@@ -264,6 +325,7 @@ void onStart(ServiceInstance service) async {
       primarySOC: scooterService.primarySOC,
       secondarySOC: scooterService.secondarySOC,
       scooterName: scooterService.scooterName,
+      scooterColor: scooterService.scooterColor,
       lastLocation: scooterService.lastLocation,
       seatClosed: scooterService.seatClosed,
     );
@@ -274,8 +336,7 @@ void onStart(ServiceInstance service) async {
 
   _rescanTimer = PausableTimer.periodic(const Duration(seconds: 35), () async {
     if (!backgroundScanEnabled) {
-      log.info(
-          "Oh boy, the timer must've killed itself/been killed. Resetting!");
+      print("Oh boy, the timer must've killed itself/been killed. Resetting!");
       _rescanTimer
         ?..pause()
         ..reset();
@@ -290,7 +351,7 @@ void onStart(ServiceInstance service) async {
         !scooterService.connected) {
       attemptConnectionCycle();
     } else {
-      log.info(
+      print(
           "Some conditions for rescanning not met. backgroundScanEnabled: $backgroundScanEnabled, scooterService.scanning: ${scooterService.scanning}, scooterService.connected: ${scooterService.connected}");
     }
   });

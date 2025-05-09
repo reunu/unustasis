@@ -26,7 +26,7 @@ class SettingsSection extends StatefulWidget {
 
 class _SettingsSectionState extends State<SettingsSection> {
   final log = Logger('SettingsSection');
-  bool backgroundScan = true;
+  bool backgroundScan = false;
   bool biometrics = false;
   bool autoUnlock = false;
   bool seasonal = true;
@@ -39,7 +39,7 @@ class _SettingsSectionState extends State<SettingsSection> {
     ScooterService service = context.read<ScooterService>();
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      backgroundScan = prefs.getBool("backgroundScan") ?? true;
+      backgroundScan = prefs.getBool("backgroundScan") ?? false;
       biometrics = prefs.getBool("biometrics") ?? false;
       autoUnlock = service.autoUnlock;
       autoUnlockDistance =

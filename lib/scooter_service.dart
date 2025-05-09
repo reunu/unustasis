@@ -65,7 +65,6 @@ class ScooterService with ChangeNotifier {
       this.prefs = prefs;
 
       savedScooters = getSavedScooters();
-
       seedStreamsWithCache();
       restoreCachedSettings();
     });
@@ -158,6 +157,7 @@ class ScooterService with ChangeNotifier {
     _scooterName = mostRecentScooter?.name;
     _scooterColor = mostRecentScooter?.color;
     _lastLocation = mostRecentScooter?.lastLocation;
+    print("Last scooter name: ${_scooterName}");
     return;
   }
 
@@ -342,6 +342,7 @@ class ScooterService with ChangeNotifier {
   set scooterColor(int? scooterColor) {
     _scooterColor = scooterColor;
     notifyListeners();
+    updateBackgroundService({"scooterColor": scooterColor});
   }
 
   LatLng? _lastLocation;

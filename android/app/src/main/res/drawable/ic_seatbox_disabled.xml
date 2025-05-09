@@ -8,9 +8,9 @@
     android:viewportHeight="32">
     <path
         android:name="path"
-        android:pathData="M 24.397 10.528 C 28.519 12.782 28.097 16.301 26.864 19.055 C 25.984 21.018 23.518 21.465 21.661 20.376 L 6.671 11.593 C 3.678 9.84 4.216 6.117 7.683 6.186 C 12.707 6.287 18.863 7.502 24.397 10.528 Z M 5.499 26.326 L 25.206 26.326"
+        android:pathData="M 22.378 6.59 C 27.308 6.443 28.793 9.854 29.139 13.002 C 29.386 15.247 27.389 16.961 25.13 16.962 L 6.889 16.967 C 3.249 16.968 1.758 13.312 4.935 11.533 C 9.537 8.957 15.759 6.788 22.378 6.59 Z M 6.461 24.269 L 27.15 24.269"
         android:fillColor="#000"
-        android:fillAlpha="100"
+        android:fillAlpha="0"
         android:strokeColor="#000000"
         android:strokeWidth="2.5"
         android:strokeLineCap="round"

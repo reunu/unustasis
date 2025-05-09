@@ -35,25 +35,29 @@ class LogHelper {
 
   void initialize() {
     Logger.root.onRecord.listen((record) {
-      if (kDebugMode && record.level >= Level.INFO) {
-        Fluttertoast.showToast(
-            msg: record.message, fontSize: 6, toastLength: Toast.LENGTH_SHORT);
-      }
-      // ignore: avoid_print
-      print(record);
-      // Ensure the buffer doesn't exceed the max size
-      if (_logBuffer.length >= maxBufferSize) {
-        _logBuffer.removeAt(0); // Remove the oldest log entry
-      }
-      _logBuffer.add({
-        'time': record.time.toIso8601String(),
-        'level': record.level.name,
-        'message': record.message,
-        'error': record.error?.toString() ?? '',
-        'stackTrace': record.stackTrace?.toString() ?? ''
-      });
+      addLog(record);
     });
     _startLogCleanup();
+  }
+
+  void addLog(LogRecord record) {
+    if (kDebugMode && record.level >= Level.INFO) {
+      Fluttertoast.showToast(
+          msg: record.message, fontSize: 6, toastLength: Toast.LENGTH_SHORT);
+    }
+    // ignore: avoid_print
+    print(record);
+    // Ensure the buffer doesn't exceed the max size
+    if (_logBuffer.length >= maxBufferSize) {
+      _logBuffer.removeAt(0); // Remove the oldest log entry
+    }
+    _logBuffer.add({
+      'time': record.time.toIso8601String(),
+      'level': record.level.name,
+      'message': record.message,
+      'error': record.error?.toString() ?? '',
+      'stackTrace': record.stackTrace?.toString() ?? ''
+    });
   }
 
   void _startLogCleanup() {
@@ -119,7 +123,7 @@ class LogHelper {
 Device: $device
 OS: $os
 Settings: 
-      backgroundScan = ${prefs.getBool("backgroundScan") ?? true}
+      backgroundScan = ${prefs.getBool("backgroundScan") ?? false}
       biometrics = ${prefs.getBool("biometrics") ?? false}
       autoUnlock = ${service.autoUnlock}
       autoUnlockDistance = ${ScooterKeylessDistance.fromThreshold(service.autoUnlockThreshold) ?? ScooterKeylessDistance.regular.threshold}

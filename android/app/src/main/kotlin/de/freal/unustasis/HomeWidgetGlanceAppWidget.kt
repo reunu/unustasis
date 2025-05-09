@@ -23,6 +23,7 @@ import androidx.glance.layout.padding
 import androidx.glance.text.*
 import de.freal.unustasis.R.drawable.ic_lock
 import de.freal.unustasis.R.drawable.ic_unlock
+import de.freal.unustasis.R.drawable.ic_lock_disabled
 import de.freal.unustasis.R.drawable.ic_battery_0
 import de.freal.unustasis.R.drawable.ic_battery_10
 import de.freal.unustasis.R.drawable.ic_battery_25
@@ -32,11 +33,37 @@ import de.freal.unustasis.R.drawable.ic_battery_75
 import de.freal.unustasis.R.drawable.ic_battery_85
 import de.freal.unustasis.R.drawable.ic_battery_100
 import de.freal.unustasis.R.drawable.ic_location
+import de.freal.unustasis.R.drawable.ic_location_disabled
 import de.freal.unustasis.R.drawable.ic_seatbox
 import de.freal.unustasis.R.drawable.ic_seatbox_open
+import de.freal.unustasis.R.drawable.ic_seatbox_disabled
+import de.freal.unustasis.R.drawable.base_0
+import de.freal.unustasis.R.drawable.base_1
+import de.freal.unustasis.R.drawable.base_2
+import de.freal.unustasis.R.drawable.base_3
+import de.freal.unustasis.R.drawable.base_4
+import de.freal.unustasis.R.drawable.base_5
+import de.freal.unustasis.R.drawable.base_6
+import de.freal.unustasis.R.drawable.base_7
+import de.freal.unustasis.R.drawable.base_8
+import de.freal.unustasis.R.drawable.base_9
+
 import es.antonborri.home_widget.HomeWidgetBackgroundIntent
 
 class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
+
+    private val SCOOTER_BASE_IMAGES = intArrayOf(
+        R.drawable.base_0,
+        R.drawable.base_1,
+        R.drawable.base_2,
+        R.drawable.base_3,
+        R.drawable.base_4,
+        R.drawable.base_5,
+        R.drawable.base_6,
+        R.drawable.base_7,
+        R.drawable.base_8,
+        R.drawable.base_9
+    )
 
     companion object {
         private val TINY = DpSize(100.dp, 100.dp)
@@ -86,11 +113,11 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
         val stateName : String = data.getString("stateName", "Unknown")!!
         val connected : Boolean = data.getBoolean("connected", false)
         val scanning : Boolean = data.getBoolean("scanning", false)
-        val lastPing : String = data.getString("lastPing", "")!!
+        val lastPing : String? = data.getString("lastPing", null)
         val soc1: Int = data.getInt("soc1", 0)
         val soc2 : Int = data.getInt("soc2", 0)
         val scooterName : String = data.getString("scooterName", "Unu Scooter")!!
-        val scooterId : String? = data.getString("scooterId", null)
+        val scooterColor : Int = data.getInt("scooterColor", 1)
         val lastLat : String? = data.getString("lastLat", null)
         val lastLon : String? = data.getString("lastLon", null)
 
@@ -106,8 +133,10 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                 GlanceModifier.background(GlanceTheme.colors.widgetBackground)
                     .cornerRadius(24.dp)
                     .padding(16.dp, 12.dp)
+                    .clickable(actionStartActivity<MainActivity>())
             ) {
                 if (size.width <= TINY.width && size.height < REGULAR_PILLAR.height) {
+                    // teeny tiny square option
                     Column(
                         verticalAlignment = Alignment.Vertical.CenterVertically,
                         horizontalAlignment = Alignment.Horizontal.CenterHorizontally,
@@ -130,6 +159,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                         )
                     }
                 } else if (size.height <= REGULAR_BAR.height) {
+                    // squished flat, with or without battery
                     Row(
                         modifier = GlanceModifier.fillMaxSize(),
                         verticalAlignment = Alignment.Vertical.CenterVertically,
@@ -152,7 +182,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                                 singleLine = size.width < LONG_BAR.width,
                             )
                             if (size.width >= LONG_BAR.width)
-                                BatteryWidget(soc1, soc2, compact = false)
+                                BatteryWidget(soc1, soc2)
 
                         }
                         SinglePowerButton(
@@ -163,6 +193,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                     }
 
                 } else if (size.width <= TINY.width && size.height >= REGULAR_PILLAR.height){
+                    // tall and thin pillar
                     Column(
                         horizontalAlignment = Alignment.Horizontal.CenterHorizontally,
                         modifier = GlanceModifier.fillMaxSize().padding(vertical = 16.dp),
@@ -183,8 +214,8 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                             singleLine = false,
                             modifier = GlanceModifier.padding(bottom = 4.dp)
                         )
-                        if(size.height >= LONG_PILLAR.height) BatteryWidget(soc1, soc2, stacked = true)
-                        else BatteryWidget(soc1, soc2, compact = true)
+                        if(size.height >= LONG_PILLAR.height) BatteryWidget(soc1, soc2)
+                        else BatteryWidget(soc1, soc2)
                         Spacer(GlanceModifier.defaultWeight())
                         SinglePowerButton(
                             scanning = scanning,
@@ -193,6 +224,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                         )
                     }
                 } else {
+                    // big, full version
                 Column(
                         modifier = GlanceModifier.fillMaxSize().padding(vertical = 8.dp),
                         horizontalAlignment = Alignment.Horizontal.Start,
@@ -204,15 +236,33 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                             center = false,
                             modifier = GlanceModifier.fillMaxWidth()
                         )
-                        Spacer(GlanceModifier.defaultWeight())
-                        StateText(
-                            stateName = stateName,
-                            centerText = false,
-                            singleLine = false,
-                            modifier = GlanceModifier.padding(bottom = 4.dp)
-                        )
-                        BatteryWidget(soc1, soc2, compact = false, stacked = size.height > FLAT_RECTANGLE.height)
-                        Spacer(GlanceModifier.defaultWeight())
+                        Row(
+                            horizontalAlignment = Alignment.Horizontal.Start,
+                            verticalAlignment = Alignment.Vertical.CenterVertically,
+                            modifier = GlanceModifier.defaultWeight().fillMaxWidth()
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.Horizontal.Start,
+                                verticalAlignment = Alignment.Vertical.CenterVertically,
+                            ) {
+                                Spacer(GlanceModifier.defaultWeight())
+                                StateText(
+                                    stateName = stateName,
+                                    centerText = false,
+                                    singleLine = false,
+                                    modifier = GlanceModifier.padding(bottom = 4.dp)
+                                )
+                                BatteryWidget(soc1, soc2)
+                                Spacer(GlanceModifier.defaultWeight())
+                            }
+                            Spacer(GlanceModifier.defaultWeight())
+                            Image(
+                                provider = ImageProvider(SCOOTER_BASE_IMAGES[scooterColor]),
+                                contentDescription = "Scooter",
+                                modifier = GlanceModifier.padding(bottom = 4.dp).width(80.dp),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
                         AdvancedPowerButton(
                             scanning = scanning,
                             enabled = connected,
@@ -248,10 +298,10 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                     textAlign = if (center) TextAlign.Center else TextAlign.Start,
                 )
             )
-            Spacer(modifier = GlanceModifier.defaultWeight())
+            Spacer(modifier = GlanceModifier.width(4.dp))
             if (showPing && lastPing != null)
                 Text(
-                    lastPing,
+                    "($lastPing)",
                     style = TextStyle(
                         color = GlanceTheme.colors.secondary,
                         textAlign = if (center) TextAlign.Center else TextAlign.Start,
@@ -285,72 +335,48 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
     fun BatteryWidget(
         soc1: Int,
         soc2: Int,
-        stacked: Boolean = false,
-        compact: Boolean = false,
         modifier: GlanceModifier = GlanceModifier,
     ) {
-       if(stacked)
-           Column (
-               modifier = modifier
-           ){
-               SingleBattery(soc1, compact, modifier = GlanceModifier.defaultWeight())
-               if(soc2 > 0) Spacer(GlanceModifier.height(4.dp))
-               if(soc2 > 0) SingleBattery(soc2, compact, modifier = GlanceModifier.defaultWeight())
-           }
-        else
-            Row (
-                modifier = modifier
-            ){
-                SingleBattery(soc1, compact, modifier = GlanceModifier.defaultWeight())
-                if(soc2 > 0) Spacer(GlanceModifier.width(8.dp))
-                if(soc2 > 0) SingleBattery(soc2, compact, modifier = GlanceModifier.defaultWeight())
-            }
+        Row (
+            modifier = modifier
+        ){
+            SingleBattery(soc1, modifier = GlanceModifier.defaultWeight())
+            if(soc2 > 0) Spacer(GlanceModifier.width(8.dp))
+            if(soc2 > 0) SingleBattery(soc2, modifier = GlanceModifier.defaultWeight())
+        }
     }
 
 
     @Composable
     fun SingleBattery(
         soc: Int,
-        compact: Boolean = false,
         modifier: GlanceModifier = GlanceModifier
     ) {
         Row(
             verticalAlignment = Alignment.Vertical.CenterVertically,
             modifier = modifier
         ){
-            if(compact) {
-                Image(
-                    provider = ImageProvider(
-                        if (soc > 85) ic_battery_100
-                        else if (soc > 75) ic_battery_85
-                        else if (soc > 60) ic_battery_75
-                        else if (soc > 40) ic_battery_60
-                        else if (soc > 25) ic_battery_40
-                        else if (soc > 10) ic_battery_25
-                        else if (soc > 0) ic_battery_10
-                        else ic_battery_0),
-                    colorFilter = ColorFilter.tint(
-                        if (soc>15)
-                            GlanceTheme.colors.primary
-                        else androidx.glance.unit.ColorProvider(
-                            Color.Red
-                        )
-                    ),
-                    contentDescription = "Battery icon",
-                    modifier = GlanceModifier
-                        .size(24.dp)
-                )
-            } else {
-                LinearProgressIndicator(
-                    progress = soc / 100f,
-                    color = GlanceTheme.colors.primary,
-                    backgroundColor = GlanceTheme.colors.secondaryContainer,
-                    modifier = GlanceModifier
-                        .height(8.dp)
-                        .width(80.dp)
-                        .padding(0.dp, 0.dp, 4.dp, 0.dp),
-                )
-            }
+            Image(
+                provider = ImageProvider(
+                    if (soc > 85) ic_battery_100
+                    else if (soc > 75) ic_battery_85
+                    else if (soc > 60) ic_battery_75
+                    else if (soc > 40) ic_battery_60
+                    else if (soc > 25) ic_battery_40
+                    else if (soc > 10) ic_battery_25
+                    else if (soc > 0) ic_battery_10
+                    else ic_battery_0),
+                colorFilter = ColorFilter.tint(
+                    if (soc>15)
+                        GlanceTheme.colors.primary
+                    else androidx.glance.unit.ColorProvider(
+                        Color.Red
+                    )
+                ),
+                contentDescription = "Battery icon",
+                modifier = GlanceModifier
+                    .size(20.dp)
+            )
             Text("$soc%", style = TextStyle(color = GlanceTheme.colors.secondary))
         }
     }
@@ -380,7 +406,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
             SquareIconButton(
                 imageProvider = ImageProvider(if(enabled) {
                     if(locked == true) ic_lock else ic_unlock
-                } else ic_lock),
+                } else ic_lock_disabled),
                 contentDescription = if(enabled) {
                     if(locked == true) "Unlock" else "Lock"
                 } else "Scan",
@@ -447,7 +473,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                             .defaultWeight()
                     ){
                         SquareIconButton(
-                            imageProvider = ImageProvider(ic_location),
+                            imageProvider = if(hasLocation) ImageProvider(ic_location) else ImageProvider(ic_location_disabled),
                             contentDescription = "Last known location",
                             backgroundColor = if (hasLocation) {
                                 GlanceTheme.colors.primaryContainer
@@ -479,7 +505,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                             .defaultWeight()
                     ) {
                         SquareIconButton(
-                            imageProvider = ImageProvider(if (seatClosed == false) ic_seatbox_open else ic_seatbox),
+                            imageProvider = ImageProvider(if(enabled && seatOpenable) if (seatClosed == false) ic_seatbox_open else ic_seatbox else ic_seatbox_disabled),
                             contentDescription = "Seatbox ${if (seatClosed == false) "open" else "closed"}",
                             backgroundColor = if (enabled && seatOpenable) {
                                 GlanceTheme.colors.primaryContainer
@@ -531,7 +557,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                             )
                         } else {
                             SquareIconButton(
-                                imageProvider = ImageProvider(if (locked == false && enabled) ic_unlock else ic_lock),
+                                imageProvider = ImageProvider(if(enabled) if (locked == false && enabled) ic_unlock else ic_lock else ic_lock_disabled),
                                 contentDescription = " ${if (locked == false) "Unlock" else "Lock"} scooter",
                                 contentColor = if(enabled) GlanceTheme.colors.onPrimary else GlanceTheme.colors.secondary,
                                 backgroundColor = if(enabled){
