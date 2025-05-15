@@ -1041,7 +1041,8 @@ class ScooterService with ChangeNotifier {
       prefs!.setString("savedScooters", jsonEncode(savedScooters));
     }
     connected = false;
-    if (Platform.isAndroid) {}
+    updateBackgroundService({"forgetSavedScooter": id});
+    notifyListeners();
   }
 
   void renameSavedScooter({String? id, required String name}) async {
@@ -1074,7 +1075,7 @@ class ScooterService with ChangeNotifier {
   void updateBackgroundService(dynamic data) {
     if (!isInBackgroundService) {
       FlutterBackgroundService().invoke("update", data);
-    } else {}
+    }
   }
 
   void addSavedScooter(String id) async {
@@ -1091,6 +1092,8 @@ class ScooterService with ChangeNotifier {
     prefs ??= await SharedPreferences.getInstance();
     prefs!.setString("savedScooters", jsonEncode(savedScooters));
     scooterName = "Scooter Pro";
+    notifyListeners();
+    updateBackgroundService({"addSavedScooter": id});
   }
 
   @override

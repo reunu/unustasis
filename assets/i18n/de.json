@@ -141,8 +141,8 @@
     "language_english": "🇺🇸   Englisch",
     "language_german": "🇩🇪   Deutsch",
     "language_pirate": "🏴‍☠️   Pirat",
-    "settings_background_scan": "Hintergrundverbindung (experimentell)",
-    "settings_background_scan_description": "Auch bei geschlossener App mit dem Roller verbinden. Erhöht den Akkuverbrauch des Handys.",
+    "settings_background_scan": "Hintergrundverbindung (Beta)",
+    "settings_background_scan_description": "Auch bei geschlossener App mit dem Roller verbinden.",
     "settings_biometrics": "Biometrisch sichern",
     "settings_biometrics_description": "Fingerabdruck oder Gesichtserkennung zum Entsperren der App verlangen.",
     "biometrics_message": "Authentifizieren, um fortzufahren",
@@ -217,5 +217,11 @@
     "widget_onboarding_body": "Du kannst deinen Roller jetzt auch vom Homescreen aus steuern, ganz, ohne die App zu öffnen!\n",
     "widget_onboarding_place": "Ausprobieren",
     "widget_onboarding_dismiss": "Nicht jetzt",
-    "stats_nfc_error": "Konnte NFC Tag nicht auslesen"
+    "stats_nfc_error": "Konnte NFC Tag nicht auslesen",
+    "bgscan_warning_accidentalturnon": "Wenn du Keyless Unlock aktiv hast, kann dein Telefon versehentlich im Vorbeigehen deinen Roller entriegeln oder öffnen. Achte immer darauf, dass dein Roller an öffentlichen Orten abgeschlossen ist.",
+    "bgscan_warning_battery": "Höherer Akkuverbrauch. Je nach Telefon kann dies die Akkulaufzeit deines Telefons um etwa 5-10 % pro Ladung verringern. Der Akku deines Rollers ist davon nicht betroffen.",
+    "bgscan_warning_confirm": "Verstanden, aktivieren",
+    "bgscan_warning_title": "Beta-Funktion",
+    "bgscan_warning_intro": "Die Hintergrundsuche ist aktuell eine Beta-Funktion und kann eines oder mehrere dieser Probleme verursachen:",
+    "bgscan_warning_lostpairing": "Verlust der Kopplung. Wenn du viel Zeit mit deinem Scooter nur knapp in Reichweite verbringst, kann die Kopplung des Handys mit dem Scooter verloren gehen. In diesem Fall braucht es die Schlüsselkarte, um ihn zu entsperren und neu zu koppeln."
 }

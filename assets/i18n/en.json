@@ -141,8 +141,8 @@
     "language_english": "🇺🇸   English",
     "language_german": "🇩🇪   German",
     "language_pirate": "🏴‍☠️   Pirate",
-    "settings_background_scan": "Background connection (experimental)",
-    "settings_background_scan_description": "Connect to the scooter, even if the app is closed. Increases phone battery consumption.",
+    "settings_background_scan": "Background connection (beta)",
+    "settings_background_scan_description": "Connect to the scooter, even if the app is closed.",
     "settings_biometrics": "Biometric authentication",
     "settings_biometrics_description": "Require fingerprint or face recognition to access the app.",
     "biometrics_message": "Authenticate to access app",
@@ -217,5 +217,11 @@
     "widget_onboarding_body": "You can now control your scooter from your home screen, without having to open the app!",
     "widget_onboarding_place": "Try",
     "widget_onboarding_dismiss": "Not now",
-    "stats_nfc_error": "Couldn't scan NFC tag"
+    "stats_nfc_error": "Couldn't scan NFC tag",
+    "bgscan_warning_confirm": "Understood, turn on",
+    "bgscan_warning_title": "Beta feature",
+    "bgscan_warning_intro": "Background scanning is currently in beta and may cause one or more of these issues:",
+    "bgscan_warning_battery": "Significantly higher battery drain. Depending on your phone, this may reduce your phone's battery life by about 5-10% per charge. Your scooter's battery will not be affected.",
+    "bgscan_warning_lostpairing": "Loss of pairing. If you spend a lot of time with your scooter just barely in range, the pairing to your scooter may be lost and you will need your keycard to unlock and re-pair it.",
+    "bgscan_warning_accidentalturnon": "If you have keyless unlock enabled, your phone may accidentally unlock or open your scooter if you walk past it. Always be careful that your scooter is locked before leaving it in a public place."
 }

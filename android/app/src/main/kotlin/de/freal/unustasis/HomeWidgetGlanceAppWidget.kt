@@ -66,23 +66,23 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
     )
 
     companion object {
-        private val TINY = DpSize(100.dp, 100.dp)
-        private val REGULAR_BAR = DpSize(200.dp, 100.dp)
-        private val LONG_BAR = DpSize(300.dp, 100.dp)
-        private val REGULAR_PILLAR = DpSize(100.dp, 200.dp)
-        private val LONG_PILLAR = DpSize(100.dp, 300.dp)
-        private val FLAT_RECTANGLE = DpSize(200.dp, 200.dp)
-        private val FULL_RECTANGLE = DpSize(250.dp, 250.dp)
+        private val TINY = DpSize(100.dp, 90.dp)
+        private val FLAT_BAR = DpSize(200.dp, 40.dp)
+        private val REGULAR_BAR = DpSize(200.dp, 90.dp)
+        private val LONG_BAR = DpSize(300.dp, 90.dp)
+        private val REGULAR_PILLAR = DpSize(100.dp, 180.dp)
+        private val LONG_PILLAR = DpSize(100.dp, 270.dp)
+        private val FULL_RECTANGLE = DpSize(250.dp, 225.dp)
     }
 
     override val sizeMode = SizeMode.Responsive(
         setOf(
             TINY,
+            FLAT_BAR,
             REGULAR_BAR,
             LONG_BAR,
             REGULAR_PILLAR,
             LONG_PILLAR,
-            FLAT_RECTANGLE,
             FULL_RECTANGLE
         )
     )
@@ -120,6 +120,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
         val scooterColor : Int = data.getInt("scooterColor", 1)
         val lastLat : String? = data.getString("lastLat", null)
         val lastLon : String? = data.getString("lastLon", null)
+        val debugText : String = size.width.toString() + "x" + size.height.toString()
 
         GlanceTheme(
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
@@ -159,7 +160,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                         )
                     }
                 } else if (size.height <= REGULAR_BAR.height) {
-                    // squished flat, with or without battery
+                    // wide enough, but not tall enough
                     Row(
                         modifier = GlanceModifier.fillMaxSize(),
                         verticalAlignment = Alignment.Vertical.CenterVertically,
@@ -170,10 +171,9 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                                 .padding(0.dp, 0.dp, 16.dp, 0.dp)
                                 .defaultWeight()
                         ) {
-                            Header(
+                            if(size.height > FLAT_BAR.height) Header(
                                 scooterName = scooterName,
                                 lastPing = lastPing,
-                                showPing = false,
                                 center = false,
                             )
                             StateText(
@@ -201,7 +201,6 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                         if(size.height >= LONG_PILLAR.height){
                             Header(
                                 scooterName = scooterName,
-                                showPing = false,
                                 lastPing = lastPing,
                                 center = true,
                                 modifier = GlanceModifier.padding(bottom = 4.dp)
@@ -214,8 +213,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                             singleLine = false,
                             modifier = GlanceModifier.padding(bottom = 4.dp)
                         )
-                        if(size.height >= LONG_PILLAR.height) BatteryWidget(soc1, soc2)
-                        else BatteryWidget(soc1, soc2)
+                        BatteryWidget(soc1, soc2, true)
                         Spacer(GlanceModifier.defaultWeight())
                         SinglePowerButton(
                             scanning = scanning,
@@ -231,7 +229,6 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                     ) {
                         Header(
                             scooterName = scooterName,
-                            showPing = true,
                             lastPing = lastPing,
                             center = false,
                             modifier = GlanceModifier.fillMaxWidth()
@@ -283,7 +280,6 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
     fun Header(
         scooterName: String = "Unu Scooter Pro",
         lastPing: String? = null,
-        showPing: Boolean = false,
         center: Boolean = false,
         modifier: GlanceModifier = GlanceModifier,
     ) {
@@ -299,7 +295,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                 )
             )
             Spacer(modifier = GlanceModifier.width(4.dp))
-            if (showPing && lastPing != null)
+            if (lastPing != null)
                 Text(
                     "($lastPing)",
                     style = TextStyle(
@@ -335,14 +331,17 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
     fun BatteryWidget(
         soc1: Int,
         soc2: Int,
+        center: Boolean? = false,
         modifier: GlanceModifier = GlanceModifier,
     ) {
         Row (
-            modifier = modifier
+            horizontalAlignment = if(center == true) Alignment.Horizontal.CenterHorizontally else Alignment.Horizontal.Start,
+            verticalAlignment = Alignment.Vertical.CenterVertically,
+            modifier = modifier.width(160.dp)
         ){
-            SingleBattery(soc1, modifier = GlanceModifier.defaultWeight())
+            SingleBattery(soc1)
             if(soc2 > 0) Spacer(GlanceModifier.width(8.dp))
-            if(soc2 > 0) SingleBattery(soc2, modifier = GlanceModifier.defaultWeight())
+            if(soc2 > 0) SingleBattery(soc2)
         }
     }
 

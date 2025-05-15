@@ -141,8 +141,8 @@
     "language_english": "🇺🇸   English",
     "language_german": "🇩🇪   German",
     "language_pirate": "🏴‍☠️   Pirate",
-    "settings_background_scan": "Background hookup (experiemental)",
-    "settings_background_scan_description": "Link up with yer ship, even with yer app shut tight! Beware—it'll be drainin' more o' yer phone's battery!",
+    "settings_background_scan": "Background hookup (beta)",
+    "settings_background_scan_description": "Link up with yer ship, even with yer app shut tight!",
     "settings_biometrics": "Biometric plunderin'",
     "settings_biometrics_description": "Require yer fingerprint or face recognition to get on board",
     "biometrics_message": "Authenticate to access the app, ye scurvy dog.",
@@ -217,5 +217,11 @@
     "widget_onboarding_body": "Ye can now steer yer scooter straight from yer shipdeck without botherin' with that blasted app!",
     "widget_onboarding_place": "Give it a whirl",
     "widget_onboarding_dismiss": "Not now",
-    "stats_nfc_error": "Couldn't scan yer NFC tag"
+    "stats_nfc_error": "Couldn't scan yer NFC tag",
+    "bgscan_warning_accidentalturnon": "If ye have the ghost ship enabled, yer magic talkbox might unwittin’ unlock or open yer ship just by driftin’ past. Always make sure yer ship be locked tight ‘fore leavin’ her in the treacherous waters o’ the public!",
+    "bgscan_warning_battery": "Yer magic talkbox’ll be burnin’ through its lifeblood faster—up to 5 to 10 percent lost with each charge, dependin’ on the beast ye carry. Worry not, though—yer ship’s heart stays untouched.",
+    "bgscan_warning_confirm": "Yarr, sail ahead!",
+    "bgscan_warning_intro": "Background scannin’ be in the beta brig, and may stir up trouble such as one or more o’ these cursed effects:",
+    "bgscan_warning_lostpairing": "Loss o’ pairin’! If ye linger too long on the edge o’ yer ship’s ghostly range, the bond may break, and ye’ll need yer keycard to unlock ‘er and forge the link anew.",
+    "bgscan_warning_title": "Uncharted waters!"
 }

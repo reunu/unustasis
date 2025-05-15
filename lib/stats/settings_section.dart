@@ -152,14 +152,24 @@ class _SettingsSectionState extends State<SettingsSection> {
                 context, "settings_background_scan_description")),
             value: backgroundScan,
             onChanged: (value) async {
-              SharedPreferences prefs = await SharedPreferences.getInstance();
-              prefs.setBool("backgroundScan", value);
-              // inform the service!
-              FlutterBackgroundService()
-                  .invoke("update", {"backgroundScan": value});
-              setState(() {
-                backgroundScan = value;
-              });
+              bool? confirmed;
+              if (value == true) {
+                // warn before turning on
+                confirmed = await showBackgroundScanWarning(context);
+              } else {
+                // no warning for turning off
+                confirmed = true;
+              }
+              if (confirmed == true) {
+                SharedPreferences prefs = await SharedPreferences.getInstance();
+                prefs.setBool("backgroundScan", value);
+                // inform the service!
+                FlutterBackgroundService()
+                    .invoke("update", {"backgroundScan": value});
+                setState(() {
+                  backgroundScan = value;
+                });
+              }
             },
           ),
         FutureBuilder<List<BiometricType>>(
@@ -383,5 +393,71 @@ class _SettingsSectionState extends State<SettingsSection> {
       ),
       itemBuilder: (context, index) => settingsItems()[index],
     );
+  }
+
+  Future<bool?> showBackgroundScanWarning(BuildContext context) {
+    return showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (context) {
+          return AlertDialog(
+            title: Text(
+              FlutterI18n.translate(context, "bgscan_warning_title"),
+              textAlign: TextAlign.center,
+            ),
+            content: ListView(
+              shrinkWrap: true,
+              children: [
+                Text(
+                  FlutterI18n.translate(context, "bgscan_warning_intro"),
+                  textAlign: TextAlign.center,
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 24, bottom: 8),
+                  child: Center(
+                      child: Icon(Icons.battery_alert_outlined, size: 32)),
+                ),
+                Text(
+                  FlutterI18n.translate(context, "bgscan_warning_battery"),
+                  textAlign: TextAlign.center,
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 24, bottom: 8),
+                  child: Center(child: Icon(Icons.link_off_outlined, size: 32)),
+                ),
+                Text(
+                  FlutterI18n.translate(context, "bgscan_warning_lostpairing"),
+                  textAlign: TextAlign.center,
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 24, bottom: 8),
+                  child: Center(
+                      child: Icon(Icons.power_settings_new_outlined, size: 32)),
+                ),
+                Text(
+                  FlutterI18n.translate(
+                      context, "bgscan_warning_accidentalturnon"),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child:
+                    Text(FlutterI18n.translate(context, "forget_alert_cancel")),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(true);
+                },
+                child: Text(
+                    FlutterI18n.translate(context, "bgscan_warning_confirm")),
+              ),
+            ],
+          );
+        });
   }
 }

@@ -21,7 +21,7 @@ const notificationChannelName = 'Unu Background Connection';
 const notificationId = 1612;
 
 bool backgroundScanEnabled = true;
-PausableTimer? _rescanTimer;
+PausableTimer? _rescanTimer, _widgetTimer;
 
 FlutterBluePlusMockable fbp = FlutterBluePlusMockable();
 ScooterService scooterService =
@@ -277,6 +277,13 @@ void onStart(ServiceInstance service) async {
           _enableScanning();
         }
       }
+      if (data?["forgetSavedScooter"] != null) {
+        scooterService.forgetSavedScooter(data!["id"]);
+      }
+      if (data?["addSavedScooter"] != null) {
+        scooterService.addSavedScooter(data!["id"]);
+      }
+
       passToWidget(
         connected: scooterService.connected,
         lastPing: scooterService.lastPing,
@@ -312,7 +319,14 @@ void onStart(ServiceInstance service) async {
 
   service.on("openseat").listen((data) async {
     print("Received openseat command");
-    scooterService.openSeat();
+    if (scooterService.connected) {
+      scooterService.openSeat();
+    } else {
+      // scan first, then open seat
+      setWidgetScanning(true);
+      await attemptConnectionCycle();
+      if (scooterService.connected) scooterService.openSeat();
+    }
   });
 
   // listen to changes
@@ -332,6 +346,10 @@ void onStart(ServiceInstance service) async {
     if (backgroundScanEnabled) {
       updateNotification();
     }
+  });
+
+  _widgetTimer = PausableTimer.periodic(const Duration(hours: 1), () async {
+    updateNotification();
   });
 
   _rescanTimer = PausableTimer.periodic(const Duration(seconds: 35), () async {
@@ -357,4 +375,5 @@ void onStart(ServiceInstance service) async {
   });
 
   _rescanTimer!.start();
+  _widgetTimer!.start();
 }
