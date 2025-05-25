@@ -53,6 +53,10 @@ class ScooterService with ChangeNotifier {
     try {
       savedScooters[myScooter!.remoteId.toString()]!.lastPing = DateTime.now();
       lastPing = DateTime.now();
+      notifyListeners();
+      updateBackgroundService({
+        "lastPingInt": DateTime.now().millisecondsSinceEpoch,
+      });
     } catch (e, stack) {
       log.severe("Couldn't save ping", e, stack);
     }

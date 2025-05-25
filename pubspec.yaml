@@ -61,6 +61,11 @@ dependencies:
   appcheck: ^1.5.2
   home_widget: ^0.7.0
   pausable_timer: ^3.1.0+3
+  workmanager:
+    git:
+      url: https://github.com/fluttercommunity/flutter_workmanager.git
+      path: workmanager
+      ref: main
 
 dev_dependencies:
   flutter_test:

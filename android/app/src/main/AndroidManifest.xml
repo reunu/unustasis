@@ -44,7 +44,16 @@
             </intent-filter>
         </receiver>
 
-        <receiver android:name=".HomeWidgetReceiver"
+        <!-- For notification actions -->
+        <receiver android:exported="false"
+            android:name="com.dexterous.flutterlocalnotifications.ActionBroadcastReceiver">
+            <intent-filter>
+                <action android:name="FLUTTER_NOTIFICATION_CLICK" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".HomeWidgetReceiver"
             android:label="Scooter Widget"
             android:exported="true">
             <intent-filter>
@@ -55,16 +64,19 @@
                 android:resource="@xml/home_widget_glance_example" />
         </receiver>
 
-        <receiver android:name="es.antonborri.home_widget.HomeWidgetBackgroundReceiver"
+        <receiver
+            android:name="es.antonborri.home_widget.HomeWidgetBackgroundReceiver"
             android:exported="true">
             <intent-filter>
                 <action android:name="es.antonborri.home_widget.action.BACKGROUND" />
             </intent-filter>
         </receiver>
-        <service android:name="es.antonborri.home_widget.HomeWidgetBackgroundService"
+        <service
+            android:name="es.antonborri.home_widget.HomeWidgetBackgroundService"
             android:permission="android.permission.BIND_JOB_SERVICE" android:exported="true" />
 
-        <meta-data android:name="com.google.firebase.messaging.default_notification_icon"
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@drawable/ic_bg_service_small" />
 
 

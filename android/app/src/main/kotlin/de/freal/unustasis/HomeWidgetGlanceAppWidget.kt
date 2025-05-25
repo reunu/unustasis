@@ -113,7 +113,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
         val stateName : String = data.getString("stateName", "Unknown")!!
         val connected : Boolean = data.getBoolean("connected", false)
         val scanning : Boolean = data.getBoolean("scanning", false)
-        val lastPing : String? = data.getString("lastPing", null)
+        val lastPing : String? = data.getString("lastPingDifference", null)
         val soc1: Int = data.getInt("soc1", 0)
         val soc2 : Int = data.getInt("soc2", 0)
         val scooterName : String = data.getString("scooterName", "Unu Scooter")!!

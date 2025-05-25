@@ -401,6 +401,7 @@ class _SettingsSectionState extends State<SettingsSection> {
         barrierDismissible: true,
         builder: (context) {
           return AlertDialog(
+            insetPadding: const EdgeInsets.symmetric(horizontal: 8),
             title: Text(
               FlutterI18n.translate(context, "bgscan_warning_title"),
               textAlign: TextAlign.center,

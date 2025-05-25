@@ -3,69 +3,47 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'dart:async';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:logging/logging.dart';
 import 'package:pausable_timer/pausable_timer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:workmanager/workmanager.dart';
 
-import '../background/translate_static.dart';
-import '../domain/scooter_state.dart';
 import '../background/widget_handler.dart';
 import '../flutter/blue_plus_mockable.dart';
 import '../scooter_service.dart';
-
-// Notification identifiers
-const notificationChannelId = 'unu_foreground';
-const notificationChannelName = 'Unu Background Connection';
-const notificationId = 1612;
+import '../background/notification_handler.dart';
 
 bool backgroundScanEnabled = true;
-PausableTimer? _rescanTimer, _widgetTimer;
+PausableTimer? _rescanTimer;
 
 FlutterBluePlusMockable fbp = FlutterBluePlusMockable();
 ScooterService scooterService =
     ScooterService(fbp, isInBackgroundService: true);
+
+Future<void> setupWidgetTasks() async {
+  Workmanager().initialize(workmanagerCallback, isInDebugMode: false);
+
+  Workmanager().registerPeriodicTask(
+    "hourly-updater",
+    "updateWidget",
+    existingWorkPolicy: ExistingWorkPolicy.replace,
+    frequency: Duration(hours: 1),
+    initialDelay: Duration(minutes: 1),
+  );
+}
 
 Future<void> setupBackgroundService() async {
   final log = Logger("setupBackgroundService");
   log.onRecord.listen((record) => print(record));
   final service = FlutterBackgroundService();
 
-  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
-
-  await flutterLocalNotificationsPlugin.initialize(
-    const InitializationSettings(
-      android: AndroidInitializationSettings("ic_bg_service_small"),
-    ),
-    onDidReceiveNotificationResponse: notificationTapBackground,
-    onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
-  );
-
   backgroundScanEnabled =
       (await SharedPreferences.getInstance()).getBool("backgroundScan") ??
           false;
   log.info("Background scan: $backgroundScanEnabled");
 
-  flutterLocalNotificationsPlugin
-      .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>()
-      ?.requestNotificationsPermission();
-
-  await flutterLocalNotificationsPlugin
-      .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>()
-      ?.createNotificationChannel(
-        const AndroidNotificationChannel(
-          notificationChannelId, // id
-          notificationChannelName, // title
-          description:
-              'This channel is used for periodically checking your scooter.', // description
-          importance: Importance
-              .low, // importance must be at low or higher levelongoing: true,
-        ),
-      );
+  await setupNotifications();
 
   await service.configure(
     iosConfiguration: IosConfiguration(
@@ -82,72 +60,17 @@ Future<void> setupBackgroundService() async {
       notificationChannelId:
           notificationChannelId, // this must match with notification channel you created above.
       initialNotificationTitle: 'Unu Scooter',
-      initialNotificationContent: 'Loading...',
+      initialNotificationContent: 'You can dismiss this notification.',
       foregroundServiceNotificationId: notificationId,
     ),
   );
 
   HomeWidget.registerInteractivityCallback(backgroundCallback);
-}
 
-void updateNotification({String? debugText}) async {
+  await setupWidgetTasks();
+
   if (!backgroundScanEnabled) {
     dismissNotification();
-  } else {
-    FlutterLocalNotificationsPlugin().show(
-      notificationId,
-      "Unu Scooter",
-      scooterService.state?.getNameStatic(),
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-            notificationChannelId, notificationChannelName,
-            icon: 'ic_bg_service_small',
-            ongoing: true,
-            importance: Importance.max,
-            priority: Priority.high,
-            autoCancel: false,
-            actions: getAndroidNotificationActions(scooterService.state)),
-      ),
-    );
-  }
-}
-
-List<AndroidNotificationAction> getAndroidNotificationActions(
-    ScooterState? state) {
-  switch (state) {
-    case ScooterState.standby:
-      return [
-        AndroidNotificationAction(
-            "unlock", getLocalizedNotificationAction("unlock")),
-        AndroidNotificationAction(
-            "openseat", getLocalizedNotificationAction("openseat"))
-      ];
-    case ScooterState.parked:
-      return [
-        AndroidNotificationAction(
-            "lock", getLocalizedNotificationAction("lock")),
-        AndroidNotificationAction(
-            "openseat", getLocalizedNotificationAction("openseat")),
-        AndroidNotificationAction(
-            "unlock", getLocalizedNotificationAction("unlock"))
-      ];
-    default:
-      return [];
-  }
-}
-
-@pragma('vm:entry-point')
-void notificationTapBackground(NotificationResponse notificationResponse) {
-  switch (notificationResponse.actionId) {
-    case "unlock":
-      FlutterBackgroundService().invoke("unlock");
-      break;
-    case "lock":
-      FlutterBackgroundService().invoke("lock");
-      break;
-    case "openseat":
-      FlutterBackgroundService().invoke("openseat");
-      break;
   }
 }
 
@@ -178,25 +101,19 @@ void _disableScanning() async {
     ?..pause()
     ..reset();
   scooterService.rssiTimer.pause();
-  dismissNotification();
 }
 
-void dismissNotification() async {
-  FlutterLocalNotificationsPlugin notifications =
-      FlutterLocalNotificationsPlugin();
-  await notifications.show(
-      notificationId,
-      "Unu Scooter",
-      (PlatformDispatcher.instance.locale.languageCode == "de")
-          ? "Du kannst diese Benachrichtigung schließen."
-          : "You can close this notification.",
-      const NotificationDetails(
-          android: AndroidNotificationDetails(
-        notificationChannelId,
-        notificationChannelName,
-      )));
-  await notifications.cancel(notificationId);
-  await notifications.cancelAll();
+@pragma('vm:entry-point')
+void workmanagerCallback() {
+  Workmanager().executeTask((task, inputData) async {
+    WidgetsFlutterBinding.ensureInitialized();
+    DartPluginRegistrant.ensureInitialized();
+    if (task == "updateWidget") {
+      await updateWidgetPing();
+    }
+    // Return true to indicate success to Workmanager.
+    return true;
+  });
 }
 
 @pragma('vm:entry-point')
@@ -215,7 +132,6 @@ void onStart(ServiceInstance service) async {
       _enableScanning();
     } else {
       print("Dismissing initial notification");
-      dismissNotification();
       _disableScanning();
     }
   }
@@ -240,7 +156,7 @@ void onStart(ServiceInstance service) async {
   });
 
   // listen for commands
-  service.on('update').listen((data) async {
+  service.on("update").listen((data) async {
     print("Received update command: $data");
     try {
       if (data?["autoUnlock"] != null) {
@@ -264,8 +180,9 @@ void onStart(ServiceInstance service) async {
       if (data?["mostRecent"] != null) {
         scooterService.setMostRecentScooter(data!["mostRecent"]);
       }
-      if (data?["lastPing"] != null) {
-        scooterService.lastPing = data!["lastPing"];
+      if (data?["lastPingInt"] != null) {
+        scooterService.lastPing =
+            DateTime.fromMillisecondsSinceEpoch(data!["lastPingInt"]);
       }
       if (data?["backgroundScan"] != null) {
         if (data!["backgroundScan"] == false && backgroundScanEnabled) {
@@ -348,17 +265,12 @@ void onStart(ServiceInstance service) async {
     }
   });
 
-  _widgetTimer = PausableTimer.periodic(const Duration(hours: 1), () async {
-    updateNotification();
-  });
-
   _rescanTimer = PausableTimer.periodic(const Duration(seconds: 35), () async {
     if (!backgroundScanEnabled) {
       print("Oh boy, the timer must've killed itself/been killed. Resetting!");
       _rescanTimer
         ?..pause()
         ..reset();
-      dismissNotification();
       return;
     }
     if (backgroundScanEnabled &&
@@ -375,5 +287,4 @@ void onStart(ServiceInstance service) async {
   });
 
   _rescanTimer!.start();
-  _widgetTimer!.start();
 }

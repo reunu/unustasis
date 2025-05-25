@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:unustasis/background/translate_static.dart';
 
+import '../background/translate_static.dart';
 import '../background/bg_service.dart';
 import '../domain/scooter_state.dart';
 
@@ -20,6 +20,39 @@ String? _scooterName;
 int? _scooterColor;
 LatLng? _lastLocation;
 bool? _seatClosed;
+
+Future<void> updateWidgetPing() async {
+  if (_lastPing != null) {
+    print("We have a cached ping");
+    // just use the cached ping
+    _lastPingDifference = _lastPing?.calculateTimeDifferenceInShort();
+  } else {
+    print("No cached ping, getting from widget data");
+    // get the last ping from widget data
+    int? lastPingInt = await HomeWidget.getWidgetData<int?>("lastPing");
+    if (lastPingInt != null) {
+      _lastPing = DateTime.fromMillisecondsSinceEpoch(lastPingInt);
+      _lastPingDifference = _lastPing?.calculateTimeDifferenceInShort();
+      print("Last ping: $_lastPing");
+    }
+  }
+
+  print("Last ping difference: $_lastPingDifference");
+
+  await HomeWidget.saveWidgetData<String?>(
+    "lastPingDifference",
+    _lastPingDifference,
+  );
+
+  print("Set data");
+
+  await HomeWidget.updateWidget(
+    qualifiedAndroidName: 'de.freal.unustasis.HomeWidgetReceiver',
+  );
+
+  print("Widget updated");
+  return;
+}
 
 void passToWidget({
   bool connected = false,
@@ -84,8 +117,13 @@ void passToWidget({
     // Not broadcasting "linking" state by default
     await HomeWidget.saveWidgetData<String>("stateName", _stateName);
 
-    await HomeWidget.saveWidgetData<String?>(
+    await HomeWidget.saveWidgetData<int?>(
       "lastPing",
+      _lastPing?.millisecondsSinceEpoch,
+    );
+
+    await HomeWidget.saveWidgetData<String?>(
+      "lastPingDifference",
       _lastPingDifference,
     );
 
@@ -169,14 +207,12 @@ extension DateTimeExtension on DateTime {
     final originalDate = DateTime.now();
     final difference = originalDate.difference(this);
 
-    if ((difference.inDays / 7).floor() >= 1) {
-      return '${(difference.inDays / 7).floor()}w';
-    } else if (difference.inDays >= 1) {
+    if (difference.inDays >= 1) {
       return '${difference.inDays}d';
     } else if (difference.inHours >= 1) {
       return '${difference.inHours}h';
     } else if (difference.inMinutes >= 1) {
-      return '${difference.inMinutes}m';
+      return '${difference.inMinutes}min';
     } else {
       return null;
     }
