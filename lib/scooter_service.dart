@@ -2,16 +2,19 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:logging/logging.dart';
-import 'package:rxdart/rxdart.dart';
+import 'package:pausable_timer/pausable_timer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../domain/scooter_battery.dart';
 import '../domain/saved_scooter.dart';
 import '../domain/scooter_keyless_distance.dart';
 import '../domain/scooter_state.dart';
@@ -23,13 +26,12 @@ const bootingTimeSeconds = 25;
 const keylessCooldownSeconds = 60;
 const handlebarCheckSeconds = 5;
 
-class ScooterService {
+class ScooterService with ChangeNotifier {
   final log = Logger('ScooterService');
   Map<String, SavedScooter> savedScooters = {};
   BluetoothDevice? myScooter; // reserved for a connected scooter!
   bool _foundSth = false; // whether we've found a scooter yet
   bool _autoRestarting = false;
-  bool _scanning = false;
   bool _autoUnlock = false;
   int _autoUnlockThreshold = ScooterKeylessDistance.regular.threshold;
   bool _openSeatOnUnlock = false;
@@ -37,32 +39,43 @@ class ScooterService {
   bool _warnOfUnlockedHandlebars = true;
   bool _autoUnlockCooldown = false;
   SharedPreferences? prefs;
-  late Timer _locationTimer, _rssiTimer, _manualRefreshTimer;
+  late Timer _locationTimer, _manualRefreshTimer;
+  late PausableTimer rssiTimer;
   bool optionalAuth = false;
   late CharacteristicRepository characteristicRepository;
   late ScooterReader _scooterReader;
+  // get a random number
+  late bool isInBackgroundService;
 
   final FlutterBluePlusMockable flutterBluePlus;
 
   void ping() {
     try {
       savedScooters[myScooter!.remoteId.toString()]!.lastPing = DateTime.now();
-      _lastPingController.add(DateTime.now());
+      lastPing = DateTime.now();
+      notifyListeners();
+      updateBackgroundService({
+        "lastPingInt": DateTime.now().millisecondsSinceEpoch,
+      });
     } catch (e, stack) {
       log.severe("Couldn't save ping", e, stack);
     }
   }
 
   // On initialization...
-  ScooterService(this.flutterBluePlus) {
+  ScooterService(this.flutterBluePlus, {this.isInBackgroundService = false}) {
     // Load saved scooter ID and cached values from SharedPrefs
     SharedPreferences.getInstance().then((prefs) {
       this.prefs = prefs;
 
       savedScooters = getSavedScooters();
-
       seedStreamsWithCache();
       restoreCachedSettings();
+    });
+
+    // update the "scanning" listener
+    flutterBluePlus.isScanning.listen((isScanning) {
+      scanning = isScanning;
     });
 
     // start the location polling timer
@@ -71,28 +84,25 @@ class ScooterService {
         _pollLocation();
       }
     });
-    _rssiTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
+    rssiTimer = PausableTimer.periodic(const Duration(seconds: 3), () async {
       if (myScooter != null && myScooter!.isConnected && _autoUnlock) {
-        int? rssi;
         try {
           rssi = await myScooter!.readRssi();
-          _rssiController.add(rssi);
         } catch (e) {
           // probably not connected anymore
         }
         if (_autoUnlock &&
-            rssi != null &&
-            rssi > _autoUnlockThreshold &&
-            _stateController.value == ScooterState.standby &&
+            _rssi != null &&
+            _rssi! > _autoUnlockThreshold &&
+            _state == ScooterState.standby &&
             !_autoUnlockCooldown &&
             optionalAuth) {
           unlock();
-          _autoUnlockCooldown = true;
-          await Future.delayed(const Duration(seconds: keylessCooldownSeconds));
-          _autoUnlockCooldown = false;
+          autoUnlockCooldown();
         }
       }
-    });
+    })
+      ..start();
     _manualRefreshTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
       if (myScooter != null && myScooter!.isConnected) {
         // only refresh state and seatbox, for now
@@ -103,7 +113,7 @@ class ScooterService {
     });
   }
 
-  void restoreCachedSettings() {
+  Future<void> restoreCachedSettings() async {
     _autoUnlock = prefs?.getBool("autoUnlock") ?? false;
     _autoUnlockThreshold = prefs?.getInt("autoUnlockThreshold") ??
         ScooterKeylessDistance.regular.threshold;
@@ -114,7 +124,7 @@ class ScooterService {
         prefs?.getBool("unlockedHandlebarsWarning") ?? true;
   }
 
-  void seedStreamsWithCache() {
+  Future<SavedScooter?> getMostRecentScooter() async {
     SavedScooter? mostRecentScooter;
     // don't seed with scooters that have auto-connect disabled
     List<SavedScooter> autoConnectScooters =
@@ -126,14 +136,32 @@ class ScooterService {
         mostRecentScooter = scooter;
       }
     }
+    return mostRecentScooter;
+  }
+
+  void setMostRecentScooter(String id) async {
+    Map<String, SavedScooter> autoConnectScooters =
+        filterAutoConnectScooters(savedScooters);
+    if (autoConnectScooters[id] != null) {
+      savedScooters[id]!.lastPing = DateTime.now();
+      scooterName = savedScooters[id]!.name;
+    } else {
+      // this may be the most recent, but we'll ignore it since it's not an auto-connect scooter
+    }
+  }
+
+  Future<void> seedStreamsWithCache() async {
+    SavedScooter? mostRecentScooter = await getMostRecentScooter();
     // assume this is the one we'll connect to, and seed the streams
-    _lastPingController.add(mostRecentScooter?.lastPing);
-    _primarySOCController.add(mostRecentScooter?.lastPrimarySOC);
-    _secondarySOCController.add(mostRecentScooter?.lastSecondarySOC);
-    _cbbSOCController.add(mostRecentScooter?.lastCbbSOC);
-    _auxSOCController.add(mostRecentScooter?.lastAuxSOC);
-    _scooterNameController.add(mostRecentScooter?.name);
-    _scooterColorController.add(mostRecentScooter?.color);
+    _lastPing = mostRecentScooter?.lastPing;
+    _primarySOC = mostRecentScooter?.lastPrimarySOC;
+    _secondarySOC = mostRecentScooter?.lastSecondarySOC;
+    _cbbSOC = mostRecentScooter?.lastCbbSOC;
+    _auxSOC = mostRecentScooter?.lastAuxSOC;
+    _scooterName = mostRecentScooter?.name;
+    _scooterColor = mostRecentScooter?.color;
+    _lastLocation = mostRecentScooter?.lastLocation;
+    return;
   }
 
   void addDemoData() {
@@ -164,81 +192,179 @@ class ScooterService {
 
     myScooter = BluetoothDevice(remoteId: const DeviceIdentifier("12345"));
 
-    _primarySOCController.add(53);
-    _secondarySOCController.add(100);
-    _cbbSOCController.add(98);
-    _auxSOCController.add(100);
-    _primaryCyclesController.add(190);
-    _secondaryCyclesController.add(75);
-    _connectedController.add(true);
-    _stateController.add(ScooterState.parked);
-    _seatClosedController.add(true);
-    _handlebarController.add(false);
-    _cbbChargingController.add(false);
-    _lastPingController.add(DateTime.now());
-    _scooterNameController.add("Demo Scooter");
-    _connectedController.close();
-    _stateController.close();
+    _primarySOC = 53;
+    _secondarySOC = 100;
+    _cbbSOC = 98;
+    _cbbVoltage = 15000;
+    _cbbCapacity = 33000;
+    _cbbCharging = false;
+    _auxSOC = 100;
+    _auxVoltage = 15000;
+    _auxCharging = AUXChargingState.absorptionCharge;
+    _primaryCycles = 190;
+    _secondaryCycles = 75;
+    _connected = true;
+    _state = ScooterState.parked;
+    _seatClosed = true;
+    _handlebarsLocked = false;
+    _lastPing = DateTime.now();
+    _scooterName = "Demo Scooter";
+
+    notifyListeners();
   }
 
   // STATUS STREAMS
-  final BehaviorSubject<bool> _connectedController =
-      BehaviorSubject<bool>.seeded(false);
-  Stream<bool> get connected => _connectedController.stream;
+  bool _connected = false;
+  bool get connected => _connected;
+  set connected(bool connected) {
+    _connected = connected;
+    notifyListeners();
+  }
 
-  final BehaviorSubject<ScooterState?> _stateController =
-      BehaviorSubject<ScooterState?>.seeded(ScooterState.disconnected);
-  Stream<ScooterState?> get state => _stateController.stream;
+  ScooterState? _state = ScooterState.disconnected;
+  ScooterState? get state => _state;
+  set state(ScooterState? state) {
+    _state = state;
+    notifyListeners();
+  }
 
-  final BehaviorSubject<bool?> _seatClosedController = BehaviorSubject<bool?>();
-  Stream<bool?> get seatClosed => _seatClosedController.stream;
+  bool? _seatClosed;
+  bool? get seatClosed => _seatClosed;
+  set seatClosed(bool? seatClosed) {
+    _seatClosed = seatClosed;
+    notifyListeners();
+  }
 
-  final BehaviorSubject<bool?> _handlebarController = BehaviorSubject<bool?>();
-  Stream<bool?> get handlebarsLocked => _handlebarController.stream;
+  bool? _handlebarsLocked;
+  bool? get handlebarsLocked => _handlebarsLocked;
+  set handlebarsLocked(bool? handlebarsLocked) {
+    _handlebarsLocked = handlebarsLocked;
+    notifyListeners();
+  }
 
-  final BehaviorSubject<int?> _auxSOCController = BehaviorSubject<int?>();
-  Stream<int?> get auxSOC => _auxSOCController.stream;
+  int? _auxSOC;
+  int? get auxSOC => _auxSOC;
+  set auxSOC(int? auxSOC) {
+    _auxSOC = auxSOC;
+    notifyListeners();
+  }
 
-  final BehaviorSubject<double?> _cbbHealthController =
-      BehaviorSubject<double?>();
-  Stream<double?> get cbbHealth => _cbbHealthController.stream;
+  int? _auxVoltage;
+  int? get auxVoltage => _auxVoltage;
+  set auxVoltage(int? auxVoltage) {
+    _auxVoltage = auxVoltage;
+    notifyListeners();
+  }
 
-  final BehaviorSubject<int?> _cbbSOCController = BehaviorSubject<int?>();
-  Stream<int?> get cbbSOC => _cbbSOCController.stream;
+  AUXChargingState? _auxCharging;
+  AUXChargingState? get auxCharging => _auxCharging;
+  set auxCharging(AUXChargingState? auxCharging) {
+    _auxCharging = auxCharging;
+    notifyListeners();
+  }
 
-  final BehaviorSubject<bool?> _cbbChargingController =
-      BehaviorSubject<bool?>();
-  Stream<bool?> get cbbCharging => _cbbChargingController.stream;
+  double? _cbbHealth;
+  double? get cbbHealth => _cbbHealth;
+  set cbbHealth(double? cbbHealth) {
+    _cbbHealth = cbbHealth;
+    notifyListeners();
+  }
 
-  final BehaviorSubject<int?> _primaryCyclesController =
-      BehaviorSubject<int?>();
-  Stream<int?> get primaryCycles => _primaryCyclesController.stream;
+  int? _cbbSOC;
+  int? get cbbSOC => _cbbSOC;
+  set cbbSOC(int? cbbSOC) {
+    _cbbSOC = cbbSOC;
+    notifyListeners();
+  }
 
-  final BehaviorSubject<int?> _primarySOCController = BehaviorSubject<int?>();
-  Stream<int?> get primarySOC => _primarySOCController.stream;
+  int? _cbbVoltage;
+  int? get cbbVoltage => _cbbVoltage;
+  set cbbVoltage(int? cbbVoltage) {
+    _cbbVoltage = cbbVoltage;
+    notifyListeners();
+  }
 
-  final BehaviorSubject<int?> _secondaryCyclesController =
-      BehaviorSubject<int?>();
-  Stream<int?> get secondaryCycles => _secondaryCyclesController.stream;
+  int? _cbbCapacity;
+  int? get cbbCapacity => _cbbCapacity;
+  set cbbCapacity(int? cbbCapacity) {
+    _cbbCapacity = cbbCapacity;
+    notifyListeners();
+  }
 
-  final BehaviorSubject<int?> _secondarySOCController = BehaviorSubject<int?>();
-  Stream<int?> get secondarySOC => _secondarySOCController.stream;
+  bool? _cbbCharging;
+  bool? get cbbCharging => _cbbCharging;
+  set cbbCharging(bool? cbbCharging) {
+    _cbbCharging = cbbCharging;
+    notifyListeners();
+  }
 
-  final BehaviorSubject<String?> _scooterNameController =
-      BehaviorSubject<String?>();
-  Stream<String?> get scooterName => _scooterNameController.stream;
+  int? _primaryCycles;
+  int? get primaryCycles => _primaryCycles;
+  set primaryCycles(int? primaryCycles) {
+    _primaryCycles = primaryCycles;
+    notifyListeners();
+  }
 
-  final BehaviorSubject<DateTime?> _lastPingController =
-      BehaviorSubject<DateTime?>();
-  Stream<DateTime?> get lastPing => _lastPingController.stream;
+  int? _primarySOC;
+  int? get primarySOC => _primarySOC;
+  set primarySOC(int? primarySOC) {
+    _primarySOC = primarySOC;
+    notifyListeners();
+  }
 
-  final BehaviorSubject<int?> _scooterColorController = BehaviorSubject<int?>();
-  Stream<int?> get scooterColor => _scooterColorController.stream;
+  int? _secondaryCycles;
+  int? get secondaryCycles => _secondaryCycles;
+  set secondaryCycles(int? secondaryCycles) {
+    _secondaryCycles = secondaryCycles;
+    notifyListeners();
+  }
 
-  Stream<bool> get scanning => flutterBluePlus.isScanning;
+  int? _secondarySOC;
+  int? get secondarySOC => _secondarySOC;
+  set secondarySOC(int? secondarySOC) {
+    _secondarySOC = secondarySOC;
+    notifyListeners();
+  }
 
-  final BehaviorSubject<int?> _rssiController = BehaviorSubject<int?>();
-  Stream<int?> get rssi => _rssiController.stream;
+  String? _scooterName;
+  String? get scooterName => _scooterName;
+  set scooterName(String? scooterName) {
+    _scooterName = scooterName;
+    notifyListeners();
+  }
+
+  DateTime? _lastPing;
+  DateTime? get lastPing => _lastPing;
+  set lastPing(DateTime? lastPing) {
+    _lastPing = lastPing;
+    notifyListeners();
+  }
+
+  int? _scooterColor;
+  int? get scooterColor => _scooterColor;
+  set scooterColor(int? scooterColor) {
+    _scooterColor = scooterColor;
+    notifyListeners();
+    updateBackgroundService({"scooterColor": scooterColor});
+  }
+
+  LatLng? _lastLocation;
+  LatLng? get lastLocation => _lastLocation;
+
+  bool _scanning = false;
+  bool get scanning => _scanning;
+  set scanning(bool scanning) {
+    log.info("Scanning: $scanning");
+    _scanning = scanning;
+    notifyListeners();
+  }
+
+  int? _rssi;
+  int? get rssi => _rssi;
+  set rssi(int? rssi) {
+    _rssi = rssi;
+    notifyListeners();
+  }
 
   // MAIN FUNCTIONS
 
@@ -312,17 +438,28 @@ class ScooterService {
       return;
     }
     if (savedScooters.isNotEmpty && preferSavedScooters) {
-      flutterBluePlus.startScan(
-        withRemoteIds: savedScooterIds, // look for OUR scooter
-        timeout: const Duration(seconds: 30),
-      );
+      log.info(
+          "Looking for our scooters, since we have ${savedScooters.length} saved scooters");
+      try {
+        flutterBluePlus.startScan(
+          withRemoteIds: savedScooterIds, // look for OUR scooter
+          timeout: const Duration(seconds: 30),
+        );
+      } catch (e, stack) {
+        log.severe("Failed to start scan", e, stack);
+      }
     } else {
-      flutterBluePlus.startScan(
-        withNames: [
-          "unu Scooter",
-        ], // if we don't have a saved scooter, look for ANY scooter
-        timeout: const Duration(seconds: 30),
-      );
+      log.info("Looking for any scooter, since we have no saved scooters");
+      try {
+        flutterBluePlus.startScan(
+          withNames: [
+            "unu Scooter",
+          ], // if we don't have a saved scooter, look for ANY scooter
+          timeout: const Duration(seconds: 30),
+        );
+      } catch (e, stack) {
+        log.severe("Failed to start scan", e, stack);
+      }
     }
     await for (var scanResult in flutterBluePlus.onScanResults) {
       if (scanResult.isNotEmpty) {
@@ -340,7 +477,7 @@ class ScooterService {
     bool initialConnect = false,
   }) async {
     _foundSth = true;
-    _stateController.add(ScooterState.linking);
+    state = ScooterState.linking;
     try {
       // attempt to connect to what we found
       BluetoothDevice attemptedScooter = BluetoothDevice.fromId(id);
@@ -354,6 +491,12 @@ class ScooterService {
       log.info("Connected to ${attemptedScooter.remoteId}");
       // Set up this scooter as ours
       myScooter = attemptedScooter;
+      setMostRecentScooter(id);
+      updateBackgroundService({
+        "mostRecent": id,
+        "scooterName": savedScooters[myScooter!.remoteId.toString()]?.name,
+        "lastPing": DateTime.now(),
+      });
       addSavedScooter(myScooter!.remoteId.toString());
       try {
         await setUpCharacteristics(myScooter!);
@@ -367,16 +510,15 @@ class ScooterService {
       // save this as the last known location
       _pollLocation();
       // Let everybody know
-      _connectedController.add(true);
-      _scooterNameController
-          .add(savedScooters[myScooter!.remoteId.toString()]?.name);
-      _scooterColorController
-          .add(savedScooters[myScooter!.remoteId.toString()]?.color);
+      connected = true;
+      scooterName = savedScooters[myScooter!.remoteId.toString()]?.name;
+      scooterColor = savedScooters[myScooter!.remoteId.toString()]?.color;
       // listen for disconnects
       myScooter!.connectionState.listen((BluetoothConnectionState state) async {
         if (state == BluetoothConnectionState.disconnected) {
-          _connectedController.add(false);
-          _stateController.add(ScooterState.disconnected);
+          connected = false;
+          this.state = ScooterState.disconnected;
+
           log.info("Lost connection to scooter! :(");
           // Restart the process if we're not already doing so
           // start(); // this leads to some conflicts right now if the phone auto-connects, so we're not doing it
@@ -386,30 +528,35 @@ class ScooterService {
       // something went wrong, roll back!
       log.shout("Couldn't connect to scooter!", e, stack);
       _foundSth = false;
-      _stateController.add(ScooterState.disconnected);
+      state = ScooterState.disconnected;
       rethrow;
     }
   }
 
   // spins up the whole connection process, and connects/bonds with the nearest scooter
   void start({bool restart = true}) async {
+    log.info("START called on service");
+    // GETTING READY
     // Remove the splash screen
     Future.delayed(const Duration(milliseconds: 1500), () {
       FlutterNativeSplash.remove();
     });
-    if (Platform.isAndroid) {
-      await flutterBluePlus.turnOn();
-    }
-    // TODO: prompt the user to turn it on manually on iOS
-    log.fine("Starting connection process...");
+    // Try to turn on Bluetooth (Android-Only)
+    await FlutterBluePlus.adapterState
+        .where((val) => val == BluetoothAdapterState.on)
+        .first;
+
+    // TODO: prompt users to turn on bluetooth manually
+
+    // CLEANUP
     _foundSth = false;
-    // Cleanup in case this is a restart
-    _connectedController.add(false);
-    _stateController.add(ScooterState.disconnected);
+    connected = false;
+    state = ScooterState.disconnected;
     if (myScooter != null) {
       myScooter!.disconnect();
     }
 
+    // SCAN
     // TODO: replace with getEligibleScooters, why do we still have this duplicated?!
 
     // First, see if the phone is already actively connected to a scooter
@@ -419,6 +566,7 @@ class ScooterService {
       connectToScooterId(systemScooters.first.remoteId.toString());
     } else {
       try {
+        log.fine("Looking for nearby scooters");
         // If not, start scanning for nearby scooters
         getNearbyScooters().listen((foundScooter) async {
           // there's one! Attempt to connect to it
@@ -429,10 +577,10 @@ class ScooterService {
         // Guess this one is not happy with us
         // TODO: Handle errors more elegantly
         log.severe("Error during search or connect!", e, stack);
-        Fluttertoast.showToast(
-            msg: "Error during search or connect!"); // TODO: Localize
+        Fluttertoast.showToast(msg: "Error during search or connect!");
       }
     }
+
     if (restart) {
       startAutoRestart();
     }
@@ -444,43 +592,49 @@ class ScooterService {
       _autoRestarting = true;
       _autoRestartSubscription =
           flutterBluePlus.isScanning.listen((scanState) async {
-        _scanning = scanState;
         // retry if we stop scanning without having found anything
-        if (_scanning == false && !_foundSth) {
+        if (scanState == false && !_foundSth) {
           await Future.delayed(const Duration(seconds: 3));
-          if (!_foundSth && !_scanning && _autoRestarting) {
+          if (!_foundSth && !scanning && _autoRestarting) {
             // make sure nothing happened in these few seconds
-            log.fine("Auto-restarting...");
+            log.info("Auto-restarting...");
             start();
           }
         }
       });
+    } else {
+      log.info("Auto-restart already running, avoiding duplicate");
     }
   }
 
   void stopAutoRestart() {
     _autoRestarting = false;
     _autoRestartSubscription.cancel();
+    log.fine("Auto-restart stopped.");
   }
 
   void setAutoUnlock(bool enabled) {
     _autoUnlock = enabled;
     prefs?.setBool("autoUnlock", enabled);
+    updateBackgroundService({"autoUnlock": enabled});
   }
 
-  void setAutoUnlockThreshold(ScooterKeylessDistance distance) {
-    _autoUnlockThreshold = distance.threshold;
-    prefs?.setInt("autoUnlockThreshold", distance.threshold);
+  void setAutoUnlockThreshold(int threshold) {
+    _autoUnlockThreshold = threshold;
+    prefs?.setInt("autoUnlockThreshold", threshold);
+    updateBackgroundService({"autoUnlockThreshold": threshold});
   }
 
   void setOpenSeatOnUnlock(bool enabled) {
     _openSeatOnUnlock = enabled;
     prefs?.setBool("openSeatOnUnlock", enabled);
+    updateBackgroundService({"openSeatOnUnlock": enabled});
   }
 
   void setHazardLocking(bool enabled) {
     _hazardLocking = enabled;
     prefs?.setBool("hazardLocking", enabled);
+    updateBackgroundService({"hazardLocking": enabled});
   }
 
   bool get autoUnlock => _autoUnlock;
@@ -496,19 +650,12 @@ class ScooterService {
       characteristicRepository = CharacteristicRepository(myScooter!);
       await characteristicRepository.findAll();
 
+      log.info(
+          "Found all characteristics! StateCharacteristic is: ${characteristicRepository.stateCharacteristic}");
       _scooterReader = ScooterReader(
-          characteristicRepository: characteristicRepository,
-          stateController: _stateController,
-          seatClosedController: _seatClosedController,
-          handlebarController: _handlebarController,
-          auxSOCController: _auxSOCController,
-          cbbSOCController: _cbbSOCController,
-          cbbChargingController: _cbbChargingController,
-          primarySOCController: _primarySOCController,
-          secondarySOCController: _secondarySOCController,
-          primaryCyclesController: _primaryCyclesController,
-          secondaryCyclesController: _secondaryCyclesController,
-          service: this);
+        characteristicRepository: characteristicRepository,
+        service: this,
+      );
       _scooterReader.readAndSubscribe();
 
       // check if any of the characteristics are null, and if so, throw an error
@@ -541,7 +688,7 @@ class ScooterService {
     }
 
     await Future.delayed(const Duration(seconds: handlebarCheckSeconds), () {
-      if (_handlebarController.value == true) {
+      if (_handlebarsLocked == true) {
         log.warning("Handlebars didn't unlock, sending warning");
         throw HandlebarLockException();
       }
@@ -554,23 +701,22 @@ class ScooterService {
     await _waitForScooterState(
         ScooterState.standby, const Duration(seconds: bootingTimeSeconds + 5));
 
-    if (_stateController.value == ScooterState.standby) {
+    if (_state == ScooterState.standby) {
       unlock();
     }
   }
 
   Future<void> lock() async {
-    // double-check for open seat
-    if (_seatClosedController.value == false) {
+    if (_seatClosed == false) {
       log.warning("Seat seems to be open, checking again...");
       // make really sure nothing has changed
       await characteristicRepository.seatCharacteristic!.read();
-      if (_seatClosedController.value == false) {
+      if (_seatClosed == false) {
         log.warning("Locking aborted, because seat is open!");
+
         throw SeatOpenException();
       } else {
-        log.info(
-            "Seat state was ${_seatClosedController.value} this time, proceeding...");
+        log.info("Seat state was $_seatClosed this time, proceeding...");
       }
     }
 
@@ -585,16 +731,26 @@ class ScooterService {
     }
 
     await Future.delayed(const Duration(seconds: handlebarCheckSeconds), () {
-      if (_handlebarController.value == false && _warnOfUnlockedHandlebars) {
+      if (_handlebarsLocked == false && _warnOfUnlockedHandlebars) {
         log.warning("Handlebars didn't lock, sending warning");
         throw HandlebarLockException();
       }
     });
 
     // don't immediately unlock again automatically
+    autoUnlockCooldown();
+  }
+
+  void autoUnlockCooldown() {
+    try {
+      FlutterBackgroundService().invoke("autoUnlockCooldown");
+    } catch (e) {
+      // closing the loop
+    }
     _autoUnlockCooldown = true;
-    await _sleepSeconds(keylessCooldownSeconds.toDouble());
-    _autoUnlockCooldown = false;
+    Future.delayed(const Duration(seconds: keylessCooldownSeconds), () {
+      _autoUnlockCooldown = false;
+    });
   }
 
   void openSeat() {
@@ -687,13 +843,42 @@ class ScooterService {
     }
   }
 
+  static Future<void> sendStaticPowerCommand(String id, String command) async {
+    BluetoothDevice scooter = BluetoothDevice.fromId(id);
+    if (scooter.isDisconnected) {
+      await scooter.connect();
+    }
+    await scooter.discoverServices();
+    BluetoothCharacteristic? commandCharacteristic =
+        CharacteristicRepository.findCharacteristic(
+            scooter,
+            "9a590000-6e67-5d0d-aab9-ad9126b66f91",
+            "9a590001-6e67-5d0d-aab9-ad9126b66f91");
+    await commandCharacteristic!.write(ascii.encode(command));
+  }
+
+  Future<bool> attemptLatestAutoConnection() async {
+    SavedScooter? latestScooter = await getMostRecentScooter();
+    if (latestScooter != null) {
+      try {
+        await connectToScooterId(latestScooter.id);
+        if (BluetoothDevice.fromId(latestScooter.id).isConnected) {
+          return true;
+        }
+      } catch (e) {
+        return false;
+      }
+    }
+    return false;
+  }
+
   Future<void> _waitForScooterState(
       ScooterState expectedScooterState, Duration limit) async {
     Completer<void> completer = Completer<void>();
 
     // Check new state every 2s
     var timer = Timer.periodic(const Duration(seconds: 2), (timer) {
-      ScooterState? scooterState = _stateController.value;
+      ScooterState? scooterState = _state;
       log.info("Waiting for $expectedScooterState, and got: $scooterState...");
       if (scooterState == expectedScooterState) {
         log.info("Found $expectedScooterState, cancel timer...");
@@ -809,9 +994,9 @@ class ScooterService {
     if (scooters.length == 1) {
       return scooters;
     }
-    Map<String, SavedScooter> scootersToConnect = getSavedScooters();
-    scootersToConnect.removeWhere((key, value) => !value.autoConnect);
-    return scootersToConnect;
+    Map<String, SavedScooter> filteredScooters = scooters;
+    filteredScooters.removeWhere((key, value) => !value.autoConnect);
+    return filteredScooters;
   }
 
   Future<List<String>> getSavedScooterIds(
@@ -858,8 +1043,9 @@ class ScooterService {
       prefs ??= await SharedPreferences.getInstance();
       prefs!.setString("savedScooters", jsonEncode(savedScooters));
     }
-    _connectedController.add(false);
-    if (Platform.isAndroid) {}
+    connected = false;
+    updateBackgroundService({"forgetSavedScooter": id});
+    notifyListeners();
   }
 
   void renameSavedScooter({String? id, required String name}) async {
@@ -880,7 +1066,19 @@ class ScooterService {
 
     prefs ??= await SharedPreferences.getInstance();
     prefs!.setString("savedScooters", jsonEncode(savedScooters));
-    _scooterNameController.add(name);
+    if ((await getMostRecentScooter())?.id == id) {
+      // if we're renaming the most recent scooter, update the name immediately
+      scooterName = name;
+      updateBackgroundService({"scooterName": name});
+    }
+    // let the background service know too right away
+    notifyListeners();
+  }
+
+  void updateBackgroundService(dynamic data) {
+    if (!isInBackgroundService) {
+      FlutterBackgroundService().invoke("update", data);
+    }
   }
 
   void addSavedScooter(String id) async {
@@ -896,24 +1094,17 @@ class ScooterService {
     );
     prefs ??= await SharedPreferences.getInstance();
     prefs!.setString("savedScooters", jsonEncode(savedScooters));
-    _scooterNameController.add("Scooter Pro");
+    scooterName = "Scooter Pro";
+    notifyListeners();
+    updateBackgroundService({"addSavedScooter": id});
   }
 
+  @override
   void dispose() {
-    _connectedController.close();
-    _stateController.close();
-    _seatClosedController.close();
-    _handlebarController.close();
-    _auxSOCController.close();
-    _cbbSOCController.close();
-    _primaryCyclesController.close();
-    _primarySOCController.close();
-    _secondarySOCController.close();
-    _secondaryCyclesController.close();
-    _lastPingController.close();
     _locationTimer.cancel();
-    _rssiTimer.cancel();
+    rssiTimer.cancel();
     _manualRefreshTimer.cancel();
+    super.dispose();
   }
 
   Future<void> _sleepSeconds(double seconds) {

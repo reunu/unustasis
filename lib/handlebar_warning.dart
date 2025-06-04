@@ -1,18 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:lottie/lottie.dart';
-
+import 'package:provider/provider.dart';
 import '../scooter_service.dart';
 
 class HandlebarWarning extends StatefulWidget {
   const HandlebarWarning({
     super.key,
-    required this.service,
     required this.didNotUnlock,
   });
 
   final bool didNotUnlock;
-  final ScooterService service;
 
   @override
   State<HandlebarWarning> createState() => _HandlebarWarningState();
@@ -69,9 +67,9 @@ class _HandlebarWarningState extends State<HandlebarWarning> {
               "${widget.didNotUnlock ? "locked" : "unlocked"}_handlebar_alert_action")),
           onPressed: () {
             if (widget.didNotUnlock) {
-              widget.service.lock();
+              context.read<ScooterService>().lock();
             } else {
-              widget.service.unlock();
+              context.read<ScooterService>().unlock();
             }
             Navigator.of(context).pop(dontShowAgain);
           },

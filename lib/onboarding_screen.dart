@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/gestures.dart';
@@ -9,6 +8,7 @@ import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:logging/logging.dart';
 import 'package:lottie/lottie.dart';
+import 'package:provider/provider.dart';
 import 'package:appcheck/appcheck.dart';
 
 import '../domain/theme_helper.dart';
@@ -20,12 +20,10 @@ import '../support_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({
-    required this.service,
     this.excludedScooterIds,
     this.skipWelcome = false,
     super.key,
   });
-  final ScooterService service;
   final List<String>? excludedScooterIds;
   final bool skipWelcome;
 
@@ -41,8 +39,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   BluetoothDevice? _foundScooter;
   late AnimationController _scanningController;
   late AnimationController _pairingController;
-  late StreamSubscription<bool> _scanningSubscription;
-  late StreamSubscription<bool> _connectedSubscription;
   // Step 0: Welcome
   // Step 1: Explan visibility
   // Step 2: Scanning (or nothing found, retry)
@@ -70,23 +66,26 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       vsync: this,
     );
     _pairingController.repeat();
-    _scanningSubscription = widget.service.scanning.listen((scanning) {
-      if (scanning) {
-        _scanningController.repeat();
-      } else {
-        _scanningController.stop();
-      }
-      setState(() {
-        _scanning = scanning;
-      });
-    });
-    _connectedSubscription = widget.service.connected.listen((connected) {
-      if (connected) {
+
+    context.read<ScooterService>().addListener(() {
+      if (mounted) {
+        ScooterService service = context.read<ScooterService>();
         setState(() {
-          _step = 5;
+          _scanning = service.scanning;
         });
+        if (service.scanning) {
+          _scanningController.repeat();
+        } else if (!service.scanning) {
+          _scanningController.stop();
+        }
+        if (service.connected) {
+          setState(() {
+            _step = 5;
+          });
+        }
       }
     });
+
     super.initState();
   }
 
@@ -99,7 +98,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     } else if (Platform.isIOS) {
       appInstalled = await appCheck.isAppInstalled('com.unumotors.app://');
     }
-    if (appInstalled) {
+    if (appInstalled && mounted) {
       showDialog<void>(
         context: context,
         barrierDismissible: false, // user must tap button!
@@ -186,10 +185,10 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             btnText: FlutterI18n.translate(context, "onboarding_step3_button"),
             onPressed: () {
               try {
-                widget.service.connectToScooterId(
-                  _foundScooter!.remoteId.toString(),
-                  initialConnect: true,
-                );
+                context.read<ScooterService>().connectToScooterId(
+                      _foundScooter!.remoteId.toString(),
+                      initialConnect: true,
+                    );
               } catch (e, stack) {
                 log.severe("Error connecting to scooter!", e, stack);
                 Fluttertoast.showToast(
@@ -217,8 +216,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             btnText: FlutterI18n.translate(context, "onboarding_step5_button"),
             onPressed: () {
               Navigator.of(context).pushReplacement(MaterialPageRoute(
-                builder: (context) =>
-                    HomeScreen(scooterService: widget.service),
+                builder: (context) => const HomeScreen(),
               ));
             });
       default:
@@ -289,7 +287,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   void _startSearch() async {
     try {
-      _foundScooter = await widget.service.findEligibleScooter(
+      _foundScooter = await context.read<ScooterService>().findEligibleScooter(
           excludedScooterIds: widget.excludedScooterIds ?? [],
           // exclude system scooters if we're adding an additional scooter
           includeSystemScooters: !widget.skipWelcome);
@@ -315,10 +313,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               log.info('27 taps detected! Skipping onboarding...');
               tapCount = 0;
               Navigator.of(context).pushReplacement(MaterialPageRoute(
-                builder: (context) => HomeScreen(
-                  scooterService: widget.service,
-                  forceOpen: true,
-                ),
+                builder: (context) => const HomeScreen(forceOpen: true),
               ));
             }
           };
@@ -404,8 +399,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   void dispose() {
     _scanningController.dispose();
     _pairingController.dispose();
-    _scanningSubscription.cancel();
-    _connectedSubscription.cancel();
     super.dispose();
   }
 }

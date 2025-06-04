@@ -1,5 +1,4 @@
 ### Changes:
-- Adding warnings for accidentally (un)locked handlebars
-- Adding RSSI display for keyless unlock
-- Fixing "last connected" display getting stuck at 1W
-- Flutter version bump
+- Homescreen widget for Android
+- App can now connect to the Scooter in the background
+- Various other minor fixes
