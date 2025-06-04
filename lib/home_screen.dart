@@ -435,7 +435,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (dontShowAgain == true) {
         Logger("").info("Not showing unlocked handlebar warning again");
         SharedPreferences prefs = await SharedPreferences.getInstance();
-        prefs.setBool("unlockedHandlebarsWarning", true);
+        prefs.setBool("unlockedHandlebarsWarning", false);
       }
     });
   }
