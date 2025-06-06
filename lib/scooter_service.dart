@@ -476,6 +476,7 @@ class ScooterService with ChangeNotifier {
     String id, {
     bool initialConnect = false,
   }) async {
+    log.info("Connecting to scooter with ID: $id");
     _foundSth = true;
     state = ScooterState.linking;
     try {
@@ -671,7 +672,7 @@ class ScooterService with ChangeNotifier {
 
   // SCOOTER ACTIONS
 
-  Future<void> unlock() async {
+  Future<void> unlock({bool checkHandlebars = true}) async {
     _sendCommand("scooter:state unlock");
     HapticFeedback.heavyImpact();
 
@@ -687,12 +688,14 @@ class ScooterService with ChangeNotifier {
       });
     }
 
-    await Future.delayed(const Duration(seconds: handlebarCheckSeconds), () {
-      if (_handlebarsLocked == true) {
-        log.warning("Handlebars didn't unlock, sending warning");
-        throw HandlebarLockException();
-      }
-    });
+    if (checkHandlebars) {
+      await Future.delayed(const Duration(seconds: handlebarCheckSeconds), () {
+        if (_handlebarsLocked == true) {
+          log.warning("Handlebars didn't unlock, sending warning");
+          throw HandlebarLockException();
+        }
+      });
+    }
   }
 
   Future<void> wakeUpAndUnlock() async {
@@ -706,7 +709,7 @@ class ScooterService with ChangeNotifier {
     }
   }
 
-  Future<void> lock() async {
+  Future<void> lock({bool checkHandlebars = true}) async {
     if (_seatClosed == false) {
       log.warning("Seat seems to be open, checking again...");
       // make really sure nothing has changed
@@ -730,12 +733,14 @@ class ScooterService with ChangeNotifier {
       });
     }
 
-    await Future.delayed(const Duration(seconds: handlebarCheckSeconds), () {
-      if (_handlebarsLocked == false && _warnOfUnlockedHandlebars) {
-        log.warning("Handlebars didn't lock, sending warning");
-        throw HandlebarLockException();
-      }
-    });
+    if (checkHandlebars) {
+      await Future.delayed(const Duration(seconds: handlebarCheckSeconds), () {
+        if (_handlebarsLocked == false && _warnOfUnlockedHandlebars) {
+          log.warning("Handlebars didn't lock, sending warning");
+          throw HandlebarLockException();
+        }
+      });
+    }
 
     // don't immediately unlock again automatically
     autoUnlockCooldown();
