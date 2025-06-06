@@ -115,7 +115,11 @@ class BatteryReader {
           _service.auxVoltage = _convertUint32ToInt(value);
           break;
         case ScooterBatteryType.cbb:
-          _service.cbbVoltage = value[0];
+          try {
+            _service.cbbVoltage = value[0];
+          } catch (e) {
+            log.warning("CBB Voltage reading failed");
+          }
           break;
         default:
           // we don't read voltage of main batteries, so this is unreachable
@@ -131,7 +135,11 @@ class BatteryReader {
     subscribeCharacteristic(capacityCharacteristic, (value) {
       switch (_battery) {
         case ScooterBatteryType.cbb:
-          _service.cbbCapacity = value[0];
+          try {
+            _service.cbbCapacity = value[0];
+          } catch (e) {
+            log.warning("CBB Capacity reading failed");
+          }
           break;
         default:
           // we don't read capacity of any other batteries, so this is unreachable

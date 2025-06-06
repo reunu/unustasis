@@ -245,19 +245,44 @@ void onStart(ServiceInstance service) async {
   });
 
   service.on("lock").listen((data) async {
-    print("Received lock command");
-    scooterService.lock();
+    Logger("bgservice").info("Received lock command");
+    if (scooterService.connected) {
+      setWidgetUnlocking(true);
+      await scooterService.lock(checkHandlebars: false);
+      setWidgetUnlocking(false);
+    } else {
+      // scan first, then lock
+      setWidgetScanning(true);
+      await attemptConnectionCycle();
+      setWidgetScanning(false);
+      if (scooterService.connected) {
+        setWidgetUnlocking(true);
+        await scooterService.lock(checkHandlebars: false);
+        Future.delayed(const Duration(seconds: 3), () {
+          setWidgetUnlocking(false);
+        });
+      }
+    }
   });
 
   service.on("unlock").listen((data) async {
     print("Received unlock command");
     if (scooterService.connected) {
-      scooterService.unlock();
+      setWidgetUnlocking(true);
+      await scooterService.unlock(checkHandlebars: false);
+      setWidgetUnlocking(false);
     } else {
       // scan first, then unlock
       setWidgetScanning(true);
       await attemptConnectionCycle();
-      if (scooterService.connected) scooterService.unlock();
+      setWidgetScanning(false);
+      if (scooterService.connected) {
+        setWidgetUnlocking(true);
+        await scooterService.unlock(checkHandlebars: false);
+        Future.delayed(const Duration(seconds: 3), () {
+          setWidgetUnlocking(false);
+        });
+      }
     }
   });
 
@@ -269,6 +294,7 @@ void onStart(ServiceInstance service) async {
       // scan first, then open seat
       setWidgetScanning(true);
       await attemptConnectionCycle();
+      setWidgetScanning(false);
       if (scooterService.connected) scooterService.openSeat();
     }
   });

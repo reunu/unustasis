@@ -98,7 +98,6 @@ List<AndroidNotificationAction> getAndroidNotificationActions(
 
 @pragma('vm:entry-point')
 void notificationTapBackground(NotificationResponse notificationResponse) {
-  print("Got notification event ${notificationResponse.actionId}");
   switch (notificationResponse.actionId) {
     case "unlock":
       FlutterBackgroundService().invoke("unlock");

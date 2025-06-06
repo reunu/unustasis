@@ -25,34 +25,23 @@ void setupWidget() {}
 
 Future<void> updateWidgetPing() async {
   if (_lastPing != null) {
-    print("We have a cached ping");
     // just use the cached ping
     _lastPingDifference = _lastPing?.calculateTimeDifferenceInShort();
   } else {
-    print("No cached ping, getting from widget data");
     // get the last ping from widget data
     int? lastPingInt = await HomeWidget.getWidgetData<int?>("lastPing");
     if (lastPingInt != null) {
       _lastPing = DateTime.fromMillisecondsSinceEpoch(lastPingInt);
       _lastPingDifference = _lastPing?.calculateTimeDifferenceInShort();
-      print("Last ping: $_lastPing");
     }
   }
-
-  print("Last ping difference: $_lastPingDifference");
-
   await HomeWidget.saveWidgetData<String?>(
     "lastPingDifference",
     _lastPingDifference,
   );
-
-  print("Set data");
-
   await HomeWidget.updateWidget(
     qualifiedAndroidName: 'de.freal.unustasis.HomeWidgetReceiver',
   );
-
-  print("Widget updated");
   return;
 }
 
@@ -80,20 +69,6 @@ void passToWidget({
       scooterColor != _scooterColor ||
       lastLocation != _lastLocation ||
       seatClosed != _seatClosed) {
-    print("Relevant values have changed");
-    print("Connected: $connected vs $_connected");
-    print(
-      "Last ping: ${lastPing?.calculateTimeDifferenceInShort()} vs ${_lastPing?.calculateTimeDifferenceInShort()}",
-    );
-    print("Scooter state: $scooterState vs $_scooterState");
-    print("State name: ${getStateNameForWidget(scooterState)} vs $_stateName");
-    print("Primary SOC: $primarySOC vs $_primarySOC");
-    print("Secondary SOC: $secondarySOC vs $_secondarySOC");
-    print("Scooter name: $scooterName vs $_scooterName");
-    print("Scooter color: $scooterColor vs $_scooterColor");
-    print("Last location: $lastLocation vs $_lastLocation");
-    print("Seat closed: $seatClosed vs $_seatClosed");
-
     // update cached values
     _connected = connected;
     _lastPing = lastPing;
@@ -150,7 +125,7 @@ void passToWidget({
       iOSName: "ScooterWidget",
     );
   } else {
-    print("No relevant changes");
+    // no relevant changes, no need to update
   }
 }
 
@@ -160,6 +135,13 @@ String? getStateNameForWidget(ScooterState? state) {
   } else {
     return state.getNameStatic();
   }
+}
+
+Future<void> setWidgetUnlocking(bool unlocking) async {
+  await HomeWidget.saveWidgetData<bool>("scanning", unlocking);
+  await HomeWidget.updateWidget(
+    qualifiedAndroidName: 'de.freal.unustasis.HomeWidgetReceiver',
+  );
 }
 
 Future<void> setWidgetScanning(bool scanning) async {
@@ -182,6 +164,7 @@ Future<void> setWidgetScanning(bool scanning) async {
 @pragma("vm:entry-point")
 FutureOr<void> backgroundCallback(Uri? data) async {
   print("Unu widget received data: $data");
+  await HomeWidget.setAppGroupId('de.freal.unustasis');
   if (await FlutterBackgroundService().isRunning() == false) {
     final service = FlutterBackgroundService();
     await service.startService();

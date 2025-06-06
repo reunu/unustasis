@@ -482,8 +482,11 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                             contentColor = if(hasLocation){
                                 GlanceTheme.colors.primary
                             } else {
-                                GlanceTheme.colors.secondary },
-                            onClick = actionStartActivity(openMapIntent)
+                                GlanceTheme.colors.secondary
+                            },
+                            onClick = actionStartActivity(openMapIntent),
+                            modifier = GlanceModifier
+                                    .fillMaxSize(),
                         )
                     }
                     Box(
@@ -527,6 +530,8 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                                actionRunCallback<VoidAction>()
                             },
                             enabled = enabled,
+                            modifier = GlanceModifier
+                                    .fillMaxSize(),
                         )
                     }
                     Box(
