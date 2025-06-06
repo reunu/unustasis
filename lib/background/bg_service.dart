@@ -222,7 +222,9 @@ void onStart(ServiceInstance service) async {
     if (scooterService.connected) {
       setWidgetUnlocking(true);
       await scooterService.lock(checkHandlebars: false);
-      setWidgetUnlocking(false);
+      Future.delayed(const Duration(seconds: 3), () {
+        setWidgetUnlocking(false);
+      });
     } else {
       // scan first, then lock
       setWidgetScanning(true);
@@ -243,7 +245,9 @@ void onStart(ServiceInstance service) async {
     if (scooterService.connected) {
       setWidgetUnlocking(true);
       await scooterService.unlock(checkHandlebars: false);
-      setWidgetUnlocking(false);
+      Future.delayed(const Duration(seconds: 3), () {
+        setWidgetUnlocking(false);
+      });
     } else {
       // scan first, then unlock
       setWidgetScanning(true);
