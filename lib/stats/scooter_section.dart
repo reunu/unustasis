@@ -4,6 +4,7 @@ import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:logging/logging.dart';
 import 'package:maps_launcher/maps_launcher.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../stats/stats_screen.dart';
@@ -16,11 +17,9 @@ import '../scooter_service.dart';
 class ScooterSection extends StatefulWidget {
   const ScooterSection({
     super.key,
-    required this.service,
     required this.dataIsOld,
   });
 
-  final ScooterService service;
   final bool dataIsOld;
 
   @override
@@ -32,14 +31,6 @@ class _ScooterSectionState extends State<ScooterSection> {
   String? nameCache;
   TextEditingController nameController = TextEditingController();
   FocusNode nameFocusNode = FocusNode();
-
-  void setColor(int newColor) async {
-    setState(() {
-      color = newColor;
-    });
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setInt("color", color);
-  }
 
   void setupInitialColor() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -54,12 +45,19 @@ class _ScooterSectionState extends State<ScooterSection> {
     setupInitialColor();
   }
 
-  List<SavedScooter> sortedScooters() {
-    List<SavedScooter> scooters = widget.service.savedScooters.values.toList();
+  List<SavedScooter> sortedScooters(BuildContext context) {
+    List<SavedScooter> scooters =
+        context.read<ScooterService>().savedScooters.values.toList();
     scooters.sort((a, b) {
       // Check if either scooter is the connected one
-      if (a.id == widget.service.myScooter?.remoteId.toString()) return -1;
-      if (b.id == widget.service.myScooter?.remoteId.toString()) return 1;
+      if (a.id ==
+          context.read<ScooterService>().myScooter?.remoteId.toString()) {
+        return -1;
+      }
+      if (b.id ==
+          context.read<ScooterService>().myScooter?.remoteId.toString()) {
+        return 1;
+      }
 
       // If neither is the connected scooter, sort by lastPing
       return b.lastPing.compareTo(a.lastPing);
@@ -69,77 +67,70 @@ class _ScooterSectionState extends State<ScooterSection> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<bool>(
-        stream: widget.service.connected,
-        builder: (context, snapshot) {
-          return ListView(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shrinkWrap: true,
-            children: [
-              ...sortedScooters().map((scooter) {
-                return Padding(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                  child: StreamBuilder<ScooterState?>(
-                      stream: widget.service.state,
-                      builder: (context, stateSnap) {
-                        return SavedScooterCard(
-                          savedScooter: scooter,
-                          connected: (scooter.id ==
-                                  widget.service.myScooter?.remoteId
-                                      .toString() &&
-                              stateSnap.data != ScooterState.disconnected),
-                          service: widget.service,
-                          single:
-                              widget.service.savedScooters.values.length == 1,
-                          rebuild: () => setState(() {}),
-                        );
-                      }),
-                );
-              }),
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-                child: TextButton.icon(
-                  style: TextButton.styleFrom(
-                    minimumSize: const Size.fromHeight(60),
-                    backgroundColor: Theme.of(context).colorScheme.onSurface,
-                  ),
-                  onPressed: () async {
-                    if (widget.service.myScooter != null) {
-                      widget.service.myScooter!.disconnect();
-                      widget.service.myScooter = null;
-                    }
-                    List<String> savedIds =
-                        await widget.service.getSavedScooterIds();
-                    Navigator.push(context, MaterialPageRoute(
-                      builder: (context) {
-                        return OnboardingScreen(
-                          service: widget.service,
-                          excludedScooterIds: savedIds,
-                          skipWelcome: true,
-                        );
-                      },
-                    ));
-                  },
-                  icon: Icon(
-                    Icons.add,
-                    color: Theme.of(context).colorScheme.surface,
-                    size: 16,
-                  ),
-                  label: Text(
-                    FlutterI18n.translate(context, "settings_add_scooter")
-                        .toUpperCase(),
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: Theme.of(context).colorScheme.surface,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+    return ListView(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      shrinkWrap: true,
+      children: [
+        ...sortedScooters(context).map((scooter) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            child: SavedScooterCard(
+              savedScooter: scooter,
+              single: sortedScooters(context).length == 1,
+              connected: (scooter.id ==
+                      context
+                          .read<ScooterService>()
+                          .myScooter
+                          ?.remoteId
+                          .toString() &&
+                  context.select<ScooterService, ScooterState?>(
+                          (service) => service.state) !=
+                      ScooterState.disconnected),
+              rebuild: () => setState(() {}),
+            ),
           );
-        });
+        }),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          child: TextButton.icon(
+            style: TextButton.styleFrom(
+              minimumSize: const Size.fromHeight(60),
+              backgroundColor: Theme.of(context).colorScheme.onSurface,
+            ),
+            onPressed: () async {
+              ScooterService service = context.read<ScooterService>();
+              service.myScooter?.disconnect();
+              service.myScooter = null;
+
+              List<String> savedIds = await service.getSavedScooterIds();
+              if (context.mounted) {
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (context) {
+                    return OnboardingScreen(
+                      excludedScooterIds: savedIds,
+                      skipWelcome: true,
+                    );
+                  },
+                ));
+              }
+            },
+            icon: Icon(
+              Icons.add,
+              color: Theme.of(context).colorScheme.surface,
+              size: 16,
+            ),
+            label: Text(
+              FlutterI18n.translate(context, "settings_add_scooter")
+                  .toUpperCase(),
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color: Theme.of(context).colorScheme.surface,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -154,17 +145,22 @@ class SavedScooterCard extends StatelessWidget {
   final log = Logger("ScooterSection");
   final bool connected;
   final SavedScooter savedScooter;
-  final ScooterService service;
   final bool single;
   final void Function() rebuild;
   SavedScooterCard({
     super.key,
     required this.savedScooter,
     required this.connected,
-    required this.service,
     required this.single,
     required this.rebuild,
   });
+
+  void setColor(int newColor, BuildContext context) async {
+    savedScooter.color = newColor;
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setInt("color", newColor);
+    if (context.mounted) context.read<ScooterService>().scooterColor = newColor;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -195,8 +191,8 @@ class SavedScooterCard extends StatelessWidget {
                     HapticFeedback.mediumImpact();
                     int? newColor = await showColorDialog(
                         savedScooter.color, savedScooter.name, context);
-                    if (newColor != null) {
-                      savedScooter.color = newColor;
+                    if (newColor != null && context.mounted) {
+                      setColor(newColor, context);
                       rebuild();
                     }
                     if (showOnboarding && snapshot.hasData) {
@@ -212,7 +208,7 @@ class SavedScooterCard extends StatelessWidget {
                           color: Theme.of(context)
                               .colorScheme
                               .onSurface
-                              .withOpacity(0.5),
+                              .withValues(alpha: 0.5),
                         ),
                   ),
                 const SizedBox(height: 4),
@@ -238,8 +234,9 @@ class SavedScooterCard extends StatelessWidget {
                         await showRenameDialog(savedScooter.name, context);
                     if (newName != null &&
                         newName.isNotEmpty &&
-                        newName != savedScooter.name) {
-                      service.renameSavedScooter(
+                        newName != savedScooter.name &&
+                        context.mounted) {
+                      context.read<ScooterService>().renameSavedScooter(
                           name: newName, id: savedScooter.id);
                       rebuild();
                     }
@@ -262,19 +259,18 @@ class SavedScooterCard extends StatelessWidget {
                     color: Theme.of(context)
                         .colorScheme
                         .onSurface
-                        .withOpacity(0.1),
+                        .withValues(alpha: 0.1),
                   ),
                 if (connected)
                   ListTile(
                     title: Text(FlutterI18n.translate(context, "stats_state")),
-                    subtitle: StreamBuilder<ScooterState?>(
-                        stream: service.state,
-                        builder: (context, state) {
-                          return Text(
-                            state.data?.description(context) ??
-                                FlutterI18n.translate(context, "stats_unknown"),
-                          );
-                        }),
+                    subtitle: Text(
+                      context
+                              .select<ScooterService, ScooterState?>(
+                                  (service) => service.state)
+                              ?.description(context) ??
+                          FlutterI18n.translate(context, "stats_unknown"),
+                    ),
                   ),
                 if (!connected)
                   Divider(
@@ -284,7 +280,7 @@ class SavedScooterCard extends StatelessWidget {
                     color: Theme.of(context)
                         .colorScheme
                         .onSurface
-                        .withOpacity(0.1),
+                        .withValues(alpha: 0.1),
                   ),
                 if (!connected)
                   ListTile(
@@ -312,7 +308,7 @@ class SavedScooterCard extends StatelessWidget {
                     color: Theme.of(context)
                         .colorScheme
                         .onSurface
-                        .withOpacity(0.1),
+                        .withValues(alpha: 0.1),
                   ),
                 if (savedScooter.lastLocation != null && !connected)
                   ListTile(
@@ -344,8 +340,10 @@ class SavedScooterCard extends StatelessWidget {
                   indent: 16,
                   endIndent: 16,
                   height: 0,
-                  color:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.1),
                 ),
                 if (!single) // only show this if there's more than one scooter
                   ListTile(
@@ -368,19 +366,23 @@ class SavedScooterCard extends StatelessWidget {
                   indent: 16,
                   endIndent: 16,
                   height: 0,
-                  color:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.1),
                 ),
                 ListTile(
-                  title: Text("ID"),
+                  title: const Text("ID"),
                   subtitle: Text(savedScooter.id),
                 ),
                 Divider(
                   indent: 16,
                   endIndent: 16,
                   height: 0,
-                  color:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.1),
                 ),
                 const SizedBox(height: 8),
                 Padding(
@@ -399,6 +401,8 @@ class SavedScooterCard extends StatelessWidget {
                             ),
                           ),
                           onPressed: () async {
+                            ScooterService service =
+                                context.read<ScooterService>();
                             service.stopAutoRestart();
                             service.myScooter?.disconnect();
                             service.myScooter = null;
@@ -427,20 +431,28 @@ class SavedScooterCard extends StatelessWidget {
                             try {
                               log.info(
                                   "Trying to connect to ${savedScooter.id}");
-                              await service.connectToScooterId(savedScooter.id);
-                              service.startAutoRestart();
+                              await context
+                                  .read<ScooterService>()
+                                  .connectToScooterId(savedScooter.id);
+                              if (context.mounted) {
+                                context
+                                    .read<ScooterService>()
+                                    .startAutoRestart();
+                              }
                               rebuild();
                             } catch (e, stack) {
                               log.severe(
                                   "Couldn't connect to ${savedScooter.id}",
                                   e,
                                   stack);
-                              Fluttertoast.showToast(
-                                  msg: FlutterI18n.translate(
-                                      context, "settings_connect_failed",
-                                      translationParams: {
-                                    "name": savedScooter.name
-                                  }));
+                              if (context.mounted) {
+                                Fluttertoast.showToast(
+                                    msg: FlutterI18n.translate(
+                                        (context), "settings_connect_failed",
+                                        translationParams: {
+                                      "name": savedScooter.name
+                                    }));
+                              }
                             }
                           },
                           icon: const Icon(
@@ -462,9 +474,11 @@ class SavedScooterCard extends StatelessWidget {
                         ),
                         onPressed: () async {
                           bool? forget = await showForgetDialog(context);
-                          if (forget == true) {
+                          if (forget == true && context.mounted) {
                             String name = savedScooter.name;
-                            service.forgetSavedScooter(savedScooter.id);
+                            context
+                                .read<ScooterService>()
+                                .forgetSavedScooter(savedScooter.id);
                             rebuild();
                             Fluttertoast.showToast(
                                 msg: FlutterI18n.translate(
@@ -506,7 +520,9 @@ class SavedScooterCard extends StatelessWidget {
         FocusNode textFieldNode = FocusNode();
 
         Future.delayed(const Duration(milliseconds: 100), () {
-          FocusScope.of(context).requestFocus(textFieldNode);
+          if (context.mounted) {
+            FocusScope.of(context).requestFocus(textFieldNode);
+          }
         });
 
         return AlertDialog(

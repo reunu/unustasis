@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -92,6 +93,8 @@ class SavedScooter {
   int? get lastCbbSOC => _lastCbbSOC;
   int? get lastAuxSOC => _lastAuxSOC;
   LatLng? get lastLocation => _lastLocation;
+
+  BluetoothDevice get bluetoothDevice => BluetoothDevice.fromId(_id);
 
   Map<String, dynamic> toJson() => {
         'id': _id,

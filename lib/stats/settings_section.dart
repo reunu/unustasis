@@ -1,10 +1,14 @@
+import 'dart:io';
+
 import 'package:easy_dynamic_theme/easy_dynamic_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:logging/logging.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -14,9 +18,7 @@ import '../domain/scooter_keyless_distance.dart';
 import '../scooter_service.dart';
 
 class SettingsSection extends StatefulWidget {
-  const SettingsSection({required this.service, super.key});
-
-  final ScooterService service;
+  const SettingsSection({super.key});
 
   @override
   State<SettingsSection> createState() => _SettingsSectionState();
@@ -24,6 +26,7 @@ class SettingsSection extends StatefulWidget {
 
 class _SettingsSectionState extends State<SettingsSection> {
   final log = Logger('SettingsSection');
+  bool backgroundScan = false;
   bool biometrics = false;
   bool autoUnlock = false;
   bool seasonal = true;
@@ -31,6 +34,29 @@ class _SettingsSectionState extends State<SettingsSection> {
   bool openSeatOnUnlock = false;
   bool hazardLocking = false;
   bool osmConsent = true;
+
+  void getInitialSettings() async {
+    ScooterService service = context.read<ScooterService>();
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      backgroundScan = prefs.getBool("backgroundScan") ?? false;
+      biometrics = prefs.getBool("biometrics") ?? false;
+      autoUnlock = service.autoUnlock;
+      autoUnlockDistance =
+          ScooterKeylessDistance.fromThreshold(service.autoUnlockThreshold) ??
+              ScooterKeylessDistance.regular.threshold;
+      openSeatOnUnlock = service.openSeatOnUnlock;
+      hazardLocking = service.hazardLocking;
+      osmConsent = prefs.getBool("osmConsent") ?? true;
+      seasonal = prefs.getBool("seasonal") ?? true;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getInitialSettings();
+  }
 
   List<Widget> settingsItems() => [
         Header(
@@ -42,7 +68,7 @@ class _SettingsSectionState extends State<SettingsSection> {
               context, "settings_auto_unlock_description")),
           value: autoUnlock,
           onChanged: (value) async {
-            widget.service.setAutoUnlock(value);
+            context.read<ScooterService>().setAutoUnlock(value);
             setState(() {
               autoUnlock = value;
             });
@@ -52,42 +78,41 @@ class _SettingsSectionState extends State<SettingsSection> {
           ListTile(
             title: Text(
                 "${FlutterI18n.translate(context, "settings_auto_unlock_threshold")}: ${autoUnlockDistance.name(context)}"),
-            subtitle: StreamBuilder<int?>(
-                stream: widget.service.rssi,
-                builder: (context, snapshot) {
-                  return Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Slider(
-                        value: autoUnlockDistance.threshold.toDouble(),
-                        min: ScooterKeylessDistance.getMinThresholdDistance()
-                            .threshold
-                            .toDouble(),
-                        max: ScooterKeylessDistance.getMaxThresholdDistance()
-                            .threshold
-                            .toDouble(),
-                        secondaryTrackValue: snapshot.data?.toDouble(),
-                        divisions: ScooterKeylessDistance.values.length - 1,
-                        label: autoUnlockDistance.getFormattedThreshold(),
-                        onChanged: (value) async {
-                          var distance = ScooterKeylessDistance.fromThreshold(
-                              value.toInt());
-                          widget.service.setAutoUnlockThreshold(distance);
-                          setState(() {
-                            autoUnlockDistance = distance;
-                          });
-                        },
-                      ),
-                      if (snapshot.hasData)
-                        Text(FlutterI18n.translate(
-                            context, "settings_auto_unlock_threshold_explainer",
-                            translationParams: {
-                              "rssi": snapshot.data!.toString()
-                            })),
-                    ],
-                  );
-                }),
+            subtitle: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Slider(
+                  value: autoUnlockDistance.threshold.toDouble(),
+                  min: ScooterKeylessDistance.getMinThresholdDistance()
+                      .threshold
+                      .toDouble(),
+                  max: ScooterKeylessDistance.getMaxThresholdDistance()
+                      .threshold
+                      .toDouble(),
+                  secondaryTrackValue:
+                      context.read<ScooterService>().rssi?.toDouble(),
+                  divisions: ScooterKeylessDistance.values.length - 1,
+                  label: autoUnlockDistance.getFormattedThreshold(),
+                  onChanged: (value) async {
+                    var distance =
+                        ScooterKeylessDistance.fromThreshold(value.toInt());
+                    context
+                        .read<ScooterService>()
+                        .setAutoUnlockThreshold(value.toInt());
+                    setState(() {
+                      autoUnlockDistance = distance;
+                    });
+                  },
+                ),
+                if (context.read<ScooterService>().rssi != null)
+                  Text(FlutterI18n.translate(
+                      context, "settings_auto_unlock_threshold_explainer",
+                      translationParams: {
+                        "rssi": context.read<ScooterService>().rssi.toString()
+                      })),
+              ],
+            ),
           ),
         SwitchListTile(
           secondary: const Icon(Icons.work_outline),
@@ -97,7 +122,7 @@ class _SettingsSectionState extends State<SettingsSection> {
               context, "settings_open_seat_on_unlock_description")),
           value: openSeatOnUnlock,
           onChanged: (value) async {
-            widget.service.setOpenSeatOnUnlock(value);
+            context.read<ScooterService>().setOpenSeatOnUnlock(value);
             setState(() {
               openSeatOnUnlock = value;
             });
@@ -111,13 +136,42 @@ class _SettingsSectionState extends State<SettingsSection> {
               context, "settings_hazard_locking_description")),
           value: hazardLocking,
           onChanged: (value) async {
-            widget.service.setHazardLocking(value);
+            context.read<ScooterService>().setHazardLocking(value);
             setState(() {
               hazardLocking = value;
             });
           },
         ),
         Header(FlutterI18n.translate(context, "stats_settings_section_app")),
+        if (Platform.isAndroid)
+          SwitchListTile(
+            secondary: const Icon(Icons.find_replace_outlined),
+            title: Text(
+                FlutterI18n.translate(context, "settings_background_scan")),
+            subtitle: Text(FlutterI18n.translate(
+                context, "settings_background_scan_description")),
+            value: backgroundScan,
+            onChanged: (value) async {
+              bool? confirmed;
+              if (value == true) {
+                // warn before turning on
+                confirmed = await showBackgroundScanWarning(context);
+              } else {
+                // no warning for turning off
+                confirmed = true;
+              }
+              if (confirmed == true) {
+                SharedPreferences prefs = await SharedPreferences.getInstance();
+                prefs.setBool("backgroundScan", value);
+                // inform the service!
+                FlutterBackgroundService()
+                    .invoke("update", {"backgroundScan": value});
+                setState(() {
+                  backgroundScan = value;
+                });
+              }
+            },
+          ),
         FutureBuilder<List<BiometricType>>(
             future: LocalAuthentication().getAvailableBiometrics(),
             builder: (context, biometricsOptionsSnap) {
@@ -144,17 +198,21 @@ class _SettingsSectionState extends State<SettingsSection> {
                           biometrics = value;
                         });
                       } else {
+                        if (context.mounted) {
+                          Fluttertoast.showToast(
+                            msg: FlutterI18n.translate(
+                                context, "biometrics_failed"),
+                          );
+                        }
+                      }
+                    } catch (e, stack) {
+                      if (context.mounted) {
+                        log.warning("Biometrics error", e, stack);
                         Fluttertoast.showToast(
                           msg: FlutterI18n.translate(
                               context, "biometrics_failed"),
                         );
                       }
-                    } catch (e, stack) {
-                      log.warning("Biometrics error", e, stack);
-                      Fluttertoast.showToast(
-                        msg:
-                            FlutterI18n.translate(context, "biometrics_failed"),
-                      );
                     }
                   },
                 );
@@ -311,7 +369,7 @@ class _SettingsSectionState extends State<SettingsSection> {
                     context: context,
                     applicationName: packageInfo.hasData
                         ? packageInfo.data!.appName
-                        : "Unustasis",
+                        : "Unu App",
                     applicationVersion: packageInfo.hasData
                         ? packageInfo.data!.version
                         : "?.?.?",
@@ -320,27 +378,6 @@ class _SettingsSectionState extends State<SettingsSection> {
               );
             }),
       ];
-
-  void getInitialSettings() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      biometrics = prefs.getBool("biometrics") ?? false;
-      autoUnlock = widget.service.autoUnlock;
-      autoUnlockDistance = ScooterKeylessDistance.fromThreshold(
-              widget.service.autoUnlockThreshold) ??
-          ScooterKeylessDistance.regular.threshold;
-      openSeatOnUnlock = widget.service.openSeatOnUnlock;
-      hazardLocking = widget.service.hazardLocking;
-      osmConsent = prefs.getBool("osmConsent") ?? true;
-      seasonal = prefs.getBool("seasonal") ?? true;
-    });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    getInitialSettings();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -352,9 +389,76 @@ class _SettingsSectionState extends State<SettingsSection> {
         indent: 16,
         endIndent: 16,
         height: 24,
-        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
       ),
       itemBuilder: (context, index) => settingsItems()[index],
     );
+  }
+
+  Future<bool?> showBackgroundScanWarning(BuildContext context) {
+    return showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (context) {
+          return AlertDialog(
+            insetPadding: const EdgeInsets.symmetric(horizontal: 8),
+            title: Text(
+              FlutterI18n.translate(context, "bgscan_warning_title"),
+              textAlign: TextAlign.center,
+            ),
+            content: ListView(
+              shrinkWrap: true,
+              children: [
+                Text(
+                  FlutterI18n.translate(context, "bgscan_warning_intro"),
+                  textAlign: TextAlign.center,
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 24, bottom: 8),
+                  child: Center(
+                      child: Icon(Icons.battery_alert_outlined, size: 32)),
+                ),
+                Text(
+                  FlutterI18n.translate(context, "bgscan_warning_battery"),
+                  textAlign: TextAlign.center,
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 24, bottom: 8),
+                  child: Center(child: Icon(Icons.link_off_outlined, size: 32)),
+                ),
+                Text(
+                  FlutterI18n.translate(context, "bgscan_warning_lostpairing"),
+                  textAlign: TextAlign.center,
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 24, bottom: 8),
+                  child: Center(
+                      child: Icon(Icons.power_settings_new_outlined, size: 32)),
+                ),
+                Text(
+                  FlutterI18n.translate(
+                      context, "bgscan_warning_accidentalturnon"),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child:
+                    Text(FlutterI18n.translate(context, "forget_alert_cancel")),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(true);
+                },
+                child: Text(
+                    FlutterI18n.translate(context, "bgscan_warning_confirm")),
+              ),
+            ],
+          );
+        });
   }
 }

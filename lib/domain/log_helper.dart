@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -10,7 +12,11 @@ import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../domain/scooter_keyless_distance.dart';
+import '../scooter_service.dart';
 
 class LogHelper {
   // Private constructor
@@ -30,24 +36,29 @@ class LogHelper {
 
   void initialize() {
     Logger.root.onRecord.listen((record) {
-      if (kDebugMode && record.level >= Level.INFO) {
-        Fluttertoast.showToast(
-            msg: record.message, fontSize: 6, toastLength: Toast.LENGTH_SHORT);
-        print(record);
-      }
-      // Ensure the buffer doesn't exceed the max size
-      if (_logBuffer.length >= maxBufferSize) {
-        _logBuffer.removeAt(0); // Remove the oldest log entry
-      }
-      _logBuffer.add({
-        'time': record.time.toIso8601String(),
-        'level': record.level.name,
-        'message': record.message,
-        'error': record.error?.toString() ?? '',
-        'stackTrace': record.stackTrace?.toString() ?? ''
-      });
+      addLog(record);
     });
     _startLogCleanup();
+  }
+
+  void addLog(LogRecord record) {
+    if (kDebugMode && record.level >= Level.INFO) {
+      Fluttertoast.showToast(
+          msg: record.message, fontSize: 6, toastLength: Toast.LENGTH_SHORT);
+    }
+    // ignore: avoid_print
+    print(record);
+    // Ensure the buffer doesn't exceed the max size
+    if (_logBuffer.length >= maxBufferSize) {
+      _logBuffer.removeAt(0); // Remove the oldest log entry
+    }
+    _logBuffer.add({
+      'time': record.time.toIso8601String(),
+      'level': record.level.name,
+      'message': record.message,
+      'error': record.error?.toString() ?? '',
+      'stackTrace': record.stackTrace?.toString() ?? ''
+    });
   }
 
   void _startLogCleanup() {
@@ -103,21 +114,35 @@ class LogHelper {
           os = "unsupported";
         }
 
-        final Email email = Email(
-          body: '''${FlutterI18n.translate(context, "report_placeholder")}
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        if (context.mounted) {
+          ScooterService service = context.read<ScooterService>();
+          final Email email = Email(
+            body: '''${FlutterI18n.translate(context, "report_placeholder")}
 
 -------------------------------
 Device: $device
 OS: $os
-Saved scooters: ${(await SharedPreferences.getInstance()).getString("savedScooters")}
+Settings: 
+      backgroundScan = ${prefs.getBool("backgroundScan") ?? false}
+      biometrics = ${prefs.getBool("biometrics") ?? false}
+      autoUnlock = ${service.autoUnlock}
+      autoUnlockDistance = ${ScooterKeylessDistance.fromThreshold(service.autoUnlockThreshold) ?? ScooterKeylessDistance.regular.threshold}
+      openSeatOnUnlock = ${service.openSeatOnUnlock}
+      hazardLocking = ${service.hazardLocking}
+      osmConsent = ${prefs.getBool("osmConsent") ?? true}
+      seasonal = ${prefs.getBool("seasonal") ?? true}
+Saved scooters: 
+      ${(await SharedPreferences.getInstance()).getString("savedScooters") ?? 'none'}
 ''',
-          subject: FlutterI18n.translate(context, "report_subject"),
-          recipients: ['unu@freal.de'],
-          attachmentPaths: [logFile.path],
-          isHTML: false,
-        );
+            subject: FlutterI18n.translate(context, "report_subject"),
+            recipients: ['unu@freal.de'],
+            attachmentPaths: [logFile.path],
+            isHTML: false,
+          );
 
-        await FlutterEmailSender.send(email);
+          await FlutterEmailSender.send(email);
+        }
       }
     });
   }
