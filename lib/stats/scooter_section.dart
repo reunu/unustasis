@@ -33,9 +33,9 @@ class _ScooterSectionState extends State<ScooterSection> {
   FocusNode nameFocusNode = FocusNode();
 
   void setupInitialColor() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
+    int initialColor = await SharedPreferencesAsync().getInt("color") ?? 1;
     setState(() {
-      color = prefs.getInt("color") ?? 1;
+      color = initialColor;
     });
   }
 
@@ -157,8 +157,8 @@ class SavedScooterCard extends StatelessWidget {
 
   void setColor(int newColor, BuildContext context) async {
     savedScooter.color = newColor;
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setInt("color", newColor);
+    SharedPreferencesAsync prefs = SharedPreferencesAsync();
+    await prefs.setInt("color", newColor);
     if (context.mounted) context.read<ScooterService>().scooterColor = newColor;
   }
 

@@ -117,6 +117,10 @@ void workmanagerCallback() {
 
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {
+  Logger("bgservice").onRecord.listen((record) {
+    print(
+        "[${record.level.name}] ${record.time}: ${record.message} ${record.error ?? ""} ${record.stackTrace ?? ""}");
+  });
   Logger("bgservice").info("Background service started!");
   DartPluginRegistrant.ensureInitialized();
 
@@ -176,9 +180,6 @@ void onStart(ServiceInstance service) async {
       if (data?["scooterColor"] != null) {
         scooterService.scooterColor = data!["scooterColor"];
       }
-      if (data?["mostRecent"] != null) {
-        scooterService.setMostRecentScooter(data!["mostRecent"]);
-      }
       if (data?["lastPingInt"] != null) {
         scooterService.lastPing =
             DateTime.fromMillisecondsSinceEpoch(data!["lastPingInt"]);
@@ -193,11 +194,9 @@ void onStart(ServiceInstance service) async {
           _enableScanning();
         }
       }
-      if (data?["forgetSavedScooter"] != null) {
-        scooterService.forgetSavedScooter(data!["id"]);
-      }
-      if (data?["addSavedScooter"] != null) {
-        scooterService.addSavedScooter(data!["id"]);
+      if (data?["updateSavedScooters"] == true) {
+        print("Received updateSavedScooters command");
+        scooterService.refetchSavedScooters();
       }
 
       passToWidget(
@@ -307,7 +306,8 @@ void onStart(ServiceInstance service) async {
     if (backgroundScanEnabled &&
         service is AndroidServiceInstance &&
         await service.isForegroundService() &&
-        (await scooterService.getSavedScooterIds()).isNotEmpty &&
+        (await scooterService.getSavedScooterIds(onlyAutoConnect: true))
+            .isNotEmpty &&
         !scooterService.scanning &&
         !scooterService.connected) {
       attemptConnectionCycle();
