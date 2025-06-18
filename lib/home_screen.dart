@@ -735,7 +735,6 @@ class _ScooterPowerButtonState extends State<ScooterPowerButton>
           },
           onLongPressCancel: () {
             if (disabled || loading) return;
-            print("Long press cancelled");
             setState(() {
               scale = 1.0; // Return to full size on cancel
             });

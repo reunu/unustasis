@@ -195,7 +195,6 @@ void onStart(ServiceInstance service) async {
         }
       }
       if (data?["updateSavedScooters"] == true) {
-        print("Received updateSavedScooters command");
         scooterService.refetchSavedScooters();
       }
 
