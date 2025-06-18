@@ -14,6 +14,7 @@ import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../helper_widgets/scooter_action_button.dart';
 import '../handlebar_warning.dart';
 import '../control_screen.dart';
 import '../domain/icomoon.dart';
@@ -56,8 +57,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _startSeasonal() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    if (prefs.getBool("seasonal") ?? true) {
+    SharedPreferencesAsync prefs = SharedPreferencesAsync();
+    if (await prefs.getBool("seasonal") ?? true) {
       switch (DateTime.now().month) {
         case 12:
           // December, snow season!
@@ -76,10 +77,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _showOnboardings() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    if (Platform.isAndroid && prefs.getBool("widgetOnboarded") != true) {
+    SharedPreferencesAsync prefs = SharedPreferencesAsync();
+    if (Platform.isAndroid && await prefs.getBool("widgetOnboarded") != true) {
       await showWidgetOnboarding();
-      prefs.setBool("widgetOnboarded", true);
+      await prefs.setBool("widgetOnboarded", true);
     }
   }
 
@@ -434,8 +435,8 @@ class _HomeScreenState extends State<HomeScreen> {
     ).then((dontShowAgain) async {
       if (dontShowAgain == true) {
         Logger("").info("Not showing unlocked handlebar warning again");
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        prefs.setBool("unlockedHandlebarsWarning", false);
+        await SharedPreferencesAsync()
+            .setBool("unlockedHandlebarsWarning", false);
       }
     });
   }
@@ -461,8 +462,8 @@ class _HomeScreenState extends State<HomeScreen> {
         context.read<ScooterService>().start();
       }
     }
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    if ((prefs.getBool("biometrics") ?? false) && mounted) {
+    if ((await SharedPreferencesAsync().getBool("biometrics") ?? false) &&
+        mounted) {
       context.read<ScooterService>().optionalAuth = false;
       final LocalAuthentication auth = LocalAuthentication();
       try {
@@ -709,10 +710,12 @@ class ScooterPowerButton extends StatefulWidget {
   State<ScooterPowerButton> createState() => _ScooterPowerButtonState();
 }
 
-class _ScooterPowerButtonState extends State<ScooterPowerButton> {
+class _ScooterPowerButtonState extends State<ScooterPowerButton>
+    with SingleTickerProviderStateMixin {
   bool loading = false;
   bool disabled = false;
   int? randomEgg = Random().nextInt(8);
+  double scale = 1.0;
 
   @override
   Widget build(BuildContext context) {
@@ -720,77 +723,112 @@ class _ScooterPowerButtonState extends State<ScooterPowerButton> {
         ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2)
         : Theme.of(context).colorScheme.primary;
     disabled = widget._action == null;
+
     return Column(
       children: [
-        Container(
-          decoration: BoxDecoration(
-            border: Border.all(width: 2, color: mainColor),
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                elevation: 0,
-                padding: EdgeInsets.zero,
-                backgroundColor: loading
-                    ? Theme.of(context).colorScheme.surface
-                    : (widget._easterEgg == true
-                        ? disabled
-                            ? Colors.white38
-                            : Colors.white
-                        : mainColor),
+        GestureDetector(
+          onTapDown: (_) {
+            if (disabled || loading) return;
+            setState(() {
+              scale = 0.8; // Shrink the button immediately on tapdown
+            });
+          },
+          onLongPressCancel: () {
+            if (disabled || loading) return;
+            setState(() {
+              scale = 1.0; // Return to full size on cancel
+            });
+          },
+          //onTapUp: (_) {
+          //  setState(() {
+          //    scale = 1.0; // Return to full size after tapup
+          //  });
+          //},
+          child: AnimatedScale(
+            scale: scale,
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeOutBack,
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border.all(width: 2, color: mainColor),
+                borderRadius: BorderRadius.circular(999),
               ),
-              onPressed: () {
-                Fluttertoast.showToast(msg: widget._label);
-              },
-              onLongPress: disabled
-                  ? null
-                  : () {
-                      setState(() {
-                        loading = true;
-                      });
-                      widget._action!();
-                      Future.delayed(const Duration(seconds: 5), () {
-                        setState(() {
-                          loading = false;
-                        });
-                      });
-                    },
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-                decoration: widget._easterEgg == true
-                    ? BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                            width: 2,
-                            color: !disabled && widget._easterEgg == true
-                                ? mainColor
-                                : Colors.transparent),
-                        image: DecorationImage(
-                            image: AssetImage(
-                                "images/decoration/egg_$randomEgg.webp"),
-                            fit: BoxFit.cover,
-                            opacity: disabled ? 0.3 : 1),
-                      )
-                    : null,
-                child: loading
-                    ? SizedBox(
-                        height: 28,
-                        width: 28,
-                        child: CircularProgressIndicator(
-                          color: mainColor,
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : Icon(
-                        widget._icon,
-                        color: widget._easterEgg == true && !context.isDarkMode
-                            ? (disabled ? Colors.black26 : Colors.black87)
-                            : Theme.of(context).colorScheme.surface,
-                        size: 28,
-                      ),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    elevation: 0,
+                    padding: EdgeInsets.zero,
+                    backgroundColor: loading
+                        ? Theme.of(context).colorScheme.surface
+                        : (widget._easterEgg == true
+                            ? disabled
+                                ? Colors.white38
+                                : Colors.white
+                            : mainColor),
+                  ),
+                  onPressed: disabled
+                      ? null
+                      : () {
+                          Fluttertoast.showToast(msg: widget._label);
+                        },
+                  onLongPress: disabled
+                      ? null
+                      : () {
+                          setState(() {
+                            loading = true;
+                          });
+                          widget._action!();
+                          Future.delayed(const Duration(seconds: 5), () {
+                            setState(() {
+                              loading = false;
+                              scale = 1.1; // Overshoot bounce
+                            });
+                            Future.delayed(const Duration(milliseconds: 200),
+                                () {
+                              setState(() {
+                                scale = 1.0; // Return to normal size
+                              });
+                            });
+                          });
+                        },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 24),
+                    decoration: widget._easterEgg == true
+                        ? BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                                width: 2,
+                                color: !disabled && widget._easterEgg == true
+                                    ? mainColor
+                                    : Colors.transparent),
+                            image: DecorationImage(
+                                image: AssetImage(
+                                    "images/decoration/egg_$randomEgg.webp"),
+                                fit: BoxFit.cover,
+                                opacity: disabled ? 0.3 : 1),
+                          )
+                        : null,
+                    child: loading
+                        ? SizedBox(
+                            height: 28,
+                            width: 28,
+                            child: CircularProgressIndicator(
+                              color: mainColor,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : Icon(
+                            widget._icon,
+                            color: widget._easterEgg == true &&
+                                    !context.isDarkMode
+                                ? (disabled ? Colors.black26 : Colors.black87)
+                                : Theme.of(context).colorScheme.surface,
+                            size: 28,
+                          ),
+                  ),
+                ),
               ),
             ),
           ),
@@ -803,57 +841,6 @@ class _ScooterPowerButtonState extends State<ScooterPowerButton> {
               .labelLarge
               ?.copyWith(color: mainColor),
           textAlign: TextAlign.center,
-        ),
-      ],
-    );
-  }
-}
-
-class ScooterActionButton extends StatelessWidget {
-  const ScooterActionButton({
-    super.key,
-    required void Function()? onPressed,
-    required IconData icon,
-    Color? iconColor,
-    required String label,
-  })  : _onPressed = onPressed,
-        _icon = icon,
-        _iconColor = iconColor,
-        _label = label;
-
-  final void Function()? _onPressed;
-  final IconData _icon;
-  final String _label;
-  final Color? _iconColor;
-
-  @override
-  Widget build(BuildContext context) {
-    Color mainColor = _iconColor ??
-        (_onPressed == null
-            ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.2)
-            : Theme.of(context).colorScheme.onSurface);
-    return Column(
-      children: [
-        OutlinedButton(
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.all(24),
-            side: BorderSide(
-              color: mainColor,
-            ),
-          ),
-          onPressed: _onPressed,
-          child: Icon(
-            _icon,
-            color: mainColor,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          _label,
-          style: Theme.of(context)
-              .textTheme
-              .labelLarge
-              ?.copyWith(color: mainColor),
         ),
       ],
     );

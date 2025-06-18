@@ -13,8 +13,8 @@ class GeoHelper {
     }
 
     // see if user hasn't disabled Nominatim
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    if (prefs.getBool("osmConsent") == false) {
+    SharedPreferencesAsync prefs = SharedPreferencesAsync();
+    if (await prefs.getBool("osmConsent") == false) {
       return null;
     }
 
