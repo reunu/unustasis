@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:go_router/go_router.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:logging/logging.dart';
@@ -23,7 +24,6 @@ import '../onboarding_screen.dart';
 import '../scooter_service.dart';
 import '../domain/scooter_state.dart';
 import '../scooter_visual.dart';
-import '../stats/stats_screen.dart';
 import '../helper_widgets/snowfall.dart';
 import '../helper_widgets/grassscape.dart';
 
@@ -52,7 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     if (widget.forceOpen != true) {
       log.fine("Redirecting or starting");
-      redirectOrStart();
+      initializeHome();
     }
   }
 
@@ -192,12 +192,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     mainAxisSize: MainAxisSize.max,
                     children: [
                       InkWell(
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const StatsScreen(),
-                          ),
-                        ),
+                        onTap: () => context.push('/stats'),
                         // Hidden for stable release, but useful for various debugging
                         // onLongPress: () =>
                         //     showHandlebarWarning(didNotUnlock: false),
@@ -363,13 +358,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                       stack);
                                                 }
                                               } else {
-                                                Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder: (context) =>
-                                                        const ControlScreen(),
-                                                  ),
-                                                );
+                                                context.push('/control');
                                               }
                                             }
                                           : null,
@@ -441,26 +430,12 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  void redirectOrStart() async {
-    List<String> ids =
-        await context.read<ScooterService>().getSavedScooterIds();
-    log.info("Saved scooters: $ids");
-    if (mounted && ids.isEmpty && !kDebugMode) {
-      FlutterNativeSplash.remove();
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const OnboardingScreen(),
-        ),
-      );
-    } else {
-      // already onboarded, set up and proceed with home page
-      _startSeasonal();
-      _showOnboardings();
-      // start the scooter service if we're not coming from onboarding
-      if (mounted && context.read<ScooterService>().myScooter == null) {
-        context.read<ScooterService>().start();
-      }
+  void initializeHome() async {
+    _startSeasonal();
+    _showOnboardings();
+    // start the scooter service if we're not coming from onboarding
+    if (mounted && context.read<ScooterService>().myScooter == null) {
+      context.read<ScooterService>().start();
     }
     if ((await SharedPreferencesAsync().getBool("biometrics") ?? false) &&
         mounted) {

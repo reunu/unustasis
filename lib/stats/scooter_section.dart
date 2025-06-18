@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:go_router/go_router.dart';
 import 'package:logging/logging.dart';
 import 'package:maps_launcher/maps_launcher.dart';
 import 'package:provider/provider.dart';
@@ -104,14 +105,7 @@ class _ScooterSectionState extends State<ScooterSection> {
 
               List<String> savedIds = await service.getSavedScooterIds();
               if (context.mounted) {
-                Navigator.push(context, MaterialPageRoute(
-                  builder: (context) {
-                    return OnboardingScreen(
-                      excludedScooterIds: savedIds,
-                      skipWelcome: true,
-                    );
-                  },
-                ));
+                context.go('/addNew', extra: savedIds);
               }
             },
             icon: Icon(

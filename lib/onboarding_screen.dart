@@ -6,13 +6,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:go_router/go_router.dart';
 import 'package:logging/logging.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:appcheck/appcheck.dart';
 
 import '../domain/theme_helper.dart';
-import '../home_screen.dart';
 import '../scooter_service.dart';
 import '../domain/scooter_state.dart';
 import '../scooter_visual.dart';
@@ -215,9 +215,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             text: FlutterI18n.translate(context, "onboarding_step5_body"),
             btnText: FlutterI18n.translate(context, "onboarding_step5_button"),
             onPressed: () {
-              Navigator.of(context).pushReplacement(MaterialPageRoute(
-                builder: (context) => const HomeScreen(),
-              ));
+              context.go('/');
             });
       default:
         return [];
@@ -236,9 +234,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
         actions: [
           IconButton(
               onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(
-                  builder: (context) => const SupportScreen(),
-                ));
+                context.push('/support');
               },
               icon: const Icon(Icons.help_outline))
         ],
@@ -312,9 +308,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               // Handle the 10 taps in short succession
               log.info('27 taps detected! Skipping onboarding...');
               tapCount = 0;
-              Navigator.of(context).pushReplacement(MaterialPageRoute(
-                builder: (context) => const HomeScreen(forceOpen: true),
-              ));
+              context.go('/');
             }
           };
         return GestureDetector(

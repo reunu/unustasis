@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences/util/legacy_to_async_migration_util.dart';
 
+import 'router/router.dart';
 import '../background/bg_service.dart';
 import '../domain/log_helper.dart';
 import '../flutter/blue_plus_mockable.dart';
@@ -77,8 +78,9 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'Unustasis',
+      routerConfig: router,
       theme: ThemeData(
         appBarTheme: const AppBarTheme(
           centerTitle: true,
@@ -149,7 +151,7 @@ class _MyAppState extends State<MyApp> {
           },
         ),
       ],
-      home: const HomeScreen(),
+      // home: const HomeScreen(),
     );
   }
 
