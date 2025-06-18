@@ -9,7 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:workmanager/workmanager.dart';
+import 'package:shared_preferences/util/legacy_to_async_migration_util.dart';
 
 import '../background/bg_service.dart';
 import '../domain/log_helper.dart';
@@ -32,8 +32,10 @@ void main() async {
 
   Locale? savedLocale;
 
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  final String? localeString = prefs.getString('savedLocale');
+  await migrateSharedPrefs();
+
+  final String? localeString =
+      await SharedPreferencesAsync().getString('savedLocale');
   if (localeString != null) {
     Logger("Main").fine("Saved locale: $localeString");
     savedLocale = Locale(localeString);
@@ -52,6 +54,15 @@ void main() async {
           savedLocale: savedLocale,
         ),
       )));
+}
+
+Future<void> migrateSharedPrefs() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  await migrateLegacySharedPreferencesToSharedPreferencesAsyncIfNecessary(
+    legacySharedPreferencesInstance: prefs,
+    sharedPreferencesAsyncOptions: SharedPreferencesOptions(),
+    migrationCompletedKey: 'migrationCompleted',
+  );
 }
 
 class MyApp extends StatefulWidget {
@@ -87,6 +98,12 @@ class _MyAppState extends State<MyApp> {
           error: Colors.red,
           onError: Colors.black,
         ),
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: <TargetPlatform, PageTransitionsBuilder>{
+            // Set the predictive back transitions for Android.
+            TargetPlatform.android: PredictiveBackPageTransitionsBuilder(),
+          },
+        ),
         /* dark theme settings */
       ),
       darkTheme: ThemeData(
@@ -109,7 +126,12 @@ class _MyAppState extends State<MyApp> {
           error: Colors.red,
           onError: Colors.white,
         ),
-        /* dark theme settings */
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: <TargetPlatform, PageTransitionsBuilder>{
+            // Set the predictive back transitions for Android.
+            TargetPlatform.android: PredictiveBackPageTransitionsBuilder(),
+          },
+        ),
       ),
       themeMode: EasyDynamicTheme.of(context).themeMode,
       localizationsDelegates: [

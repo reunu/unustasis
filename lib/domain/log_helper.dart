@@ -113,7 +113,7 @@ class LogHelper {
           os = "unsupported";
         }
 
-        SharedPreferences prefs = await SharedPreferences.getInstance();
+        SharedPreferencesAsync prefs = SharedPreferencesAsync();
         if (context.mounted) {
           ScooterService service = context.read<ScooterService>();
           final Email email = Email(
@@ -123,16 +123,15 @@ class LogHelper {
 Device: $device
 OS: $os
 Settings: 
-      backgroundScan = ${prefs.getBool("backgroundScan") ?? false}
-      biometrics = ${prefs.getBool("biometrics") ?? false}
+      backgroundScan = ${await prefs.getBool("backgroundScan") ?? false}
+      biometrics = ${await prefs.getBool("biometrics") ?? false}
       autoUnlock = ${service.autoUnlock}
       autoUnlockDistance = ${ScooterKeylessDistance.fromThreshold(service.autoUnlockThreshold) ?? ScooterKeylessDistance.regular.threshold}
       openSeatOnUnlock = ${service.openSeatOnUnlock}
       hazardLocking = ${service.hazardLocking}
-      osmConsent = ${prefs.getBool("osmConsent") ?? true}
-      seasonal = ${prefs.getBool("seasonal") ?? true}
-Saved scooters: 
-      ${(await SharedPreferences.getInstance()).getString("savedScooters") ?? 'none'}
+      osmConsent = ${await prefs.getBool("osmConsent") ?? true}
+      seasonal = ${await prefs.getBool("seasonal") ?? true}
+Saved scooters: ${await prefs.getString("savedScooters") ?? 'none'}
 ''',
             subject: FlutterI18n.translate(context, "report_subject"),
             recipients: ['unu@freal.de'],

@@ -183,6 +183,10 @@ class FaqWidget extends StatelessWidget {
               MapEntry category = faq.entries.elementAt(index);
               return ExpansionTile(
                 shape: const RoundedRectangleBorder(),
+                expansionAnimationStyle: AnimationStyle(
+                  duration: Durations.medium4,
+                  curve: Curves.easeInOutCubicEmphasized,
+                ),
                 initiallyExpanded: false,
                 iconColor: Theme.of(context).colorScheme.onSurface,
                 leading: index == 0
@@ -198,6 +202,10 @@ class FaqWidget extends StatelessWidget {
                   for (MapEntry question in category.value.entries)
                     ExpansionTile(
                         shape: const RoundedRectangleBorder(),
+                        expansionAnimationStyle: AnimationStyle(
+                          duration: Durations.medium4,
+                          curve: Curves.easeInOutCubicEmphasized,
+                        ),
                         iconColor: Theme.of(context).colorScheme.onSurface,
                         backgroundColor:
                             Theme.of(context).colorScheme.surfaceContainer,

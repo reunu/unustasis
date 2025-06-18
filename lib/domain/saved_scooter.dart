@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,8 +18,8 @@ class SavedScooter {
   LatLng? _lastLocation;
 
   SavedScooter({
-    required String name,
     required String id,
+    String? name,
     int? color,
     DateTime? lastPing,
     bool? autoConnect,
@@ -27,7 +28,7 @@ class SavedScooter {
     int? lastCbbSOC,
     int? lastAuxSOC,
     LatLng? lastLocation,
-  })  : _name = name,
+  })  : _name = name ?? "Scooter Pro",
         _id = id,
         _color = color ?? 1,
         _lastPing = lastPing ?? DateTime.now(),
@@ -56,6 +57,7 @@ class SavedScooter {
   set autoConnect(bool autoConnect) {
     _autoConnect = autoConnect;
     updateSharedPreferences();
+    FlutterBackgroundService().invoke("update", {"updateSavedScooters": true});
   }
 
   set lastPrimarySOC(int? lastPrimarySOC) {
@@ -131,10 +133,11 @@ class SavedScooter {
   }
 
   void updateSharedPreferences() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
+    SharedPreferencesAsync prefs = SharedPreferencesAsync();
     Map<String, dynamic> savedScooters =
-        jsonDecode(prefs.getString("savedScooters")!) as Map<String, dynamic>;
+        jsonDecode(await prefs.getString("savedScooters") ?? "{}")
+            as Map<String, dynamic>;
     savedScooters[_id] = toJson();
-    prefs.setString("savedScooters", jsonEncode(savedScooters));
+    await prefs.setString("savedScooters", jsonEncode(savedScooters));
   }
 }

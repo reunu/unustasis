@@ -34,21 +34,30 @@ class _SettingsSectionState extends State<SettingsSection> {
   bool openSeatOnUnlock = false;
   bool hazardLocking = false;
   bool osmConsent = true;
+  final SharedPreferencesAsync prefs = SharedPreferencesAsync();
 
   void getInitialSettings() async {
     ScooterService service = context.read<ScooterService>();
-    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool initialBackgroundScan = await prefs.getBool("backgroundScan") ?? false;
+    bool initialBiometrics = await prefs.getBool("biometrics") ?? false;
+    bool initialAutoUnlock = service.autoUnlock;
+    ScooterKeylessDistance initialAutoUnlockDistance =
+        ScooterKeylessDistance.fromThreshold(service.autoUnlockThreshold) ??
+            ScooterKeylessDistance.regular.threshold;
+    bool initialOpenSeatOnUnlock = service.openSeatOnUnlock;
+    bool initialHazardLocking = service.hazardLocking;
+    bool initialOsmConsent = await prefs.getBool("osmConsent") ?? true;
+    bool initialSeasonal = await prefs.getBool("seasonal") ?? true;
+
     setState(() {
-      backgroundScan = prefs.getBool("backgroundScan") ?? false;
-      biometrics = prefs.getBool("biometrics") ?? false;
-      autoUnlock = service.autoUnlock;
-      autoUnlockDistance =
-          ScooterKeylessDistance.fromThreshold(service.autoUnlockThreshold) ??
-              ScooterKeylessDistance.regular.threshold;
-      openSeatOnUnlock = service.openSeatOnUnlock;
-      hazardLocking = service.hazardLocking;
-      osmConsent = prefs.getBool("osmConsent") ?? true;
-      seasonal = prefs.getBool("seasonal") ?? true;
+      backgroundScan = initialBackgroundScan;
+      biometrics = initialBiometrics;
+      autoUnlock = initialAutoUnlock;
+      autoUnlockDistance = initialAutoUnlockDistance;
+      openSeatOnUnlock = initialOpenSeatOnUnlock;
+      hazardLocking = initialHazardLocking;
+      osmConsent = initialOsmConsent;
+      seasonal = initialSeasonal;
     });
   }
 
@@ -161,8 +170,7 @@ class _SettingsSectionState extends State<SettingsSection> {
                 confirmed = true;
               }
               if (confirmed == true) {
-                SharedPreferences prefs = await SharedPreferences.getInstance();
-                prefs.setBool("backgroundScan", value);
+                await prefs.setBool("backgroundScan", value);
                 // inform the service!
                 FlutterBackgroundService()
                     .invoke("update", {"backgroundScan": value});
@@ -191,9 +199,7 @@ class _SettingsSectionState extends State<SettingsSection> {
                           localizedReason: FlutterI18n.translate(
                               context, "biometrics_message"));
                       if (didAuthenticate) {
-                        SharedPreferences prefs =
-                            await SharedPreferences.getInstance();
-                        prefs.setBool("biometrics", value);
+                        await prefs.setBool("biometrics", value);
                         setState(() {
                           biometrics = value;
                         });
@@ -297,8 +303,7 @@ class _SettingsSectionState extends State<SettingsSection> {
               ],
               onChanged: (newLanguage) async {
                 await FlutterI18n.refresh(context, newLanguage);
-                SharedPreferences prefs = await SharedPreferences.getInstance();
-                prefs.setString("savedLocale", newLanguage!.languageCode);
+                await prefs.setString("savedLocale", newLanguage!.languageCode);
                 setState(() {});
               },
             ),
@@ -311,8 +316,7 @@ class _SettingsSectionState extends State<SettingsSection> {
               context, "settings_osm_consent_description")),
           value: osmConsent,
           onChanged: (value) async {
-            SharedPreferences prefs = await SharedPreferences.getInstance();
-            prefs.setBool("osmConsent", value);
+            await prefs.setBool("osmConsent", value);
             setState(() {
               osmConsent = value;
             });
@@ -327,8 +331,7 @@ class _SettingsSectionState extends State<SettingsSection> {
                   Text(FlutterI18n.translate(context, "settings_color_info")),
               value: seasonal,
               onChanged: (value) async {
-                SharedPreferences prefs = await SharedPreferences.getInstance();
-                prefs.setBool("seasonal", value);
+                await prefs.setBool("seasonal", value);
                 setState(() {
                   seasonal = value;
                 });
