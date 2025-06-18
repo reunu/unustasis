@@ -21,6 +21,8 @@ int? _scooterColor;
 LatLng? _lastLocation;
 bool? _seatClosed;
 
+void setupWidget() {}
+
 Future<void> updateWidgetPing() async {
   if (_lastPing != null) {
     print("We have a cached ping");
@@ -145,6 +147,7 @@ void passToWidget({
     // once everything is set, rebuild the widget
     await HomeWidget.updateWidget(
       qualifiedAndroidName: 'de.freal.unustasis.HomeWidgetReceiver',
+      iOSName: "ScooterWidget",
     );
   } else {
     print("No relevant changes");
@@ -178,7 +181,6 @@ Future<void> setWidgetScanning(bool scanning) async {
 
 @pragma("vm:entry-point")
 FutureOr<void> backgroundCallback(Uri? data) async {
-  await HomeWidget.setAppGroupId('de.freal.unustasis');
   print("Unu widget received data: $data");
   if (await FlutterBackgroundService().isRunning() == false) {
     final service = FlutterBackgroundService();

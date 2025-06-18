@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -43,7 +44,9 @@ Future<void> setupBackgroundService() async {
           false;
   log.info("Background scan: $backgroundScanEnabled");
 
-  await setupNotifications();
+  if (Platform.isAndroid) {
+    await setupNotifications();
+  }
 
   await service.configure(
     iosConfiguration: IosConfiguration(
@@ -65,9 +68,14 @@ Future<void> setupBackgroundService() async {
     ),
   );
 
-  HomeWidget.registerInteractivityCallback(backgroundCallback);
+  service.startService();
 
-  await setupWidgetTasks();
+  HomeWidget.registerInteractivityCallback(backgroundCallback);
+  HomeWidget.setAppGroupId("group.de.freal.unustasis");
+
+  if (Platform.isAndroid) {
+    await setupWidgetTasks();
+  }
 
   if (!backgroundScanEnabled) {
     dismissNotification();
@@ -76,8 +84,27 @@ Future<void> setupBackgroundService() async {
 
 @pragma('vm:entry-point')
 Future<bool> onIosBackground(ServiceInstance service) async {
+  // this will be updated occasionally by the system
+  print("Background service started on iOS!");
+  // Ensure that the Flutter engine is initialized.
   WidgetsFlutterBinding.ensureInitialized();
   DartPluginRegistrant.ensureInitialized();
+  // Set up a scooter service instance.
+  scooterService = ScooterService(fbp, isInBackgroundService: true);
+  // Make sure scooterService has time to initialize all values
+  await Future.delayed(const Duration(seconds: 5));
+  // update the widget
+  passToWidget(
+    connected: scooterService.connected,
+    lastPing: scooterService.lastPing,
+    scooterState: scooterService.state,
+    primarySOC: scooterService.primarySOC,
+    secondarySOC: scooterService.secondarySOC,
+    scooterName: scooterService.scooterName,
+    scooterColor: scooterService.scooterColor,
+    lastLocation: scooterService.lastLocation,
+    seatClosed: scooterService.seatClosed,
+  );
   return true;
 }
 

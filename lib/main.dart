@@ -43,9 +43,7 @@ void main() async {
   }
 
   // here goes nothing...
-  if (Platform.isAndroid) {
-    setupBackgroundService();
-  }
+  setupBackgroundService();
 
   runApp(ChangeNotifierProvider(
       create: (context) => ScooterService(FlutterBluePlusMockable()),

@@ -77,7 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _showOnboardings() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    if (Platform.isAndroid && prefs.getBool("widgetOnboarded") != true) {
+    if (prefs.getBool("widgetOnboarded") != true) {
       await showWidgetOnboarding();
       prefs.setBool("widgetOnboarded", true);
     }

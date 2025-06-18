@@ -1,5 +1,6 @@
-import UIKit
 import Flutter
+import UIKit
+import flutter_background_service_ios
 import home_widget
 import workmanager
 
@@ -9,6 +10,7 @@ import workmanager
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
+    SwiftFlutterBackgroundServicePlugin.taskIdentifier = "de.freal.unustasis.background"
     GeneratedPluginRegistrant.register(with: self)
 
     UIApplication.shared.setMinimumBackgroundFetchInterval(TimeInterval(60 * 15))
