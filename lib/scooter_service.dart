@@ -1078,8 +1078,8 @@ class ScooterService with ChangeNotifier {
 
     updateBackgroundService({"updateSavedScooters": true});
     if ((await getMostRecentScooter())?.id == id) {
-      // if we're renaming the most recent scooter, update the name immediately
-      color = color;
+      // if we're recoloring the most recent scooter, update the color immediately
+      scooterColor = color;
       updateBackgroundService({"scooterColor": color});
     }
     // let the background service know too right away
