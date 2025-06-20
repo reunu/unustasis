@@ -39,6 +39,9 @@ Future<void> setupBackgroundService() async {
   log.onRecord.listen((record) => print(record));
   final service = FlutterBackgroundService();
 
+  HomeWidget.setAppGroupId("group.de.freal.unustasis");
+  HomeWidget.registerInteractivityCallback(backgroundCallback);
+
   backgroundScanEnabled =
       (await SharedPreferences.getInstance()).getBool("backgroundScan") ??
           false;
@@ -69,9 +72,6 @@ Future<void> setupBackgroundService() async {
   );
 
   service.startService();
-
-  HomeWidget.registerInteractivityCallback(backgroundCallback);
-  HomeWidget.setAppGroupId("group.de.freal.unustasis");
 
   if (Platform.isAndroid) {
     await setupWidgetTasks();
@@ -167,7 +167,9 @@ void onStart(ServiceInstance service) async {
     }
   }
 
+  print("Seeding widget with initial data");
   // seed widget
+  await HomeWidget.setAppGroupId("group.de.freal.unustasis");
   Future.delayed(const Duration(seconds: 5), () {
     passToWidget(
         connected: scooterService.connected,
@@ -180,6 +182,8 @@ void onStart(ServiceInstance service) async {
         lastLocation: scooterService.lastLocation,
         seatClosed: scooterService.seatClosed);
   });
+  print(
+      "Widget seeded with initial data. ScooterName: ${scooterService.scooterName}");
 
   service.on("autoUnlockCooldown").listen((data) async {
     print("Received autoUnlockCooldown command");

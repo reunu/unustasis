@@ -225,6 +225,13 @@ class ScooterService with ChangeNotifier {
     _lastPing = DateTime.now();
     _scooterName = "Demo Scooter";
 
+    //SharedPreferencesAsync().setString(
+    //  "savedScooters",
+    //  jsonEncode(
+    //      savedScooters.map((key, value) => MapEntry(key, value.toJson()))),
+    //);
+    //updateBackgroundService({"updateSavedScooters": true});
+
     notifyListeners();
   }
 

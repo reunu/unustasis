@@ -6,6 +6,7 @@ import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:easy_dynamic_theme/easy_dynamic_theme.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:home_widget/home_widget.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -43,6 +44,15 @@ void main() async {
     // we have no language saved, so we pass along the device language
     savedLocale = Locale(Platform.localeName.split('_').first);
   }
+
+  // WIDGET TESTING
+  //HomeWidget.setAppGroupId("group.de.freal.unustasis");
+  //await HomeWidget.saveWidgetData<String>("scooterName", "Test Scooter");
+  //await HomeWidget.saveWidgetData<bool>("connected", true);
+  //await HomeWidget.updateWidget(
+  //  qualifiedAndroidName: 'de.freal.unustasis.HomeWidgetReceiver',
+  //  iOSName: "ScooterWidget",
+  //);
 
   // here goes nothing...
   setupBackgroundService();

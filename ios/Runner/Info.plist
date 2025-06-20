@@ -46,6 +46,12 @@
 		<string>FaceID can be used to protect the app and your scooter</string>
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>Location is required to remember where your scooter was last seen</string>
+		<key>NSLocalNetworkUsageDescription</key>
+		<string>This app needs access to network service discovery to debug the app</string>
+		<key>NSBonjourServices</key>
+		<array>
+			<string>_dartobservatory._tcp</string>
+		</array>
 		<key>UIApplicationSupportsIndirectInputEvents</key>
 		<true />
 		<key>UIBackgroundModes</key>
