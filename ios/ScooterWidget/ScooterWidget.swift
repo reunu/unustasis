@@ -104,16 +104,109 @@ struct ScooterStatusEntry: TimelineEntry {
 struct ScooterWidgetEntryView: View {
     var entry: Provider.Entry
 
+    var lastPingString: String {
+        if let lastPing = entry.lastPing {
+            let now = Date().timeIntervalSince1970 * 1000.0
+            let diff = now - Double(lastPing)
+            let hours = Int(diff / 3_600_000)
+            return "(\(hours)h)"
+        }
+        return ""
+    }
+
     var body: some View {
-        VStack {
-            Text("Widget update:")
-            Text(entry.date, style: .time)
-
-            Text("\(entry.scooterName ?? "Unnamed scooter") is \(entry.stateName ?? "Unknown")")
-
-            Text("Connected: \(entry.connected ? "Yes" : "No")")
-
-            Text("Last Ping: \(entry.calculatedLastPingDifference)")
+        ZStack {
+            // Background color
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .top) {
+                    HStack(alignment: .top, spacing: 2) {
+                        // Scooter name and last ping
+                        Text(entry.scooterName ?? "No Scooter")
+                            .font(.system(size: 12, weight: .regular))
+                            .foregroundColor(Color.black.opacity(0.5))
+                        Text(lastPingString)
+                            .font(.system(size: 12, weight: .regular))
+                            .foregroundColor(Color.black.opacity(0.5))
+                    }
+                    Spacer()
+                    // Scooter image (placeholder)
+                    // Image("scooter_widget")
+                    //     .resizable()
+                    //     .aspectRatio(contentMode: .fit)
+                    //     .frame(width: 80, height: 80)
+                    //     .padding(.top, 8)
+                }
+                Spacer()
+                // Status and battery
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(entry.stateName ?? (entry.connected ? "Connected" : "Disconnected"))
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(Color.black)
+                    HStack(spacing: 16) {
+                        if let soc1 = entry.primarySOC {
+                            HStack(spacing: 4) {
+                                Image(systemName: "battery.100")
+                                    .foregroundColor(Color.black)
+                                    .font(.system(size: 12))
+                                Text("\(soc1)%")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundColor(Color.black)
+                            }
+                        }
+                        if let soc2 = entry.secondarySOC {
+                            HStack(spacing: 4) {
+                                Image(systemName: "battery.100")
+                                    .foregroundColor(Color.black)
+                                    .font(.system(size: 12))
+                                Text("\(soc2)%")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundColor(Color.black)
+                            }
+                        }
+                    }
+                }
+                Spacer()
+                // Buttons row
+                HStack(spacing: 0) {
+                    // location button
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color.blue.opacity(0.7))
+                            .frame(height: 32)
+                        Image(systemName: "mappin")
+                            .font(.system(size: 16))
+                            .foregroundColor(Color.black)
+                    }.onTapGesture {
+                        print("Location button tapped")
+                    }
+                    Spacer()
+                    // wind button
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(height: 32)
+                        Image(systemName: "wind")
+                            .font(.system(size: 16))
+                            .foregroundColor(Color.black)
+                    }.onTapGesture {
+                        print("Wind button tapped")
+                    }
+                    Spacer()
+                    // lock button
+                    Button(
+                        action: {
+                            print("Lock button tapped")
+                            // Handle lock action here
+                        }
+                    ) {
+                        Image(systemName: "lock")
+                            .font(.system(size: 16))
+                            .foregroundColor(Color.black)
+                    }.buttonStyle(.plain).background(Color.gray.opacity(0.3))
+                        .cornerRadius(16)
+                        .frame(height: 32)
+                }
+            }
         }
     }
 }
@@ -128,16 +221,17 @@ struct ScooterWidget: Widget {
                     .containerBackground(.fill.tertiary, for: .widget)
             } else {
                 ScooterWidgetEntryView(entry: entry)
-                    .padding()
+                    .padding(24)
                     .background()
             }
         }
-        .configurationDisplayName("My Widget")
-        .description("This is an example widget.")
+        .supportedFamilies([.systemMedium])
+        .configurationDisplayName("Scooter Status")
+        .description("Shows your scooter's status and quick actions.")
     }
 }
 
-#Preview(as: .systemSmall) {
+#Preview(as: .systemMedium) {
     ScooterWidget()
 } timeline: {
     ScooterStatusEntry(
