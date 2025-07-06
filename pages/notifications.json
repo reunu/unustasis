@@ -1,0 +1,11 @@
+[
+    {
+        "id": "sample",
+        "timestamp": "1970-01-01T00:00:00Z",
+        "duration-days": 7,
+        "title": "Sample Notification",
+        "body": "This is a sample notification message to demonstrate the structure. The app will display it once, for the 'duration-days' after 'timestamp'.",
+        "action-text": "Learn more",
+        "action-url": "https://example.com"
+    }
+]
