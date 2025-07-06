@@ -9,10 +9,12 @@ import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:home_widget/home_widget.dart';
+import 'package:http/http.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../helper_widgets/scooter_action_button.dart';
 import '../handlebar_warning.dart';
@@ -81,6 +83,106 @@ class _HomeScreenState extends State<HomeScreen> {
     if (Platform.isAndroid && await prefs.getBool("widgetOnboarded") != true) {
       await showWidgetOnboarding();
       await prefs.setBool("widgetOnboarded", true);
+    }
+  }
+
+  Future<void> showServerNotifications() async {
+    // get the notifications json from https://reunu.github.io/unustasis/notifications.json
+    Response response = await get(
+        Uri.parse("https://reunu.github.io/unustasis/notifications.json"));
+    if (response.statusCode != 200) {
+      log.warning("Failed to fetch notifications: ${response.statusCode}");
+      return;
+    }
+    List<Map<String, dynamic>> notifications =
+        response.body as List<Map<String, dynamic>>;
+    if (notifications.isEmpty) {
+      log.warning("No notifications found");
+      return;
+    }
+    SharedPreferencesAsync prefs = SharedPreferencesAsync();
+    List<String> shownServerNotifications =
+        await prefs.getStringList("shownServerNotifications") ?? [];
+    for (var notification in notifications) {
+      // check for validity
+      if (notification['id'] == null ||
+          notification['timestamp'] == null ||
+          notification['duration-days'] == null ||
+          notification['title'] == null ||
+          notification['body'] == null) {
+        log.warning("Invalid notification: $notification");
+        continue;
+      }
+      // check for already shown notifications
+      if (shownServerNotifications.contains(notification['id'])) {
+        log.fine("Notification ${notification['id']} already shown");
+        continue;
+      }
+      // check for timeframe
+      DateTime timestamp = DateTime.parse(notification['timestamp']);
+      int durationDays = notification['duration-days'] as int;
+      if (timestamp.isAfter(DateTime.now()) ||
+          timestamp
+              .add(Duration(days: durationDays))
+              .isBefore(DateTime.now())) {
+        log.fine(
+            "Notification ${notification['id']} is not valid for current time");
+        continue;
+      }
+      // make sure we still have a context
+      if (!mounted) {
+        log.warning("Context is not mounted, skipping notification");
+        continue;
+      }
+      // show the notification
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: true, // user can dismiss the dialog
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text(notification['title']
+                    [FlutterI18n.currentLocale(context)?.languageCode] ??
+                notification['title']['en'] ??
+                "Notification"),
+            content: SingleChildScrollView(
+              child: ListBody(
+                children: <Widget>[
+                  Text(notification['body']
+                          [FlutterI18n.currentLocale(context)?.languageCode] ??
+                      notification['body']['en'] ??
+                      ""),
+                ],
+              ),
+            ),
+            actions: <Widget>[
+              if (notification["action-url"] != null)
+                TextButton(
+                  child: Text(notification["action-text"]
+                          [FlutterI18n.currentLocale(context)?.languageCode] ??
+                      notification["action-text"]["en"] ??
+                      "Open"),
+                  onPressed: () async {
+                    if (await canLaunchUrl(notification["action-url"])) {
+                      await launchUrl(notification["action-url"]);
+                    } else {
+                      log.warning(
+                          "Could not launch URL: ${notification["action-url"]}");
+                    }
+                  },
+                ),
+              TextButton(
+                child: Text(notification["dismiss-text"]
+                        [FlutterI18n.currentLocale(context)?.languageCode] ??
+                    notification["dismiss-text"]["en"] ??
+                    "Dismiss"),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        },
+      );
     }
   }
 

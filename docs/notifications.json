@@ -3,9 +3,26 @@
         "id": "sample",
         "timestamp": "1970-01-01T00:00:00Z",
         "duration-days": 7,
-        "title": "Sample Notification",
-        "body": "This is a sample notification message to demonstrate the structure. The app will display it once, for the 'duration-days' after 'timestamp'.",
-        "action-text": "Learn more",
-        "action-url": "https://example.com"
+        "title": {
+            "en": "Sample Notification",
+            "de": "Beispielbenachrichtigung",
+            "fr": "Notification d'exemple"
+        },
+        "body": {
+            "en": "This is a sample notification to demonstrate the structure.",
+            "de": "Dies ist eine Beispielbenachrichtigung, um die Struktur zu demonstrieren.",
+            "fr": "Ceci est une notification d'exemple pour démontrer la structure."
+        },
+        "action-text": {
+            "en": "Learn more",
+            "de": "Mehr erfahren",
+            "fr": "En savoir plus"
+        },
+        "action-url": "https://example.com",
+        "dismiss-text": {
+            "en": "OK",
+            "de": "OK",
+            "fr": "OK"
+        }
     }
 ]
