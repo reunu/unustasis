@@ -2,7 +2,8 @@
     {
         "id": "sample",
         "timestamp": "1970-01-01T00:00:00Z",
-        "duration-days": 7,
+        "branch": "unustasis",
+        "duration-days": 100000,
         "title": {
             "en": "Sample Notification",
             "de": "Beispielbenachrichtigung",
