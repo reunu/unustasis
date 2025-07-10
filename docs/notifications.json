@@ -1,8 +1,9 @@
 [
     {
-        "id": "sample",
+        "id": "sample-ios-unustasis",
         "timestamp": "1970-01-01T00:00:00Z",
         "branch": "unustasis",
+        "platform": "ios",
         "duration-days": 100000,
         "title": {
             "en": "Sample Notification",
@@ -19,7 +20,29 @@
             "de": "Mehr erfahren",
             "fr": "En savoir plus"
         },
-        "action-url": "https://example.com",
+        "action-url": "https://example.com/",
+        "dismiss-text": {
+            "en": "OK",
+            "de": "OK",
+            "fr": "OK"
+        }
+    },
+    {
+        "id": "sample-android-unu",
+        "timestamp": "1970-01-01T00:00:00Z",
+        "branch": "unustasis",
+        "platform": "android",
+        "duration-days": 100000,
+        "title": {
+            "en": "Sample Notification",
+            "de": "Beispielbenachrichtigung",
+            "fr": "Notification d'exemple"
+        },
+        "body": {
+            "en": "This is a sample notification to demonstrate the structure.",
+            "de": "Dies ist eine Beispielbenachrichtigung, um die Struktur zu demonstrieren.",
+            "fr": "Ceci est une notification d'exemple pour démontrer la structure."
+        },
         "dismiss-text": {
             "en": "OK",
             "de": "OK",

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math' show Random;
 
@@ -12,6 +13,7 @@ import 'package:home_widget/home_widget.dart';
 import 'package:http/http.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:logging/logging.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -86,20 +88,23 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> showServerNotifications() async {
+  Future<void> _showServerNotifications() async {
+    log.info("Fetching server notifications");
     // get the notifications json from https://reunu.github.io/unustasis/notifications.json
     Response response = await get(
         Uri.parse("https://reunu.github.io/unustasis/notifications.json"));
     if (response.statusCode != 200) {
       log.warning("Failed to fetch notifications: ${response.statusCode}");
       return;
+    } else {
+      log.info("Successfully fetched notifications");
     }
-    List<Map<String, dynamic>> notifications =
-        response.body as List<Map<String, dynamic>>;
+    List<dynamic> notifications = json.decode(response.body) as List<dynamic>;
     if (notifications.isEmpty) {
       log.warning("No notifications found");
       return;
     }
+    // check if we've already shown this
     SharedPreferencesAsync prefs = SharedPreferencesAsync();
     List<String> shownServerNotifications =
         await prefs.getStringList("shownServerNotifications") ?? [];
@@ -113,9 +118,24 @@ class _HomeScreenState extends State<HomeScreen> {
         log.warning("Invalid notification: $notification");
         continue;
       }
+      // check if this is meant for this branch of the app
+      PackageInfo packageInfo = await PackageInfo.fromPlatform();
+      if (notification['branch'] != null &&
+          notification['branch'] != packageInfo.appName) {
+        log.info(
+            "Notification ${notification['id']} is only meant for this branch: ${notification['branch']}. Skipping.");
+        continue;
+      }
+      // check if this is meant for this platform
+      if (notification['platform'] != null &&
+          notification['platform'] != Platform.operatingSystem) {
+        log.info(
+            "Notification ${notification['id']} is only meant for this platform: ${notification['platform']}. Skipping.");
+        continue;
+      }
       // check for already shown notifications
       if (shownServerNotifications.contains(notification['id'])) {
-        log.fine("Notification ${notification['id']} already shown");
+        log.info("Notification ${notification['id']} already shown");
         continue;
       }
       // check for timeframe
@@ -125,7 +145,7 @@ class _HomeScreenState extends State<HomeScreen> {
           timestamp
               .add(Duration(days: durationDays))
               .isBefore(DateTime.now())) {
-        log.fine(
+        log.info(
             "Notification ${notification['id']} is not valid for current time");
         continue;
       }
@@ -134,6 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
         log.warning("Context is not mounted, skipping notification");
         continue;
       }
+      log.info("Showing notification: ${notification['id']}");
       // show the notification
       await showDialog<void>(
         context: context,
@@ -162,8 +183,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       notification["action-text"]["en"] ??
                       "Open"),
                   onPressed: () async {
-                    if (await canLaunchUrl(notification["action-url"])) {
-                      await launchUrl(notification["action-url"]);
+                    if (await canLaunchUrl(
+                        Uri.parse(notification["action-url"]))) {
+                      await launchUrl(Uri.parse(notification["action-url"]));
                     } else {
                       log.warning(
                           "Could not launch URL: ${notification["action-url"]}");
@@ -183,6 +205,11 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         },
       );
+      // add the notification to the list of shown notifications
+      shownServerNotifications.add(notification['id']);
+      // save the list of shown notifications
+      await prefs.setStringList(
+          "shownServerNotifications", shownServerNotifications);
     }
   }
 
@@ -559,6 +586,7 @@ class _HomeScreenState extends State<HomeScreen> {
       // already onboarded, set up and proceed with home page
       _startSeasonal();
       _showOnboardings();
+      _showServerNotifications();
       // start the scooter service if we're not coming from onboarding
       if (mounted && context.read<ScooterService>().myScooter == null) {
         context.read<ScooterService>().start();
