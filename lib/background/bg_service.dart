@@ -318,6 +318,7 @@ void onStart(ServiceInstance service) async {
       scooterColor: scooterService.scooterColor,
       lastLocation: scooterService.lastLocation,
       seatClosed: scooterService.seatClosed,
+      scooterLocked: scooterService.handlebarsLocked,
     );
     if (backgroundScanEnabled) {
       updateNotification();

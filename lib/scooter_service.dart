@@ -172,7 +172,8 @@ class ScooterService with ChangeNotifier {
     _scooterName = mostRecentScooter?.name;
     _scooterColor = mostRecentScooter?.color;
     _lastLocation = mostRecentScooter?.lastLocation;
-    print("Last scooter name: ${_scooterName}");
+    _handlebarsLocked = mostRecentScooter?.handlebarsLocked;
+    print("Last scooter name: \\${_scooterName}");
     return;
   }
 
@@ -261,6 +262,10 @@ class ScooterService with ChangeNotifier {
   bool? get handlebarsLocked => _handlebarsLocked;
   set handlebarsLocked(bool? handlebarsLocked) {
     _handlebarsLocked = handlebarsLocked;
+    // Cache the value in SavedScooter if possible
+    if (myScooter != null && savedScooters.containsKey(myScooter!.remoteId.toString())) {
+      savedScooters[myScooter!.remoteId.toString()]!.handlebarsLocked = handlebarsLocked;
+    }
     notifyListeners();
   }
 
@@ -974,6 +979,7 @@ class ScooterService with ChangeNotifier {
         _scooterName = mostRecentScooter.name;
         _scooterColor = mostRecentScooter.color;
         _lastLocation = mostRecentScooter.lastLocation;
+        _handlebarsLocked = mostRecentScooter.handlebarsLocked;
       } else {
         // no saved scooters, reset streams
         _lastPing = null;

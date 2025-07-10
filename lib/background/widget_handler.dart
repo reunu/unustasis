@@ -20,8 +20,8 @@ String? _scooterName;
 int? _scooterColor;
 LatLng? _lastLocation;
 bool? _seatClosed;
-
-void setupWidget() {}
+bool? _scooterLocked = true;
+String _lockStateName = "Unknown";
 
 Future<void> updateWidgetPing() async {
   if (_lastPing != null) {
@@ -55,6 +55,7 @@ void passToWidget({
   int? scooterColor,
   LatLng? lastLocation,
   bool? seatClosed,
+  bool? scooterLocked,
 }) async {
   if (connected != _connected ||
       (scooterState?.isOn) != (_scooterState?.isOn) ||
@@ -68,7 +69,8 @@ void passToWidget({
       scooterName != _scooterName ||
       scooterColor != _scooterColor ||
       lastLocation != _lastLocation ||
-      seatClosed != _seatClosed) {
+      seatClosed != _seatClosed ||
+      scooterLocked != _scooterLocked) {
     // update cached values
     _connected = connected;
     _lastPing = lastPing;
@@ -81,6 +83,8 @@ void passToWidget({
     _scooterColor = scooterColor;
     _lastLocation = lastLocation;
     _seatClosed = seatClosed;
+    _scooterLocked = scooterLocked;
+    _lockStateName = getLocalizedLockStateName(scooterLocked ?? true);
 
     await HomeWidget.saveWidgetData<bool>("connected", connected);
     if (scooterState != null) {
@@ -109,6 +113,9 @@ void passToWidget({
     await HomeWidget.saveWidgetData<String>("scooterName", scooterName);
     await HomeWidget.saveWidgetData<int>("scooterColor", scooterColor);
     await HomeWidget.saveWidgetData("seatClosed", seatClosed);
+    await HomeWidget.saveWidgetData<bool>(
+        "scooterLocked", scooterLocked ?? true);
+    await HomeWidget.saveWidgetData<String>("lockStateName", _lockStateName);
 
     await HomeWidget.saveWidgetData<String>(
       "lastLat",

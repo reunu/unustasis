@@ -90,3 +90,27 @@ String getLocalizedNotificationAction(String actionId) {
     }
   }
 }
+
+String getLocalizedLockStateName(bool? locked) {
+  String lang = PlatformDispatcher.instance.locale.languageCode;
+
+  if (lang == "de") {
+    switch (locked) {
+      case true:
+        return "Verriegelt";
+      case false:
+        return "Offen";
+      default:
+        return "Unbekannt";
+    }
+  } else {
+    switch (locked) {
+      case true:
+        return "Locked";
+      case false:
+        return "Unlocked";
+      default:
+        return "Unknown";
+    }
+  }
+}
