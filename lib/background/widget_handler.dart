@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../background/translate_static.dart';
 import '../background/bg_service.dart';
@@ -25,6 +26,7 @@ String _lockStateName = "Unknown";
 
 void setupWidget() {
   HomeWidget.setAppGroupId('group.de.freal.unustasis');
+  HomeWidget.registerInteractivityCallback(backgroundCallback);
 }
 
 Future<void> updateWidgetPing() async {
@@ -62,6 +64,7 @@ void passToWidget({
   bool? seatClosed,
   bool? scooterLocked,
 }) async {
+  HomeWidget.setAppGroupId('group.de.freal.unustasis');
   if (connected != _connected ||
       (scooterState?.isOn) != (_scooterState?.isOn) ||
       (scooterState?.isReadyForSeatOpen) !=
@@ -178,12 +181,21 @@ Future<void> setWidgetScanning(bool scanning) async {
 @pragma("vm:entry-point")
 FutureOr<void> backgroundCallback(Uri? data) async {
   print("Unu widget received data: $data");
-  await HomeWidget.setAppGroupId('group.de.freal.unustasis');
   if (await FlutterBackgroundService().isRunning() == false) {
     final service = FlutterBackgroundService();
     await service.startService();
   }
+
+  launchUrl(Uri.parse("https://www.unustasis.de"),
+      mode: LaunchMode.externalApplication);
+
   switch (data?.host) {
+    case "openlocation":
+      // open location in maps
+      if (await canLaunchUrl(Uri.parse(data.toString()))) {
+        await launchUrl(Uri.parse("maps://?q=Googleplex"),
+            mode: LaunchMode.externalApplication);
+      }
     case "scan":
       setWidgetScanning(true);
       if (!backgroundScanEnabled) {

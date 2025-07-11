@@ -13,12 +13,15 @@
 		3CFB9DFFB6A29FA823B2DF62 /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EC58A420F43D0CE38E6BE4EC /* Pods_RunnerTests.framework */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
 		85B0B54B50134C57F8573D19 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4D389A89D312EE72EBC7DCF0 /* Pods_Runner.framework */; };
+		9018F5C618C6DE16260DADD0 /* Pods_ScooterWidgetExtension.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EF5644E712BF21579C281969 /* Pods_ScooterWidgetExtension.framework */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
 		B3D281B42E214676001687E0 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B311E3342DE99F13009FCEBD /* WidgetKit.framework */; };
 		B3D281B52E214676001687E0 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B311E3362DE99F13009FCEBD /* SwiftUI.framework */; };
 		B3D281C02E214678001687E0 /* ScooterWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B3D281B32E214676001687E0 /* ScooterWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		B3D282602E216061001687E0 /* BackgroundIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3D2825F2E216057001687E0 /* BackgroundIntent.swift */; };
+		B3D282612E216068001687E0 /* BackgroundIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3D2825F2E216057001687E0 /* BackgroundIntent.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -85,12 +88,17 @@
 		97C146FD1CF9000F007C117D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		9BCEBA36F3524ED6DAF86120 /* Pods-ScooterWidgetExtension.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ScooterWidgetExtension.release.xcconfig"; path = "Target Support Files/Pods-ScooterWidgetExtension/Pods-ScooterWidgetExtension.release.xcconfig"; sourceTree = "<group>"; };
 		B311E3342DE99F13009FCEBD /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		B311E3362DE99F13009FCEBD /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		B3BB19542BD002E300649B57 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
 		B3D281B32E214676001687E0 /* ScooterWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ScooterWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		B3D281E62E2149E6001687E0 /* ScooterWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ScooterWidgetExtension.entitlements; sourceTree = "<group>"; };
+		B3D2825F2E216057001687E0 /* BackgroundIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundIntent.swift; sourceTree = "<group>"; };
+		C07AB95170A26D14AE3DEB79 /* Pods-ScooterWidgetExtension.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ScooterWidgetExtension.profile.xcconfig"; path = "Target Support Files/Pods-ScooterWidgetExtension/Pods-ScooterWidgetExtension.profile.xcconfig"; sourceTree = "<group>"; };
+		DF53CF2DDDCA5A86C999E7FF /* Pods-ScooterWidgetExtension.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ScooterWidgetExtension.debug.xcconfig"; path = "Target Support Files/Pods-ScooterWidgetExtension/Pods-ScooterWidgetExtension.debug.xcconfig"; sourceTree = "<group>"; };
 		EC58A420F43D0CE38E6BE4EC /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		EF5644E712BF21579C281969 /* Pods_ScooterWidgetExtension.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_ScooterWidgetExtension.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -133,6 +141,7 @@
 			files = (
 				B3D281B52E214676001687E0 /* SwiftUI.framework in Frameworks */,
 				B3D281B42E214676001687E0 /* WidgetKit.framework in Frameworks */,
+				9018F5C618C6DE16260DADD0 /* Pods_ScooterWidgetExtension.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -154,6 +163,7 @@
 				B311E3362DE99F13009FCEBD /* SwiftUI.framework */,
 				4D389A89D312EE72EBC7DCF0 /* Pods_Runner.framework */,
 				EC58A420F43D0CE38E6BE4EC /* Pods_RunnerTests.framework */,
+				EF5644E712BF21579C281969 /* Pods_ScooterWidgetExtension.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -175,6 +185,9 @@
 				0AAEA513985198C3F0AE888A /* Pods-RunnerTests.debug.xcconfig */,
 				29BD0313DB58C1C86750FAF8 /* Pods-RunnerTests.release.xcconfig */,
 				39770DA74A328BEBCBE09AB7 /* Pods-RunnerTests.profile.xcconfig */,
+				DF53CF2DDDCA5A86C999E7FF /* Pods-ScooterWidgetExtension.debug.xcconfig */,
+				9BCEBA36F3524ED6DAF86120 /* Pods-ScooterWidgetExtension.release.xcconfig */,
+				C07AB95170A26D14AE3DEB79 /* Pods-ScooterWidgetExtension.profile.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -226,6 +239,7 @@
 				1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */,
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
+				B3D2825F2E216057001687E0 /* BackgroundIntent.swift */,
 			);
 			path = Runner;
 			sourceTree = "<group>";
@@ -280,6 +294,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = B3D281C52E214678001687E0 /* Build configuration list for PBXNativeTarget "ScooterWidgetExtension" */;
 			buildPhases = (
+				0DB8A2A0F34CCE1072768A02 /* [CP] Check Pods Manifest.lock */,
 				B3D281AF2E214676001687E0 /* Sources */,
 				B3D281B02E214676001687E0 /* Frameworks */,
 				B3D281B12E214676001687E0 /* Resources */,
@@ -369,6 +384,28 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		0DB8A2A0F34CCE1072768A02 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-ScooterWidgetExtension-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
 		3B06AD1E1E4923F5004D2608 /* Thin Binary */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -476,6 +513,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B3D282612E216068001687E0 /* BackgroundIntent.swift in Sources */,
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 			);
@@ -485,6 +523,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B3D282602E216061001687E0 /* BackgroundIntent.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -808,6 +847,7 @@
 		};
 		B3D281C12E214678001687E0 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = DF53CF2DDDCA5A86C999E7FF /* Pods-ScooterWidgetExtension.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -853,6 +893,7 @@
 		};
 		B3D281C22E214678001687E0 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9BCEBA36F3524ED6DAF86120 /* Pods-ScooterWidgetExtension.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -895,6 +936,7 @@
 		};
 		B3D281C32E214678001687E0 /* Profile */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = C07AB95170A26D14AE3DEB79 /* Pods-ScooterWidgetExtension.profile.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
