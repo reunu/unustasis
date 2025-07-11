@@ -98,7 +98,6 @@ struct ScooterWidget: Widget {
                     .containerBackground(.fill.tertiary, for: .widget)
             } else {
                 ScooterWidgetEntryView(entry: entry)
-                    .padding(16)
                     .background()
             }
         }
@@ -136,6 +135,7 @@ struct ScooterWidgetMediumView: View {
                         // Scooter name and last ping
                         Text(entry.scooterName ?? "No Scooter")
                             .font(.system(size: 12, weight: .regular))
+
                             .foregroundColor(Color.secondary)
                         Text(
                             (entry.lastPingDifference != nil) ? "\(entry.lastPingDifference!)" : ""
@@ -235,45 +235,43 @@ struct ScooterWidgetSmallView: View {
     var entry: Provider.Entry
 
     var body: some View {
-        VStack(
-            alignment: .center,
-        ) {
-            Spacer()
-            Spacer().frame(height: 0)
-            VStack(alignment: .center, spacing: 8) {
+        ZStack(alignment: .topLeading) {
+            VStack(alignment: .leading, spacing: 6) {
                 // Scooter name and last ping
                 Text(entry.lockStateName)
                     .font(.system(size: 12, weight: .regular))
+                    .multilineTextAlignment(.leading)
                     .foregroundColor(Color.secondary)
                 Text(entry.scooterName ?? "No Scooter")
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.system(size: 26, weight: .bold))
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .multilineTextAlignment(.leading)
                     .foregroundColor(Color.primary)
-                HStack {
+                VStack(alignment: .leading, spacing: 4) {
                     BatteryItem(soc: entry.primarySOC)
-                    if let soc2 = entry.secondarySOC, soc2 > 0 {
+                    if let soc2 = entry.secondarySOC, soc2 >= 0 {
                         BatteryItem(soc: soc2)
                     }
                 }
             }
-            Spacer()
-            let hasLocation = (entry.lastLat != "0.0" && entry.lastLon != "0.0")
-            HStack {
+            // Location button always at bottom trailing
+            VStack {
                 Spacer()
-                Link(
-                    destination: hasLocation
-                        ? URL(string: "maps://?ll=" + entry.lastLat! + "," + entry.lastLon!)!
-                        : URL(string: "about:blank")!
-                ) {
-                    // Only enable the link if location is available
+                HStack {
+                    Spacer()
+                    let hasLocation = (entry.lastLat != "0.0" && entry.lastLon != "0.0")
                     if hasLocation {
                         ZStack {
                             RoundedRectangle(cornerRadius: 16)
                                 .fill(.quaternary)
-                                .frame(width: 36, height: 36)
+                                .frame(width: 40, height: 40)
                             Image(systemName: "location")
                                 .font(.system(size: 16))
                                 .foregroundColor(Color.primary)
                         }
+                        .widgetURL(
+                            URL(string: "maps://?ll=" + entry.lastLat! + "," + entry.lastLon!))
                     } else {
                         ZStack {
                             RoundedRectangle(cornerRadius: 16)
@@ -285,7 +283,7 @@ struct ScooterWidgetSmallView: View {
                         }
                         .allowsHitTesting(false)  // disables interaction
                     }
-                }.buttonStyle(.plain)
+                }
             }
         }
     }
