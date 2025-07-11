@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -11,6 +12,7 @@ import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences/util/legacy_to_async_migration_util.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../background/bg_service.dart';
 import '../domain/log_helper.dart';
@@ -30,6 +32,9 @@ void main() async {
     ),
   );
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+
+  // Register HomeWidget background callback
+  HomeWidget.registerInteractivityCallback(backgroundCallback);
 
   Locale? savedLocale;
 
@@ -165,6 +170,29 @@ class _MyAppState extends State<MyApp> {
   @override
   void dispose() {
     super.dispose();
+  }
+}
+
+// Add the background callback for HomeWidget
+@pragma("vm:entry-point")
+FutureOr<void> backgroundCallback(Uri? data) async {
+  if (data != null &&
+      data.toString() == "homeWidgetExample://lockButtonPressed") {
+    // TODO: Add your lock logic here, e.g. call a service, update state, etc.
+    Logger("HomeWidget").info("Lock button pressed from widget!");
+  } else if (data != null && data.toString().startsWith("maps://?ll=")) {
+    // Open the maps app at the given coordinates
+    try {
+      if (await canLaunchUrl(Uri.parse(data.toString()))) {
+        await launchUrl(Uri.parse(data.toString()),
+            mode: LaunchMode.externalApplication);
+      } else {
+        Logger("HomeWidget")
+            .warning("Could not launch maps URL: ${data.toString()}");
+      }
+    } catch (e) {
+      Logger("HomeWidget").severe("Error launching maps URL: $e");
+    }
   }
 }
 

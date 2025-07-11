@@ -41,6 +41,7 @@ Future<void> updateWidgetPing() async {
   );
   await HomeWidget.updateWidget(
     qualifiedAndroidName: 'de.freal.unustasis.HomeWidgetReceiver',
+    iOSName: "ScooterWidget",
   );
   return;
 }
@@ -148,6 +149,7 @@ Future<void> setWidgetUnlocking(bool unlocking) async {
   await HomeWidget.saveWidgetData<bool>("scanning", unlocking);
   await HomeWidget.updateWidget(
     qualifiedAndroidName: 'de.freal.unustasis.HomeWidgetReceiver',
+    iOSName: "ScooterWidget",
   );
 }
 
@@ -165,6 +167,7 @@ Future<void> setWidgetScanning(bool scanning) async {
       : ScooterState.disconnected.getNameStatic();
   await HomeWidget.updateWidget(
     qualifiedAndroidName: 'de.freal.unustasis.HomeWidgetReceiver',
+    iOSName: "ScooterWidget",
   );
 }
 
@@ -191,6 +194,7 @@ FutureOr<void> backgroundCallback(Uri? data) async {
   }
   await HomeWidget.updateWidget(
     qualifiedAndroidName: 'de.freal.unustasis.HomeWidgetReceiver',
+    iOSName: "ScooterWidget",
   );
 }
 

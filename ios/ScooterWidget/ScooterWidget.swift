@@ -95,13 +95,16 @@ struct ScooterWidget: Widget {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
             if #available(iOS 17.0, *) {
                 ScooterWidgetEntryView(entry: entry)
-                    .containerBackground(.fill.tertiary, for: .widget)
+                    .padding(16)
+                    .containerBackground(.fill.quaternary, for: .widget)
             } else {
                 ScooterWidgetEntryView(entry: entry)
+                    .padding(16)
                     .background()
             }
         }
         .supportedFamilies([.systemSmall])
+        .contentMarginsDisabled()
         .configurationDisplayName("Scooter Status")
         .description("Shows your unu Scooter's last known status")
     }
@@ -250,7 +253,7 @@ struct ScooterWidgetSmallView: View {
                     .foregroundColor(Color.primary)
                 VStack(alignment: .leading, spacing: 4) {
                     BatteryItem(soc: entry.primarySOC)
-                    if let soc2 = entry.secondarySOC, soc2 >= 0 {
+                    if let soc2 = entry.secondarySOC, soc2 > 0 {
                         BatteryItem(soc: soc2)
                     }
                 }
@@ -315,7 +318,7 @@ struct BatteryItem: View {
         case 0...20:
             return Color.red
         default:
-            return Color.primary
+            return Color.accentColor
         }
     }
 

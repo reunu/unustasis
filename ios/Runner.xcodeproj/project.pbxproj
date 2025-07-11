@@ -10,15 +10,15 @@
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
-		48F457BD7B5E0F37D85742B0 /* libPods-Runner.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5093391CC6E4FDD6A41C8105 /* libPods-Runner.a */; };
+		3CFB9DFFB6A29FA823B2DF62 /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EC58A420F43D0CE38E6BE4EC /* Pods_RunnerTests.framework */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
+		85B0B54B50134C57F8573D19 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4D389A89D312EE72EBC7DCF0 /* Pods_Runner.framework */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
-		B311E3352DE99F13009FCEBD /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B311E3342DE99F13009FCEBD /* WidgetKit.framework */; };
-		B311E3372DE99F13009FCEBD /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B311E3362DE99F13009FCEBD /* SwiftUI.framework */; };
-		B311E3422DE99F15009FCEBD /* ScooterWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B311E3332DE99F13009FCEBD /* ScooterWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		C9832C0B570D81C8BB1860FC /* libPods-RunnerTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 4EB6DA235C36CD2E2FF2A8C4 /* libPods-RunnerTests.a */; };
+		B3D281B42E214676001687E0 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B311E3342DE99F13009FCEBD /* WidgetKit.framework */; };
+		B3D281B52E214676001687E0 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B311E3362DE99F13009FCEBD /* SwiftUI.framework */; };
+		B3D281C02E214678001687E0 /* ScooterWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B3D281B32E214676001687E0 /* ScooterWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -29,11 +29,11 @@
 			remoteGlobalIDString = 97C146ED1CF9000F007C117D;
 			remoteInfo = Runner;
 		};
-		B311E3402DE99F15009FCEBD /* PBXContainerItemProxy */ = {
+		B3D281BE2E214678001687E0 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = B311E3322DE99F13009FCEBD;
+			remoteGlobalIDString = B3D281B22E214676001687E0;
 			remoteInfo = ScooterWidgetExtension;
 		};
 /* End PBXContainerItemProxy section */
@@ -55,7 +55,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				B311E3422DE99F15009FCEBD /* ScooterWidgetExtension.appex in Embed Foundation Extensions */,
+				B3D281C02E214678001687E0 /* ScooterWidgetExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -71,9 +71,8 @@
 		331C8081294A63A400263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		39770DA74A328BEBCBE09AB7 /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
+		4D389A89D312EE72EBC7DCF0 /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		4DB55B49E66E82906B40F0BA /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
-		4EB6DA235C36CD2E2FF2A8C4 /* libPods-RunnerTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-RunnerTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		5093391CC6E4FDD6A41C8105 /* libPods-Runner.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Runner.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		60C275BBA8A501EB10FF589A /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -86,28 +85,29 @@
 		97C146FD1CF9000F007C117D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		B311E3332DE99F13009FCEBD /* ScooterWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ScooterWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		B311E3342DE99F13009FCEBD /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		B311E3362DE99F13009FCEBD /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
-		B311E3912DE9B4A9009FCEBD /* ScooterWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ScooterWidgetExtension.entitlements; sourceTree = "<group>"; };
 		B3BB19542BD002E300649B57 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
+		B3D281B32E214676001687E0 /* ScooterWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ScooterWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		B3D281E62E2149E6001687E0 /* ScooterWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ScooterWidgetExtension.entitlements; sourceTree = "<group>"; };
+		EC58A420F43D0CE38E6BE4EC /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		B311E3432DE99F15009FCEBD /* Exceptions for "ScooterWidget" folder in "ScooterWidgetExtension" target */ = {
+		B3D281C42E214678001687E0 /* Exceptions for "ScooterWidget" folder in "ScooterWidgetExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = B311E3322DE99F13009FCEBD /* ScooterWidgetExtension */;
+			target = B3D281B22E214676001687E0 /* ScooterWidgetExtension */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		B311E3382DE99F13009FCEBD /* ScooterWidget */ = {
+		B3D281B62E214676001687E0 /* ScooterWidget */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				B311E3432DE99F15009FCEBD /* Exceptions for "ScooterWidget" folder in "ScooterWidgetExtension" target */,
+				B3D281C42E214678001687E0 /* Exceptions for "ScooterWidget" folder in "ScooterWidgetExtension" target */,
 			);
 			explicitFileTypes = {
 			};
@@ -123,16 +123,16 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				48F457BD7B5E0F37D85742B0 /* libPods-Runner.a in Frameworks */,
+				85B0B54B50134C57F8573D19 /* Pods_Runner.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		B311E3302DE99F13009FCEBD /* Frameworks */ = {
+		B3D281B02E214676001687E0 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B311E3372DE99F13009FCEBD /* SwiftUI.framework in Frameworks */,
-				B311E3352DE99F13009FCEBD /* WidgetKit.framework in Frameworks */,
+				B3D281B52E214676001687E0 /* SwiftUI.framework in Frameworks */,
+				B3D281B42E214676001687E0 /* WidgetKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -140,7 +140,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C9832C0B570D81C8BB1860FC /* libPods-RunnerTests.a in Frameworks */,
+				3CFB9DFFB6A29FA823B2DF62 /* Pods_RunnerTests.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -150,10 +150,10 @@
 		15538ED03B76F7BA7C45EE0F /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				5093391CC6E4FDD6A41C8105 /* libPods-Runner.a */,
-				4EB6DA235C36CD2E2FF2A8C4 /* libPods-RunnerTests.a */,
 				B311E3342DE99F13009FCEBD /* WidgetKit.framework */,
 				B311E3362DE99F13009FCEBD /* SwiftUI.framework */,
+				4D389A89D312EE72EBC7DCF0 /* Pods_Runner.framework */,
+				EC58A420F43D0CE38E6BE4EC /* Pods_RunnerTests.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -193,10 +193,10 @@
 		97C146E51CF9000F007C117D = {
 			isa = PBXGroup;
 			children = (
-				B311E3912DE9B4A9009FCEBD /* ScooterWidgetExtension.entitlements */,
+				B3D281E62E2149E6001687E0 /* ScooterWidgetExtension.entitlements */,
 				9740EEB11CF90186004384FC /* Flutter */,
 				97C146F01CF9000F007C117D /* Runner */,
-				B311E3382DE99F13009FCEBD /* ScooterWidget */,
+				B3D281B62E214676001687E0 /* ScooterWidget */,
 				97C146EF1CF9000F007C117D /* Products */,
 				331C8082294A63A400263BE5 /* RunnerTests */,
 				4A71B5FBA45DBB1BF7E4F106 /* Pods */,
@@ -209,7 +209,7 @@
 			children = (
 				97C146EE1CF9000F007C117D /* Runner.app */,
 				331C8081294A63A400263BE5 /* RunnerTests.xctest */,
-				B311E3332DE99F13009FCEBD /* ScooterWidgetExtension.appex */,
+				B3D281B32E214676001687E0 /* ScooterWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -262,38 +262,38 @@
 				97C146EB1CF9000F007C117D /* Frameworks */,
 				97C146EC1CF9000F007C117D /* Resources */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
-				FB861F34EC74CC91C0D128A2 /* [CP] Copy Pods Resources */,
 				B311E3482DE99F15009FCEBD /* Embed Foundation Extensions */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
+				3F25E0D94310DA4558A19FD0 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				B311E3412DE99F15009FCEBD /* PBXTargetDependency */,
+				B3D281BF2E214678001687E0 /* PBXTargetDependency */,
 			);
 			name = Runner;
 			productName = Runner;
 			productReference = 97C146EE1CF9000F007C117D /* Runner.app */;
 			productType = "com.apple.product-type.application";
 		};
-		B311E3322DE99F13009FCEBD /* ScooterWidgetExtension */ = {
+		B3D281B22E214676001687E0 /* ScooterWidgetExtension */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = B311E3442DE99F15009FCEBD /* Build configuration list for PBXNativeTarget "ScooterWidgetExtension" */;
+			buildConfigurationList = B3D281C52E214678001687E0 /* Build configuration list for PBXNativeTarget "ScooterWidgetExtension" */;
 			buildPhases = (
-				B311E32F2DE99F13009FCEBD /* Sources */,
-				B311E3302DE99F13009FCEBD /* Frameworks */,
-				B311E3312DE99F13009FCEBD /* Resources */,
+				B3D281AF2E214676001687E0 /* Sources */,
+				B3D281B02E214676001687E0 /* Frameworks */,
+				B3D281B12E214676001687E0 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				B311E3382DE99F13009FCEBD /* ScooterWidget */,
+				B3D281B62E214676001687E0 /* ScooterWidget */,
 			);
 			name = ScooterWidgetExtension;
 			productName = ScooterWidgetExtension;
-			productReference = B311E3332DE99F13009FCEBD /* ScooterWidgetExtension.appex */;
+			productReference = B3D281B32E214676001687E0 /* ScooterWidgetExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
@@ -303,7 +303,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastSwiftUpdateCheck = 1630;
+				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 1510;
 				ORGANIZATIONNAME = "";
 				TargetAttributes = {
@@ -315,8 +315,8 @@
 						CreatedOnToolsVersion = 7.3.1;
 						LastSwiftMigration = 1100;
 					};
-					B311E3322DE99F13009FCEBD = {
-						CreatedOnToolsVersion = 16.3;
+					B3D281B22E214676001687E0 = {
+						CreatedOnToolsVersion = 26.0;
 					};
 				};
 			};
@@ -335,7 +335,7 @@
 			targets = (
 				97C146ED1CF9000F007C117D /* Runner */,
 				331C8080294A63A400263BE5 /* RunnerTests */,
-				B311E3322DE99F13009FCEBD /* ScooterWidgetExtension */,
+				B3D281B22E214676001687E0 /* ScooterWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -359,7 +359,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		B311E3312DE99F13009FCEBD /* Resources */ = {
+		B3D281B12E214676001687E0 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -384,6 +384,23 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" embed_and_thin";
+		};
+		3F25E0D94310DA4558A19FD0 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
 		};
 		6F12BDAC02B8374D51B8E92F /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -444,23 +461,6 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		FB861F34EC74CC91C0D128A2 /* [CP] Copy Pods Resources */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Copy Pods Resources";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -481,7 +481,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		B311E32F2DE99F13009FCEBD /* Sources */ = {
+		B3D281AF2E214676001687E0 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -496,10 +496,10 @@
 			target = 97C146ED1CF9000F007C117D /* Runner */;
 			targetProxy = 331C8085294A63A400263BE5 /* PBXContainerItemProxy */;
 		};
-		B311E3412DE99F15009FCEBD /* PBXTargetDependency */ = {
+		B3D281BF2E214678001687E0 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = B311E3322DE99F13009FCEBD /* ScooterWidgetExtension */;
-			targetProxy = B311E3402DE99F15009FCEBD /* PBXContainerItemProxy */;
+			target = B3D281B22E214676001687E0 /* ScooterWidgetExtension */;
+			targetProxy = B3D281BE2E214678001687E0 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -806,7 +806,7 @@
 			};
 			name = Release;
 		};
-		B311E3452DE99F15009FCEBD /* Debug */ = {
+		B3D281C12E214678001687E0 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -828,7 +828,7 @@
 				INFOPLIST_FILE = ScooterWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = ScooterWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -841,15 +841,17 @@
 				PRODUCT_BUNDLE_IDENTIFIER = de.freal.unustasis.ScooterWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
-		B311E3462DE99F15009FCEBD /* Release */ = {
+		B3D281C22E214678001687E0 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -871,7 +873,7 @@
 				INFOPLIST_FILE = ScooterWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = ScooterWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -883,13 +885,15 @@
 				PRODUCT_BUNDLE_IDENTIFIER = de.freal.unustasis.ScooterWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
-		B311E3472DE99F15009FCEBD /* Profile */ = {
+		B3D281C32E214678001687E0 /* Profile */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -911,7 +915,7 @@
 				INFOPLIST_FILE = ScooterWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = ScooterWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -923,7 +927,9 @@
 				PRODUCT_BUNDLE_IDENTIFIER = de.freal.unustasis.ScooterWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -962,12 +968,12 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		B311E3442DE99F15009FCEBD /* Build configuration list for PBXNativeTarget "ScooterWidgetExtension" */ = {
+		B3D281C52E214678001687E0 /* Build configuration list for PBXNativeTarget "ScooterWidgetExtension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				B311E3452DE99F15009FCEBD /* Debug */,
-				B311E3462DE99F15009FCEBD /* Release */,
-				B311E3472DE99F15009FCEBD /* Profile */,
+				B3D281C12E214678001687E0 /* Debug */,
+				B3D281C22E214678001687E0 /* Release */,
+				B3D281C32E214678001687E0 /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
