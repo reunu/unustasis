@@ -23,6 +23,10 @@ bool? _seatClosed;
 bool? _scooterLocked = true;
 String _lockStateName = "Unknown";
 
+void setupWidget() {
+  HomeWidget.setAppGroupId('group.de.freal.unustasis');
+}
+
 Future<void> updateWidgetPing() async {
   if (_lastPing != null) {
     // just use the cached ping

@@ -19,6 +19,7 @@ import '../domain/log_helper.dart';
 import '../flutter/blue_plus_mockable.dart';
 import '../home_screen.dart';
 import '../scooter_service.dart';
+import '../background/widget_handler.dart';
 
 void main() async {
   LogHelper().initialize();
@@ -89,6 +90,29 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    if (Platform.isIOS) {
+      setupWidget();
+      scooterService.addListener(() async {
+        print("ScooterService updated");
+        passToWidget(
+          connected: scooterService.connected,
+          lastPing: scooterService.lastPing,
+          scooterState: scooterService.state,
+          primarySOC: scooterService.primarySOC,
+          secondarySOC: scooterService.secondarySOC,
+          scooterName: scooterService.scooterName,
+          scooterColor: scooterService.scooterColor,
+          lastLocation: scooterService.lastLocation,
+          seatClosed: scooterService.seatClosed,
+          scooterLocked: scooterService.handlebarsLocked,
+        );
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
