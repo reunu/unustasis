@@ -17,6 +17,7 @@ class SavedScooter {
   int? _lastAuxSOC;
   LatLng? _lastLocation;
   bool? _handlebarsLocked;
+  int? _cloudScooterId;
 
   SavedScooter({
     required String id,
@@ -30,6 +31,7 @@ class SavedScooter {
     int? lastAuxSOC,
     LatLng? lastLocation,
     bool? handlebarsLocked,
+    int? cloudScooterId,
   })  : _name = name ?? "Scooter Pro",
         _id = id,
         _color = color ?? 1,
@@ -40,7 +42,8 @@ class SavedScooter {
         _lastCbbSOC = lastCbbSOC,
         _lastAuxSOC = lastAuxSOC,
         _lastLocation = lastLocation,
-        _handlebarsLocked = handlebarsLocked;
+        _handlebarsLocked = handlebarsLocked,
+        _cloudScooterId = cloudScooterId;
 
   set name(String name) {
     _name = name;
@@ -93,6 +96,11 @@ class SavedScooter {
     updateSharedPreferences();
   }
 
+  set cloudScooterId(int? cloudScooterId) {
+    _cloudScooterId = cloudScooterId;
+    updateSharedPreferences();
+  }
+
   String get name => _name;
   String get id => _id;
   int get color => _color;
@@ -104,6 +112,7 @@ class SavedScooter {
   int? get lastAuxSOC => _lastAuxSOC;
   LatLng? get lastLocation => _lastLocation;
   bool? get handlebarsLocked => _handlebarsLocked;
+  int? get cloudScooterId => _cloudScooterId;
 
   BluetoothDevice get bluetoothDevice => BluetoothDevice.fromId(_id);
 
@@ -119,6 +128,7 @@ class SavedScooter {
         'lastAuxSOC': _lastAuxSOC,
         'lastLocation': _lastLocation?.toJson(),
         'handlebarsLocked': _handlebarsLocked,
+        'cloudScooterId': _cloudScooterId,
       };
 
   factory SavedScooter.fromJson(
@@ -126,22 +136,22 @@ class SavedScooter {
     Map<String, dynamic> map,
   ) {
     return SavedScooter(
-      id: id,
-      name: map['name'],
-      color: map['color'],
-      lastPing: map.containsKey('lastPing') ? DateTime.fromMicrosecondsSinceEpoch(map['lastPing']) : DateTime.now(),
-      autoConnect: map['autoConnect'],
-      lastLocation: map['lastLocation'] != null ? LatLng.fromJson(map['lastLocation']) : null,
-      lastPrimarySOC: map['lastPrimarySOC'],
-      lastSecondarySOC: map['lastSecondarySOC'],
-      lastCbbSOC: map['lastCbbSOC'],
-      lastAuxSOC: map['lastAuxSOC'],
-      handlebarsLocked: map['handlebarsLocked'],
-    );
-  }
-
-  bool get dataIsOld {
-    return _lastPing.difference(DateTime.now()).inMinutes.abs() > 5;
+        id: id,
+        name: map['name'],
+        color: map['color'],
+        lastPing: map.containsKey('lastPing')
+            ? DateTime.fromMicrosecondsSinceEpoch(map['lastPing'])
+            : DateTime.now(),
+        autoConnect: map['autoConnect'],
+        lastLocation: map['lastLocation'] != null
+            ? LatLng.fromJson(map['lastLocation'])
+            : null,
+        lastPrimarySOC: map['lastPrimarySOC'],
+        lastSecondarySOC: map['lastSecondarySOC'],
+        lastCbbSOC: map['lastCbbSOC'],
+        lastAuxSOC: map['lastAuxSOC'],
+        handlebarsLocked: map['handlebarsLocked'],
+        cloudScooterId: map['cloudScooterId']);
   }
 
   void updateSharedPreferences() async {
