@@ -3,6 +3,7 @@ import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 
+import '../control_screen.dart';
 import '../features.dart';
 import '../scooter_service.dart';
 
@@ -23,6 +24,13 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
   @override
   void initState() {
     super.initState();
+    _loadCloudStatus();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh cloud status when returning from OAuth or other changes
     _loadCloudStatus();
   }
 
@@ -201,13 +209,7 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Text(
-            FlutterI18n.translate(context, "cloud_settings_title"),
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-        ),
+        Header(FlutterI18n.translate(context, "cloud_settings_title")),
         SwitchListTile(
           title: Text(FlutterI18n.translate(context, "cloud_connectivity_enable")),
           subtitle: Text(FlutterI18n.translate(context, "cloud_connectivity_description")),
@@ -215,33 +217,45 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
           onChanged: (_) => _toggleCloudConnectivity(),
         ),
         if (_isCloudEnabled) ...[
-          const Divider(),
+          Divider(
+            indent: 16,
+            endIndent: 16,
+            height: 24,
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+          ),
           if (!_isAuthenticated) ...[
             ListTile(
+              leading: const Icon(Icons.login),
               title: Text(FlutterI18n.translate(context, "cloud_connect")),
               subtitle: Text(FlutterI18n.translate(context, "cloud_connect_description")),
-              trailing: const Icon(Icons.login),
               onTap: _authenticateWithCloud,
             ),
           ] else ...[
             ListTile(
+              leading: const Icon(Icons.cloud_done, color: Colors.green),
               title: Text(FlutterI18n.translate(context, "cloud_connected")),
               subtitle: Text(FlutterI18n.translate(context, "cloud_connected_description")),
-              trailing: const Icon(Icons.cloud_done, color: Colors.green),
             ),
             ListTile(
+              leading: const Icon(Icons.open_in_browser),
               title: Text(FlutterI18n.translate(context, "cloud_dashboard")),
               subtitle: Text(FlutterI18n.translate(context, "cloud_dashboard_description")),
-              trailing: const Icon(Icons.open_in_browser),
               onTap: _openCloudDashboard,
             ),
             if (_cloudScooters.isNotEmpty) ...[
-              const Divider(),
+              Divider(
+                indent: 16,
+                endIndent: 16,
+                height: 24,
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+              ),
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Text(
                   FlutterI18n.translate(context, "cloud_scooters_title"),
-                  style: Theme.of(context).textTheme.titleMedium,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+                  ),
                 ),
               ),
               ..._cloudScooters.map((scooter) => ListTile(
@@ -256,11 +270,16 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
                 ),
               )),
             ],
-            const Divider(),
+            Divider(
+              indent: 16,
+              endIndent: 16,
+              height: 24,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+            ),
             ListTile(
+              leading: const Icon(Icons.logout, color: Colors.red),
               title: Text(FlutterI18n.translate(context, "cloud_logout")),
               subtitle: Text(FlutterI18n.translate(context, "cloud_logout_description")),
-              trailing: const Icon(Icons.logout, color: Colors.red),
               onTap: _logout,
             ),
           ],

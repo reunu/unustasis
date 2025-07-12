@@ -13,6 +13,11 @@ class CloudCommandService implements CommandService {
 
   @override
   Future<bool> isAvailable(CommandType command) async {
+    // Check if command is supported in cloud
+    if (!_isCommandSupportedInCloud(command)) {
+      return false;
+    }
+
     // Check if cloud connectivity is enabled via feature flag
     if (!await Features.isCloudConnectivityEnabled) {
       return false;
@@ -96,19 +101,19 @@ class CloudCommandService implements CommandService {
       case CommandType.unlock:
         return 'unlock';
       case CommandType.wakeUp:
-        return 'wake';
+        throw UnsupportedError('WakeUp command is not supported in cloud');
       case CommandType.hibernate:
-        return 'sleep';
+        return 'hibernate';
       case CommandType.openSeat:
-        return 'open_seat';
+        return 'open_seatbox';
       case CommandType.blinkerLeft:
-        return 'signal';
+        return 'blinkers';
       case CommandType.blinkerRight:
-        return 'signal';
+        return 'blinkers';
       case CommandType.blinkerBoth:
-        return 'signal';
+        return 'blinkers';
       case CommandType.blinkerOff:
-        return 'signal';
+        return 'blinkers';
       case CommandType.honk:
         return 'honk';
       case CommandType.alarm:
@@ -119,19 +124,35 @@ class CloudCommandService implements CommandService {
   Map<String, dynamic>? _getCloudCommandParameters(CommandType command) {
     switch (command) {
       case CommandType.blinkerLeft:
-        return {'direction': 'left'};
+        return {'state': 'left'};
       case CommandType.blinkerRight:
-        return {'direction': 'right'};
+        return {'state': 'right'};
       case CommandType.blinkerBoth:
-        return {'direction': 'both'};
+        return {'state': 'both'};
       case CommandType.blinkerOff:
-        return {'direction': 'off'};
-      case CommandType.honk:
-        return {'duration': 2};
+        return {'state': 'off'};
       case CommandType.alarm:
-        return {'duration': 30};
+        return {'duration': '30s'};
       default:
         return null;
+    }
+  }
+
+  bool _isCommandSupportedInCloud(CommandType command) {
+    switch (command) {
+      case CommandType.lock:
+      case CommandType.unlock:
+      case CommandType.hibernate:
+      case CommandType.openSeat:
+      case CommandType.blinkerLeft:
+      case CommandType.blinkerRight:
+      case CommandType.blinkerBoth:
+      case CommandType.blinkerOff:
+      case CommandType.honk:
+      case CommandType.alarm:
+        return true;
+      case CommandType.wakeUp:
+        return false; // Not supported in cloud API
     }
   }
 }

@@ -12,6 +12,7 @@ import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences/util/legacy_to_async_migration_util.dart';
+import 'package:uni_links/uni_links.dart';
 
 import '../background/bg_service.dart';
 import '../domain/log_helper.dart';
@@ -77,6 +78,58 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  StreamSubscription? _linkSubscription;
+  final log = Logger('MyApp');
+
+  @override
+  void initState() {
+    super.initState();
+    _initDeepLinks();
+  }
+
+  void _initDeepLinks() async {
+    try {
+      // Handle app launch from deep link
+      final initialLink = await getInitialLink();
+      if (initialLink != null) {
+        _handleDeepLink(initialLink);
+      }
+
+      // Handle deep links while app is running
+      _linkSubscription = linkStream.listen(
+        (String? link) {
+          if (link != null) {
+            _handleDeepLink(link);
+          }
+        },
+        onError: (err) {
+          log.severe('Deep link error: $err');
+        },
+      );
+    } catch (e) {
+      log.severe('Failed to initialize deep links: $e');
+    }
+  }
+
+  void _handleDeepLink(String link) {
+    log.info('Received deep link: $link');
+    final uri = Uri.parse(link);
+    
+    if (uri.scheme == 'unustasis' && uri.host == 'oauth' && uri.path == '/callback') {
+      // Handle OAuth callback
+      final scooterService = context.read<ScooterService>();
+      scooterService.cloudService.handleOAuthCallback(uri).then((success) {
+        if (success) {
+          log.info('OAuth callback handled successfully');
+        } else {
+          log.warning('OAuth callback failed');
+        }
+      }).catchError((e) {
+        log.severe('Error handling OAuth callback: $e');
+      });
+    }
+  }
+
   @override
   void initState() {
     scooterService.addListener(() async {
@@ -161,6 +214,7 @@ class _MyAppState extends State<MyApp> {
 
   @override
   void dispose() {
+    _linkSubscription?.cancel();
     super.dispose();
   }
 }

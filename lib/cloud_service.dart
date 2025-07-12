@@ -7,8 +7,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'scooter_service.dart';
 
 class CloudService {
-  static const String _baseUrl = 'https://api.sunray.rescoot.org';
-  static const String _oauthUrl = 'https://sunray.rescoot.org/oauth';
+  static const String _baseUrl = 'https://sunshine.rescoot.org/api/v1';
+  static const String _oauthUrl = 'https://sunshine.rescoot.org/oauth';
   static const String _clientId = 'unustasis-mobile';
   static const String _redirectUri = 'unustasis://oauth/callback';
 
@@ -175,7 +175,7 @@ class CloudService {
     try {
       final headers = await _getAuthHeaders();
       final response = await http.get(
-        Uri.parse('$_baseUrl/v1/scooters'),
+        Uri.parse('$_baseUrl/scooters'),
         headers: headers,
       );
 
@@ -198,7 +198,7 @@ class CloudService {
     try {
       final headers = await _getAuthHeaders();
       final response = await http.get(
-        Uri.parse('$_baseUrl/v1/scooters/$scooterId'),
+        Uri.parse('$_baseUrl/scooters/$scooterId'),
         headers: headers,
       );
 
@@ -222,25 +222,37 @@ class CloudService {
   Future<bool> sendCommand(int scooterId, String command, {Map<String, dynamic>? parameters}) async {
     try {
       final headers = await _getAuthHeaders();
-      final body = {
-        'command': command,
-        if (parameters != null) 'parameters': parameters,
-      };
+      
+      // Build request body based on command type
+      final body = <String, dynamic>{};
+      if (parameters != null) {
+        body.addAll(parameters);
+      }
 
       final response = await http.post(
-        Uri.parse('$_baseUrl/v1/scooters/$scooterId/commands'),
+        Uri.parse('$_baseUrl/scooters/$scooterId/$command'),
         headers: headers,
-        body: jsonEncode(body),
+        body: body.isNotEmpty ? jsonEncode(body) : null,
       );
 
-      if (response.statusCode == 200 || response.statusCode == 202) {
-        log.info('Cloud command $command sent successfully to scooter $scooterId');
-        return true;
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        if (responseData['status'] == 'success') {
+          log.info('Cloud command $command sent successfully to scooter $scooterId');
+          return true;
+        } else {
+          log.warning('Cloud command failed: ${responseData['message']}');
+          return false;
+        }
       } else if (response.statusCode == 401) {
         await logout();
         throw Exception('Authentication expired');
+      } else if (response.statusCode == 422) {
+        final responseData = jsonDecode(response.body);
+        log.warning('Cloud command failed: ${responseData['message']}');
+        return false;
       } else {
-        log.warning('Cloud command failed: ${response.body}');
+        log.warning('Cloud command failed with status ${response.statusCode}: ${response.body}');
         return false;
       }
     } catch (e, stack) {
@@ -278,9 +290,10 @@ class CloudService {
     }
 
     try {
+      // Use the scooters endpoint to check service availability
       final headers = await _getAuthHeaders();
       final response = await http.get(
-        Uri.parse('$_baseUrl/v1/health'),
+        Uri.parse('$_baseUrl/scooters'),
         headers: headers,
       );
       return response.statusCode == 200;
@@ -291,7 +304,7 @@ class CloudService {
 
   // Open cloud dashboard in browser
   Future<void> openCloudDashboard() async {
-    final dashboardUrl = Uri.parse('https://sunray.rescoot.org/dashboard');
+    final dashboardUrl = Uri.parse('https://sunshine.rescoot.org/dashboard');
     if (await canLaunchUrl(dashboardUrl)) {
       await launchUrl(dashboardUrl, mode: LaunchMode.externalApplication);
     } else {
