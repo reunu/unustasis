@@ -39,10 +39,11 @@ class CloudService {
       'scope': 'scooter:read scooter:control',
     });
 
-    if (await canLaunchUrl(authUrl)) {
+    try {
       await launchUrl(authUrl, mode: LaunchMode.externalApplication);
-    } else {
-      throw Exception('Could not launch OAuth URL');
+    } catch (e) {
+      log.severe('Failed to launch OAuth URL: $authUrl', e);
+      throw Exception('Could not launch OAuth URL: $e');
     }
   }
 
