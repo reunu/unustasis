@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
@@ -21,6 +22,10 @@ import '../domain/scooter_state.dart';
 import '../flutter/blue_plus_mockable.dart';
 import '../infrastructure/characteristic_repository.dart';
 import '../infrastructure/scooter_reader.dart';
+import 'ble_command_service.dart';
+import 'cloud_command_service.dart';
+import 'cloud_service.dart';
+import 'command_service.dart';
 
 const bootingTimeSeconds = 25;
 const keylessCooldownSeconds = 60;
@@ -49,6 +54,12 @@ class ScooterService with ChangeNotifier {
   // get a random number
   late bool isInBackgroundService;
   final FlutterBluePlusMockable flutterBluePlus;
+  
+  // Cloud services
+  CloudService? _cloudService;
+  BLECommandService? _bleCommandService;
+  CloudCommandService? _cloudCommandService;
+  bool _cloudServicesInitialized = false;
 
   void ping() {
     try {
@@ -111,6 +122,130 @@ class ScooterService with ChangeNotifier {
         characteristicRepository.seatCharacteristic!.read();
       }
     });
+  }
+
+  void _ensureCloudServicesInitialized() {
+    if (_cloudServicesInitialized) return;
+    
+    _cloudService = CloudService(this);
+    _cloudServicesInitialized = true;
+  }
+  
+  void _ensureBLECommandServiceInitialized() {
+    // Only initialize if characteristicRepository is available
+    if (_bleCommandService == null) {
+      _bleCommandService = BLECommandService(myScooter, characteristicRepository);
+    }
+  }
+  
+  void _ensureCloudCommandServiceInitialized() {
+    if (_cloudCommandService == null && _cloudService != null) {
+      _cloudCommandService = CloudCommandService(_cloudService!, _getCurrentCloudScooterId);
+    }
+  }
+
+  Future<int?> _getCurrentCloudScooterId() async {
+    if (myScooter == null) return null;
+    final savedScooter = savedScooters[myScooter!.remoteId.toString()];
+    return savedScooter?.cloudScooterId;
+  }
+
+  CloudService get cloudService {
+    _ensureCloudServicesInitialized();
+    return _cloudService!;
+  }
+
+  /// Execute a command using BLE first, then cloud as fallback
+  Future<bool> _executeCommand(CommandType command, {BuildContext? context}) async {
+    // Ensure services are initialized
+    _ensureCloudServicesInitialized();
+    _ensureBLECommandServiceInitialized();
+    _ensureCloudCommandServiceInitialized();
+    
+    // Try BLE first
+    if (await _bleCommandService!.isAvailable(command)) {
+      log.info('Executing BLE command: $command');
+      return await _bleCommandService!.execute(command);
+    }
+    
+    // Fall back to cloud if BLE is not available
+    if (await _cloudCommandService!.isAvailable(command)) {
+      log.info('Executing cloud command: $command');
+      
+      // Check if confirmation is needed for cloud commands
+      if (await _cloudCommandService!.needsConfirmation(command)) {
+        if (context != null && context.mounted) {
+          bool confirmed = await _showCloudCommandConfirmation(context, command);
+          if (!confirmed) {
+            log.info('Cloud command $command cancelled by user');
+            return false;
+          }
+        } else {
+          log.warning('Cloud command $command requires confirmation but no context provided');
+          return false;
+        }
+      }
+      
+      return await _cloudCommandService!.execute(command);
+    }
+    
+    log.warning('Command $command not available via BLE or cloud');
+    return false;
+  }
+
+  Future<bool> _showCloudCommandConfirmation(BuildContext context, CommandType command) async {
+    String commandName = _getCommandDisplayName(context, command);
+    String title = FlutterI18n.translate(context, "cloud_command_confirm_title");
+    String message = FlutterI18n.translate(context, "cloud_command_confirm_message", 
+        translationParams: {"command": commandName});
+    
+    return await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(FlutterI18n.translate(context, "cancel")),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(FlutterI18n.translate(context, "confirm")),
+            ),
+          ],
+        );
+      },
+    ) ?? false;
+  }
+
+  String _getCommandDisplayName(BuildContext context, CommandType command) {
+    switch (command) {
+      case CommandType.lock:
+        return FlutterI18n.translate(context, "controls_lock");
+      case CommandType.unlock:
+        return FlutterI18n.translate(context, "controls_unlock");
+      case CommandType.wakeUp:
+        return FlutterI18n.translate(context, "controls_wake_up");
+      case CommandType.hibernate:
+        return FlutterI18n.translate(context, "controls_hibernate");
+      case CommandType.openSeat:
+        return FlutterI18n.translate(context, "home_seat_button_closed");
+      case CommandType.honk:
+        return FlutterI18n.translate(context, "cloud_command_honk");
+      case CommandType.alarm:
+        return FlutterI18n.translate(context, "cloud_command_alarm");
+      case CommandType.blinkerLeft:
+        return FlutterI18n.translate(context, "controls_blink_left");
+      case CommandType.blinkerRight:
+        return FlutterI18n.translate(context, "controls_blink_right");
+      case CommandType.blinkerBoth:
+        return FlutterI18n.translate(context, "controls_blink_hazard");
+      case CommandType.blinkerOff:
+        return FlutterI18n.translate(context, "controls_blink_off");
+    }
   }
 
   Future<void> restoreCachedSettings() async {
@@ -686,19 +821,22 @@ class ScooterService with ChangeNotifier {
 
   // SCOOTER ACTIONS
 
-  Future<void> unlock({bool checkHandlebars = true}) async {
-    _sendCommand("scooter:state unlock");
+  Future<void> unlock({bool checkHandlebars = true, BuildContext? context}) async {
+    // Try cloud command if BLE is not available
+    if (!await _executeCommand(CommandType.unlock, context: context)) {
+      throw Exception("Failed to unlock scooter");
+    }
     HapticFeedback.heavyImpact();
 
     if (_openSeatOnUnlock) {
-      await Future.delayed(const Duration(seconds: 1), () {
-        openSeat();
+      await Future.delayed(const Duration(seconds: 1), () async {
+        await openSeat(context: context);
       });
     }
 
     if (_hazardLocking) {
-      await Future.delayed(const Duration(seconds: 2), () {
-        hazard(times: 2);
+      await Future.delayed(const Duration(seconds: 2), () async {
+        await hazard(times: 2, context: context);
       });
     }
 
@@ -723,7 +861,7 @@ class ScooterService with ChangeNotifier {
     }
   }
 
-  Future<void> lock({bool checkHandlebars = true}) async {
+  Future<void> lock({bool checkHandlebars = true, BuildContext? context}) async {
     if (_seatClosed == false) {
       log.warning("Seat seems to be open, checking again...");
       // make really sure nothing has changed
@@ -737,13 +875,15 @@ class ScooterService with ChangeNotifier {
       }
     }
 
-    // send the command
-    _sendCommand("scooter:state lock");
+    // Try cloud command if BLE is not available
+    if (!await _executeCommand(CommandType.lock, context: context)) {
+      throw Exception("Failed to lock scooter");
+    }
     HapticFeedback.heavyImpact();
 
     if (_hazardLocking) {
-      Future.delayed(const Duration(seconds: 1), () {
-        hazard(times: 1);
+      Future.delayed(const Duration(seconds: 1), () async {
+        await hazard(times: 1, context: context);
       });
     }
 
@@ -772,38 +912,55 @@ class ScooterService with ChangeNotifier {
     });
   }
 
-  void openSeat() {
-    _sendCommand("scooter:seatbox open");
-  }
-
-  void blink({required bool left, required bool right}) {
-    if (left && !right) {
-      _sendCommand("scooter:blinker left");
-    } else if (!left && right) {
-      _sendCommand("scooter:blinker right");
-    } else if (left && right) {
-      _sendCommand("scooter:blinker both");
-    } else {
-      _sendCommand("scooter:blinker off");
+  Future<void> openSeat({BuildContext? context}) async {
+    if (!await _executeCommand(CommandType.openSeat, context: context)) {
+      throw Exception("Failed to open seat");
     }
   }
 
-  Future<void> hazard({int times = 1}) async {
-    blink(left: true, right: true);
+  Future<void> blink({required bool left, required bool right, BuildContext? context}) async {
+    CommandType commandType;
+    if (left && !right) {
+      commandType = CommandType.blinkerLeft;
+    } else if (!left && right) {
+      commandType = CommandType.blinkerRight;
+    } else if (left && right) {
+      commandType = CommandType.blinkerBoth;
+    } else {
+      commandType = CommandType.blinkerOff;
+    }
+    
+    await _executeCommand(commandType, context: context);
+  }
+
+  Future<void> hazard({int times = 1, BuildContext? context}) async {
+    await blink(left: true, right: true, context: context);
     await _sleepSeconds((0.6) * times);
-    blink(left: false, right: false);
+    await blink(left: false, right: false, context: context);
   }
 
-  Future<void> wakeUp() async {
-    _sendCommand("wakeup",
-        characteristic:
-            characteristicRepository.hibernationCommandCharacteristic);
+  Future<void> wakeUp({BuildContext? context}) async {
+    if (!await _executeCommand(CommandType.wakeUp, context: context)) {
+      throw Exception("Failed to wake up scooter");
+    }
   }
 
-  Future<void> hibernate() async {
-    _sendCommand("hibernate",
-        characteristic:
-            characteristicRepository.hibernationCommandCharacteristic);
+  Future<void> hibernate({BuildContext? context}) async {
+    if (!await _executeCommand(CommandType.hibernate, context: context)) {
+      throw Exception("Failed to hibernate scooter");
+    }
+  }
+
+  Future<void> honk({BuildContext? context}) async {
+    if (!await _executeCommand(CommandType.honk, context: context)) {
+      throw Exception("Failed to honk");
+    }
+  }
+
+  Future<void> alarm({BuildContext? context}) async {
+    if (!await _executeCommand(CommandType.alarm, context: context)) {
+      throw Exception("Failed to activate alarm");
+    }
   }
 
   void _pollLocation() async {
@@ -838,29 +995,6 @@ class ScooterService with ChangeNotifier {
 
   // HELPER FUNCTIONS
 
-  void _sendCommand(String command, {BluetoothCharacteristic? characteristic}) {
-    log.fine("Sending command: $command");
-    if (myScooter == null) {
-      throw "Scooter not found!";
-    }
-    if (myScooter!.isDisconnected) {
-      throw "Scooter disconnected!";
-    }
-
-    var characteristicToSend = characteristicRepository.commandCharacteristic;
-    if (characteristic != null) {
-      characteristicToSend = characteristic;
-    }
-
-    // commandCharcteristic should never be null, so we can assume it's not
-    // if the given characteristic is null, we'll "fail" quitely by sending garbage to the default command characteristic instead
-
-    try {
-      characteristicToSend!.write(ascii.encode(command));
-    } catch (e) {
-      rethrow;
-    }
-  }
 
   static Future<void> sendStaticPowerCommand(String id, String command) async {
     BluetoothDevice scooter = BluetoothDevice.fromId(id);
