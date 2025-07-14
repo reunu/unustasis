@@ -190,34 +190,33 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     Positioned(
                       top: 0,
+                      left: 0,
+                      child: IconButton(
+                        icon: const Icon(Icons.help_outline),
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SupportScreen(),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 0,
                       right: 0,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.settings),
-                            onPressed: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const SettingsScreen(),
-                              ),
-                            ),
+                      child: IconButton(
+                        icon: const Icon(Icons.settings),
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SettingsScreen(),
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.help_outline),
-                            onPressed: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const SupportScreen(),
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                     Padding(
                       padding: const EdgeInsets.only(
-                        top: 64,
+                        top: 40,
                         bottom: 40,
                       ),
                       child: Column(
@@ -615,6 +614,7 @@ class BatteryBars extends StatelessWidget {
           return Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              const SizedBox(width: 16),
               SizedBox(
                   width: MediaQuery.of(context).size.width / 6,
                   child: LinearProgressIndicator(

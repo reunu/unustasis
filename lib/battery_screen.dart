@@ -26,15 +26,13 @@ class BatteryScreen extends StatelessWidget {
             ],
           ),
         ),
-        child: SafeArea(
-          child: Selector<ScooterService, DateTime?>(
-            selector: (context, service) => service.lastPing,
-            builder: (context, lastPing, _) {
-              bool dataIsOld = lastPing == null ||
-                  lastPing.difference(DateTime.now()).inMinutes.abs() > 5;
-              return BatterySection(dataIsOld: dataIsOld);
-            },
-          ),
+        child: Selector<ScooterService, DateTime?>(
+          selector: (context, service) => service.lastPing,
+          builder: (context, lastPing, _) {
+            bool dataIsOld = lastPing == null ||
+                lastPing.difference(DateTime.now()).inMinutes.abs() > 5;
+            return BatterySection(dataIsOld: dataIsOld);
+          },
         ),
       ),
     );

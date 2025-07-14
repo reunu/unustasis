@@ -459,99 +459,71 @@ class SavedScooterCard extends StatelessWidget {
                   },
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  connected
-                      ? FlutterI18n.translate(context, "state_name_unknown")
-                      : FlutterI18n.translate(
-                          context, "state_name_disconnected"),
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 24),
                 if (connected)
-                  Divider(
-                    indent: 16,
-                    endIndent: 16,
-                    height: 0,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.1),
-                  ),
-                if (connected)
-                  ListTile(
-                    title: Text(FlutterI18n.translate(context, "stats_state")),
-                    subtitle: Text(
-                      context
-                              .select<ScooterService, ScooterState?>(
-                                  (service) => service.state)
-                              ?.description(context) ??
-                          FlutterI18n.translate(context, "stats_unknown"),
-                    ),
+                  Text(
+                    context
+                            .select<ScooterService, ScooterState?>(
+                                (service) => service.state)
+                            ?.description(context) ??
+                        FlutterI18n.translate(context, "stats_unknown"),
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
                 if (!connected)
-                  Divider(
-                    indent: 16,
-                    endIndent: 16,
-                    height: 0,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.1),
-                  ),
-                if (!connected)
-                  ListTile(
-                    title: Text(FlutterI18n.translate(
-                        context, "stats_last_ping_title")),
-                    subtitle: Text(FlutterI18n.translate(
-                        context, "stats_last_ping",
-                        translationParams: {
-                          "time": savedScooter.lastPing
-                              .calculateTimeDifferenceInShort(context)
-                              .toLowerCase()
-                        })),
-                    onTap: () {
-                      Fluttertoast.showToast(
-                          msg: savedScooter.lastPing
-                              .toString()
-                              .substring(0, 16));
-                    },
-                  ),
-                if (savedScooter.lastLocation != null && !connected)
-                  Divider(
-                    indent: 16,
-                    endIndent: 16,
-                    height: 0,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.1),
-                  ),
-                if (savedScooter.lastLocation != null && !connected)
-                  ListTile(
-                    title: Text(
-                      FlutterI18n.translate(context, "stats_last_seen_near"),
-                    ),
-                    subtitle: FutureBuilder<String?>(
-                      future: GeoHelper.getAddress(
-                          savedScooter.lastLocation!, context),
-                      builder: (context, snapshot) {
-                        if (snapshot.hasData) {
-                          return Text(snapshot.data!);
-                        } else {
-                          return Text(
-                            FlutterI18n.translate(context, "stats_no_location"),
-                          );
-                        }
-                      },
-                    ),
-                    trailing: const Icon(Icons.exit_to_app_outlined),
-                    onTap: () {
+                  InkWell(
+                    onTap: savedScooter.lastLocation != null ? () {
                       MapsLauncher.launchCoordinates(
                         savedScooter.lastLocation!.latitude,
                         savedScooter.lastLocation!.longitude,
                       );
-                    },
+                    } : null,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          FlutterI18n.translate(context, "stats_last_ping", 
+                            translationParams: {
+                              "time": savedScooter.lastPing.calculateTimeDifferenceInShort(context).toLowerCase()
+                            }),
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        if (savedScooter.lastLocation != null) ...[
+                          Text(
+                            " near ",
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                            ),
+                          ),
+                          Flexible(
+                            child: FutureBuilder<String?>(
+                              future: GeoHelper.getAddress(savedScooter.lastLocation!, context),
+                              builder: (context, snapshot) {
+                                if (snapshot.hasData) {
+                                  return Text(
+                                    snapshot.data!,
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      color: Theme.of(context).colorScheme.primary,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  );
+                                } else {
+                                  return Text(
+                                    "${savedScooter.lastLocation!.latitude.toStringAsFixed(4)}, ${savedScooter.lastLocation!.longitude.toStringAsFixed(4)}",
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      color: Theme.of(context).colorScheme.primary,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                  );
+                                }
+                              },
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
+                const SizedBox(height: 24),
                 Divider(
                   indent: 16,
                   endIndent: 16,
@@ -563,6 +535,7 @@ class SavedScooterCard extends StatelessWidget {
                 ),
                 if (!single) // only show this if there's more than one scooter
                   ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                     title: Text(FlutterI18n.translate(
                         context, "stats_scooter_auto_connect")),
                     subtitle: Text(savedScooter.autoConnect
@@ -587,56 +560,86 @@ class SavedScooterCard extends StatelessWidget {
                       .onSurface
                       .withValues(alpha: 0.1),
                 ),
-                ListTile(
-                  title: const Text("ID"),
-                  subtitle: Text(savedScooter.id),
-                ),
-                // Cloud linking status as list item
                 FutureBuilder<bool>(
                   future: Features.isCloudConnectivityEnabled,
                   builder: (context, cloudSnapshot) {
                     final isCloudEnabled = cloudSnapshot.data ?? false;
-                    if (!isCloudEnabled) return const SizedBox.shrink();
+                    if (!isCloudEnabled) {
+                      return ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                        title: const Text("ID"),
+                        subtitle: Text(
+                          savedScooter.id,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      );
+                    }
                     
                     return FutureBuilder<bool>(
                       future: context.read<ScooterService>().cloudService.isAuthenticated,
                       builder: (context, authSnapshot) {
                         final isAuthenticated = authSnapshot.data ?? false;
-                        if (!isAuthenticated) return const SizedBox.shrink();
-                        
-                        return Column(
-                          children: [
-                            Divider(
-                              indent: 16,
-                              endIndent: 16,
-                              height: 0,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withValues(alpha: 0.1),
+                        if (!isAuthenticated) {
+                          return ListTile(
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                            title: const Text("ID"),
+                            subtitle: Text(
+                              savedScooter.id,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            if (savedScooter.cloudScooterId != null)
-                              ListTile(
-                                title: Text(FlutterI18n.translate(context, "cloud_linked_to")),
-                                subtitle: Text(savedScooter.cloudScooterName ?? 'Unknown'),
-                                trailing: TextButton(
-                                  onPressed: () => _unlinkCloudScooter(context),
-                                  child: Text(
-                                    FlutterI18n.translate(context, "cloud_unlink"),
-                                    style: TextStyle(
-                                      color: Theme.of(context).colorScheme.error,
-                                    ),
+                          );
+                        }
+                        
+                        return ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                          title: const Text("ID"),
+                          subtitle: Text(
+                            savedScooter.cloudScooterId != null
+                                ? "${savedScooter.id} • ${savedScooter.cloudScooterName ?? 'Cloud linked'}"
+                                : savedScooter.id,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          trailing: savedScooter.cloudScooterId != null
+                              ? GestureDetector(
+                                  onTap: () => _unlinkCloudScooter(context),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        "Unlink",
+                                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                          color: Theme.of(context).colorScheme.error,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Icon(
+                                        Icons.chevron_right,
+                                        size: 16,
+                                        color: Theme.of(context).colorScheme.error,
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : GestureDetector(
+                                  onTap: () => _linkToCloudScooter(context),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        "Link Cloud Scooter",
+                                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                          color: Theme.of(context).colorScheme.primary,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Icon(
+                                        Icons.chevron_right,
+                                        size: 16,
+                                        color: Theme.of(context).colorScheme.primary,
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ),
-                            if (savedScooter.cloudScooterId == null)
-                              ListTile(
-                                title: Text(FlutterI18n.translate(context, "cloud_not_linked")),
-                                subtitle: Text(FlutterI18n.translate(context, "cloud_link")),
-                                trailing: const Icon(Icons.chevron_right),
-                                onTap: () => _linkToCloudScooter(context),
-                              ),
-                          ],
                         );
                       },
                     );
