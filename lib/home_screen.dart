@@ -259,7 +259,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const StatusText(),
                       const SizedBox(height: 16),
-                      if (context.select<ScooterService, int?>(
+                      if (context.select<ScooterService, bool>(
+                              (service) => service.connected) &&
+                          context.select<ScooterService, int?>(
                               (service) => service.primarySOC) !=
                           null)
                         GestureDetector(
