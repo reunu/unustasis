@@ -23,7 +23,10 @@ import '../onboarding_screen.dart';
 import '../scooter_service.dart';
 import '../domain/scooter_state.dart';
 import '../scooter_visual.dart';
-import '../stats/stats_screen.dart';
+import '../battery_screen.dart';
+import '../scooter_screen.dart';
+import '../settings_screen.dart';
+import '../support_screen.dart';
 import '../helper_widgets/snowfall.dart';
 import '../helper_widgets/grassscape.dart';
 
@@ -183,19 +186,49 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: GrassScape(),
                 ),
               SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 40,
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.max,
-                    children: [
+                child: Stack(
+                  children: [
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.settings),
+                            onPressed: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const SettingsScreen(),
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.help_outline),
+                            onPressed: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const SupportScreen(),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(
+                        top: 64,
+                        bottom: 40,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.max,
+                        children: [
                       InkWell(
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const StatsScreen(),
+                            builder: (context) => const ScooterScreen(),
                           ),
                         ),
                         // Hidden for stable release, but useful for various debugging
@@ -230,7 +263,29 @@ class _HomeScreenState extends State<HomeScreen> {
                       if (context.select<ScooterService, int?>(
                               (service) => service.primarySOC) !=
                           null)
-                        const BatteryBars(),
+                        GestureDetector(
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const BatteryScreen(),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const BatteryBars(),
+                              const SizedBox(width: 8),
+                              Icon(
+                                Icons.info_outline,
+                                size: 16,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withValues(alpha: 0.6),
+                              ),
+                            ],
+                          ),
+                        ),
                       const SizedBox(height: 16),
                       Expanded(
                         child: ScooterVisual(
@@ -385,10 +440,12 @@ class _HomeScreenState extends State<HomeScreen> {
                               }),
                         ],
                       )
-                    ],
+                      ],
+                    ),
                   ),
-                ),
+                ],
               ),
+            ),
             ],
           ),
         ),
