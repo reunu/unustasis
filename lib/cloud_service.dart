@@ -282,10 +282,13 @@ class CloudService {
   }
 
   // Scooter Assignment Management
-  Future<void> assignScooterToDevice(int cloudScooterId, String deviceId) async {
+  Future<void> assignScooterToDevice(int cloudScooterId, String deviceId, {String? cloudScooterName}) async {
     final scooter = scooterService.savedScooters[deviceId];
     if (scooter != null) {
       scooter.cloudScooterId = cloudScooterId;
+      if (cloudScooterName != null) {
+        scooter.cloudScooterName = cloudScooterName;
+      }
       scooter.updateSharedPreferences();
     }
   }
@@ -294,6 +297,7 @@ class CloudService {
     final scooter = scooterService.savedScooters[deviceId];
     if (scooter != null) {
       scooter.cloudScooterId = null;
+      scooter.cloudScooterName = null;
       scooter.updateSharedPreferences();
     }
   }

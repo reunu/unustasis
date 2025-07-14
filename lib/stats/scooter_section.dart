@@ -12,6 +12,7 @@ import '../stats/stats_screen.dart';
 import '../onboarding_screen.dart';
 import '../domain/saved_scooter.dart';
 import '../domain/scooter_state.dart';
+import '../domain/theme_helper.dart';
 import '../geo_helper.dart';
 import '../scooter_service.dart';
 import '../features.dart';
@@ -160,9 +161,16 @@ class SavedScooterCard extends StatelessWidget {
 
   void setColor(int newColor, BuildContext context) async {
     savedScooter.color = newColor;
+    // Clear custom color when selecting a predefined color
+    if (newColor >= 0) {
+      savedScooter.colorHex = null;
+      savedScooter.cloudImageUrl = null;
+    }
     SharedPreferencesAsync prefs = SharedPreferencesAsync();
     await prefs.setInt("color", newColor);
-    if (context.mounted) context.read<ScooterService>().scooterColor = newColor;
+    if (context.mounted) {
+      context.read<ScooterService>().scooterColor = newColor;
+    }
   }
 
   Future<void> _linkToCloudScooter(BuildContext context) async {
@@ -324,6 +332,7 @@ class SavedScooterCard extends StatelessWidget {
     await cloudService.assignScooterToDevice(
       selectedScooter['id'], 
       savedScooter.id,
+      cloudScooterName: selectedScooter['name'],
     );
     rebuild();
     
@@ -394,7 +403,10 @@ class SavedScooterCard extends StatelessWidget {
                   onTap: () async {
                     HapticFeedback.mediumImpact();
                     int? newColor = await showColorDialog(
-                        savedScooter.color, savedScooter.name, context);
+                        savedScooter.hasCustomColor ? -1 : savedScooter.color, 
+                        savedScooter.name, 
+                        context,
+                        customColorHex: savedScooter.colorHex);
                     if (newColor != null && context.mounted) {
                       setColor(newColor, context);
                       rebuild();
@@ -606,18 +618,7 @@ class SavedScooterCard extends StatelessWidget {
                             if (savedScooter.cloudScooterId != null)
                               ListTile(
                                 title: Text(FlutterI18n.translate(context, "cloud_linked_to")),
-                                subtitle: FutureBuilder<List<Map<String, dynamic>>>(
-                                  future: context.read<ScooterService>().cloudService.getScooters(),
-                                  builder: (context, snapshot) {
-                                    if (snapshot.hasData) {
-                                      final linkedScooter = snapshot.data!.where(
-                                        (s) => s['id'] == savedScooter.cloudScooterId
-                                      ).firstOrNull;
-                                      return Text(linkedScooter?['name'] ?? 'Unknown');
-                                    }
-                                    return Text(FlutterI18n.translate(context, "stats_unknown"));
-                                  },
-                                ),
+                                subtitle: Text(savedScooter.cloudScooterName ?? 'Unknown'),
                                 trailing: TextButton(
                                   onPressed: () => _unlinkCloudScooter(context),
                                   child: Text(
@@ -820,7 +821,7 @@ class SavedScooterCard extends StatelessWidget {
   }
 
   Future<int?> showColorDialog(
-      int initialValue, String scooterName, BuildContext context) {
+      int initialValue, String scooterName, BuildContext context, {String? customColorHex}) {
     int selectedValue = initialValue;
 
     return showDialog<int>(
@@ -843,6 +844,33 @@ class SavedScooterCard extends StatelessWidget {
             return StatefulBuilder(builder: (context, setState) {
               return Column(
                 children: [
+                  if (customColorHex != null) ...[
+                    RadioListTile<int>(
+                      contentPadding: EdgeInsets.zero,
+                      value: -1,
+                      groupValue: selectedValue,
+                      onChanged: null, // Disabled - can't select custom color from here
+                      title: Text(FlutterI18n.translate(context, "custom_color")),
+                      subtitle: Text(FlutterI18n.translate(context, "custom_color_from_cloud")),
+                      secondary: Container(
+                        width: 16,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: Color(int.parse('FF${customColorHex.replaceAll('#', '')}', radix: 16)),
+                          shape: BoxShape.circle,
+                          border: Border.fromBorderSide(
+                            BorderSide(
+                              color: context.isDarkMode
+                                  ? Colors.white
+                                  : Colors.black,
+                              width: 2.0,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const Divider(),
+                  ],
                   _colorRadioTile(
                     colorName: "black",
                     colorValue: 0,

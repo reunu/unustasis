@@ -20,6 +20,7 @@ class SavedScooter {
   int? _lastAuxSOC;
   LatLng? _lastLocation;
   int? _cloudScooterId;
+  String? _cloudScooterName;
 
   SavedScooter({
     required String id,
@@ -35,6 +36,7 @@ class SavedScooter {
     int? lastAuxSOC,
     LatLng? lastLocation,
     int? cloudScooterId,
+    String? cloudScooterName,
   })  : _name = name ?? "Scooter Pro",
         _id = id,
         _color = color ?? 1,
@@ -47,7 +49,8 @@ class SavedScooter {
         _lastCbbSOC = lastCbbSOC,
         _lastAuxSOC = lastAuxSOC,
         _lastLocation = lastLocation,
-        _cloudScooterId = cloudScooterId;
+        _cloudScooterId = cloudScooterId,
+        _cloudScooterName = cloudScooterName;
 
   set name(String name) {
     _name = name;
@@ -111,6 +114,11 @@ class SavedScooter {
     updateSharedPreferences();
   }
 
+  set cloudScooterName(String? cloudScooterName) {
+    _cloudScooterName = cloudScooterName;
+    updateSharedPreferences();
+  }
+
   String get name => _name;
   String get id => _id;
   int get color => _color;
@@ -124,6 +132,7 @@ class SavedScooter {
   int? get lastAuxSOC => _lastAuxSOC;
   LatLng? get lastLocation => _lastLocation;
   int? get cloudScooterId => _cloudScooterId;
+  String? get cloudScooterName => _cloudScooterName;
 
   /// Returns true if this scooter uses a custom hex color (from cloud)
   bool get hasCustomColor => _colorHex != null;
@@ -167,6 +176,7 @@ class SavedScooter {
         'lastAuxSOC': _lastAuxSOC,
         'lastLocation': _lastLocation?.toJson(),
         'cloudScooterId': _cloudScooterId,
+        'cloudScooterName': _cloudScooterName,
       };
 
   factory SavedScooter.fromJson(
@@ -190,7 +200,8 @@ class SavedScooter {
         lastSecondarySOC: map['lastSecondarySOC'],
         lastCbbSOC: map['lastCbbSOC'],
         lastAuxSOC: map['lastAuxSOC'],
-        cloudScooterId: map['cloudScooterId']);
+        cloudScooterId: map['cloudScooterId'],
+        cloudScooterName: map['cloudScooterName']);
   }
 
   /// Updates scooter data from cloud data
@@ -198,6 +209,12 @@ class SavedScooter {
     // Update name if provided
     if (cloudData['name'] != null) {
       _name = cloudData['name'];
+      _cloudScooterName = cloudData['name']; // Also cache cloud name
+    }
+    
+    // Update cloud scooter ID if provided
+    if (cloudData['id'] != null) {
+      _cloudScooterId = cloudData['id'];
     }
     
     // Handle color based on cloud 'color' field
@@ -206,11 +223,14 @@ class SavedScooter {
       // Use custom hex color
       if (cloudData['color_hex'] != null) {
         _colorHex = cloudData['color_hex'];
+        // When using custom color, clear the predefined color to avoid conflicts
+        _color = 1; // Default to white as fallback
       }
       // Update cloud image URL for custom colors
       if (cloudData['images'] != null) {
         final images = cloudData['images'] as Map<String, dynamic>;
-        _cloudImageUrl = images['right'] ?? images['left'];
+        // Use 'front' image for main screen visual
+        _cloudImageUrl = images['front'] ?? images['right'] ?? images['left'];
       }
     } else {
       // Use predefined color_id
