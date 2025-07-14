@@ -537,6 +537,32 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     updateBackgroundService({"scooterColor": scooterColor});
   }
 
+  /// Gets the current scooter's custom hex color, if any
+  String? get scooterColorHex {
+    final currentScooter = getCurrentScooter();
+    return currentScooter?.colorHex;
+  }
+
+  /// Gets the current scooter's cloud image URL, if any
+  String? get scooterCloudImageUrl {
+    final currentScooter = getCurrentScooter();
+    return currentScooter?.cloudImageUrl;
+  }
+
+  /// Returns true if the current scooter uses a custom color
+  bool get scooterHasCustomColor {
+    final currentScooter = getCurrentScooter();
+    return currentScooter?.hasCustomColor ?? false;
+  }
+
+  /// Gets the current scooter object
+  SavedScooter? getCurrentScooter() {
+    if (myScooter != null) {
+      return savedScooters[myScooter!.remoteId.toString()];
+    }
+    return null;
+  }
+
   LatLng? _lastLocation;
   LatLng? get lastLocation => _lastLocation;
 
@@ -672,6 +698,14 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     log.info("Connecting to scooter with ID: $id");
     _foundSth = true;
     state = ScooterState.linking;
+    
+    // Immediately update UI with target scooter's name and color
+    final targetScooter = savedScooters[id];
+    if (targetScooter != null) {
+      scooterName = targetScooter.name;
+      scooterColor = targetScooter.color;
+      log.info("Updated UI to show target scooter: ${targetScooter.name}");
+    }
     try {
       // attempt to connect to what we found
       BluetoothDevice attemptedScooter = BluetoothDevice.fromId(id);

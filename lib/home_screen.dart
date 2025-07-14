@@ -194,11 +194,37 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                       ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 40, bottom: 40),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      const StatusText(),
+                      const SizedBox(height: 16),
+                      if (context.select<ScooterService, int?>(
+                              (service) => service.primarySOC) !=
+                          null)
+                        const BatteryBars(),
+                      const SizedBox(height: 16),
+                      Expanded(
+                        child: ScooterVisual(
+                          color: context.select<ScooterService, int?>(
+                                  (service) => service.scooterColor) ??
+                              1,
+                          colorHex: context.select<ScooterService, String?>(
+                                  (service) => service.scooterColorHex),
+                          cloudImageUrl: context.select<ScooterService, String?>(
+                                  (service) => service.scooterCloudImageUrl),
+                          hasCustomColor: context.select<ScooterService, bool>(
+                                  (service) => service.scooterHasCustomColor),
+                          state: context.select(
+                              (ScooterService service) => service.state),
+                          scanning: context.select(
+                              (ScooterService service) => service.scanning),
+                          blinkerLeft: _hazards,
+                          blinkerRight: _hazards,
+                          winter: _snowing,
+                          aprilFools: _forceHover,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         mainAxisSize: MainAxisSize.max,
                         children: [
                           Padding(

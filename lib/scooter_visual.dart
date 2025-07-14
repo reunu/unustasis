@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../domain/scooter_state.dart';
 import '../domain/theme_helper.dart';
+import '../services/image_cache_service.dart';
 
 class ScooterVisual extends StatefulWidget {
   final ScooterState? state;
@@ -13,6 +15,9 @@ class ScooterVisual extends StatefulWidget {
   final bool blinkerLeft;
   final bool blinkerRight;
   final int? color;
+  final String? colorHex;
+  final String? cloudImageUrl;
+  final bool hasCustomColor;
   final bool winter;
   final bool aprilFools;
   final bool halloween;
@@ -26,6 +31,9 @@ class ScooterVisual extends StatefulWidget {
     this.aprilFools = false,
     this.halloween = false,
     this.color,
+    this.colorHex,
+    this.cloudImageUrl,
+    this.hasCustomColor = false,
     super.key,
   });
 
@@ -165,6 +173,20 @@ class _ScooterVisualState extends State<ScooterVisual> {
       _doFlickerSequence();
     });
   }
+=======
+  const ScooterVisual(
+      {required this.state,
+      required this.scanning,
+      required this.blinkerLeft,
+      required this.blinkerRight,
+      this.winter = false,
+      this.aprilFools = false,
+      this.color,
+      this.colorHex,
+      this.cloudImageUrl,
+      this.hasCustomColor = false,
+      super.key});
+>>>>>>> 2081bc6 (feat: update main page immediately when connecting to target scooter)
 
   @override
   Widget build(BuildContext context) {
@@ -230,10 +252,9 @@ class _ScooterVisualState extends State<ScooterVisual> {
                         "images/scooter/seasonal/winter_on.webp",
                       ),
                     ),
-                    secondChild: const Image(
-                      image: AssetImage(
-                        "images/scooter/seasonal/winter_off.webp",
-                      ),
+                    secondChild: Opacity(
+                      opacity: 1,
+                      child: _buildScooterImage(),
                     ),
                     crossFadeState: widget.state != null && widget.state!.isOn
                         ? CrossFadeState.showFirst
@@ -260,6 +281,89 @@ class _ScooterVisualState extends State<ScooterVisual> {
       ],
     );
     //BlinkerWidget(blinkerLeft: blinkerLeft, blinkerRight: blinkerRight),
+  }
+
+  /// Builds the main scooter image, handling both local assets and cloud images
+  Widget _buildScooterImage() {
+    if (hasCustomColor && cloudImageUrl != null) {
+      // Use cached cloud image for custom colors - use "front" image for main screen
+      return FutureBuilder<File?>(
+        future: ImageCacheService().getImage(cloudImageUrl!),
+        builder: (context, snapshot) {
+          if (snapshot.hasData && snapshot.data != null) {
+            return Image.file(
+              snapshot.data!,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                // Fallback to color-based placeholder
+                return _buildColorPlaceholder();
+              },
+            );
+          } else if (snapshot.hasError) {
+            return _buildColorPlaceholder();
+          } else {
+            // Loading state - show asset image while loading
+            return Image(
+              image: AssetImage(
+                  "images/scooter/base_${aprilFools ? 9 : color ?? 1}.webp"),
+            );
+          }
+        },
+      );
+    } else {
+      // Use local asset image for predefined colors
+      return Image(
+        image: AssetImage(
+            "images/scooter/base_${aprilFools ? 9 : color ?? 1}.webp"),
+      );
+    }
+  }
+
+  /// Builds a color-based placeholder when cloud image fails to load
+  Widget _buildColorPlaceholder() {
+    Color effectiveColor = _getEffectiveColor();
+    
+    return Container(
+      width: double.infinity,
+      height: 200,
+      decoration: BoxDecoration(
+        color: effectiveColor.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: effectiveColor,
+          width: 2,
+        ),
+      ),
+      child: Icon(
+        Icons.electric_scooter,
+        size: 120,
+        color: effectiveColor,
+      ),
+    );
+  }
+
+  /// Gets the effective color for display
+  Color _getEffectiveColor() {
+    if (colorHex != null) {
+      // Parse hex color string
+      final hexColor = colorHex!.replaceAll('#', '');
+      return Color(int.parse('FF$hexColor', radix: 16));
+    }
+    
+    // Return predefined color
+    const colorMap = {
+      0: Colors.black,
+      1: Colors.white,
+      2: Colors.green,
+      3: Colors.grey,
+      4: Colors.deepOrange,
+      5: Colors.red,
+      6: Colors.blue,
+      7: Colors.grey,
+      8: Colors.teal,
+      9: Colors.lightBlue,
+    };
+    return colorMap[color ?? 1] ?? Colors.white;
   }
 
   IconData stateIcon() {
