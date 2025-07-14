@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
@@ -14,6 +15,7 @@ import '../domain/scooter_state.dart';
 import '../geo_helper.dart';
 import '../scooter_service.dart';
 import '../features.dart';
+import '../services/image_cache_service.dart';
 
 class ScooterSection extends StatefulWidget {
   const ScooterSection({
@@ -259,13 +261,13 @@ class SavedScooterCard extends StatelessWidget {
     
     // Check if data sync is needed
     final cloudName = selectedScooter['name'] as String?;
-    final cloudColor = selectedScooter['color_hex'] as String?;
+    final cloudColorName = _getCloudColorName(selectedScooter);
     final localName = savedScooter.name;
-    final localColor = 'color_${savedScooter.color}';
+    final localColorName = _getLocalColorName(savedScooter);
     
     bool needsSync = false;
     if (cloudName != null && cloudName != localName) needsSync = true;
-    if (cloudColor != null && cloudColor != localColor) needsSync = true;
+    if (cloudColorName != localColorName) needsSync = true;
     
     if (needsSync && context.mounted) {
       final syncChoice = await showDialog<String>(
@@ -284,10 +286,10 @@ class SavedScooterCard extends StatelessWidget {
                 Text('Cloud: $cloudName'),
                 const SizedBox(height: 8),
               ],
-              if (cloudColor != null && cloudColor != localColor) ...[
+              if (cloudColorName != localColorName) ...[
                 Text(FlutterI18n.translate(context, "cloud_sync_color_diff")),
-                Text('Local: $localColor'),
-                Text('Cloud: $cloudColor'),
+                Text('Local: $localColorName'),
+                Text('Cloud: $cloudColorName'),
               ],
             ],
           ),
@@ -312,13 +314,8 @@ class SavedScooterCard extends StatelessWidget {
       
       // Apply sync choice
       if (syncChoice == 'from_cloud' && context.mounted) {
-        if (cloudName != null && cloudName != localName) {
-          context.read<ScooterService>().renameSavedScooter(
-            name: cloudName,
-            id: savedScooter.id,
-          );
-        }
-        // TODO: Sync color if needed
+        // Update local scooter with cloud data
+        savedScooter.updateFromCloudData(selectedScooter);
       } else if (syncChoice == 'to_cloud') {
         // TODO: Update cloud scooter with local data
       }
@@ -393,10 +390,7 @@ class SavedScooterCard extends StatelessWidget {
               children: [
                 const SizedBox(height: 4),
                 GestureDetector(
-                  child: Image.asset(
-                    "images/scooter/side_${forceHover ? 9 : savedScooter.color}.webp",
-                    height: 160,
-                  ),
+                  child: _buildScooterImage(savedScooter, forceHover),
                   onTap: () async {
                     HapticFeedback.mediumImpact();
                     int? newColor = await showColorDialog(
@@ -1063,6 +1057,106 @@ class SavedScooterCard extends StatelessWidget {
         return char;
       }
     }).join('');
+  }
+
+  /// Builds the scooter image widget, handling both local assets and cloud images
+  Widget _buildScooterImage(SavedScooter scooter, bool forceHover) {
+    if (scooter.hasCustomColor && scooter.cloudImageUrl != null) {
+      // Use cached cloud image for custom colors
+      return FutureBuilder<File?>(
+        future: ImageCacheService().getImage(scooter.cloudImageUrl!),
+        builder: (context, snapshot) {
+          if (snapshot.hasData && snapshot.data != null) {
+            return Image.file(
+              snapshot.data!,
+              height: 160,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                // Fallback to color-based placeholder
+                return _buildColorPlaceholder(scooter);
+              },
+            );
+          } else if (snapshot.hasError) {
+            return _buildColorPlaceholder(scooter);
+          } else {
+            // Loading state
+            return SizedBox(
+              height: 160,
+              child: Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(scooter.effectiveColor),
+                ),
+              ),
+            );
+          }
+        },
+      );
+    } else {
+      // Use local asset image for predefined colors
+      return Image.asset(
+        "images/scooter/side_${forceHover ? 9 : scooter.color}.webp",
+        height: 160,
+      );
+    }
+  }
+
+  /// Builds a color-based placeholder when image fails to load
+  Widget _buildColorPlaceholder(SavedScooter scooter) {
+    return Container(
+      height: 160,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: scooter.effectiveColor.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: scooter.effectiveColor,
+          width: 2,
+        ),
+      ),
+      child: Icon(
+        Icons.electric_scooter,
+        size: 80,
+        color: scooter.effectiveColor,
+      ),
+    );
+  }
+
+  /// Gets human-readable color name from cloud scooter data
+  String _getCloudColorName(Map<String, dynamic> cloudData) {
+    final cloudColor = cloudData['color'] as String?;
+    if (cloudColor == 'custom') {
+      final colorHex = cloudData['color_hex'] as String?;
+      return colorHex ?? 'Custom color';
+    } else {
+      final colorId = cloudData['color_id'] as int?;
+      return _getColorNameFromId(colorId ?? 1);
+    }
+  }
+
+  /// Gets human-readable color name from local scooter
+  String _getLocalColorName(SavedScooter scooter) {
+    if (scooter.hasCustomColor) {
+      return scooter.colorHex ?? 'Custom color';
+    } else {
+      return _getColorNameFromId(scooter.color);
+    }
+  }
+
+  /// Maps color ID to human-readable name
+  String _getColorNameFromId(int colorId) {
+    const colorNames = {
+      0: 'Black',
+      1: 'White', 
+      2: 'Green',
+      3: 'Gray',
+      4: 'Orange',
+      5: 'Red',
+      6: 'Blue',
+      7: 'Eclipse',
+      8: 'Idioteque',
+      9: 'Hover',
+    };
+    return colorNames[colorId] ?? 'Unknown';
   }
 }
 

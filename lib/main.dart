@@ -18,6 +18,7 @@ import '../domain/log_helper.dart';
 import '../flutter/blue_plus_mockable.dart';
 import '../home_screen.dart';
 import '../scooter_service.dart';
+import '../services/image_cache_service.dart';
 
 void main() async {
   LogHelper().initialize();
@@ -85,6 +86,16 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     _initDeepLinks();
+    _initImageCache();
+  }
+
+  void _initImageCache() async {
+    try {
+      await ImageCacheService().initialize();
+      log.info('Image cache service initialized');
+    } catch (e, stack) {
+      log.severe('Failed to initialize image cache service', e, stack);
+    }
   }
 
   void _initDeepLinks() async {
