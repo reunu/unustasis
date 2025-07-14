@@ -18,7 +18,6 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
   final log = Logger('CloudSettingsSection');
   bool _isCloudEnabled = false;
   bool _isAuthenticated = false;
-  List<Map<String, dynamic>> _cloudScooters = [];
   bool _isLoading = false;
 
   @override
@@ -54,9 +53,6 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
           _isAuthenticated = authenticated;
         });
 
-        if (authenticated) {
-          await _loadCloudScooters();
-        }
       }
     } catch (e, stack) {
       log.severe('Failed to load cloud status', e, stack);
@@ -69,19 +65,6 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
     }
   }
 
-  Future<void> _loadCloudScooters() async {
-    try {
-      final cloudService = context.read<ScooterService>().cloudService;
-      final scooters = await cloudService.getScooters();
-      if (mounted) {
-        setState(() {
-          _cloudScooters = scooters;
-        });
-      }
-    } catch (e, stack) {
-      log.severe('Failed to load cloud scooters', e, stack);
-    }
-  }
 
   Future<void> _toggleCloudConnectivity() async {
     final newValue = !_isCloudEnabled;
@@ -154,48 +137,6 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
     }
   }
 
-  Future<void> _assignCloudScooter(int cloudScooterId, String scooterName) async {
-    final scooterService = context.read<ScooterService>();
-    final currentScooterId = scooterService.myScooter?.remoteId.toString();
-    
-    if (currentScooterId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(FlutterI18n.translate(context, "cloud_no_local_scooter")),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
-      return;
-    }
-
-    try {
-      final cloudService = scooterService.cloudService;
-      await cloudService.assignScooterToDevice(cloudScooterId, currentScooterId);
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(FlutterI18n.translate(
-              context, 
-              "cloud_scooter_assigned",
-              translationParams: {"name": scooterName},
-            )),
-            backgroundColor: Theme.of(context).colorScheme.primary,
-          ),
-        );
-      }
-    } catch (e, stack) {
-      log.severe('Failed to assign cloud scooter', e, stack);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(FlutterI18n.translate(context, "cloud_assignment_failed")),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -211,6 +152,7 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
       children: [
         Header(FlutterI18n.translate(context, "cloud_settings_title")),
         SwitchListTile(
+          secondary: const Icon(Icons.cloud_outlined),
           title: Text(FlutterI18n.translate(context, "cloud_connectivity_enable")),
           subtitle: Text(FlutterI18n.translate(context, "cloud_connectivity_description")),
           value: _isCloudEnabled,
@@ -234,53 +176,16 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
             ListTile(
               leading: const Icon(Icons.cloud_done, color: Colors.green),
               title: Text(FlutterI18n.translate(context, "cloud_connected")),
-              subtitle: Text(FlutterI18n.translate(context, "cloud_connected_description")),
+              subtitle: const Text("Tap to log out"),
+              trailing: const Icon(Icons.logout, color: Colors.red),
+              onTap: _logout,
             ),
             ListTile(
               leading: const Icon(Icons.open_in_browser),
               title: Text(FlutterI18n.translate(context, "cloud_dashboard")),
               subtitle: Text(FlutterI18n.translate(context, "cloud_dashboard_description")),
+              trailing: const Icon(Icons.chevron_right),
               onTap: _openCloudDashboard,
-            ),
-            if (_cloudScooters.isNotEmpty) ...[
-              Divider(
-                indent: 16,
-                endIndent: 16,
-                height: 24,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Text(
-                  FlutterI18n.translate(context, "cloud_scooters_title"),
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
-                  ),
-                ),
-              ),
-              ..._cloudScooters.map((scooter) => ListTile(
-                title: Text(scooter['name'] ?? 'Unknown'),
-                subtitle: Text('ID: ${scooter['id']}'),
-                trailing: ElevatedButton(
-                  onPressed: () => _assignCloudScooter(
-                    scooter['id'],
-                    scooter['name'] ?? 'Unknown',
-                  ),
-                  child: Text(FlutterI18n.translate(context, "cloud_assign")),
-                ),
-              )),
-            ],
-            Divider(
-              indent: 16,
-              endIndent: 16,
-              height: 24,
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
-            ),
-            ListTile(
-              leading: const Icon(Icons.logout, color: Colors.red),
-              title: Text(FlutterI18n.translate(context, "cloud_logout")),
-              subtitle: Text(FlutterI18n.translate(context, "cloud_logout_description")),
-              onTap: _logout,
             ),
           ],
         ],

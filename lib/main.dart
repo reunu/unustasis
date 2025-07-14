@@ -12,7 +12,7 @@ import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences/util/legacy_to_async_migration_util.dart';
-import 'package:uni_links/uni_links.dart';
+import 'package:app_links/app_links.dart';
 
 import '../background/bg_service.dart';
 import '../domain/log_helper.dart';
@@ -80,6 +80,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   StreamSubscription? _linkSubscription;
   final log = Logger('MyApp');
+  late AppLinks _appLinks;
 
   @override
   void initState() {
@@ -89,18 +90,18 @@ class _MyAppState extends State<MyApp> {
 
   void _initDeepLinks() async {
     try {
+      _appLinks = AppLinks();
+      
       // Handle app launch from deep link
-      final initialLink = await getInitialLink();
+      final initialLink = await _appLinks.getInitialLink();
       if (initialLink != null) {
-        _handleDeepLink(initialLink);
+        _handleDeepLink(initialLink.toString());
       }
 
       // Handle deep links while app is running
-      _linkSubscription = linkStream.listen(
-        (String? link) {
-          if (link != null) {
-            _handleDeepLink(link);
-          }
+      _linkSubscription = _appLinks.uriLinkStream.listen(
+        (Uri uri) {
+          _handleDeepLink(uri.toString());
         },
         onError: (err) {
           log.severe('Deep link error: $err');

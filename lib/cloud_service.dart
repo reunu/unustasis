@@ -9,7 +9,8 @@ import 'scooter_service.dart';
 class CloudService {
   static const String _baseUrl = 'https://sunshine.rescoot.org/api/v1';
   static const String _oauthUrl = 'https://sunshine.rescoot.org/oauth';
-  static const String _clientId = 'unustasis-mobile';
+  static const String _clientId = 'Q20PF36dOaO1FDw0NEzkP1jNtPT12w_onMuwr5nS5I0';
+  static const String _clientSecret = 'd_paqhM3O1EgFLez_vJs-WG20g0vt3yHS7ULMtg2aCQ';
   static const String _redirectUri = 'unustasis://oauth/callback';
 
   final ScooterService scooterService;
@@ -36,7 +37,7 @@ class CloudService {
       'redirect_uri': _redirectUri,
       'response_type': 'code',
       'state': state,
-      'scope': 'scooter:read scooter:control',
+      'scope': 'read write scooter_control',
     });
 
     try {
@@ -73,6 +74,7 @@ class CloudService {
       body: {
         'grant_type': 'authorization_code',
         'client_id': _clientId,
+        'client_secret': _clientSecret,
         'code': code,
         'redirect_uri': _redirectUri,
       },
@@ -95,16 +97,25 @@ class CloudService {
     final accessToken = await _secureStorage.read(key: 'access_token');
     final expiresAtStr = await _secureStorage.read(key: 'token_expires_at');
     
+    log.info('Access token exists: ${accessToken != null}');
+    log.info('Expires at: $expiresAtStr');
+    
     if (accessToken == null || expiresAtStr == null) {
+      log.warning('Missing access token or expiry time');
       return null;
     }
 
     final expiresAt = DateTime.parse(expiresAtStr);
-    if (DateTime.now().isAfter(expiresAt.subtract(const Duration(minutes: 5)))) {
+    final now = DateTime.now();
+    log.info('Token expires at: $expiresAt, now: $now');
+    
+    if (now.isAfter(expiresAt.subtract(const Duration(minutes: 5)))) {
       // Token is expired or expires soon, try to refresh
+      log.info('Token expired or expires soon, refreshing...');
       return await _refreshAccessToken();
     }
 
+    log.info('Token is valid');
     return accessToken;
   }
 
@@ -121,6 +132,7 @@ class CloudService {
         body: {
           'grant_type': 'refresh_token',
           'client_id': _clientId,
+          'client_secret': _clientSecret,
           'refresh_token': refreshToken,
         },
       );
@@ -173,20 +185,28 @@ class CloudService {
   // Cloud Scooter Management
   Future<List<Map<String, dynamic>>> getScooters() async {
     try {
+      log.info('Getting cloud scooters from $_baseUrl/scooters');
       final headers = await _getAuthHeaders();
+      log.info('Auth headers prepared: ${headers.keys}');
+      
       final response = await http.get(
         Uri.parse('$_baseUrl/scooters'),
         headers: headers,
       );
 
+      log.info('Response status: ${response.statusCode}');
+      log.info('Response body: ${response.body}');
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return List<Map<String, dynamic>>.from(data['scooters'] ?? []);
+        final scooters = List<Map<String, dynamic>>.from(data ?? []);
+        log.info('Found ${scooters.length} cloud scooters');
+        return scooters;
       } else if (response.statusCode == 401) {
         await logout();
         throw Exception('Authentication expired');
       } else {
-        throw Exception('Failed to fetch scooters: ${response.body}');
+        throw Exception('Failed to fetch scooters: ${response.statusCode} ${response.body}');
       }
     } catch (e, stack) {
       log.severe('Failed to get cloud scooters', e, stack);
