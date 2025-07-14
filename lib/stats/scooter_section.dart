@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../stats/stats_screen.dart';
 import '../onboarding_screen.dart';
+import '../scooter_screen.dart';
 import '../domain/saved_scooter.dart';
 import '../domain/scooter_state.dart';
 import '../domain/theme_helper.dart';
@@ -702,16 +703,22 @@ class SavedScooterCard extends StatelessWidget {
                             try {
                               log.info(
                                   "Trying to connect to ${savedScooter.id}");
-                              await context
+                              
+                              // Start the connection but don't wait for it to fully complete
+                              // Just initiate it and navigate back immediately
+                              context
                                   .read<ScooterService>()
                                   .connectToScooterId(savedScooter.id);
+                              
                               if (context.mounted) {
                                 context
                                     .read<ScooterService>()
                                     .startAutoRestart();
                                 rebuild();
-                                // Navigate back to main screen after successful connection
-                                Navigator.of(context).popUntil((route) => route.isFirst);
+                                // Navigate back to main screen after initiating connection
+                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  ScooterScreen.closeScreen();
+                                });
                               }
                             } catch (e, stack) {
                               log.severe(
