@@ -20,6 +20,7 @@ import '../flutter/blue_plus_mockable.dart';
 import '../home_screen.dart';
 import '../scooter_service.dart';
 import '../background/widget_handler.dart';
+import '../services/image_cache_service.dart';
 
 void main() async {
   LogHelper().initialize();
@@ -86,12 +87,22 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     _initDeepLinks();
+    _initImageCache();
+  }
+
+  void _initImageCache() async {
+    try {
+      await ImageCacheService().initialize();
+      log.info('Image cache service initialized');
+    } catch (e, stack) {
+      log.severe('Failed to initialize image cache service', e, stack);
+    }
   }
 
   void _initDeepLinks() async {
     try {
       _appLinks = AppLinks();
-      
+
       // Handle app launch from deep link
       final initialLink = await _appLinks.getInitialLink();
       if (initialLink != null) {
@@ -115,7 +126,7 @@ class _MyAppState extends State<MyApp> {
   void _handleDeepLink(String link) {
     log.info('Received deep link: $link');
     final uri = Uri.parse(link);
-    
+
     if (uri.scheme == 'unustasis' && uri.host == 'oauth' && uri.path == '/callback') {
       // Handle OAuth callback
       final scooterService = context.read<ScooterService>();
@@ -129,25 +140,6 @@ class _MyAppState extends State<MyApp> {
         log.severe('Error handling OAuth callback: $e');
       });
     }
-  }
-
-  @override
-  void initState() {
-    scooterService.addListener(() async {
-      passToWidget(
-        connected: scooterService.connected,
-        lastPing: scooterService.lastPing,
-        scooterState: scooterService.state,
-        primarySOC: scooterService.primarySOC,
-        secondarySOC: scooterService.secondarySOC,
-        scooterName: scooterService.scooterName,
-        scooterColor: scooterService.scooterColor,
-        lastLocation: scooterService.lastLocation,
-        seatClosed: scooterService.seatClosed,
-        scooterLocked: scooterService.handlebarsLocked,
-      );
-    });
-    super.initState();
   }
 
   @override
