@@ -9,7 +9,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../stats/stats_screen.dart';
 import '../onboarding_screen.dart';
-import '../scooter_screen.dart';
 import '../domain/saved_scooter.dart';
 import '../domain/scooter_state.dart';
 import '../geo_helper.dart';
@@ -19,9 +18,11 @@ class ScooterSection extends StatefulWidget {
   const ScooterSection({
     super.key,
     required this.dataIsOld,
+    this.onNavigateBack,
   });
 
   final bool dataIsOld;
+  final VoidCallback? onNavigateBack;
 
   @override
   State<ScooterSection> createState() => _ScooterSectionState();
@@ -88,6 +89,7 @@ class _ScooterSectionState extends State<ScooterSection> {
                           (service) => service.state) !=
                       ScooterState.disconnected),
               rebuild: () => setState(() {}),
+              onNavigateBack: widget.onNavigateBack,
             ),
           );
         }),
@@ -148,12 +150,14 @@ class SavedScooterCard extends StatelessWidget {
   final SavedScooter savedScooter;
   final bool single;
   final void Function() rebuild;
+  final VoidCallback? onNavigateBack;
   SavedScooterCard({
     super.key,
     required this.savedScooter,
     required this.connected,
     required this.single,
     required this.rebuild,
+    this.onNavigateBack,
   });
 
   void setColor(int newColor, BuildContext context) async {
@@ -423,7 +427,7 @@ class SavedScooterCard extends StatelessWidget {
                                 rebuild();
                                 // Navigate back to main screen after initiating connection
                                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                                  ScooterScreen.closeScreen();
+                                  onNavigateBack?.call();
                                 });
                               }
                             } catch (e, stack) {
