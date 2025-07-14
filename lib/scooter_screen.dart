@@ -9,19 +9,8 @@ import 'onboarding_screen.dart';
 class ScooterScreen extends StatelessWidget {
   const ScooterScreen({super.key});
 
-  static ScooterScreen? _currentInstance;
-  static BuildContext? _currentContext;
-
-  static void closeScreen() {
-    if (_currentContext != null && Navigator.of(_currentContext!).canPop()) {
-      Navigator.of(_currentContext!).pop();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    _currentInstance = this;
-    _currentContext = context;
     return Scaffold(
       appBar: AppBar(
         title: Text(FlutterI18n.translate(context, 'stats_title_scooter')),
@@ -65,7 +54,14 @@ class ScooterScreen extends StatelessWidget {
           builder: (context, lastPing, _) {
             bool dataIsOld = lastPing == null ||
                 lastPing.difference(DateTime.now()).inMinutes.abs() > 5;
-            return ScooterSection(dataIsOld: dataIsOld);
+            return ScooterSection(
+              dataIsOld: dataIsOld,
+              onNavigateBack: () {
+                if (Navigator.of(context).canPop()) {
+                  Navigator.of(context).pop();
+                }
+              },
+            );
           },
         ),
       ),
