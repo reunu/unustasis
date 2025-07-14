@@ -7,6 +7,7 @@ import 'package:shimmer/shimmer.dart';
 
 import '../domain/scooter_state.dart';
 import '../domain/theme_helper.dart';
+import '../domain/color_utils.dart';
 import '../services/image_cache_service.dart';
 
 class ScooterVisual extends StatefulWidget {
@@ -364,25 +365,11 @@ class _ScooterVisualState extends State<ScooterVisual> {
   /// Gets the effective color for display
   Color _getEffectiveColor() {
     if (colorHex != null) {
-      // Parse hex color string
-      final hexColor = colorHex!.replaceAll('#', '');
-      return Color(int.parse('FF$hexColor', radix: 16));
+      return ColorUtils.parseHexColor(colorHex) ?? ColorUtils.getColorValue(color ?? 1);
     }
     
     // Return predefined color
-    const colorMap = {
-      0: Colors.black,
-      1: Colors.white,
-      2: Colors.green,
-      3: Colors.grey,
-      4: Colors.deepOrange,
-      5: Colors.red,
-      6: Colors.blue,
-      7: Colors.grey,
-      8: Colors.teal,
-      9: Colors.lightBlue,
-    };
-    return colorMap[color ?? 1] ?? Colors.white;
+    return ColorUtils.getColorValue(color ?? 1);
   }
 
   IconData stateIcon() {

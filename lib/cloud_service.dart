@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:math';
+import 'package:crypto/crypto.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
@@ -10,7 +12,6 @@ class CloudService {
   static const String _baseUrl = 'https://sunshine.rescoot.org/api/v1';
   static const String _oauthUrl = 'https://sunshine.rescoot.org/oauth';
   static const String _clientId = 'Q20PF36dOaO1FDw0NEzkP1jNtPT12w_onMuwr5nS5I0';
-  static const String _clientSecret = 'd_paqhM3O1EgFLez_vJs-WG20g0vt3yHS7ULMtg2aCQ';
   static const String _redirectUri = 'unustasis://oauth/callback';
 
   final ScooterService scooterService;
@@ -27,10 +28,28 @@ class CloudService {
 
   CloudService(this.scooterService);
 
-  // OAuth Authentication
+  /// Generates a cryptographically secure random string for PKCE code verifier
+  String _generateCodeVerifier() {
+    final random = Random.secure();
+    final bytes = List<int>.generate(32, (i) => random.nextInt(256));
+    return base64UrlEncode(bytes).replaceAll('=', '');
+  }
+
+  /// Creates SHA256 code challenge from code verifier for PKCE
+  String _createCodeChallenge(String codeVerifier) {
+    final bytes = utf8.encode(codeVerifier);
+    final digest = sha256.convert(bytes);
+    return base64UrlEncode(digest.bytes).replaceAll('=', '');
+  }
+
+  // OAuth Authentication with PKCE
   Future<void> initiateOAuth() async {
     final state = DateTime.now().millisecondsSinceEpoch.toString();
+    final codeVerifier = _generateCodeVerifier();
+    final codeChallenge = _createCodeChallenge(codeVerifier);
+    
     await _secureStorage.write(key: 'oauth_state', value: state);
+    await _secureStorage.write(key: 'oauth_code_verifier', value: codeVerifier);
 
     final authUrl = Uri.parse('$_oauthUrl/authorize').replace(queryParameters: {
       'client_id': _clientId,
@@ -38,6 +57,8 @@ class CloudService {
       'response_type': 'code',
       'state': state,
       'scope': 'read write scooter_control',
+      'code_challenge': codeChallenge,
+      'code_challenge_method': 'S256',
     });
 
     try {
@@ -60,6 +81,7 @@ class CloudService {
 
       await _exchangeCodeForTokens(code);
       await _secureStorage.delete(key: 'oauth_state');
+      await _secureStorage.delete(key: 'oauth_code_verifier');
       return true;
     } catch (e, stack) {
       log.severe('OAuth callback failed', e, stack);
@@ -68,15 +90,20 @@ class CloudService {
   }
 
   Future<void> _exchangeCodeForTokens(String code) async {
+    final codeVerifier = await _secureStorage.read(key: 'oauth_code_verifier');
+    if (codeVerifier == null) {
+      throw Exception('Missing PKCE code verifier');
+    }
+
     final response = await http.post(
       Uri.parse('$_oauthUrl/token'),
       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
       body: {
         'grant_type': 'authorization_code',
         'client_id': _clientId,
-        'client_secret': _clientSecret,
         'code': code,
         'redirect_uri': _redirectUri,
+        'code_verifier': codeVerifier,
       },
     );
 
@@ -132,7 +159,6 @@ class CloudService {
         body: {
           'grant_type': 'refresh_token',
           'client_id': _clientId,
-          'client_secret': _clientSecret,
           'refresh_token': refreshToken,
         },
       );

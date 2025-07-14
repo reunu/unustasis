@@ -6,6 +6,8 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'color_utils.dart';
+
 class SavedScooter {
   String _name;
   String _id;
@@ -158,25 +160,9 @@ class SavedScooter {
   /// Returns the effective color to display - either hex color or predefined color
   String get effectiveColorHex {
     if (_colorHex != null) return _colorHex!;
-    return _getPredefinedColorHex(_color);
+    return ColorUtils.colorToHex(ColorUtils.getColorValue(_color));
   }
 
-  /// Maps predefined color indices to hex values
-  String _getPredefinedColorHex(int colorIndex) {
-    const colorMap = {
-      0: '#000000', // black
-      1: '#FFFFFF', // white
-      2: '#1B5E20', // green
-      3: '#9E9E9E', // gray
-      4: '#FF5722', // orange
-      5: '#F44336', // red
-      6: '#2196F3', // blue
-      7: '#424242', // eclipse
-      8: '#4DB6AC', // idioteque
-      9: '#03A9F4', // hover
-    };
-    return colorMap[colorIndex] ?? '#FFFFFF';
-  }
 
   BluetoothDevice get bluetoothDevice => BluetoothDevice.fromId(_id);
 
@@ -268,28 +254,9 @@ class SavedScooter {
   /// Gets the Flutter Color object for this scooter
   Color get effectiveColor {
     if (_colorHex != null) {
-      // Parse hex color string
-      final hexColor = _colorHex!.replaceAll('#', '');
-      return Color(int.parse('FF$hexColor', radix: 16));
+      return ColorUtils.parseHexColor(_colorHex) ?? ColorUtils.getColorValue(_color);
     }
-    return _getPredefinedColor(_color);
-  }
-  
-  /// Maps predefined color indices to Flutter Colors
-  Color _getPredefinedColor(int colorIndex) {
-    const colorMap = {
-      0: Colors.black,
-      1: Colors.white,
-      2: Colors.green,
-      3: Colors.grey,
-      4: Colors.deepOrange,
-      5: Colors.red,
-      6: Colors.blue,
-      7: Colors.grey,
-      8: Colors.teal,
-      9: Colors.lightBlue,
-    };
-    return colorMap[colorIndex] ?? Colors.white;
+    return ColorUtils.getColorValue(_color);
   }
 
   void updateSharedPreferences() async {
