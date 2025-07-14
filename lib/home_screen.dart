@@ -237,6 +237,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: context.select<ScooterService, int?>(
                                   (service) => service.scooterColor) ??
                               1,
+                          colorHex: context.select<ScooterService, String?>(
+                                  (service) => service.scooterColorHex),
+                          cloudImageUrl: context.select<ScooterService, String?>(
+                                  (service) => service.scooterCloudImageUrl),
+                          hasCustomColor: context.select<ScooterService, bool>(
+                                  (service) => service.scooterHasCustomColor),
                           state: context.select(
                               (ScooterService service) => service.state),
                           scanning: context.select(
