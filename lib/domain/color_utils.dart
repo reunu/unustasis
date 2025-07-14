@@ -39,8 +39,8 @@ class ColorUtils {
       return null;
     }
 
-    // Remove # if present
-    String cleanHex = hexColor.replaceAll('#', '');
+    // Remove # if present and normalize
+    String cleanHex = hexColor.replaceFirst('#', '').toUpperCase();
 
     try {
       // Handle 3-character hex (e.g., "F0A" -> "FF00AA")
@@ -48,13 +48,13 @@ class ColorUtils {
         cleanHex = cleanHex.split('').map((char) => char + char).join('');
       }
 
-      // Ensure we have 6 characters for RGB
-      if (cleanHex.length != 6) {
+      // Ensure we have 6 characters for RGB and only valid hex characters
+      if (cleanHex.length != 6 || !RegExp(r'^[0-9A-F]{6}$').hasMatch(cleanHex)) {
         return null;
       }
 
-      // Parse with full alpha (FF prefix)
-      return Color(int.parse('FF$cleanHex', radix: 16));
+      // Parse with full alpha (0xFF prefix for more robust parsing)
+      return Color(int.parse('0xFF$cleanHex', radix: 16));
     } catch (e) {
       return null;
     }
