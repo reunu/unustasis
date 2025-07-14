@@ -24,9 +24,7 @@ class SupportScreen extends StatelessWidget {
             ],
           ),
         ),
-        child: const SafeArea(
-          child: SupportSection(),
-        ),
+        child: const SupportSection(),
       ),
     );
   }

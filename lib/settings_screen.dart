@@ -24,9 +24,7 @@ class SettingsScreen extends StatelessWidget {
             ],
           ),
         ),
-        child: const SafeArea(
-          child: SettingsSection(),
-        ),
+        child: const SettingsSection(),
       ),
     );
   }
