@@ -264,6 +264,44 @@ class CloudService {
     }
   }
 
+  Future<bool> updateScooter(int scooterId, {String? name, String? color, String? customColor}) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final scooterData = <String, dynamic>{};
+      
+      if (name != null) scooterData['name'] = name;
+      if (color != null) scooterData['color'] = color;
+      if (customColor != null) scooterData['custom_color'] = customColor;
+      
+      if (scooterData.isEmpty) {
+        log.warning('No data provided for scooter update');
+        return false;
+      }
+
+      final body = {'scooter': scooterData};
+
+      final response = await http.patch(
+        Uri.parse('$_baseUrl/scooters/$scooterId'),
+        headers: headers,
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200) {
+        log.info('Cloud scooter $scooterId updated successfully');
+        return true;
+      } else if (response.statusCode == 401) {
+        await logout();
+        throw Exception('Authentication expired');
+      } else {
+        log.warning('Failed to update cloud scooter $scooterId: ${response.statusCode} ${response.body}');
+        return false;
+      }
+    } catch (e, stack) {
+      log.severe('Failed to update cloud scooter $scooterId', e, stack);
+      return false;
+    }
+  }
+
   // Cloud Commands
   Future<bool> sendCommand(int scooterId, String command, {Map<String, dynamic>? parameters}) async {
     try {
