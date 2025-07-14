@@ -68,11 +68,14 @@ class ScooterVisual extends StatelessWidget {
                       opacity: 1,
                       child: _buildScooterImage(),
                     ),
-                    crossFadeState: state == ScooterState.disconnected
+                    crossFadeState: state == ScooterState.disconnected ||
+                            state == ScooterState.connectingAuto
                         ? CrossFadeState.showFirst
                         : CrossFadeState.showSecond,
                   ),
-                  if (winter && state != ScooterState.disconnected)
+                  if (winter && 
+                      state != ScooterState.disconnected && 
+                      state != ScooterState.connectingAuto)
                     AnimatedCrossFade(
                       duration: const Duration(milliseconds: 500),
                       firstChild: const Image(

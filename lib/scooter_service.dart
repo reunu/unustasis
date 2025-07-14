@@ -304,8 +304,7 @@ class ScooterService with ChangeNotifier {
     _secondarySOC = mostRecentScooter?.lastSecondarySOC;
     _cbbSOC = mostRecentScooter?.lastCbbSOC;
     _auxSOC = mostRecentScooter?.lastAuxSOC;
-    _scooterName = mostRecentScooter?.name;
-    _scooterColor = mostRecentScooter?.color;
+    _targetScooter = mostRecentScooter;
     _lastLocation = mostRecentScooter?.lastLocation;
     return;
   }
@@ -357,7 +356,7 @@ class ScooterService with ChangeNotifier {
     _seatClosed = true;
     _handlebarsLocked = false;
     _lastPing = DateTime.now();
-    _scooterName = "Demo Scooter";
+    _targetScooter = SavedScooter(id: "12345", name: "Demo Scooter");
 
     notifyListeners();
   }
@@ -475,10 +474,15 @@ class ScooterService with ChangeNotifier {
     notifyListeners();
   }
 
-  String? _scooterName;
-  String? get scooterName => _scooterName;
+  // Target scooter system - unified source of scooter data
+  SavedScooter? _targetScooter;
+  bool _isTargetingSpecificScooter = false;
+
+  String? get scooterName => _targetScooter?.name;
   set scooterName(String? scooterName) {
-    _scooterName = scooterName;
+    if (_targetScooter != null) {
+      _targetScooter!.name = scooterName ?? "Scooter Pro";
+    }
     notifyListeners();
   }
 
@@ -489,31 +493,23 @@ class ScooterService with ChangeNotifier {
     notifyListeners();
   }
 
-  int? _scooterColor;
-  int? get scooterColor => _scooterColor;
+  int? get scooterColor => _targetScooter?.color;
   set scooterColor(int? scooterColor) {
-    _scooterColor = scooterColor;
+    if (_targetScooter != null) {
+      _targetScooter!.color = scooterColor ?? 1;
+    }
     notifyListeners();
     updateBackgroundService({"scooterColor": scooterColor});
   }
 
   /// Gets the current scooter's custom hex color, if any
-  String? get scooterColorHex {
-    final currentScooter = getCurrentScooter();
-    return currentScooter?.colorHex;
-  }
+  String? get scooterColorHex => _targetScooter?.colorHex;
 
-  /// Gets the current scooter's cloud image URL, if any
-  String? get scooterCloudImageUrl {
-    final currentScooter = getCurrentScooter();
-    return currentScooter?.cloudImageUrl;
-  }
+  /// Gets the current scooter's cloud image URL for main display (front view)
+  String? get scooterCloudImageUrl => _targetScooter?.cloudImageFront;
 
   /// Returns true if the current scooter uses a custom color
-  bool get scooterHasCustomColor {
-    final currentScooter = getCurrentScooter();
-    return currentScooter?.hasCustomColor ?? false;
-  }
+  bool get scooterHasCustomColor => _targetScooter?.hasCustomColor ?? false;
 
   /// Gets the current scooter object
   SavedScooter? getCurrentScooter() {
@@ -653,22 +649,23 @@ class ScooterService with ChangeNotifier {
   }) async {
     log.info("Connecting to scooter with ID: $id");
     _foundSth = true;
-    state = ScooterState.linking;
     
-    // Immediately update UI with target scooter's name and color
-    final targetScooter = savedScooters[id];
-    if (targetScooter != null) {
-      scooterName = targetScooter.name;
-      scooterColor = targetScooter.color;
-      log.info("Updated UI to show target scooter: ${targetScooter.name}");
-      // Trigger UI update for custom color data
-      notifyListeners();
+    // Set target scooter and connection state
+    _targetScooter = savedScooters[id];
+    _isTargetingSpecificScooter = true;
+    state = ScooterState.connectingSpecific;
+    
+    if (_targetScooter != null) {
+      log.info("Updated UI to show target scooter: ${_targetScooter!.name}");
     }
+    notifyListeners();
     try {
       // attempt to connect to what we found
       BluetoothDevice attemptedScooter = BluetoothDevice.fromId(id);
       // wait for the connection to be established
       log.info("Connecting to ${attemptedScooter.remoteId}");
+      state = ScooterState.linking;
+      notifyListeners();
       await attemptedScooter.connect(timeout: const Duration(seconds: 30));
       if (initialConnect && Platform.isAndroid) {
         await attemptedScooter.createBond(timeout: 30);
@@ -691,8 +688,8 @@ class ScooterService with ChangeNotifier {
       _pollLocation();
       // Let everybody know
       connected = true;
-      scooterName = savedScooters[myScooter!.remoteId.toString()]?.name;
-      scooterColor = savedScooters[myScooter!.remoteId.toString()]?.color;
+      // Ensure target scooter is properly set for connected state
+      _targetScooter ??= savedScooters[myScooter!.remoteId.toString()];
       updateBackgroundService({
         "scooterName": scooterName,
         "scooterColor": scooterColor,
@@ -737,7 +734,9 @@ class ScooterService with ChangeNotifier {
     // CLEANUP
     _foundSth = false;
     connected = false;
-    state = ScooterState.disconnected;
+    _isTargetingSpecificScooter = false;
+    _targetScooter = null;
+    state = ScooterState.connectingAuto;
     if (myScooter != null) {
       myScooter!.disconnect();
     }
@@ -1133,8 +1132,7 @@ class ScooterService with ChangeNotifier {
         _secondarySOC = mostRecentScooter.lastSecondarySOC;
         _cbbSOC = mostRecentScooter.lastCbbSOC;
         _auxSOC = mostRecentScooter.lastAuxSOC;
-        _scooterName = mostRecentScooter.name;
-        _scooterColor = mostRecentScooter.color;
+        _targetScooter = mostRecentScooter;
         _lastLocation = mostRecentScooter.lastLocation;
       } else {
         // no saved scooters, reset streams
@@ -1143,8 +1141,7 @@ class ScooterService with ChangeNotifier {
         _secondarySOC = null;
         _cbbSOC = null;
         _auxSOC = null;
-        _scooterName = null;
-        _scooterColor = null;
+        _targetScooter = null;
         _lastLocation = null;
       }
     }

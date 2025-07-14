@@ -11,7 +11,7 @@ class SavedScooter {
   String _id;
   int _color;
   String? _colorHex;
-  String? _cloudImageUrl;
+  Map<String, String>? _cloudImages;
   DateTime _lastPing;
   bool _autoConnect;
   int? _lastPrimarySOC;
@@ -27,7 +27,7 @@ class SavedScooter {
     String? name,
     int? color,
     String? colorHex,
-    String? cloudImageUrl,
+    Map<String, String>? cloudImages,
     DateTime? lastPing,
     bool? autoConnect,
     int? lastPrimarySOC,
@@ -41,7 +41,7 @@ class SavedScooter {
         _id = id,
         _color = color ?? 1,
         _colorHex = colorHex,
-        _cloudImageUrl = cloudImageUrl,
+        _cloudImages = cloudImages,
         _lastPing = lastPing ?? DateTime.now(),
         _autoConnect = autoConnect ?? true,
         _lastPrimarySOC = lastPrimarySOC,
@@ -68,8 +68,8 @@ class SavedScooter {
     updateSharedPreferences();
   }
 
-  set cloudImageUrl(String? cloudImageUrl) {
-    _cloudImageUrl = cloudImageUrl;
+  set cloudImages(Map<String, String>? cloudImages) {
+    _cloudImages = cloudImages;
     updateSharedPreferences();
   }
 
@@ -123,7 +123,16 @@ class SavedScooter {
   String get id => _id;
   int get color => _color;
   String? get colorHex => _colorHex;
-  String? get cloudImageUrl => _cloudImageUrl;
+  Map<String, String>? get cloudImages => _cloudImages;
+  
+  /// Gets the front view image URL for main page display
+  String? get cloudImageFront => _cloudImages?['front'];
+  
+  /// Gets the side view image URL for info list display  
+  String? get cloudImageSide => _cloudImages?['right'] ?? _cloudImages?['side'];
+  
+  /// Gets any available cloud image URL as fallback
+  String? get cloudImageUrl => _cloudImages?['front'] ?? _cloudImages?['right'] ?? _cloudImages?['left'];
   DateTime get lastPing => _lastPing;
   bool get autoConnect => _autoConnect;
   int? get lastPrimarySOC => _lastPrimarySOC;
@@ -167,7 +176,7 @@ class SavedScooter {
         'name': _name,
         'color': _color,
         'colorHex': _colorHex,
-        'cloudImageUrl': _cloudImageUrl,
+        'cloudImages': _cloudImages,
         'lastPing': _lastPing.microsecondsSinceEpoch,
         'autoConnect': _autoConnect,
         'lastPrimarySOC': _lastPrimarySOC,
@@ -188,7 +197,9 @@ class SavedScooter {
         name: map['name'],
         color: map['color'],
         colorHex: map['colorHex'],
-        cloudImageUrl: map['cloudImageUrl'],
+        cloudImages: map['cloudImages'] != null 
+            ? Map<String, String>.from(map['cloudImages']) 
+            : null,
         lastPing: map.containsKey('lastPing')
             ? DateTime.fromMicrosecondsSinceEpoch(map['lastPing'])
             : DateTime.now(),
@@ -226,18 +237,17 @@ class SavedScooter {
         // When using custom color, clear the predefined color to avoid conflicts
         _color = 1; // Default to white as fallback
       }
-      // Update cloud image URL for custom colors
+      // Save entire images hash for custom colors
       if (cloudData['images'] != null) {
         final images = cloudData['images'] as Map<String, dynamic>;
-        // Use 'front' image for main screen visual
-        _cloudImageUrl = images['front'] ?? images['right'] ?? images['left'];
+        _cloudImages = Map<String, String>.from(images);
       }
     } else {
       // Use predefined color_id
       if (cloudData['color_id'] != null) {
         _color = cloudData['color_id'];
         _colorHex = null; // Clear hex color when using predefined
-        _cloudImageUrl = null; // Clear cloud image when using predefined
+        _cloudImages = null; // Clear cloud images when using predefined
       }
     }
     

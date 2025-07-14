@@ -164,7 +164,7 @@ class SavedScooterCard extends StatelessWidget {
     // Clear custom color when selecting a predefined color
     if (newColor >= 0) {
       savedScooter.colorHex = null;
-      savedScooter.cloudImageUrl = null;
+      savedScooter.cloudImages = null;
     }
     SharedPreferencesAsync prefs = SharedPreferencesAsync();
     await prefs.setInt("color", newColor);
@@ -1089,10 +1089,10 @@ class SavedScooterCard extends StatelessWidget {
 
   /// Builds the scooter image widget, handling both local assets and cloud images
   Widget _buildScooterImage(SavedScooter scooter, bool forceHover) {
-    if (scooter.hasCustomColor && scooter.cloudImageUrl != null) {
-      // Use cached cloud image for custom colors
+    if (scooter.hasCustomColor && scooter.cloudImageSide != null) {
+      // Use cached cloud image for custom colors (side view for info list)
       return FutureBuilder<File?>(
-        future: ImageCacheService().getImage(scooter.cloudImageUrl!),
+        future: ImageCacheService().getImage(scooter.cloudImageSide!),
         builder: (context, snapshot) {
           if (snapshot.hasData && snapshot.data != null) {
             return Image.file(

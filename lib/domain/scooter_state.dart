@@ -14,7 +14,9 @@ enum ScooterState {
   booting,
   unknown,
   linking,
-  disconnected;
+  disconnected,
+  connectingSpecific,
+  connectingAuto;
 
   static ScooterState? fromString(String? state) {
     final log = Logger("ScooterState.fromStateString");
@@ -116,6 +118,10 @@ extension StateExtension on ScooterState {
         return FlutterI18n.translate(context, "state_name_disconnected");
       case ScooterState.linking:
         return FlutterI18n.translate(context, "state_name_linking");
+      case ScooterState.connectingSpecific:
+        return FlutterI18n.translate(context, "state_name_connecting");
+      case ScooterState.connectingAuto:
+        return FlutterI18n.translate(context, "state_name_scanning");
     }
   }
 
@@ -144,6 +150,10 @@ extension StateExtension on ScooterState {
         return FlutterI18n.translate(context, "state_desc_disconnected");
       case ScooterState.linking:
         return FlutterI18n.translate(context, "state_desc_linking");
+      case ScooterState.connectingSpecific:
+        return FlutterI18n.translate(context, "state_desc_connecting");
+      case ScooterState.connectingAuto:
+        return FlutterI18n.translate(context, "state_desc_scanning");
     }
   }
 
