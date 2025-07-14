@@ -256,15 +256,34 @@ class _ScooterVisualState extends State<ScooterVisual> {
                       opacity: 1,
                       child: _buildScooterImage(),
                     ),
-                    crossFadeState: widget.state != null && widget.state!.isOn
+                    crossFadeState: state == ScooterState.disconnected ||
+                            state == ScooterState.connectingAuto
                         ? CrossFadeState.showFirst
                         : CrossFadeState.showSecond,
                   ),
-                AnimatedOpacity(
-                  opacity: (widget.state != null && widget.state!.isOn) ? (_ringFlickering ? 0.5 : 1.0) : 0.0,
-                  duration: _ringOpacityDuration,
-                  child: const Image(
-                    image: AssetImage("images/scooter/light_ring.webp"),
+                  if (winter &&
+                      state != ScooterState.disconnected &&
+                      state != ScooterState.connectingAuto)
+                    AnimatedCrossFade(
+                      duration: const Duration(milliseconds: 500),
+                      firstChild: const Image(
+                        image: AssetImage(
+                            "images/scooter/seasonal/winter_on.webp"),
+                      ),
+                      secondChild: const Image(
+                        image: AssetImage(
+                            "images/scooter/seasonal/winter_off.webp"),
+                      ),
+                      crossFadeState: state != null && state!.isOn
+                          ? CrossFadeState.showFirst
+                          : CrossFadeState.showSecond,
+                    ),
+                  AnimatedOpacity(
+                    opacity: state != null && state!.isOn ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 1000),
+                    child: const Image(
+                      image: AssetImage("images/scooter/light_ring.webp"),
+                    ),
                   ),
                 ),
                 AnimatedOpacity(
