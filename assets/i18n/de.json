@@ -273,6 +273,7 @@
     "cloud_sync_no_sync": "Verknüpfen ohne Sync",
     "cloud_sync_from_cloud": "Cloud-Daten verwenden",
     "cloud_sync_to_cloud": "Lokale Daten verwenden",
+    "cloud_sync_failed": "Fehler beim Synchronisieren der Daten",
     "cloud_auto_match_title": "Automatische Übereinstimmung gefunden",
     "cloud_auto_match_message": "Cloud-Roller '{cloudName}' gefunden, der mit deinem lokalen Roller '{localName}' über Bluetooth-Adresse übereinstimmt. Automatisch verknüpfen?",
     "cloud_manual_select": "Manuell auswählen",

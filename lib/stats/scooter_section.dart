@@ -337,7 +337,34 @@ class SavedScooterCard extends StatelessWidget {
         // Update local scooter with cloud data
         savedScooter.updateFromCloudData(selectedScooter);
       } else if (syncChoice == 'to_cloud') {
-        // TODO: Update cloud scooter with local data
+        // Update cloud scooter with local data
+        try {
+          final success = await cloudService.updateScooter(
+            selectedScooter['id'],
+            name: savedScooter.name,
+            color: savedScooter.hasCustomColor ? 'custom' : savedScooter.color.toString(),
+            customColor: savedScooter.hasCustomColor ? savedScooter.colorHex : null,
+          );
+          
+          if (!success && context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(FlutterI18n.translate(context, "cloud_sync_failed")),
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+            );
+          }
+        } catch (e) {
+          log.severe('Failed to sync local data to cloud', e);
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(FlutterI18n.translate(context, "cloud_sync_failed")),
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+            );
+          }
+        }
       }
     }
     

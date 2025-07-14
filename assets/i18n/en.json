@@ -274,6 +274,7 @@
     "cloud_sync_no_sync": "Link without syncing",
     "cloud_sync_from_cloud": "Use cloud data",
     "cloud_sync_to_cloud": "Use local data",
+    "cloud_sync_failed": "Failed to sync data",
     "cloud_auto_match_title": "Automatic match found",
     "cloud_auto_match_message": "Found cloud scooter '{cloudName}' matching your local scooter '{localName}' by Bluetooth address. Link automatically?",
     "cloud_manual_select": "Choose manually",
