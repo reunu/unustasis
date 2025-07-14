@@ -13,6 +13,7 @@ import '../stats/stats_screen.dart';
 import '../onboarding_screen.dart';
 import '../domain/saved_scooter.dart';
 import '../domain/scooter_state.dart';
+import '../domain/theme_helper.dart';
 import '../geo_helper.dart';
 import '../scooter_service.dart';
 import '../helper_widgets/color_picker_dialog.dart';
@@ -171,9 +172,16 @@ class SavedScooterCard extends StatelessWidget {
 
   void setColor(int newColor, BuildContext context) async {
     savedScooter.color = newColor;
+    // Clear custom color when selecting a predefined color
+    if (newColor >= 0) {
+      savedScooter.colorHex = null;
+      savedScooter.cloudImageUrl = null;
+    }
     SharedPreferencesAsync prefs = SharedPreferencesAsync();
     await prefs.setInt("color", newColor);
-    if (context.mounted) context.read<ScooterService>().scooterColor = newColor;
+    if (context.mounted) {
+      context.read<ScooterService>().scooterColor = newColor;
+    }
   }
 
   Future<void> _linkToCloudScooter(BuildContext context) async {
@@ -335,6 +343,7 @@ class SavedScooterCard extends StatelessWidget {
     await cloudService.assignScooterToDevice(
       selectedScooter['id'], 
       savedScooter.id,
+      cloudScooterName: selectedScooter['name'],
     );
     rebuild();
     
@@ -402,7 +411,11 @@ class SavedScooterCard extends StatelessWidget {
                   child: _buildScooterImage(savedScooter, forceHover),
                   onTap: () async {
                     HapticFeedback.mediumImpact();
-                    int? newColor = await showColorDialog(savedScooter.color, savedScooter.name, context);
+                    int? newColor = await showColorDialog(
+                        savedScooter.hasCustomColor ? -1 : savedScooter.color,
+                        savedScooter.name,
+                        context,
+                        customColorHex: savedScooter.colorHex);
                     if (newColor != null && context.mounted) {
                       setColor(newColor, context);
                       rebuild();
@@ -582,18 +595,7 @@ class SavedScooterCard extends StatelessWidget {
                             if (savedScooter.cloudScooterId != null)
                               ListTile(
                                 title: Text(FlutterI18n.translate(context, "cloud_linked_to")),
-                                subtitle: FutureBuilder<List<Map<String, dynamic>>>(
-                                  future: context.read<ScooterService>().cloudService.getScooters(),
-                                  builder: (context, snapshot) {
-                                    if (snapshot.hasData) {
-                                      final linkedScooter = snapshot.data!.where(
-                                        (s) => s['id'] == savedScooter.cloudScooterId
-                                      ).firstOrNull;
-                                      return Text(linkedScooter?['name'] ?? 'Unknown');
-                                    }
-                                    return Text(FlutterI18n.translate(context, "stats_unknown"));
-                                  },
-                                ),
+                                subtitle: Text(savedScooter.cloudScooterName ?? 'Unknown'),
                                 trailing: TextButton(
                                   onPressed: () => _unlinkCloudScooter(context),
                                   child: Text(
@@ -770,7 +772,207 @@ class SavedScooterCard extends StatelessWidget {
             TextButton(
               child: Text(FlutterI18n.translate(context, "stats_rename_save")),
               onPressed: () {
-                Navigator.of(context).pop(textController.text); // Return the text
+                Navigator.of(context)
+                    .pop(textController.text); // Return the text
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<int?> showColorDialog(
+      int initialValue, String scooterName, BuildContext context, {String? customColorHex}) {
+    int selectedValue = initialValue;
+
+    return showDialog<int>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(FlutterI18n.translate(context, "settings_color")),
+              const SizedBox(height: 4),
+              Text(
+                FlutterI18n.translate(context, "settings_color_info"),
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ],
+          ),
+          scrollable: true,
+          content: Builder(builder: (context) {
+            return StatefulBuilder(builder: (context, setState) {
+              return Column(
+                children: [
+                  if (customColorHex != null) ...[
+                    RadioListTile<int>(
+                      contentPadding: EdgeInsets.zero,
+                      value: -1,
+                      groupValue: selectedValue,
+                      onChanged: null, // Disabled - can't select custom color from here
+                      title: Text(FlutterI18n.translate(context, "custom_color")),
+                      subtitle: Text(FlutterI18n.translate(context, "custom_color_from_cloud")),
+                      secondary: Container(
+                        width: 16,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: Color(int.parse('FF${customColorHex.replaceAll('#', '')}', radix: 16)),
+                          shape: BoxShape.circle,
+                          border: Border.fromBorderSide(
+                            BorderSide(
+                              color: context.isDarkMode
+                                  ? Colors.white
+                                  : Colors.black,
+                              width: 2.0,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const Divider(),
+                  ],
+                  _colorRadioTile(
+                    colorName: "black",
+                    colorValue: 0,
+                    color: Colors.black,
+                    selectedValue: selectedValue,
+                    onChanged: (value) {
+                      setState(() {
+                        selectedValue = value!;
+                      });
+                    },
+                    context: context,
+                  ),
+                  _colorRadioTile(
+                    colorName: "white",
+                    colorValue: 1,
+                    color: Colors.white,
+                    selectedValue: selectedValue,
+                    onChanged: (value) {
+                      setState(() {
+                        selectedValue = value!;
+                      });
+                    },
+                    context: context,
+                  ),
+                  _colorRadioTile(
+                    colorName: "green",
+                    colorValue: 2,
+                    color: Colors.green.shade900,
+                    selectedValue: selectedValue,
+                    onChanged: (value) {
+                      setState(() {
+                        selectedValue = value!;
+                      });
+                    },
+                    context: context,
+                  ),
+                  _colorRadioTile(
+                    colorName: "gray",
+                    colorValue: 3,
+                    color: Colors.grey,
+                    selectedValue: selectedValue,
+                    onChanged: (value) {
+                      setState(() {
+                        selectedValue = value!;
+                      });
+                    },
+                    context: context,
+                  ),
+                  _colorRadioTile(
+                    colorName: "orange",
+                    colorValue: 4,
+                    color: Colors.deepOrange.shade400,
+                    selectedValue: selectedValue,
+                    onChanged: (value) {
+                      setState(() {
+                        selectedValue = value!;
+                      });
+                    },
+                    context: context,
+                  ),
+                  _colorRadioTile(
+                    colorName: "red",
+                    colorValue: 5,
+                    color: Colors.red,
+                    selectedValue: selectedValue,
+                    onChanged: (value) {
+                      setState(() {
+                        selectedValue = value!;
+                      });
+                    },
+                    context: context,
+                  ),
+                  _colorRadioTile(
+                    colorName: "blue",
+                    colorValue: 6,
+                    color: Colors.blue,
+                    selectedValue: selectedValue,
+                    onChanged: (value) {
+                      setState(() {
+                        selectedValue = value!;
+                      });
+                    },
+                    context: context,
+                  ),
+                  if (scooterName == magic("Rpyvcfr"))
+                    _colorRadioTile(
+                      colorName: "eclipse",
+                      colorValue: 7,
+                      color: Colors.grey.shade800,
+                      selectedValue: selectedValue,
+                      onChanged: (value) {
+                        setState(() {
+                          selectedValue = value!;
+                        });
+                      },
+                      context: context,
+                    ),
+                  if (scooterName == magic("Xbev"))
+                    _colorRadioTile(
+                      colorName: "idioteque",
+                      colorValue: 8,
+                      color: Colors.teal.shade200,
+                      selectedValue: selectedValue,
+                      onChanged: (value) {
+                        setState(() {
+                          selectedValue = value!;
+                        });
+                      },
+                      context: context,
+                    ),
+                  if (scooterName == magic("Ubire"))
+                    _colorRadioTile(
+                      colorName: "hover",
+                      colorValue: 9,
+                      color: Colors.lightBlue,
+                      selectedValue: selectedValue,
+                      onChanged: (value) {
+                        setState(() {
+                          selectedValue = value!;
+                        });
+                      },
+                      context: context,
+                    )
+                ],
+              );
+            });
+          }),
+          actions: [
+            TextButton(
+              child:
+                  Text(FlutterI18n.translate(context, "stats_rename_cancel")),
+              onPressed: () {
+                Navigator.of(context).pop(); // Close without returning data
+              },
+            ),
+            TextButton(
+              child: Text(FlutterI18n.translate(context, "stats_rename_save")),
+              onPressed: () {
+                Navigator.of(context).pop(selectedValue); // Return the text
+>>>>>>> decf862 (feat: improve custom color support)
               },
             ),
           ],

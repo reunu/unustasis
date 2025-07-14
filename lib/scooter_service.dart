@@ -705,6 +705,8 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       scooterName = targetScooter.name;
       scooterColor = targetScooter.color;
       log.info("Updated UI to show target scooter: ${targetScooter.name}");
+      // Trigger UI update for custom color data
+      notifyListeners();
     }
     try {
       // attempt to connect to what we found
