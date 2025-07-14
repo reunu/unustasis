@@ -13,6 +13,7 @@ import '../onboarding_screen.dart';
 import '../domain/saved_scooter.dart';
 import '../domain/scooter_state.dart';
 import '../domain/theme_helper.dart';
+import '../domain/color_utils.dart';
 import '../geo_helper.dart';
 import '../scooter_service.dart';
 import '../features.dart';
@@ -856,7 +857,7 @@ class SavedScooterCard extends StatelessWidget {
                         width: 16,
                         height: 16,
                         decoration: BoxDecoration(
-                          color: Color(int.parse('FF${customColorHex.replaceAll('#', '')}', radix: 16)),
+                          color: ColorUtils.parseHexColor(customColorHex) ?? Colors.grey,
                           shape: BoxShape.circle,
                           border: Border.fromBorderSide(
                             BorderSide(
@@ -1172,19 +1173,7 @@ class SavedScooterCard extends StatelessWidget {
 
   /// Maps color ID to human-readable name
   String _getColorNameFromId(int colorId) {
-    const colorNames = {
-      0: 'Black',
-      1: 'White', 
-      2: 'Green',
-      3: 'Gray',
-      4: 'Orange',
-      5: 'Red',
-      6: 'Blue',
-      7: 'Eclipse',
-      8: 'Idioteque',
-      9: 'Hover',
-    };
-    return colorNames[colorId] ?? 'Unknown';
+    return ColorUtils.getColorName(colorId);
   }
 }
 
@@ -1219,26 +1208,60 @@ class _CloudScooterSelectionDialog extends StatelessWidget {
                     width: 64,
                     height: 64,
                     child: sideImageUrl != null
-                        ? Image.network(
-                            sideImageUrl,
-                            width: 64,
-                            height: 64,
-                            fit: BoxFit.contain,
-                            errorBuilder: (context, error, stackTrace) {
-                              // Fallback to color swatch if image fails
-                              final colorHex = scooter['color_hex'] ?? '#FFFFFF';
-                              return Container(
-                                width: 32,
-                                height: 32,
-                                decoration: BoxDecoration(
-                                  color: Color(int.parse(colorHex.replaceAll('#', '0xFF'))),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Colors.grey.shade400,
-                                    width: 1,
+                        ? FutureBuilder<File?>(
+                            future: ImageCacheService().getImage(sideImageUrl),
+                            builder: (context, snapshot) {
+                              if (snapshot.hasData && snapshot.data != null) {
+                                return Image.file(
+                                  snapshot.data!,
+                                  width: 64,
+                                  height: 64,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    // Fallback to color swatch if image fails
+                                    final colorHex = scooter['color_hex'] ?? '#FFFFFF';
+                                    return Container(
+                                      width: 32,
+                                      height: 32,
+                                      decoration: BoxDecoration(
+                                        color: ColorUtils.parseHexColor(colorHex) ?? Colors.grey,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Colors.grey.shade400,
+                                          width: 1,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                );
+                              } else if (snapshot.hasError) {
+                                // Fallback to color swatch if loading fails
+                                final colorHex = scooter['color_hex'] ?? '#FFFFFF';
+                                return Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    color: ColorUtils.parseHexColor(colorHex) ?? Colors.grey,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.grey.shade400,
+                                      width: 1,
+                                    ),
                                   ),
-                                ),
-                              );
+                                );
+                              } else {
+                                // Loading state
+                                return SizedBox(
+                                  width: 32,
+                                  height: 32,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      ColorUtils.parseHexColor(scooter['color_hex']) ?? Colors.grey,
+                                    ),
+                                  ),
+                                );
+                              }
                             },
                           )
                         : Container(
