@@ -415,8 +415,10 @@ class SavedScooterCard extends StatelessWidget {
                                 context
                                     .read<ScooterService>()
                                     .startAutoRestart();
+                                rebuild();
+                                // Navigate back to main screen after successful connection
+                                Navigator.of(context).popUntil((route) => route.isFirst);
                               }
-                              rebuild();
                             } catch (e, stack) {
                               log.severe(
                                   "Couldn't connect to ${savedScooter.id}",

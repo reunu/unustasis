@@ -190,7 +190,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     Positioned(
                       top: 0,
-                      left: 0,
+                      left: 8,
                       child: IconButton(
                         icon: const Icon(Icons.help_outline),
                         onPressed: () => Navigator.push(
@@ -203,7 +203,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     Positioned(
                       top: 0,
-                      right: 0,
+                      right: 8,
                       child: IconButton(
                         icon: const Icon(Icons.settings),
                         onPressed: () => Navigator.push(
