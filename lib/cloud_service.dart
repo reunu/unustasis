@@ -254,6 +254,35 @@ class CloudService {
     }
   }
 
+  /// Check if a specific scooter is online in the cloud
+  Future<bool> isScooterOnline(int scooterId) async {
+    try {
+      final scooterData = await getScooter(scooterId);
+      if (scooterData == null) {
+        return false;
+      }
+      
+      // Check if the scooter has an 'online' field or determine based on last_seen
+      if (scooterData.containsKey('online')) {
+        return scooterData['online'] == true;
+      }
+      
+      // If no explicit online field, check if last_seen is recent (within 5 minutes)
+      if (scooterData.containsKey('last_seen') && scooterData['last_seen'] != null) {
+        final lastSeen = DateTime.parse(scooterData['last_seen']);
+        final now = DateTime.now();
+        final difference = now.difference(lastSeen);
+        return difference.inMinutes <= 5;
+      }
+      
+      // If no online status info is available, assume offline
+      return false;
+    } catch (e, stack) {
+      log.warning('Failed to check online status for scooter $scooterId', e, stack);
+      return false;
+    }
+  }
+
   // Cloud Commands
   Future<bool> sendCommand(int scooterId, String command, {Map<String, dynamic>? parameters}) async {
     try {

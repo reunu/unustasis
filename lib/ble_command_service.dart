@@ -4,21 +4,20 @@ import 'package:logging/logging.dart';
 
 import '../infrastructure/characteristic_repository.dart';
 import 'command_service.dart';
+import 'services/ble_connection_service.dart';
 
 class BLECommandService implements CommandService {
-  final BluetoothDevice? device;
-  final CharacteristicRepository? characteristicRepository;
+  final BLEConnectionService _bleConnectionService;
   final log = Logger('BLECommandService');
 
-  BLECommandService(this.device, this.characteristicRepository);
+  BLECommandService(this._bleConnectionService);
 
   @override
   Future<bool> isAvailable(CommandType command) async {
     // BLE commands are available if device is connected and characteristics are set up
-    return device != null && 
-           device!.isConnected && 
-           characteristicRepository != null &&
-           characteristicRepository!.commandCharacteristic != null;
+    return _bleConnectionService.isConnected && 
+           _bleConnectionService.characteristicRepository != null &&
+           _bleConnectionService.characteristicRepository!.commandCharacteristic != null;
   }
 
   @override
@@ -80,14 +79,15 @@ class BLECommandService implements CommandService {
   }
 
   BluetoothCharacteristic? _getCharacteristic(CommandType command) {
+    final characteristicRepository = _bleConnectionService.characteristicRepository;
     if (characteristicRepository == null) return null;
     
     switch (command) {
       case CommandType.wakeUp:
       case CommandType.hibernate:
-        return characteristicRepository!.hibernationCommandCharacteristic;
+        return characteristicRepository.hibernationCommandCharacteristic;
       default:
-        return characteristicRepository!.commandCharacteristic;
+        return characteristicRepository.commandCharacteristic;
     }
   }
 }

@@ -22,6 +22,7 @@ import '../domain/theme_helper.dart';
 import '../onboarding_screen.dart';
 import '../scooter_service.dart';
 import '../domain/scooter_state.dart';
+import '../domain/connection_status.dart';
 import '../scooter_visual.dart';
 import '../battery_screen.dart';
 import '../scooter_screen.dart';
@@ -29,6 +30,7 @@ import '../settings_screen.dart';
 import '../support_screen.dart';
 import '../helper_widgets/snowfall.dart';
 import '../helper_widgets/grassscape.dart';
+import '../command_service.dart';
 
 class HomeScreen extends StatefulWidget {
   final bool? forceOpen;
@@ -257,7 +259,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           ],
                         ),
                       ),
-                      const StatusText(),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const StatusText(),
+                          const SizedBox(width: 8),
+                          const ConnectionStatusText(),
+                        ],
+                      ),
                       const SizedBox(height: 16),
                       if (context.select<ScooterService, String?>(
                               (service) => service.scooterName) != null &&
@@ -319,14 +328,19 @@ class _HomeScreenState extends State<HomeScreen> {
                         mainAxisSize: MainAxisSize.max,
                         children: [
                           const SeatButton(),
-                          Selector<ScooterService, ScooterState?>(
-                              selector: (context, service) => service.state,
-                              builder: (context, state, _) {
+                          Selector<ScooterService, ({ScooterState? state, bool lockAvailable, bool unlockAvailable, bool wakeUpAvailable})>(
+                              selector: (context, service) => (
+                                state: service.state,
+                                lockAvailable: service.isCommandAvailableCached(CommandType.lock),
+                                unlockAvailable: service.isCommandAvailableCached(CommandType.unlock),
+                                wakeUpAvailable: service.isCommandAvailableCached(CommandType.wakeUp),
+                              ),
+                              builder: (context, data, _) {
                                 return Expanded(
                                   child: ScooterPowerButton(
-                                      action: state != null &&
-                                              state.isReadyForLockChange
-                                          ? (state.isOn
+                                      action: data.state != null &&
+                                              data.state!.isReadyForLockChange
+                                          ? (data.state!.isOn && data.lockAvailable
                                               ? () async {
                                                   try {
                                                     await context
@@ -358,7 +372,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                         msg: e.toString());
                                                   }
                                                 }
-                                              : (state == ScooterState.standby
+                                              : (data.state == ScooterState.standby && data.unlockAvailable
                                                   ? () async {
                                                       try {
                                                         await context
@@ -380,8 +394,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                                         );
                                                       }
                                                     }
-                                                  : (state ==
-                                                          ScooterState.standby
+                                                  : (data.state ==
+                                                          ScooterState.standby && data.unlockAvailable
                                                       ? () {
                                                           context
                                                               .read<
@@ -389,15 +403,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                                               .unlock();
                                                           // TODO: Flash hazards in visual
                                                         }
-                                                      : context
-                                                          .read<
-                                                              ScooterService>()
-                                                          .wakeUpAndUnlock)))
+                                                      : (data.wakeUpAvailable
+                                                          ? context
+                                                              .read<
+                                                                  ScooterService>()
+                                                              .wakeUpAndUnlock
+                                                          : null))))
                                           : null,
-                                      icon: state != null && state.isOn
+                                      icon: data.state != null && data.state!.isOn
                                           ? Icons.lock_open
                                           : Icons.lock_outline,
-                                      label: state != null && state.isOn
+                                      label: data.state != null && data.state!.isOn
                                           ? FlutterI18n.translate(
                                               context, "home_lock_button")
                                           : FlutterI18n.translate(
@@ -576,7 +592,7 @@ class SeatButton extends StatelessWidget {
           return Expanded(
             child: ScooterActionButton(
               onPressed: context.select(
-                          (ScooterService service) => service.connected) &&
+                          (ScooterService service) => service.isCommandAvailableCached(CommandType.openSeat)) &&
                       data.state != null &&
                       data.seatClosed == true &&
                       context.select(
@@ -676,31 +692,36 @@ class StatusText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Selector<ScooterService,
-            ({bool connected, bool scanning, ScooterState? state})>(
+    return Selector<ScooterService, ({ConnectionStatus connectionStatus, ScooterState? scooterState})>(
         selector: (context, service) => (
-              state: service.state,
-              scanning: service.scanning,
-              connected: service.connected
-            ),
+          connectionStatus: service.connectionStatus,
+          scooterState: service.state
+        ),
         builder: (context, data, _) {
+          String statusText;
+          
+          // If we have a scooter state, show that; otherwise show connection status
+          if (data.scooterState != null) {
+            statusText = data.scooterState!.name(context);
+          } else {
+            // Fallback to connection status
+            switch (data.connectionStatus) {
+              case ConnectionStatus.none:
+                statusText = FlutterI18n.translate(context, "home_loading_state");
+                break;
+              case ConnectionStatus.ble:
+              case ConnectionStatus.cloud:
+              case ConnectionStatus.both:
+                statusText = FlutterI18n.translate(context, "state_name_unknown");
+                break;
+              case ConnectionStatus.offline:
+                statusText = FlutterI18n.translate(context, "state_name_disconnected");
+                break;
+            }
+          }
+          
           return Text(
-            data.scanning &&
-                    (data.state == null ||
-                        data.state == ScooterState.disconnected)
-                ? (context.read<ScooterService>().savedScooters.isNotEmpty
-                    ? FlutterI18n.translate(context, "home_scanning_known")
-                    : FlutterI18n.translate(context, "home_scanning"))
-                : ((data.state != null
-                        ? data.state!.name(context)
-                        : FlutterI18n.translate(
-                            context, "home_loading_state")) +
-                    (data.connected &&
-                            context.select<ScooterService, bool?>(
-                                    (service) => service.handlebarsLocked) ==
-                                false
-                        ? FlutterI18n.translate(context, "home_unlocked")
-                        : "")),
+            statusText,
             style: Theme.of(context).textTheme.titleMedium,
           );
         });
@@ -914,5 +935,43 @@ class _ScooterPowerButtonState extends State<ScooterPowerButton>
         ),
       ],
     );
+  }
+}
+
+class ConnectionStatusText extends StatelessWidget {
+  const ConnectionStatusText({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Selector<ScooterService, ConnectionStatus>(
+        selector: (context, service) => service.connectionStatus,
+        builder: (context, connectionStatus, _) {
+          final primaryColor = Theme.of(context).colorScheme.primary;
+          final disabledColor = Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4);
+          
+          bool bleConnected = connectionStatus == ConnectionStatus.ble || 
+                             connectionStatus == ConnectionStatus.both;
+          bool cloudConnected = connectionStatus == ConnectionStatus.cloud || 
+                               connectionStatus == ConnectionStatus.both;
+          
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.bluetooth,
+                size: 16,
+                color: bleConnected ? primaryColor : disabledColor,
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.cloud,
+                size: 16,
+                color: cloudConnected ? primaryColor : disabledColor,
+              ),
+            ],
+          );
+        });
   }
 }

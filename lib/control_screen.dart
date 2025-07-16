@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../helper_widgets/scooter_action_button.dart';
 import '../scooter_service.dart';
+import '../command_service.dart';
 
 class ControlScreen extends StatefulWidget {
   const ControlScreen({super.key});
@@ -21,7 +22,27 @@ class _ControlScreenState extends State<ControlScreen> {
         elevation: 0.0,
         bottomOpacity: 0.0,
       ),
-      body: ListView(
+      body: Selector<ScooterService, ({
+        bool unlockAvailable,
+        bool lockAvailable,
+        bool wakeUpAvailable,
+        bool hibernateAvailable,
+        bool blinkerLeftAvailable,
+        bool blinkerRightAvailable,
+        bool blinkerBothAvailable,
+        bool blinkerOffAvailable,
+      })>(
+        selector: (context, service) => (
+          unlockAvailable: service.isCommandAvailableCached(CommandType.unlock),
+          lockAvailable: service.isCommandAvailableCached(CommandType.lock),
+          wakeUpAvailable: service.isCommandAvailableCached(CommandType.wakeUp),
+          hibernateAvailable: service.isCommandAvailableCached(CommandType.hibernate),
+          blinkerLeftAvailable: service.isCommandAvailableCached(CommandType.blinkerLeft),
+          blinkerRightAvailable: service.isCommandAvailableCached(CommandType.blinkerRight),
+          blinkerBothAvailable: service.isCommandAvailableCached(CommandType.blinkerBoth),
+          blinkerOffAvailable: service.isCommandAvailableCached(CommandType.blinkerOff),
+        ),
+        builder: (context, commandAvailability, _) => ListView(
         children: [
           Header(FlutterI18n.translate(context, "controls_state_title")),
           Padding(
@@ -31,20 +52,20 @@ class _ControlScreenState extends State<ControlScreen> {
               children: [
                 Expanded(
                   child: ScooterActionButton(
-                    onPressed: () {
+                    onPressed: commandAvailability.unlockAvailable ? () {
                       context.read<ScooterService>().unlock();
                       Navigator.of(context).pop();
-                    },
+                    } : null,
                     icon: Icons.lock_open_outlined,
                     label: FlutterI18n.translate(context, "controls_unlock"),
                   ),
                 ),
                 Expanded(
                   child: ScooterActionButton(
-                    onPressed: () {
+                    onPressed: commandAvailability.lockAvailable ? () {
                       context.read<ScooterService>().lock();
                       Navigator.of(context).pop();
-                    },
+                    } : null,
                     icon: Icons.lock_outlined,
                     label: FlutterI18n.translate(context, "controls_lock"),
                   ),
@@ -59,20 +80,20 @@ class _ControlScreenState extends State<ControlScreen> {
               children: [
                 Expanded(
                   child: ScooterActionButton(
-                    onPressed: () {
+                    onPressed: commandAvailability.wakeUpAvailable ? () {
                       context.read<ScooterService>().wakeUp();
                       Navigator.of(context).pop();
-                    },
+                    } : null,
                     icon: Icons.wb_sunny_outlined,
                     label: FlutterI18n.translate(context, "controls_wake_up"),
                   ),
                 ),
                 Expanded(
                   child: ScooterActionButton(
-                    onPressed: () {
+                    onPressed: commandAvailability.hibernateAvailable ? () {
                       context.read<ScooterService>().hibernate();
                       Navigator.of(context).pop();
-                    },
+                    } : null,
                     icon: Icons.nightlight_outlined,
                     label: FlutterI18n.translate(context, "controls_hibernate"),
                   ),
@@ -88,9 +109,9 @@ class _ControlScreenState extends State<ControlScreen> {
               children: [
                 Expanded(
                   child: ScooterActionButton(
-                    onPressed: () => context
+                    onPressed: commandAvailability.blinkerLeftAvailable ? () => context
                         .read<ScooterService>()
-                        .blink(left: true, right: false),
+                        .blink(left: true, right: false) : null,
                     icon: Icons.arrow_back_ios_new_rounded,
                     label:
                         FlutterI18n.translate(context, "controls_blink_left"),
@@ -98,9 +119,9 @@ class _ControlScreenState extends State<ControlScreen> {
                 ),
                 Expanded(
                   child: ScooterActionButton(
-                    onPressed: () => context
+                    onPressed: commandAvailability.blinkerRightAvailable ? () => context
                         .read<ScooterService>()
-                        .blink(left: false, right: true),
+                        .blink(left: false, right: true) : null,
                     icon: Icons.arrow_forward_ios_rounded,
                     label:
                         FlutterI18n.translate(context, "controls_blink_right"),
@@ -116,9 +137,9 @@ class _ControlScreenState extends State<ControlScreen> {
                 children: [
                   Expanded(
                     child: ScooterActionButton(
-                      onPressed: () => context
+                      onPressed: commandAvailability.blinkerBothAvailable ? () => context
                           .read<ScooterService>()
-                          .blink(left: true, right: true),
+                          .blink(left: true, right: true) : null,
                       icon: Icons.code_rounded,
                       label: FlutterI18n.translate(
                           context, "controls_blink_hazard"),
@@ -126,9 +147,9 @@ class _ControlScreenState extends State<ControlScreen> {
                   ),
                   Expanded(
                     child: ScooterActionButton(
-                      onPressed: () => context
+                      onPressed: commandAvailability.blinkerOffAvailable ? () => context
                           .read<ScooterService>()
-                          .blink(left: false, right: false),
+                          .blink(left: false, right: false) : null,
                       icon: Icons.code_off_rounded,
                       label:
                           FlutterI18n.translate(context, "controls_blink_off"),
@@ -137,6 +158,7 @@ class _ControlScreenState extends State<ControlScreen> {
                 ]),
           ),
         ],
+      ),
       ),
     );
   }

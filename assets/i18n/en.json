@@ -54,6 +54,7 @@
     "state_name_unknown": "Connected",
     "state_name_disconnected": "Disconnected",
     "state_name_linking": "Connecting...",
+    "state_name_connecting": "Connecting...",
     "state_name_scanning": "Scanning...",
     "state_desc_standby": "Your scooter is in standby mode",
     "state_desc_off": "Your scooter is fully powered down",

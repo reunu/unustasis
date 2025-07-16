@@ -19,6 +19,7 @@ import '../domain/scooter_battery.dart';
 import '../domain/saved_scooter.dart';
 import '../domain/scooter_keyless_distance.dart';
 import '../domain/scooter_state.dart';
+import '../domain/connection_status.dart';
 import '../flutter/blue_plus_mockable.dart';
 import '../infrastructure/characteristic_repository.dart';
 import '../infrastructure/scooter_reader.dart';
@@ -26,6 +27,7 @@ import 'ble_command_service.dart';
 import 'cloud_command_service.dart';
 import 'cloud_service.dart';
 import 'command_service.dart';
+import 'services/ble_connection_service.dart';
 
 const bootingTimeSeconds = 25;
 const keylessCooldownSeconds = 60;
@@ -55,11 +57,22 @@ class ScooterService with ChangeNotifier {
   late bool isInBackgroundService;
   final FlutterBluePlusMockable flutterBluePlus;
   
+  // New architecture: current scooter and connection service
+  SavedScooter? _currentScooter;
+  BLEConnectionService? _bleConnectionService;
+  Timer? _availabilityTimer;
+  
   // Cloud services
   CloudService? _cloudService;
   BLECommandService? _bleCommandService;
   CloudCommandService? _cloudCommandService;
   bool _cloudServicesInitialized = false;
+  
+  // Command availability cache
+  Map<CommandType, bool> _commandAvailabilityCache = {};
+  
+  // Cloud connectivity cache
+  bool _isCloudOnline = false;
 
   void ping() {
     try {
@@ -132,9 +145,9 @@ class ScooterService with ChangeNotifier {
   }
   
   void _ensureBLECommandServiceInitialized() {
-    // Only initialize if characteristicRepository is available
-    if (_bleCommandService == null) {
-      _bleCommandService = BLECommandService(myScooter, characteristicRepository);
+    // Only initialize if BLE connection service is available
+    if (_bleCommandService == null && _bleConnectionService != null) {
+      _bleCommandService = BLECommandService(_bleConnectionService!);
     }
   }
   
@@ -145,9 +158,8 @@ class ScooterService with ChangeNotifier {
   }
 
   Future<int?> _getCurrentCloudScooterId() async {
-    if (myScooter == null) return null;
-    final savedScooter = savedScooters[myScooter!.remoteId.toString()];
-    return savedScooter?.cloudScooterId;
+    // Use current scooter for cloud commands
+    return _currentScooter?.cloudScooterId;
   }
 
   CloudService get cloudService {
@@ -478,10 +490,10 @@ class ScooterService with ChangeNotifier {
   SavedScooter? _targetScooter;
   bool _isTargetingSpecificScooter = false;
 
-  String? get scooterName => _targetScooter?.name;
+  String? get scooterName => _currentScooter?.name;
   set scooterName(String? scooterName) {
-    if (_targetScooter != null) {
-      _targetScooter!.name = scooterName ?? "Scooter Pro";
+    if (_currentScooter != null) {
+      _currentScooter!.name = scooterName ?? "Scooter Pro";
     }
     notifyListeners();
   }
@@ -493,17 +505,17 @@ class ScooterService with ChangeNotifier {
     notifyListeners();
   }
 
-  int? get scooterColor => _targetScooter?.color;
+  int? get scooterColor => _currentScooter?.color;
   set scooterColor(int? scooterColor) {
-    if (_targetScooter != null) {
-      _targetScooter!.color = scooterColor ?? 1;
+    if (_currentScooter != null) {
+      _currentScooter!.color = scooterColor ?? 1;
     }
     notifyListeners();
     updateBackgroundService({"scooterColor": scooterColor});
   }
 
   /// Gets the current scooter's custom hex color, if any
-  String? get scooterColorHex => _targetScooter?.colorHex;
+  String? get scooterColorHex => _currentScooter?.colorHex;
 
   /// Gets the current scooter's cloud image URL for main display (front view)
   String? get scooterCloudImageUrl => _targetScooter?.cloudImageFront;
@@ -650,70 +662,17 @@ class ScooterService with ChangeNotifier {
     log.info("Connecting to scooter with ID: $id");
     _foundSth = true;
     
-    // Set target scooter and connection state
+    // Set target scooter and connection state for legacy compatibility
     _targetScooter = savedScooters[id];
     _isTargetingSpecificScooter = true;
     state = ScooterState.connectingSpecific;
+    addSavedScooter(id);
     
-    if (_targetScooter != null) {
-      log.info("Updated UI to show target scooter: ${_targetScooter!.name}");
-    }
-    notifyListeners();
-    try {
-      // attempt to connect to what we found
-      BluetoothDevice attemptedScooter = BluetoothDevice.fromId(id);
-      // wait for the connection to be established
-      log.info("Connecting to ${attemptedScooter.remoteId}");
-      state = ScooterState.linking;
-      notifyListeners();
-      await attemptedScooter.connect(timeout: const Duration(seconds: 30));
-      if (initialConnect && Platform.isAndroid) {
-        await attemptedScooter.createBond(timeout: 30);
-        log.info("Bond established");
-      }
-      log.info("Connected to ${attemptedScooter.remoteId}");
-      // Set up this scooter as ours
-      myScooter = attemptedScooter;
-      addSavedScooter(myScooter!.remoteId.toString());
-      try {
-        await setUpCharacteristics(myScooter!);
-      } on UnavailableCharacteristicsException {
-        log.warning(
-            "Some characteristics are null, if this turns out to be a rare issue we might display a toast here in the future");
-        // Fluttertoast.showToast(
-        // msg: "Scooter firmware outdated, some features may not work");
-      }
-
-      // save this as the last known location
-      _pollLocation();
-      // Let everybody know
-      connected = true;
-      // Ensure target scooter is properly set for connected state
-      _targetScooter ??= savedScooters[myScooter!.remoteId.toString()];
-      updateBackgroundService({
-        "scooterName": scooterName,
-        "scooterColor": scooterColor,
-        "lastPingInt": DateTime.now().millisecondsSinceEpoch,
-      });
-      // listen for disconnects
-      myScooter!.connectionState.listen((BluetoothConnectionState state) async {
-        if (state == BluetoothConnectionState.disconnected) {
-          connected = false;
-          this.state = ScooterState.disconnected;
-          log.info("Lost connection to scooter! :(");
-          // update the ping again
-          updateScooterPing(myScooter!.remoteId.toString());
-          // Restart the process if we're not already doing so
-          // start(); // this leads to some conflicts right now if the phone auto-connects, so we're not doing it
-        }
-      });
-    } catch (e, stack) {
-      // something went wrong, roll back!
-      log.shout("Couldn't connect to scooter!", e, stack);
-      _foundSth = false;
-      state = ScooterState.disconnected;
-      rethrow;
-    }
+    // Set current scooter using the new architecture - this handles both BLE and cloud connections
+    // The connection state will be updated automatically when connections complete
+    await setCurrentScooter(savedScooters[id]);
+    
+    log.info("Connection attempts initiated for scooter: $id");
   }
 
   // spins up the whole connection process, and connects/bonds with the nearest scooter
@@ -724,6 +683,13 @@ class ScooterService with ChangeNotifier {
     Future.delayed(const Duration(milliseconds: 1500), () {
       FlutterNativeSplash.remove();
     });
+    
+    // Initialize BLE connection service
+    _bleConnectionService = BLEConnectionService();
+    
+    // Initialize command availability cache (but don't refresh yet)
+    // refreshCommandAvailabilityCache();
+    
     // Try to turn on Bluetooth (Android-Only)
     await FlutterBluePlus.adapterState
         .where((val) => val == BluetoothAdapterState.on)
@@ -996,6 +962,392 @@ class ScooterService with ChangeNotifier {
     if (!await _executeCommand(CommandType.alarm, context: context)) {
       throw Exception("Failed to activate alarm");
     }
+  }
+
+  /// Check if a command is available via BLE or cloud
+  Future<bool> isCommandAvailable(CommandType command) async {
+    // Ensure services are initialized
+    _ensureCloudServicesInitialized();
+    _ensureBLECommandServiceInitialized();
+    _ensureCloudCommandServiceInitialized();
+    
+    // Check if available via BLE
+    if (_bleCommandService != null && await _bleCommandService!.isAvailable(command)) {
+      return true;
+    }
+    
+    // Check if available via cloud
+    if (_cloudCommandService != null && await _cloudCommandService!.isAvailable(command)) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  /// Get detailed availability status for a command
+  Future<Map<String, dynamic>> getCommandAvailabilityStatus(CommandType command) async {
+    // Ensure services are initialized
+    _ensureCloudServicesInitialized();
+    _ensureBLECommandServiceInitialized();
+    _ensureCloudCommandServiceInitialized();
+    
+    bool bleAvailable = _bleCommandService != null && await _bleCommandService!.isAvailable(command);
+    bool cloudAvailable = _cloudCommandService != null && await _cloudCommandService!.isAvailable(command);
+    
+    return {
+      'available': bleAvailable || cloudAvailable,
+      'bleAvailable': bleAvailable,
+      'cloudAvailable': cloudAvailable,
+      'preferredMethod': bleAvailable ? 'ble' : (cloudAvailable ? 'cloud' : 'none'),
+    };
+  }
+
+  /// Get cached command availability (synchronous)
+  bool isCommandAvailableCached(CommandType command) {
+    return _commandAvailabilityCache[command] ?? false;
+  }
+
+  /// Refresh command availability cache (legacy method - use _refreshCommandAvailabilityFromConnectionState instead)
+  Future<void> refreshCommandAvailabilityCache() async {
+    log.warning("Using legacy refreshCommandAvailabilityCache - should use _refreshCommandAvailabilityFromConnectionState");
+    _refreshCommandAvailabilityFromConnectionState();
+  }
+
+  /// Get current scooter
+  SavedScooter? get currentScooter => _currentScooter;
+
+  /// Set current scooter and start connection attempts
+  Future<void> setCurrentScooter(SavedScooter? scooter) async {
+    if (_currentScooter == scooter) return;
+    
+    _currentScooter = scooter;
+    log.info("Current scooter set to: ${scooter?.name ?? 'none'}");
+    
+    // Initialize BLE connection service if not already done
+    _bleConnectionService ??= BLEConnectionService();
+    
+    if (scooter != null) {
+      // Immediately update UI to show scooter info
+      notifyListeners();
+      
+      // Set up listeners for connection changes
+      _setupConnectionListeners();
+      
+      // Start both connection attempts in parallel and update UI as soon as each completes
+      final bleConnectionFuture = _bleConnectionService!.attemptConnection(scooter.id).then((bleSuccess) {
+        log.info("BLE connection result: $bleSuccess");
+        _refreshCommandAvailabilityFromConnectionState();
+      });
+      
+      final cloudStatusFuture = _refreshCloudOnlineStatus().then((_) {
+        log.info("Cloud status check completed, isOnline: $_isCloudOnline");
+        _refreshCommandAvailabilityFromConnectionState();
+      });
+      
+      // Don't wait for both - let them complete independently
+      bleConnectionFuture.catchError((e) => log.warning("BLE connection failed: $e"));
+      cloudStatusFuture.catchError((e) => log.warning("Cloud status check failed: $e"));
+      
+      log.info("Connection attempts started for ${scooter.name}");
+    } else {
+      _isCloudOnline = false;
+      _commandAvailabilityCache.clear();
+    }
+    
+    notifyListeners();
+  }
+  
+  /// Set up listeners for connection state changes
+  void _setupConnectionListeners() {
+    if (_bleConnectionService != null) {
+      _bleConnectionService!.connectionStream.listen((scooterId) {
+        log.info("BLE connection state changed: $scooterId");
+        // Only refresh command availability when BLE connection changes
+        // Don't re-check cloud status - we already did that once
+        _refreshCommandAvailabilityFromConnectionState();
+      });
+    }
+  }
+  
+  /// Refresh command availability based on current connection state (without re-checking cloud)
+  void _refreshCommandAvailabilityFromConnectionState() {
+    if (_currentScooter == null) {
+      log.info("_refreshCommandAvailabilityFromConnectionState: No current scooter");
+      _commandAvailabilityCache.clear();
+      connected = false;
+      state = ScooterState.disconnected;
+      notifyListeners();
+      return;
+    }
+    
+    // Simple logic: if BLE is connected, enable BLE commands
+    // If cloud is available (from our one-time check), enable cloud commands
+    bool bleConnected = _bleConnectionService?.isConnectedTo(_currentScooter!.id) ?? false;
+    bool cloudAvailable = _currentScooter!.cloudScooterId != null && _isCloudOnline;
+    
+    log.info("_refreshCommandAvailabilityFromConnectionState: BLE connected: $bleConnected, Cloud available: $cloudAvailable");
+    log.info("_refreshCommandAvailabilityFromConnectionState: Current scooter cloudScooterId: ${_currentScooter!.cloudScooterId}, _isCloudOnline: $_isCloudOnline");
+    
+    // Update legacy connection state
+    if (bleConnected || cloudAvailable) {
+      connected = true;
+      _foundSth = true;
+      
+      // Only update state if we don't have a cloud state already
+      if (!cloudAvailable) {
+        state = ScooterState.unknown; // BLE-only connection
+      }
+      // For cloud connections, state is already updated in _refreshCloudOnlineStatus
+      
+      // Set up old architecture compatibility if BLE is connected
+      if (bleConnected && _bleConnectionService?.connectedDevice != null) {
+        myScooter = _bleConnectionService!.connectedDevice!;
+      }
+      
+      // Update background service
+      updateBackgroundService({
+        "scooterName": scooterName,
+        "scooterColor": scooterColor,
+        "lastPingInt": DateTime.now().millisecondsSinceEpoch,
+      });
+      
+      log.info("_refreshCommandAvailabilityFromConnectionState: Setting connected = true");
+    } else {
+      connected = false;
+      state = ScooterState.disconnected;
+      _foundSth = false;
+      log.info("_refreshCommandAvailabilityFromConnectionState: Setting connected = false");
+    }
+    
+    for (CommandType command in CommandType.values) {
+      bool available = false;
+      
+      if (bleConnected) {
+        // All commands available via BLE
+        available = true;
+      } else if (cloudAvailable) {
+        // Only cloud-supported commands available
+        available = _isCommandSupportedInCloud(command);
+      }
+      
+      _commandAvailabilityCache[command] = available;
+    }
+    
+    log.info("_refreshCommandAvailabilityFromConnectionState: Command availability cache updated: $_commandAvailabilityCache");
+    notifyListeners();
+  }
+  
+  /// Check if command is supported in cloud (copied from CloudCommandService)
+  bool _isCommandSupportedInCloud(CommandType command) {
+    switch (command) {
+      case CommandType.lock:
+      case CommandType.unlock:
+      case CommandType.hibernate:
+      case CommandType.openSeat:
+      case CommandType.blinkerLeft:
+      case CommandType.blinkerRight:
+      case CommandType.blinkerBoth:
+      case CommandType.blinkerOff:
+      case CommandType.honk:
+      case CommandType.alarm:
+        return true;
+      case CommandType.wakeUp:
+        return false; // Not supported in cloud API
+    }
+  }
+  
+  /// Refresh cloud online status for current scooter
+  Future<void> _refreshCloudOnlineStatus() async {
+    if (_currentScooter?.cloudScooterId == null) {
+      _isCloudOnline = false;
+      return;
+    }
+    
+    try {
+      _ensureCloudServicesInitialized();
+      final scooterData = await _cloudService!.getScooter(_currentScooter!.cloudScooterId!);
+      
+      if (scooterData != null) {
+        // Check if scooter is online
+        _isCloudOnline = scooterData.containsKey('online') && scooterData['online'] == true;
+        
+        // Update scooter state from cloud if available
+        if (_isCloudOnline && scooterData.containsKey('state')) {
+          state = _convertCloudStateToScooterState(scooterData['state']);
+          log.info("Updated scooter state from cloud: ${scooterData['state']} -> $state");
+        }
+        
+        // Update seatbox status from cloud
+        if (scooterData.containsKey('seatbox')) {
+          seatClosed = scooterData['seatbox'] == 'closed';
+          log.info("Updated seatbox status from cloud: ${scooterData['seatbox']} -> seatClosed=$seatClosed");
+        }
+        
+        // Update battery levels from cloud if available
+        if (scooterData.containsKey('batteries')) {
+          final batteries = scooterData['batteries'];
+          if (batteries is Map) {
+            if (batteries.containsKey('battery0') && batteries['battery0']['present'] == true) {
+              final level = batteries['battery0']['level'];
+              if (level != null) {
+                primarySOC = int.tryParse(level.toString().split('.')[0]) ?? primarySOC;
+                log.info("Updated primary battery from cloud: ${level}% -> $primarySOC%");
+              }
+            }
+            if (batteries.containsKey('battery1') && batteries['battery1']['present'] == true) {
+              final level = batteries['battery1']['level'];
+              if (level != null) {
+                secondarySOC = int.tryParse(level.toString().split('.')[0]) ?? secondarySOC;
+                log.info("Updated secondary battery from cloud: ${level}% -> $secondarySOC%");
+              }
+            }
+            
+            // Update auxiliary battery
+            if (batteries.containsKey('aux')) {
+              final aux = batteries['aux'];
+              if (aux is Map && aux.containsKey('level')) {
+                final level = aux['level'];
+                if (level != null) {
+                  auxSOC = int.tryParse(level.toString().split('.')[0]) ?? auxSOC;
+                  log.info("Updated auxiliary battery from cloud: ${level}% -> $auxSOC%");
+                }
+              }
+            }
+            
+            // Update CBB battery
+            if (batteries.containsKey('cbb')) {
+              final cbb = batteries['cbb'];
+              if (cbb is Map && cbb.containsKey('level')) {
+                final level = cbb['level'];
+                if (level != null) {
+                  cbbSOC = int.tryParse(level.toString().split('.')[0]) ?? cbbSOC;
+                  log.info("Updated CBB battery from cloud: ${level}% -> $cbbSOC%");
+                }
+              }
+            }
+          }
+        }
+        
+        // Update last seen timestamp
+        if (scooterData.containsKey('last_seen_at')) {
+          final lastSeenStr = scooterData['last_seen_at'];
+          if (lastSeenStr != null) {
+            try {
+              lastPing = DateTime.parse(lastSeenStr.toString());
+              log.info("Updated last seen from cloud: $lastSeenStr");
+            } catch (e) {
+              log.warning("Failed to parse last_seen_at: $lastSeenStr");
+            }
+          }
+        }
+        
+        // Update location from cloud if available
+        if (scooterData.containsKey('location')) {
+          final location = scooterData['location'];
+          if (location is Map && location.containsKey('lat') && location.containsKey('lng')) {
+            final lat = location['lat'];
+            final lng = location['lng'];
+            if (lat != null && lng != null) {
+              try {
+                final latDouble = double.parse(lat.toString());
+                final lngDouble = double.parse(lng.toString());
+                if (_currentScooter != null) {
+                  _currentScooter!.lastLocation = LatLng(latDouble, lngDouble);
+                  log.info("Updated location from cloud: $latDouble, $lngDouble");
+                }
+              } catch (e) {
+                log.warning("Failed to parse location: lat=$lat, lng=$lng");
+              }
+            }
+          }
+        }
+      } else {
+        _isCloudOnline = false;
+      }
+    } catch (e) {
+      log.warning("Failed to check cloud online status", e);
+      _isCloudOnline = false;
+    }
+  }
+  
+  /// Convert cloud state string to ScooterState enum
+  ScooterState _convertCloudStateToScooterState(String cloudState) {
+    switch (cloudState) {
+      case 'stand-by':
+        return ScooterState.standby;
+      case 'parked':
+        return ScooterState.parked;
+      case 'ready-to-drive':
+        return ScooterState.ready;
+      case 'shutting-down':
+        return ScooterState.shuttingDown;
+      case 'updating':
+        return ScooterState.booting; // Closest equivalent
+      case 'waiting-hibernation-confirm':
+        return ScooterState.hibernatingImminent;
+      case 'waiting-hibernation':
+        return ScooterState.hibernating;
+      default:
+        log.warning("Unknown cloud state: $cloudState");
+        return ScooterState.cloudConnected; // Fallback
+    }
+  }
+
+  /// Check if current scooter is online in the cloud
+  Future<bool> _isCurrentScooterOnlineInCloud() async {
+    if (_currentScooter?.cloudScooterId == null) return false;
+    
+    try {
+      _ensureCloudServicesInitialized();
+      return await _cloudService!.isScooterOnline(_currentScooter!.cloudScooterId!);
+    } catch (e) {
+      log.warning("Failed to check cloud online status", e);
+      return false;
+    }
+  }
+
+  /// Get connection status for current scooter
+  ConnectionStatus get connectionStatus {
+    if (_currentScooter == null) return ConnectionStatus.none;
+    
+    bool bleConnected = _bleConnectionService?.isConnectedTo(_currentScooter!.id) ?? false;
+    bool cloudAvailable = _currentScooter!.cloudScooterId != null && _isCloudOnline;
+    
+    if (bleConnected && cloudAvailable) {
+      return ConnectionStatus.both;
+    } else if (bleConnected) {
+      return ConnectionStatus.ble;
+    } else if (cloudAvailable) {
+      return ConnectionStatus.cloud;
+    } else {
+      return ConnectionStatus.offline;
+    }
+  }
+
+  /// Get status text for current connection
+  String getStatusText(BuildContext context) {
+    return connectionStatus.name(context);
+  }
+  
+  /// Manually trigger connection attempts for current scooter
+  Future<void> connectToCurrentScooter() async {
+    if (_currentScooter == null) return;
+    
+    log.info("Manually connecting to current scooter: ${_currentScooter!.name}");
+    
+    // Start both connection attempts in parallel
+    final bleConnectionFuture = _bleConnectionService?.attemptConnection(_currentScooter!.id);
+    final cloudStatusFuture = _refreshCloudOnlineStatus();
+    
+    // Wait for both to complete, then refresh command availability
+    if (bleConnectionFuture != null) {
+      await Future.wait([bleConnectionFuture, cloudStatusFuture]);
+    } else {
+      await cloudStatusFuture;
+    }
+    
+    _refreshCommandAvailabilityFromConnectionState();
+    log.info("Manual connection attempts completed");
   }
 
   void _pollLocation() async {
