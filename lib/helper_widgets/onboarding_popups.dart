@@ -58,23 +58,31 @@ Future<void> showServerNotifications(BuildContext context) async {
   final log = Logger('ServerNotifications');
   log.info("Fetching server notifications");
   // get the notifications json from https://reunu.github.io/unustasis/notifications.json
-  Response response = await get(
-      Uri.parse("https://reunu.github.io/unustasis/notifications.json"));
-  if (response.statusCode != 200) {
-    log.warning("Failed to fetch notifications: ${response.statusCode}");
-    return;
-  } else {
+  List<dynamic> notifications;
+  try {
+    final response = await get(
+        Uri.parse("https://reunu.github.io/unustasis/notifications.json"));
+    if (response.statusCode != 200) {
+      log.warning("Failed to fetch notifications: ${response.statusCode}");
+      return;
+    }
     log.info("Successfully fetched notifications");
-  }
-  List<dynamic> notifications = json.decode(response.body) as List<dynamic>;
-  if (notifications.isEmpty) {
-    log.warning("No notifications found");
+
+    notifications = json.decode(response.body) as List<dynamic>;
+    if (notifications.isEmpty) {
+      log.warning("No notifications found");
+      return;
+    }
+  } catch (e, stack) {
+    log.severe("Failed to fetch or parse notifications", e, stack);
     return;
   }
 
   SharedPreferencesAsync prefs = SharedPreferencesAsync();
   List<String> shownServerNotifications =
       await prefs.getStringList("shownServerNotifications") ?? [];
+  String appName = (await PackageInfo.fromPlatform()).appName;
+  String platform = Platform.operatingSystem;
 
   for (var notification in notifications) {
     // check for validity
@@ -87,16 +95,14 @@ Future<void> showServerNotifications(BuildContext context) async {
       continue;
     }
     // check if this is meant for this branch of the app
-    PackageInfo packageInfo = await PackageInfo.fromPlatform();
-    if (notification['branch'] != null &&
-        notification['branch'] != packageInfo.appName) {
+    if (notification['branch'] != null && notification['branch'] != appName) {
       log.info(
           "Notification ${notification['id']} is only meant for this branch: ${notification['branch']}. Skipping.");
       continue;
     }
     // check if this is meant for this platform
     if (notification['platform'] != null &&
-        notification['platform'] != Platform.operatingSystem) {
+        notification['platform'] != platform) {
       log.info(
           "Notification ${notification['id']} is only meant for this platform: ${notification['platform']}. Skipping.");
       continue;
@@ -174,7 +180,7 @@ Future<void> showServerNotifications(BuildContext context) async {
     // add the notification to the list of shown notifications
     shownServerNotifications.add(notification['id']);
     // save the list of shown notifications
-    await prefs.setStringList(
-        "shownServerNotifications", shownServerNotifications);
   }
+  await prefs.setStringList(
+      "shownServerNotifications", shownServerNotifications);
 }
