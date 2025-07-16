@@ -316,61 +316,76 @@ class SavedScooterCard extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 if (!connected)
-                  InkWell(
-                    onTap: savedScooter.lastLocation != null ? () {
+                  Text(
+                    FlutterI18n.translate(context, "state_name_disconnected"),
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                const SizedBox(height: 24),
+                Divider(
+                  indent: 16,
+                  endIndent: 16,
+                  height: 0,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.1),
+                ),
+                if (!connected)
+                  ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                    title: Text(FlutterI18n.translate(
+                        context, "stats_last_ping_title")),
+                    subtitle: Text(FlutterI18n.translate(
+                        context, "stats_last_ping",
+                        translationParams: {
+                          "time": savedScooter.lastPing
+                              .calculateTimeDifferenceInShort(context)
+                              .toLowerCase()
+                        })),
+                    onTap: () {
+                      Fluttertoast.showToast(
+                          msg: savedScooter.lastPing
+                              .toString()
+                              .substring(0, 16));
+                    },
+                  ),
+                if (savedScooter.lastLocation != null && !connected)
+                  Divider(
+                    indent: 16,
+                    endIndent: 16,
+                    height: 0,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.1),
+                  ),
+                if (savedScooter.lastLocation != null && !connected)
+                  ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                    title: Text(
+                      FlutterI18n.translate(context, "stats_last_seen_near"),
+                    ),
+                    subtitle: FutureBuilder<String?>(
+                      future: GeoHelper.getAddress(
+                          savedScooter.lastLocation!, context),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData) {
+                          return Text(snapshot.data!);
+                        } else {
+                          return Text(
+                            FlutterI18n.translate(context, "stats_no_location"),
+                          );
+                        }
+                      },
+                    ),
+                    trailing: const Icon(Icons.exit_to_app_outlined),
+                    onTap: () {
                       MapsLauncher.launchCoordinates(
                         savedScooter.lastLocation!.latitude,
                         savedScooter.lastLocation!.longitude,
                       );
-                    } : null,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          FlutterI18n.translate(context, "stats_last_ping", 
-                            translationParams: {
-                              "time": savedScooter.lastPing.calculateTimeDifferenceInShort(context).toLowerCase()
-                            }),
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        if (savedScooter.lastLocation != null) ...[
-                          Text(
-                            " near ",
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                            ),
-                          ),
-                          Flexible(
-                            child: FutureBuilder<String?>(
-                              future: GeoHelper.getAddress(savedScooter.lastLocation!, context),
-                              builder: (context, snapshot) {
-                                if (snapshot.hasData) {
-                                  return Text(
-                                    snapshot.data!,
-                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                      color: Theme.of(context).colorScheme.primary,
-                                      decoration: TextDecoration.underline,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  );
-                                } else {
-                                  return Text(
-                                    "${savedScooter.lastLocation!.latitude.toStringAsFixed(4)}, ${savedScooter.lastLocation!.longitude.toStringAsFixed(4)}",
-                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                      color: Theme.of(context).colorScheme.primary,
-                                      decoration: TextDecoration.underline,
-                                    ),
-                                  );
-                                }
-                              },
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
+                    },
                   ),
-                const SizedBox(height: 24),
                 Divider(
                   indent: 16,
                   endIndent: 16,
