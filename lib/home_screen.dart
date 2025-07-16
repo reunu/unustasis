@@ -104,10 +104,11 @@ class _HomeScreenState extends State<HomeScreen> {
       log.warning("No notifications found");
       return;
     }
-    // check if we've already shown this
+
     SharedPreferencesAsync prefs = SharedPreferencesAsync();
     List<String> shownServerNotifications =
         await prefs.getStringList("shownServerNotifications") ?? [];
+
     for (var notification in notifications) {
       // check for validity
       if (notification['id'] == null ||

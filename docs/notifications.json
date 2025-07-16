@@ -4,7 +4,7 @@
         "timestamp": "1970-01-01T00:00:00Z",
         "branch": "unustasis",
         "platform": "ios",
-        "duration-days": 100000,
+        "duration-days": 100,
         "title": {
             "en": "Sample Notification",
             "de": "Beispielbenachrichtigung",
@@ -32,7 +32,7 @@
         "timestamp": "1970-01-01T00:00:00Z",
         "branch": "unustasis",
         "platform": "android",
-        "duration-days": 100000,
+        "duration-days": 100,
         "title": {
             "en": "Sample Notification",
             "de": "Beispielbenachrichtigung",
