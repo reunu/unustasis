@@ -113,12 +113,28 @@ Future<void> showServerNotifications(BuildContext context) async {
       continue;
     }
     // check for timeframe
-    DateTime timestamp = DateTime.parse(notification['timestamp']);
-    int durationDays = notification['duration-days'] as int;
-    if (timestamp.isAfter(DateTime.now()) ||
-        timestamp.add(Duration(days: durationDays)).isBefore(DateTime.now())) {
-      log.info(
-          "Notification ${notification['id']} is not valid for current time");
+    DateTime timestamp;
+    int durationDays;
+    try {
+      timestamp = DateTime.parse(notification['timestamp']);
+      durationDays = notification['duration-days'] as int;
+      if (durationDays < 0) {
+        log.warning(
+            "Invalid duration for notification ${notification['id']}: $durationDays days");
+        continue;
+      }
+      if (timestamp.isAfter(DateTime.now()) ||
+          timestamp
+              .add(Duration(days: durationDays))
+              .isBefore(DateTime.now())) {
+        log.info(
+            "Notification ${notification['id']} is not valid for current time");
+        continue;
+      }
+    } catch (e) {
+      log.warning(
+          "Invalid date format for notification ${notification['id']}: ${notification['timestamp']}",
+          e);
       continue;
     }
     // make sure we still have a context
