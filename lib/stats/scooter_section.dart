@@ -13,15 +13,18 @@ import '../domain/saved_scooter.dart';
 import '../domain/scooter_state.dart';
 import '../geo_helper.dart';
 import '../scooter_service.dart';
+import '../helper_widgets/color_picker_dialog.dart';
 
 class ScooterSection extends StatefulWidget {
   const ScooterSection({
     super.key,
     required this.dataIsOld,
+    this.isListView = false,
     this.onNavigateBack,
   });
 
   final bool dataIsOld;
+  final bool isListView;
   final VoidCallback? onNavigateBack;
 
   @override
@@ -74,24 +77,39 @@ class _ScooterSectionState extends State<ScooterSection> {
       shrinkWrap: true,
       children: [
         ...sortedScooters(context).map((scooter) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            child: SavedScooterCard(
-              savedScooter: scooter,
-              single: sortedScooters(context).length == 1,
-              connected: (scooter.id ==
-                      context
-                          .read<ScooterService>()
-                          .myScooter
-                          ?.remoteId
-                          .toString() &&
-                  context.select<ScooterService, ScooterState?>(
-                          (service) => service.state) !=
-                      ScooterState.disconnected),
-              rebuild: () => setState(() {}),
-              onNavigateBack: widget.onNavigateBack,
-            ),
-          );
+          final bool connected = (scooter.id ==
+                  context
+                      .read<ScooterService>()
+                      .myScooter
+                      ?.remoteId
+                      .toString() &&
+              context.select<ScooterService, ScooterState?>(
+                      (service) => service.state) !=
+                  ScooterState.disconnected);
+          
+          if (widget.isListView) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
+              child: SavedScooterListItem(
+                savedScooter: scooter,
+                single: sortedScooters(context).length == 1,
+                connected: connected,
+                rebuild: () => setState(() {}),
+                onNavigateBack: widget.onNavigateBack,
+              ),
+            );
+          } else {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              child: SavedScooterCard(
+                savedScooter: scooter,
+                single: sortedScooters(context).length == 1,
+                connected: connected,
+                rebuild: () => setState(() {}),
+                onNavigateBack: widget.onNavigateBack,
+              ),
+            );
+          }
         }),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
@@ -851,5 +869,328 @@ class SavedScooterCard extends StatelessWidget {
         return char;
       }
     }).join('');
+  }
+}
+
+class SavedScooterListItem extends StatelessWidget {
+  final log = Logger("ScooterSection");
+  final bool connected;
+  final SavedScooter savedScooter;
+  final bool single;
+  final void Function() rebuild;
+  final VoidCallback? onNavigateBack;
+
+  SavedScooterListItem({
+    super.key,
+    required this.savedScooter,
+    required this.connected,
+    required this.single,
+    required this.rebuild,
+    this.onNavigateBack,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: !connected ? () async {
+        try {
+          log.info("Trying to connect to ${savedScooter.id}");
+          
+          // Start the connection but don't wait for it to fully complete
+          // Just initiate it and navigate back immediately
+          context
+              .read<ScooterService>()
+              .connectToScooterId(savedScooter.id);
+          
+          if (context.mounted) {
+            context
+                .read<ScooterService>()
+                .startAutoRestart();
+            rebuild();
+            // Navigate back to main screen after initiating connection
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              onNavigateBack?.call();
+            });
+          }
+        } catch (e, stack) {
+          log.severe("Couldn't connect to ${savedScooter.id}", e, stack);
+          if (context.mounted) {
+            Fluttertoast.showToast(
+                msg: FlutterI18n.translate(context, "settings_connect_failed",
+                    translationParams: {"name": savedScooter.name}));
+          }
+        }
+      } : null,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: const BorderRadius.all(Radius.circular(12)),
+          color: Theme.of(context).colorScheme.surfaceContainer,
+        ),
+        child: Column(
+        children: [
+          // First row: Scooter image and name
+          Row(
+            children: [
+              // Scooter image - half the current size with connection indicator
+              Padding(
+                padding: const EdgeInsets.all(8),
+                child: GestureDetector(
+                  onLongPress: () async {
+                    HapticFeedback.mediumImpact();
+                    int? newColor = await showColorDialog(
+                        savedScooter.color, savedScooter.name, context);
+                    if (newColor != null && context.mounted) {
+                      setColor(newColor, context);
+                      rebuild();
+                    }
+                  },
+                  child: SizedBox(
+                    height: 80,
+                    child: Stack(
+                      children: [
+                        Image.asset(
+                          "images/scooter/side_${savedScooter.color}.webp",
+                          height: 80,
+                        ),
+                        // Green circle indicator for connected scooter
+                        if (connected)
+                          Positioned(
+                            top: 4,
+                            left: 4,
+                            child: Container(
+                              width: 12,
+                              height: 12,
+                              decoration: BoxDecoration(
+                                color: Colors.green,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Theme.of(context).colorScheme.surface,
+                                  width: 2,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Name and status
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    GestureDetector(
+                      onLongPress: () async {
+                        HapticFeedback.mediumImpact();
+                        String? newName =
+                            await showRenameDialog(savedScooter.name, context);
+                        if (newName != null &&
+                            newName.isNotEmpty &&
+                            newName != savedScooter.name &&
+                            context.mounted) {
+                          context.read<ScooterService>().renameSavedScooter(
+                              name: newName, id: savedScooter.id);
+                          rebuild();
+                        }
+                      },
+                      child: Text(
+                        savedScooter.name,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    // Connection status for connected scooters only
+                    if (connected)
+                      Text(
+                        context
+                                .select<ScooterService, ScooterState?>(
+                                    (service) => service.state)
+                                ?.description(context) ??
+                            FlutterI18n.translate(context, "stats_unknown"),
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    // Battery SOC data
+                    if (savedScooter.lastPrimarySOC != null || savedScooter.lastSecondarySOC != null) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          if (savedScooter.lastPrimarySOC != null) ...[
+                            SizedBox(
+                              width: 50,
+                              child: LinearProgressIndicator(
+                                backgroundColor: Colors.black26,
+                                minHeight: 4,
+                                borderRadius: BorderRadius.circular(4),
+                                value: savedScooter.lastPrimarySOC! / 100.0,
+                                color: savedScooter.lastPrimarySOC! <= 15
+                                    ? Theme.of(context).colorScheme.error
+                                    : Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              "${savedScooter.lastPrimarySOC}%",
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                              ),
+                            ),
+                          ],
+                          if (savedScooter.lastPrimarySOC != null && savedScooter.lastSecondarySOC != null && savedScooter.lastSecondarySOC! > 0)
+                            const SizedBox(width: 12),
+                          if (savedScooter.lastSecondarySOC != null && savedScooter.lastSecondarySOC! > 0) ...[
+                            SizedBox(
+                              width: 50,
+                              child: LinearProgressIndicator(
+                                backgroundColor: Colors.black26,
+                                minHeight: 4,
+                                borderRadius: BorderRadius.circular(4),
+                                value: savedScooter.lastSecondarySOC! / 100.0,
+                                color: savedScooter.lastSecondarySOC! <= 15
+                                    ? Theme.of(context).colorScheme.error
+                                    : Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              "${savedScooter.lastSecondarySOC}%",
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                    // Location on separate line (for disconnected scooters)
+                    if (!connected && savedScooter.lastLocation != null) ...[
+                      const SizedBox(height: 2),
+                      GestureDetector(
+                        onTap: () {
+                          MapsLauncher.launchCoordinates(
+                            savedScooter.lastLocation!.latitude,
+                            savedScooter.lastLocation!.longitude,
+                          );
+                        },
+                        child: FutureBuilder<String?>(
+                          future: GeoHelper.getAddress(savedScooter.lastLocation!, context),
+                          builder: (context, snapshot) {
+                            String locationText = snapshot.hasData 
+                                ? snapshot.data!
+                                : FlutterI18n.translate(context, "stats_no_location");
+                            return Text(
+                              locationText,
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                    // Last seen timestamp at bottom (for disconnected scooters only)
+                    if (!connected) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        "${savedScooter.lastPing.calculateTimeDifferenceInShort(context).toLowerCase()} ago",
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+        ),
+      ),
+    );
+  }
+
+  void setColor(int newColor, BuildContext context) async {
+    savedScooter.color = newColor;
+    SharedPreferencesAsync prefs = SharedPreferencesAsync();
+    await prefs.setInt("color", newColor);
+    if (context.mounted) context.read<ScooterService>().scooterColor = newColor;
+  }
+
+  Future<String?> showRenameDialog(String initialValue, BuildContext context) {
+    return showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        TextEditingController textController =
+            TextEditingController(text: initialValue);
+        FocusNode textFieldNode = FocusNode();
+
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (context.mounted) {
+            FocusScope.of(context).requestFocus(textFieldNode);
+          }
+        });
+
+        return AlertDialog(
+          title: Text(FlutterI18n.translate(context, "stats_name")),
+          content: TextField(
+            controller: textController,
+            focusNode: textFieldNode,
+          ),
+          actions: [
+            TextButton(
+              child:
+                  Text(FlutterI18n.translate(context, "stats_rename_cancel")),
+              onPressed: () {
+                Navigator.of(context).pop(); // Close without returning data
+              },
+            ),
+            TextButton(
+              child: Text(FlutterI18n.translate(context, "stats_rename_save")),
+              onPressed: () {
+                Navigator.of(context)
+                    .pop(textController.text); // Return the text
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
+  Future<bool?> showForgetDialog(BuildContext context) {
+    return showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(FlutterI18n.translate(context, "forget_alert_title")),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text(FlutterI18n.translate(context, "forget_alert_body",
+                    translationParams: {"name": savedScooter.name})),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text(FlutterI18n.translate(context, "forget_alert_cancel")),
+              onPressed: () {
+                Navigator.of(context).pop(false);
+              },
+            ),
+            TextButton(
+              child: Text(FlutterI18n.translate(context, "forget_alert_confirm")),
+              onPressed: () {
+                Navigator.of(context).pop(true);
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 }
