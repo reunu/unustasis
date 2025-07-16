@@ -16,7 +16,8 @@ enum ScooterState {
   linking,
   disconnected,
   connectingSpecific,
-  connectingAuto;
+  connectingAuto,
+  cloudConnected;
 
   static ScooterState? fromString(String? state) {
     final log = Logger("ScooterState.fromStateString");
@@ -91,6 +92,9 @@ extension StateExtension on ScooterState {
       case ScooterState.parked:
         // scooter is awake and ready to party!
         return Theme.of(context).colorScheme.primary;
+      case ScooterState.cloudConnected:
+        // scooter is connected via cloud
+        return Theme.of(context).colorScheme.primary.withOpacity(0.7);
       case ScooterState.unknown:
       case ScooterState.disconnected:
       default:
@@ -127,6 +131,8 @@ extension StateExtension on ScooterState {
         return FlutterI18n.translate(context, "state_name_connecting");
       case ScooterState.connectingAuto:
         return FlutterI18n.translate(context, "state_name_scanning");
+      case ScooterState.cloudConnected:
+        return FlutterI18n.translate(context, "state_name_cloud_connected");
     }
   }
 
@@ -158,6 +164,8 @@ extension StateExtension on ScooterState {
         return FlutterI18n.translate(context, "state_desc_connecting");
       case ScooterState.connectingAuto:
         return FlutterI18n.translate(context, "state_desc_scanning");
+      case ScooterState.cloudConnected:
+        return FlutterI18n.translate(context, "state_desc_cloud_connected");
     }
   }
 
@@ -179,6 +187,7 @@ extension StateExtension on ScooterState {
       case ScooterState.hibernatingImminent:
       case ScooterState.parked:
       case ScooterState.ready:
+      case ScooterState.cloudConnected:
         return true;
       default:
         return false;
@@ -191,6 +200,8 @@ extension StateExtension on ScooterState {
       case ScooterState.hibernatingImminent:
       case ScooterState.booting:
         return false;
+      case ScooterState.cloudConnected:
+        return true;
       default:
         return true;
     }
