@@ -222,67 +222,9 @@ class SavedScooterCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const SizedBox(width: 32),
-                      Expanded(
-                        child: Column(
-                          children: [
-                            Text(
-                              savedScooter.name,
-                              style: Theme.of(context).textTheme.headlineMedium,
-                            ),
-                            if (savedScooter.lastPrimarySOC != null || savedScooter.lastSecondarySOC != null)
-                              const SizedBox(height: 4),
-                            if (savedScooter.lastPrimarySOC != null || savedScooter.lastSecondarySOC != null)
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  if (savedScooter.lastPrimarySOC != null) ...[
-                                    SizedBox(
-                                      width: 60,
-                                      child: LinearProgressIndicator(
-                                        backgroundColor: Colors.black26,
-                                        minHeight: 6,
-                                        borderRadius: BorderRadius.circular(6),
-                                        value: savedScooter.lastPrimarySOC! / 100.0,
-                                        color: savedScooter.lastPrimarySOC! <= 15
-                                            ? Theme.of(context).colorScheme.error
-                                            : Theme.of(context).colorScheme.primary,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      "${savedScooter.lastPrimarySOC}%",
-                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                                      ),
-                                    ),
-                                  ],
-                                  if (savedScooter.lastPrimarySOC != null && savedScooter.lastSecondarySOC != null && savedScooter.lastSecondarySOC! > 0)
-                                    const VerticalDivider(width: 16),
-                                  if (savedScooter.lastSecondarySOC != null && savedScooter.lastSecondarySOC! > 0) ...[
-                                    SizedBox(
-                                      width: 60,
-                                      child: LinearProgressIndicator(
-                                        backgroundColor: Colors.black26,
-                                        minHeight: 6,
-                                        borderRadius: BorderRadius.circular(6),
-                                        value: savedScooter.lastSecondarySOC! / 100.0,
-                                        color: savedScooter.lastSecondarySOC! <= 15
-                                            ? Theme.of(context).colorScheme.error
-                                            : Theme.of(context).colorScheme.primary,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      "${savedScooter.lastSecondarySOC}%",
-                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                          ],
-                        ),
+                      Text(
+                        savedScooter.name,
+                        style: Theme.of(context).textTheme.headlineMedium,
                       ),
                       const SizedBox(width: 12),
                       const Icon(
@@ -316,9 +258,65 @@ class SavedScooterCard extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 if (!connected)
-                  Text(
-                    FlutterI18n.translate(context, "state_name_disconnected"),
-                    style: Theme.of(context).textTheme.titleMedium,
+                  Column(
+                    children: [
+                      Text(
+                        FlutterI18n.translate(context, "state_name_disconnected"),
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      if (savedScooter.lastPrimarySOC != null || savedScooter.lastSecondarySOC != null)
+                        const SizedBox(height: 4),
+                      if (savedScooter.lastPrimarySOC != null || savedScooter.lastSecondarySOC != null)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            if (savedScooter.lastPrimarySOC != null) ...[
+                              SizedBox(
+                                width: 60,
+                                child: LinearProgressIndicator(
+                                  backgroundColor: Colors.black26,
+                                  minHeight: 6,
+                                  borderRadius: BorderRadius.circular(6),
+                                  value: savedScooter.lastPrimarySOC! / 100.0,
+                                  color: savedScooter.lastPrimarySOC! <= 15
+                                      ? Theme.of(context).colorScheme.error
+                                      : Theme.of(context).colorScheme.primary,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                "${savedScooter.lastPrimarySOC}%",
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                                ),
+                              ),
+                            ],
+                            if (savedScooter.lastPrimarySOC != null && savedScooter.lastSecondarySOC != null && savedScooter.lastSecondarySOC! > 0)
+                              const VerticalDivider(width: 16),
+                            if (savedScooter.lastSecondarySOC != null && savedScooter.lastSecondarySOC! > 0) ...[
+                              SizedBox(
+                                width: 60,
+                                child: LinearProgressIndicator(
+                                  backgroundColor: Colors.black26,
+                                  minHeight: 6,
+                                  borderRadius: BorderRadius.circular(6),
+                                  value: savedScooter.lastSecondarySOC! / 100.0,
+                                  color: savedScooter.lastSecondarySOC! <= 15
+                                      ? Theme.of(context).colorScheme.error
+                                      : Theme.of(context).colorScheme.primary,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                "${savedScooter.lastSecondarySOC}%",
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                    ],
                   ),
                 const SizedBox(height: 24),
                 Divider(
