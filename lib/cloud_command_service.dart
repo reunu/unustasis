@@ -35,7 +35,12 @@ class CloudCommandService implements CommandService {
     }
 
     // Check if cloud service is reachable
-    return await cloudService.isServiceAvailable();
+    if (!await cloudService.isServiceAvailable()) {
+      return false;
+    }
+
+    // Check if the scooter is online in the cloud
+    return await cloudService.isScooterOnline(cloudScooterId);
   }
 
   @override
