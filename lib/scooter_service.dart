@@ -73,6 +73,7 @@ class ScooterService with ChangeNotifier {
   
   // Cloud connectivity cache
   bool _isCloudOnline = false;
+  bool _isCloudConnecting = false;
   
   // Cloud scooter data cache
   Map<int, Map<String, dynamic>> _cloudScooterCache = {};
@@ -541,6 +542,7 @@ class ScooterService with ChangeNotifier {
 
   bool _scanning = false;
   bool get scanning => _scanning;
+  bool get cloudConnecting => _isCloudConnecting;
   set scanning(bool scanning) {
     log.info("Scanning: $scanning");
     _scanning = scanning;
@@ -1210,10 +1212,14 @@ class ScooterService with ChangeNotifier {
   Future<void> _refreshCloudOnlineStatus() async {
     if (_currentScooter?.cloudScooterId == null) {
       _isCloudOnline = false;
+      _isCloudConnecting = false;
       return;
     }
     
     try {
+      _isCloudConnecting = true;
+      notifyListeners();
+      
       _ensureCloudServicesInitialized();
       final scooterData = await _cloudService!.getScooter(_currentScooter!.cloudScooterId!);
       
@@ -1320,6 +1326,9 @@ class ScooterService with ChangeNotifier {
     } catch (e) {
       log.warning("Failed to check cloud online status", e);
       _isCloudOnline = false;
+    } finally {
+      _isCloudConnecting = false;
+      notifyListeners();
     }
   }
   
