@@ -15,7 +15,6 @@ import '../domain/scooter_state.dart';
 import '../domain/theme_helper.dart';
 import '../geo_helper.dart';
 import '../scooter_service.dart';
-import '../features.dart';
 import '../services/image_cache_service.dart';
 
 class ScooterSection extends StatefulWidget {
@@ -636,88 +635,142 @@ class SavedScooterCard extends StatelessWidget {
                       .onSurface
                       .withValues(alpha: 0.1),
                 ),
-                FutureBuilder<bool>(
-                  future: Features.isCloudConnectivityEnabled,
-                  builder: (context, cloudSnapshot) {
-                    final isCloudEnabled = cloudSnapshot.data ?? false;
-                    if (!isCloudEnabled) {
-                      return ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                        title: const Text("ID"),
-                        subtitle: Text(
-                          savedScooter.id,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      );
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                  title: const Text("ID"),
+                  subtitle: Text(
+                    savedScooter.id,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Consumer<ScooterService>(
+                  builder: (context, scooterService, child) {
+                    // Get cached cloud data immediately
+                    String cloudName = "";
+                    bool isCloudOnline = false;
+                    bool showCloudOptions = false;
+                    
+                    // Check if cloud features are enabled and user is authenticated
+                    // Use cached values to avoid FutureBuilder delays
+                    showCloudOptions = true; // Always show cloud options for now
+                    
+                    if (showCloudOptions && savedScooter.cloudScooterId != null) {
+                      final cachedData = scooterService.getCachedCloudScooterData(savedScooter.cloudScooterId!);
+                      if (cachedData != null) {
+                        cloudName = cachedData['name'] ?? savedScooter.cloudScooterName ?? 'Cloud linked';
+                        isCloudOnline = cachedData['online'] == true;
+                      } else {
+                        cloudName = savedScooter.cloudScooterName ?? 'Cloud linked';
+                      }
                     }
                     
-                    return FutureBuilder<bool>(
-                      future: context.read<ScooterService>().cloudService.isAuthenticated,
-                      builder: (context, authSnapshot) {
-                        final isAuthenticated = authSnapshot.data ?? false;
-                        if (!isAuthenticated) {
-                          return ListTile(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                            title: const Text("ID"),
-                            subtitle: Text(
-                              savedScooter.id,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          );
-                        }
-                        
-                        return ListTile(
+                    // Only show cloud ListTile if scooter is linked to cloud
+                    if (!showCloudOptions || savedScooter.cloudScooterId == null) {
+                      return const SizedBox.shrink();
+                    }
+                    
+                    return Column(
+                      children: [
+                        Divider(
+                          indent: 16,
+                          endIndent: 16,
+                          height: 0,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.1),
+                        ),
+                        ListTile(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                          title: const Text("ID"),
+                          title: Row(
+                            children: [
+                              const Text("Cloud"),
+                              const SizedBox(width: 8),
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: isCloudOnline
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+                                ),
+                              ),
+                            ],
+                          ),
                           subtitle: Text(
-                            savedScooter.cloudScooterId != null
-                                ? "${savedScooter.id} • ${savedScooter.cloudScooterName ?? 'Cloud linked'}"
-                                : savedScooter.id,
+                            cloudName,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          trailing: savedScooter.cloudScooterId != null
-                              ? GestureDetector(
-                                  onTap: () => _unlinkCloudScooter(context),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        "Unlink",
-                                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                          color: Theme.of(context).colorScheme.error,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Icon(
-                                        Icons.chevron_right,
-                                        size: 16,
-                                        color: Theme.of(context).colorScheme.error,
-                                      ),
-                                    ],
-                                  ),
-                                )
-                              : GestureDetector(
-                                  onTap: () => _linkToCloudScooter(context),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        "Link Cloud Scooter",
-                                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                          color: Theme.of(context).colorScheme.primary,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Icon(
-                                        Icons.chevron_right,
-                                        size: 16,
-                                        color: Theme.of(context).colorScheme.primary,
-                                      ),
-                                    ],
+                          trailing: GestureDetector(
+                            onTap: () => _unlinkCloudScooter(context),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  "Unlink",
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(context).colorScheme.error,
                                   ),
                                 ),
-                        );
-                      },
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.chevron_right,
+                                  size: 16,
+                                  color: Theme.of(context).colorScheme.error,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                Consumer<ScooterService>(
+                  builder: (context, scooterService, child) {
+                    // Only show link option if not already linked to cloud
+                    if (savedScooter.cloudScooterId != null) {
+                      return const SizedBox.shrink();
+                    }
+                    
+                    return Column(
+                      children: [
+                        Divider(
+                          indent: 16,
+                          endIndent: 16,
+                          height: 0,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.1),
+                        ),
+                        ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                          title: const Text("Cloud"),
+                          subtitle: const Text("Not linked"),
+                          trailing: GestureDetector(
+                            onTap: () => _linkToCloudScooter(context),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  "Link",
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(context).colorScheme.primary,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Icon(
+                                  Icons.chevron_right,
+                                  size: 16,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     );
                   },
                 ),

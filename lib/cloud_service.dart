@@ -98,8 +98,8 @@ class CloudService {
     final accessToken = await _secureStorage.read(key: 'access_token');
     final expiresAtStr = await _secureStorage.read(key: 'token_expires_at');
     
-    log.info('Access token exists: ${accessToken != null}');
-    log.info('Expires at: $expiresAtStr');
+    log.fine('Access token exists: ${accessToken != null}');
+    log.fine('Expires at: $expiresAtStr');
     
     if (accessToken == null || expiresAtStr == null) {
       log.warning('Missing access token or expiry time');
@@ -108,7 +108,7 @@ class CloudService {
 
     final expiresAt = DateTime.parse(expiresAtStr);
     final now = DateTime.now();
-    log.info('Token expires at: $expiresAt, now: $now');
+    log.fine('Token expires at: $expiresAt, now: $now');
     
     if (now.isAfter(expiresAt.subtract(const Duration(minutes: 5)))) {
       // Token is expired or expires soon, try to refresh
@@ -127,7 +127,7 @@ class CloudService {
       return result;
     }
 
-    log.info('Token is valid');
+    log.fine('Token is valid');
     return accessToken;
   }
 
