@@ -874,38 +874,115 @@ class _ScooterPowerButtonState extends State<ScooterPowerButton>
   }
 }
 
-class ConnectionStatusText extends StatelessWidget {
+class ConnectionStatusText extends StatefulWidget {
   const ConnectionStatusText({
     super.key,
   });
 
   @override
+  State<ConnectionStatusText> createState() => _ConnectionStatusTextState();
+}
+
+class _ConnectionStatusTextState extends State<ConnectionStatusText>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+    _pulseAnimation = Tween<double>(
+      begin: 0.4,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Selector<ScooterService, ConnectionStatus>(
-        selector: (context, service) => service.connectionStatus,
-        builder: (context, connectionStatus, _) {
+    return Selector<ScooterService, ({ConnectionStatus connectionStatus, bool scanning, bool cloudConnecting, ScooterState? state})>(
+        selector: (context, service) => (
+          connectionStatus: service.connectionStatus,
+          scanning: service.scanning,
+          cloudConnecting: service.cloudConnecting,
+          state: service.state,
+        ),
+        builder: (context, data, _) {
           final primaryColor = Theme.of(context).colorScheme.primary;
           final disabledColor = Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4);
           
-          bool bleConnected = connectionStatus == ConnectionStatus.ble || 
-                             connectionStatus == ConnectionStatus.both;
-          bool cloudConnected = connectionStatus == ConnectionStatus.cloud || 
-                               connectionStatus == ConnectionStatus.both;
+          bool bleConnected = data.connectionStatus == ConnectionStatus.ble || 
+                             data.connectionStatus == ConnectionStatus.both;
+          bool cloudConnected = data.connectionStatus == ConnectionStatus.cloud || 
+                               data.connectionStatus == ConnectionStatus.both;
+          
+          // Check if BLE or cloud is connecting
+          bool bleConnecting = data.scanning || 
+                              data.state == ScooterState.connectingSpecific || 
+                              data.state == ScooterState.connectingAuto;
+          bool cloudConnecting = data.cloudConnecting;
+          
+          // Start/stop animation based on connecting states
+          bool shouldAnimate = bleConnecting || cloudConnecting;
+          if (shouldAnimate && !_animationController.isAnimating) {
+            _animationController.repeat(reverse: true);
+          } else if (!shouldAnimate && _animationController.isAnimating) {
+            _animationController.stop();
+            _animationController.reset();
+          }
           
           return Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.bluetooth,
-                size: 16,
-                color: bleConnected ? primaryColor : disabledColor,
-              ),
+              bleConnecting 
+                ? AnimatedBuilder(
+                    animation: _pulseAnimation,
+                    builder: (context, child) {
+                      return Icon(
+                        Icons.bluetooth,
+                        size: 16,
+                        color: bleConnected 
+                          ? primaryColor 
+                          : disabledColor.withValues(alpha: _pulseAnimation.value),
+                      );
+                    },
+                  )
+                : Icon(
+                    Icons.bluetooth,
+                    size: 16,
+                    color: bleConnected ? primaryColor : disabledColor,
+                  ),
               const SizedBox(width: 8),
-              Icon(
-                Icons.cloud,
-                size: 16,
-                color: cloudConnected ? primaryColor : disabledColor,
-              ),
+              cloudConnecting 
+                ? AnimatedBuilder(
+                    animation: _pulseAnimation,
+                    builder: (context, child) {
+                      return Icon(
+                        Icons.cloud,
+                        size: 16,
+                        color: cloudConnected 
+                          ? primaryColor 
+                          : disabledColor.withValues(alpha: _pulseAnimation.value),
+                      );
+                    },
+                  )
+                : Icon(
+                    Icons.cloud,
+                    size: 16,
+                    color: cloudConnected ? primaryColor : disabledColor,
+                  ),
             ],
           );
         });
