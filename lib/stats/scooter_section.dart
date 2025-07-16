@@ -604,8 +604,19 @@ class SavedScooterCard extends StatelessWidget {
                         ),
                     ],
                   ),
+                const SizedBox(height: 24),
+                Divider(
+                  indent: 16,
+                  endIndent: 16,
+                  height: 0,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.1),
+                ),
                 if (!connected)
                   ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                     title: Text(FlutterI18n.translate(
                         context, "stats_last_ping_title")),
                     subtitle: Text(FlutterI18n.translate(
@@ -634,6 +645,10 @@ class SavedScooterCard extends StatelessWidget {
                   ),
                 if (savedScooter.lastLocation != null && !connected)
                   ListTile(
+<<<<<<< HEAD
+=======
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+>>>>>>> 0ef86bb (feat: improve scooter list location display with separate ListTiles)
                     title: Text(
                       FlutterI18n.translate(context, "stats_last_seen_near"),
                     ),
