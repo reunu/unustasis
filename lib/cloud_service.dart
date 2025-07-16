@@ -24,6 +24,7 @@ class CloudService {
   );
 
   final log = Logger('CloudService');
+  Future<String?>? _refreshInProgress;
 
   CloudService(this.scooterService);
 
@@ -112,7 +113,18 @@ class CloudService {
     if (now.isAfter(expiresAt.subtract(const Duration(minutes: 5)))) {
       // Token is expired or expires soon, try to refresh
       log.info('Token expired or expires soon, refreshing...');
-      return await _refreshAccessToken();
+      
+      // Check if refresh is already in progress
+      if (_refreshInProgress != null) {
+        log.info('Refresh already in progress, waiting for result...');
+        return await _refreshInProgress!;
+      }
+      
+      // Start refresh and store the future
+      _refreshInProgress = _refreshAccessToken();
+      final result = await _refreshInProgress!;
+      _refreshInProgress = null;
+      return result;
     }
 
     log.info('Token is valid');
@@ -122,10 +134,12 @@ class CloudService {
   Future<String?> _refreshAccessToken() async {
     final refreshToken = await _secureStorage.read(key: 'refresh_token');
     if (refreshToken == null) {
+      log.warning('No refresh token available');
       return null;
     }
 
     try {
+      log.info('Starting token refresh...');
       final response = await http.post(
         Uri.parse('$_oauthUrl/token'),
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -149,9 +163,10 @@ class CloudService {
         final expiresAt = DateTime.now().add(Duration(seconds: expiresIn));
         await _secureStorage.write(key: 'token_expires_at', value: expiresAt.toIso8601String());
         
+        log.info('Token refresh successful');
         return tokenData['access_token'];
       } else {
-        log.warning('Token refresh failed: ${response.body}');
+        log.warning('Token refresh failed with status ${response.statusCode}: ${response.body}');
         await logout();
         return null;
       }
@@ -167,6 +182,7 @@ class CloudService {
   }
 
   Future<void> logout() async {
+    _refreshInProgress = null;
     await _secureStorage.deleteAll();
   }
 
