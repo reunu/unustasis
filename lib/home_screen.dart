@@ -259,8 +259,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const StatusText(),
                       const SizedBox(height: 16),
-                      if (context.select<ScooterService, bool>(
-                              (service) => service.connected && service.primarySOC != null))
+                      if (context.select<ScooterService, String?>(
+                              (service) => service.scooterName) != null &&
+                          context.select<ScooterService, String?>(
+                              (service) => service.scooterName) !=
+                          FlutterI18n.translate(context, "stats_no_name") &&
+                          (context.select<ScooterService, int?>(
+                              (service) => service.primarySOC) != null ||
+                          context.select<ScooterService, int?>(
+                              (service) => service.secondarySOC) != null))
                         GestureDetector(
                           onTap: () => Navigator.push(
                             context,
@@ -608,27 +615,29 @@ class BatteryBars extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const SizedBox(width: 16),
-              SizedBox(
-                  width: MediaQuery.of(context).size.width / 6,
-                  child: LinearProgressIndicator(
-                    backgroundColor: Colors.black26,
-                    minHeight: 8,
-                    borderRadius: BorderRadius.circular(8),
-                    value: data.primarySOC! / 100.0,
-                    color: dataIsOld
-                        ? Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.4)
-                        : data.primarySOC! <= 15
-                            ? Theme.of(context).colorScheme.error
-                            : Theme.of(context).colorScheme.primary,
-                  )),
-              const SizedBox(width: 8),
-              Text("${data.primarySOC}%"),
-              if (data.secondarySOC != null && data.secondarySOC! > 0)
+              if (data.primarySOC != null) ...[
+                SizedBox(
+                    width: MediaQuery.of(context).size.width / 6,
+                    child: LinearProgressIndicator(
+                      backgroundColor: Colors.black26,
+                      minHeight: 8,
+                      borderRadius: BorderRadius.circular(8),
+                      value: data.primarySOC! / 100.0,
+                      color: dataIsOld
+                          ? Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.4)
+                          : data.primarySOC! <= 15
+                              ? Theme.of(context).colorScheme.error
+                              : Theme.of(context).colorScheme.primary,
+                    )),
+                const SizedBox(width: 8),
+                Text("${data.primarySOC}%"),
+              ],
+              if (data.primarySOC != null && data.secondarySOC != null && data.secondarySOC! > 0)
                 const VerticalDivider(),
-              if (data.secondarySOC != null && data.secondarySOC! > 0)
+              if (data.secondarySOC != null && data.secondarySOC! > 0) ...[
                 SizedBox(
                     width: MediaQuery.of(context).size.width / 6,
                     child: LinearProgressIndicator(
@@ -645,10 +654,9 @@ class BatteryBars extends StatelessWidget {
                               ? Theme.of(context).colorScheme.error
                               : Theme.of(context).colorScheme.primary,
                     )),
-              if (data.secondarySOC != null && data.secondarySOC! > 0)
                 const SizedBox(width: 8),
-              if (data.secondarySOC != null && data.secondarySOC! > 0)
                 Text("${data.secondarySOC}%"),
+              ],
             ],
           );
         });
