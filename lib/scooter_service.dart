@@ -73,6 +73,9 @@ class ScooterService with ChangeNotifier {
   
   // Cloud connectivity cache
   bool _isCloudOnline = false;
+  
+  // Cloud scooter data cache
+  Map<int, Map<String, dynamic>> _cloudScooterCache = {};
 
   void ping() {
     try {
@@ -92,6 +95,8 @@ class ScooterService with ChangeNotifier {
     log.info("Seeded streams with cached values");
     restoreCachedSettings();
     log.info("Restored cached settings");
+    
+    // Cloud cache will be refreshed only when user logs in or links scooters
   }
 
   // On initialization...
@@ -1006,6 +1011,51 @@ class ScooterService with ChangeNotifier {
   bool isCommandAvailableCached(CommandType command) {
     return _commandAvailabilityCache[command] ?? false;
   }
+  
+  /// Cache cloud scooter data
+  void _cacheCloudScooterData(int cloudScooterId, Map<String, dynamic> data) {
+    _cloudScooterCache[cloudScooterId] = data;
+  }
+  
+  /// Get cached cloud scooter data
+  Map<String, dynamic>? getCachedCloudScooterData(int cloudScooterId) {
+    return _cloudScooterCache[cloudScooterId];
+  }
+  
+  /// Refresh cloud scooter cache for all linked scooters
+  Future<void> refreshCloudScooterCache() async {
+    if (!await _isCloudServiceAvailable()) {
+      return;
+    }
+    
+    try {
+      _ensureCloudServicesInitialized();
+      final cloudScooters = await _cloudService!.getScooters();
+      
+      // Cache each cloud scooter
+      for (final scooterData in cloudScooters) {
+        if (scooterData.containsKey('id')) {
+          final cloudScooterId = scooterData['id'] as int;
+          _cacheCloudScooterData(cloudScooterId, scooterData);
+        }
+      }
+      
+      log.info("Refreshed cloud scooter cache for ${cloudScooters.length} scooters");
+      notifyListeners();
+    } catch (e) {
+      log.warning("Failed to refresh cloud scooter cache", e);
+    }
+  }
+  
+  /// Check if cloud service is available
+  Future<bool> _isCloudServiceAvailable() async {
+    try {
+      _ensureCloudServicesInitialized();
+      return await _cloudService!.isServiceAvailable();
+    } catch (e) {
+      return false;
+    }
+  }
 
   /// Refresh command availability cache (legacy method - use _refreshCommandAvailabilityFromConnectionState instead)
   Future<void> refreshCommandAvailabilityCache() async {
@@ -1168,6 +1218,9 @@ class ScooterService with ChangeNotifier {
       final scooterData = await _cloudService!.getScooter(_currentScooter!.cloudScooterId!);
       
       if (scooterData != null) {
+        // Cache the cloud scooter data
+        _cacheCloudScooterData(_currentScooter!.cloudScooterId!, scooterData);
+        
         // Check if scooter is online
         _isCloudOnline = scooterData.containsKey('online') && scooterData['online'] == true;
         
