@@ -1067,7 +1067,7 @@ class SavedScooterCard extends StatelessWidget {
                         width: 16,
                         height: 16,
                         decoration: BoxDecoration(
-                          color: ColorUtils.parseHexColor(customColorHex) ?? Colors.grey,
+                          color: SavedScooter.hexToColor(customColorHex),
                           shape: BoxShape.circle,
                           border: Border.fromBorderSide(
                             BorderSide(
@@ -1085,7 +1085,7 @@ class SavedScooterCard extends StatelessWidget {
                   _colorRadioTile(
                     colorName: "black",
                     colorValue: 0,
-                    color: Colors.black,
+                    color: SavedScooter.getPredefinedColor(0),
                     selectedValue: selectedValue,
                     onChanged: (value) {
                       setState(() {
@@ -1097,7 +1097,7 @@ class SavedScooterCard extends StatelessWidget {
                   _colorRadioTile(
                     colorName: "white",
                     colorValue: 1,
-                    color: Colors.white,
+                    color: SavedScooter.getPredefinedColor(1),
                     selectedValue: selectedValue,
                     onChanged: (value) {
                       setState(() {
@@ -1109,7 +1109,7 @@ class SavedScooterCard extends StatelessWidget {
                   _colorRadioTile(
                     colorName: "green",
                     colorValue: 2,
-                    color: Colors.green.shade900,
+                    color: SavedScooter.getPredefinedColor(2),
                     selectedValue: selectedValue,
                     onChanged: (value) {
                       setState(() {
@@ -1121,7 +1121,7 @@ class SavedScooterCard extends StatelessWidget {
                   _colorRadioTile(
                     colorName: "gray",
                     colorValue: 3,
-                    color: Colors.grey,
+                    color: SavedScooter.getPredefinedColor(3),
                     selectedValue: selectedValue,
                     onChanged: (value) {
                       setState(() {
@@ -1133,7 +1133,7 @@ class SavedScooterCard extends StatelessWidget {
                   _colorRadioTile(
                     colorName: "orange",
                     colorValue: 4,
-                    color: Colors.deepOrange.shade400,
+                    color: SavedScooter.getPredefinedColor(4),
                     selectedValue: selectedValue,
                     onChanged: (value) {
                       setState(() {
@@ -1145,7 +1145,7 @@ class SavedScooterCard extends StatelessWidget {
                   _colorRadioTile(
                     colorName: "red",
                     colorValue: 5,
-                    color: Colors.red,
+                    color: SavedScooter.getPredefinedColor(5),
                     selectedValue: selectedValue,
                     onChanged: (value) {
                       setState(() {
@@ -1157,7 +1157,7 @@ class SavedScooterCard extends StatelessWidget {
                   _colorRadioTile(
                     colorName: "blue",
                     colorValue: 6,
-                    color: Colors.blue,
+                    color: SavedScooter.getPredefinedColor(6),
                     selectedValue: selectedValue,
                     onChanged: (value) {
                       setState(() {
@@ -1170,7 +1170,7 @@ class SavedScooterCard extends StatelessWidget {
                     _colorRadioTile(
                       colorName: "eclipse",
                       colorValue: 7,
-                      color: Colors.grey.shade800,
+                      color: SavedScooter.getPredefinedColor(7),
                       selectedValue: selectedValue,
                       onChanged: (value) {
                         setState(() {
@@ -1183,7 +1183,7 @@ class SavedScooterCard extends StatelessWidget {
                     _colorRadioTile(
                       colorName: "idioteque",
                       colorValue: 8,
-                      color: Colors.teal.shade200,
+                      color: SavedScooter.getPredefinedColor(8),
                       selectedValue: selectedValue,
                       onChanged: (value) {
                         setState(() {
@@ -1196,7 +1196,7 @@ class SavedScooterCard extends StatelessWidget {
                     _colorRadioTile(
                       colorName: "hover",
                       colorValue: 9,
-                      color: Colors.lightBlue,
+                      color: SavedScooter.getPredefinedColor(9),
                       selectedValue: selectedValue,
                       onChanged: (value) {
                         setState(() {
@@ -1368,7 +1368,7 @@ class SavedScooterCard extends StatelessWidget {
       return colorHex ?? 'Custom color';
     } else {
       final colorId = cloudData['color_id'] as int?;
-      return _getColorNameFromId(colorId ?? 1);
+      return SavedScooter.getColorName(colorId ?? 1);
     }
   }
 
@@ -1377,13 +1377,8 @@ class SavedScooterCard extends StatelessWidget {
     if (scooter.hasCustomColor) {
       return scooter.colorHex ?? 'Custom color';
     } else {
-      return _getColorNameFromId(scooter.color);
+      return SavedScooter.getColorName(scooter.color);
     }
-  }
-
-  /// Maps color ID to human-readable name
-  String _getColorNameFromId(int colorId) {
-    return ColorUtils.getColorName(colorId);
   }
 }
 
@@ -1418,45 +1413,23 @@ class _CloudScooterSelectionDialog extends StatelessWidget {
                     width: 64,
                     height: 64,
                     child: sideImageUrl != null
-                        ? FutureBuilder<File?>(
-                            future: ImageCacheService().getImage(sideImageUrl),
-                            builder: (context, snapshot) {
-                              if (snapshot.hasData && snapshot.data != null) {
-                                return Image.file(
-                                  snapshot.data!,
-                                  width: 64,
-                                  height: 64,
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    // Fallback to color swatch if image fails
-                                    final colorHex = scooter['color_hex'] ?? '#FFFFFF';
-                                    return Container(
-                                      width: 32,
-                                      height: 32,
-                                      decoration: BoxDecoration(
-                                        color: ColorUtils.parseHexColor(colorHex) ?? Colors.grey,
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: Colors.grey.shade400,
-                                          width: 1,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                );
-                              } else if (snapshot.hasError) {
-                                // Fallback to color swatch if loading fails
-                                final colorHex = scooter['color_hex'] ?? '#FFFFFF';
-                                return Container(
-                                  width: 32,
-                                  height: 32,
-                                  decoration: BoxDecoration(
-                                    color: ColorUtils.parseHexColor(colorHex) ?? Colors.grey,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: Colors.grey.shade400,
-                                      width: 1,
-                                    ),
+                        ? Image.network(
+                            sideImageUrl,
+                            width: 64,
+                            height: 64,
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) {
+                              // Fallback to color swatch if image fails
+                              final colorHex = scooter['color_hex'] ?? '#FFFFFF';
+                              return Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: SavedScooter.hexToColor(colorHex),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.grey.shade400,
+                                    width: 1,
                                   ),
                                 );
                               } else {
@@ -1467,7 +1440,7 @@ class _CloudScooterSelectionDialog extends StatelessWidget {
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
                                     valueColor: AlwaysStoppedAnimation<Color>(
-                                      ColorUtils.parseHexColor(scooter['color_hex']) ?? Colors.grey,
+                                      SavedScooter.hexToColor(scooter['color_hex'] ?? '#FFFFFF'),
                                     ),
                                   ),
                                 );
