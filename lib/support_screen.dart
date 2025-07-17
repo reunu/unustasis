@@ -14,16 +14,7 @@ class SupportScreen extends StatelessWidget {
         backgroundColor: Theme.of(context).colorScheme.surface,
       ),
       body: Container(
-        decoration: BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment.center,
-            radius: 1.3,
-            colors: [
-              Theme.of(context).colorScheme.surface,
-              Theme.of(context).colorScheme.surface,
-            ],
-          ),
-        ),
+        color: Theme.of(context).colorScheme.surface,
         child: const SupportSection(),
       ),
     );
