@@ -159,9 +159,11 @@ class CloudService {
       
       // Start refresh and store the future
       _refreshInProgress = _refreshAccessToken();
-      final result = await _refreshInProgress!;
-      _refreshInProgress = null;
-      return result;
+      try {
+        return await _refreshInProgress!;
+      } finally {
+        _refreshInProgress = null;
+      }
     }
 
     log.fine('Token is valid');
