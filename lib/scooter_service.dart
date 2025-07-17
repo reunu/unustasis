@@ -518,17 +518,20 @@ class ScooterService with ChangeNotifier {
     notifyListeners();
   }
 
-  int? get scooterColor => _currentScooter?.color;
+  int? get scooterColor => _targetScooter?.color;
   set scooterColor(int? scooterColor) {
     if (_currentScooter != null) {
       _currentScooter!.color = scooterColor ?? 1;
+    }
+    if (_targetScooter != null) {
+      _targetScooter!.color = scooterColor ?? 1;
     }
     notifyListeners();
     updateBackgroundService({"scooterColor": scooterColor});
   }
 
   /// Gets the current scooter's custom hex color, if any
-  String? get scooterColorHex => _currentScooter?.colorHex;
+  String? get scooterColorHex => _targetScooter?.colorHex;
 
   /// Gets the current scooter's cloud image URL for main display (front view)
   String? get scooterCloudImageUrl => _targetScooter?.cloudImageFront;
@@ -682,8 +685,9 @@ class ScooterService with ChangeNotifier {
     addSavedScooter(id);
     
     // Set current scooter using the new architecture - this handles both BLE and cloud connections
+    // Force refresh even if it's the same scooter since we're explicitly connecting
     // The connection state will be updated automatically when connections complete
-    await setCurrentScooter(savedScooters[id]);
+    await setCurrentScooter(savedScooters[id], forceRefresh: true);
     
     log.info("Connection attempts initiated for scooter: $id");
   }
@@ -1118,10 +1122,11 @@ class ScooterService with ChangeNotifier {
   SavedScooter? get currentScooter => _currentScooter;
 
   /// Set current scooter and start connection attempts
-  Future<void> setCurrentScooter(SavedScooter? scooter) async {
-    if (_currentScooter == scooter) return;
+  Future<void> setCurrentScooter(SavedScooter? scooter, {bool forceRefresh = false}) async {
+    if (_currentScooter == scooter && !forceRefresh) return;
     
     _currentScooter = scooter;
+    _targetScooter = scooter; // Ensure _targetScooter is also updated for visual consistency
     log.info("Current scooter set to: ${scooter?.name ?? 'none'}");
     
     // Initialize BLE connection service if not already done
@@ -1162,7 +1167,7 @@ class ScooterService with ChangeNotifier {
   void _setupConnectionListeners() {
     if (_bleConnectionService != null) {
       _bleConnectionService!.connectionStream.listen((scooterId) {
-        // Skip null or empty state changes to prevent spam
+        // Only log meaningful connection state changes
         if (scooterId != null && scooterId.isNotEmpty) {
           log.info("BLE connection state changed: $scooterId");
         }
@@ -1235,7 +1240,7 @@ class ScooterService with ChangeNotifier {
       // Update background service
       updateBackgroundService({
         "scooterName": scooterName,
-        "scooterColor": scooterColor,
+        "scooterColor": scooterHasCustomColor ? null : scooterColor,
         "lastPingInt": DateTime.now().millisecondsSinceEpoch,
       });
       
@@ -1306,6 +1311,10 @@ class ScooterService with ChangeNotifier {
         if (_isCloudOnline && scooterData.containsKey('state')) {
           state = _convertCloudStateToScooterState(scooterData['state']);
           log.info("Updated scooter state from cloud: ${scooterData['state']} -> $state");
+        } else if (_isCloudOnline && state == ScooterState.connectingSpecific) {
+          // Clear connecting state if cloud is online but no specific state from cloud
+          state = ScooterState.unknown;
+          log.info("Cleared connecting state after successful cloud connection");
         }
         
         // Update seatbox status from cloud
@@ -1513,6 +1522,45 @@ class ScooterService with ChangeNotifier {
     
     _refreshCommandAvailabilityFromConnectionState();
     log.info("Manual connection attempts completed");
+  }
+
+  /// Disconnect from current scooter (both BLE and cloud)
+  Future<void> disconnectFromCurrentScooter() async {
+    log.info("Disconnecting from current scooter: ${_currentScooter?.name ?? 'none'}");
+    
+    // Stop auto-restart to prevent reconnection
+    stopAutoRestart();
+    
+    // Disconnect BLE if connected
+    if (_bleConnectionService != null) {
+      await _bleConnectionService!.disconnect();
+    }
+    
+    // Clear legacy BLE reference
+    if (myScooter != null) {
+      await myScooter!.disconnect();
+      myScooter = null;
+    }
+    
+    // Clear current scooter and target scooter
+    _currentScooter = null;
+    _targetScooter = null;
+    _isTargetingSpecificScooter = false;
+    
+    // Clear cloud state
+    _isCloudOnline = false;
+    _isCloudConnecting = false;
+    
+    // Reset connection state
+    connected = false;
+    state = ScooterState.disconnected;
+    _foundSth = false;
+    
+    // Clear command availability cache
+    _commandAvailabilityCache.clear();
+    
+    log.info("Disconnected from scooter successfully");
+    notifyListeners();
   }
 
   void _pollLocation() async {

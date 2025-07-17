@@ -7,11 +7,13 @@ import 'package:logging/logging.dart';
 import 'package:maps_launcher/maps_launcher.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../stats/stats_screen.dart';
 import '../onboarding_screen.dart';
 import '../domain/saved_scooter.dart';
 import '../domain/scooter_state.dart';
+import '../domain/connection_status.dart';
 import '../domain/theme_helper.dart';
 import '../domain/color_utils.dart';
 import '../geo_helper.dart';
@@ -81,15 +83,14 @@ class _ScooterSectionState extends State<ScooterSection> {
             child: SavedScooterCard(
               savedScooter: scooter,
               single: sortedScooters(context).length == 1,
-              connected: (scooter.id ==
+              connectionStatus: scooter.id ==
                       context
                           .read<ScooterService>()
-                          .myScooter
-                          ?.remoteId
-                          .toString() &&
-                  context.select<ScooterService, ScooterState?>(
-                          (service) => service.state) !=
-                      ScooterState.disconnected),
+                          .currentScooter
+                          ?.id
+                  ? context.select<ScooterService, ConnectionStatus>(
+                      (service) => service.connectionStatus)
+                  : ConnectionStatus.offline,
               rebuild: () => setState(() {}),
             ),
           );
@@ -147,17 +148,20 @@ class _ScooterSectionState extends State<ScooterSection> {
 
 class SavedScooterCard extends StatelessWidget {
   final log = Logger("ScooterSection");
-  final bool connected;
+  final ConnectionStatus connectionStatus;
   final SavedScooter savedScooter;
   final bool single;
   final void Function() rebuild;
   SavedScooterCard({
     super.key,
     required this.savedScooter,
-    required this.connected,
+    required this.connectionStatus,
     required this.single,
     required this.rebuild,
   });
+
+  /// Legacy compatibility getter - derives boolean from connectionStatus
+  bool get connected => connectionStatus.isConnected;
 
   void setColor(int newColor, BuildContext context) async {
     savedScooter.color = newColor;
@@ -405,6 +409,42 @@ class SavedScooterCard extends StatelessWidget {
     }
   }
 
+  Future<void> _openCloudScooterInBrowser(BuildContext context) async {
+    final cloudScooterId = savedScooter.cloudScooterId;
+    if (cloudScooterId == null) {
+      log.warning('Attempted to open cloud scooter URL but no cloud scooter ID available');
+      return;
+    }
+    
+    final url = Uri.parse('https://sunshine.rescoot.org/scooters/$cloudScooterId');
+    
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        log.warning('Could not launch URL: $url');
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(FlutterI18n.translate(context, "cloud_open_failed")),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+      }
+    } catch (e, stack) {
+      log.severe('Failed to open cloud scooter URL', e, stack);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(FlutterI18n.translate(context, "cloud_open_failed")),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -495,35 +535,74 @@ class SavedScooterCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
                 if (connected)
-                  Divider(
-                    indent: 16,
-                    endIndent: 16,
-                    height: 0,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.1),
-                  ),
-                if (connected)
-                  ListTile(
-                    title: Text(FlutterI18n.translate(context, "stats_state")),
-                    subtitle: Text(
-                      context
-                              .select<ScooterService, ScooterState?>(
-                                  (service) => service.state)
-                              ?.description(context) ??
-                          FlutterI18n.translate(context, "stats_unknown"),
-                    ),
+                  Text(
+                    context
+                            .select<ScooterService, ScooterState?>(
+                                (service) => service.state)
+                            ?.description(context) ??
+                        connectionStatus.description(context),
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
                 if (!connected)
-                  Divider(
-                    indent: 16,
-                    endIndent: 16,
-                    height: 0,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.1),
+                  Column(
+                    children: [
+                      Text(
+                        connectionStatus.description(context),
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      if (savedScooter.lastPrimarySOC != null || savedScooter.lastSecondarySOC != null)
+                        const SizedBox(height: 4),
+                      if (savedScooter.lastPrimarySOC != null || savedScooter.lastSecondarySOC != null)
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            if (savedScooter.lastPrimarySOC != null) ...[
+                              SizedBox(
+                                width: 60,
+                                child: LinearProgressIndicator(
+                                  backgroundColor: Colors.black26,
+                                  minHeight: 6,
+                                  borderRadius: BorderRadius.circular(6),
+                                  value: savedScooter.lastPrimarySOC! / 100.0,
+                                  color: savedScooter.lastPrimarySOC! <= 15
+                                      ? Theme.of(context).colorScheme.error
+                                      : Theme.of(context).colorScheme.primary,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                "${savedScooter.lastPrimarySOC}%",
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                                ),
+                              ),
+                            ],
+                            if (savedScooter.lastPrimarySOC != null && savedScooter.lastSecondarySOC != null && savedScooter.lastSecondarySOC! > 0)
+                              const VerticalDivider(width: 16),
+                            if (savedScooter.lastSecondarySOC != null && savedScooter.lastSecondarySOC! > 0) ...[
+                              SizedBox(
+                                width: 60,
+                                child: LinearProgressIndicator(
+                                  backgroundColor: Colors.black26,
+                                  minHeight: 6,
+                                  borderRadius: BorderRadius.circular(6),
+                                  value: savedScooter.lastSecondarySOC! / 100.0,
+                                  color: savedScooter.lastSecondarySOC! <= 15
+                                      ? Theme.of(context).colorScheme.error
+                                      : Theme.of(context).colorScheme.primary,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                "${savedScooter.lastSecondarySOC}%",
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                    ],
                   ),
                 if (!connected)
                   ListTile(
@@ -621,6 +700,28 @@ class SavedScooterCard extends StatelessWidget {
                     savedScooter.id,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  trailing: connectionStatus.isConnected
+                      ? Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.bluetooth,
+                              size: 16,
+                              color: connectionStatus.hasBLE
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+                            ),
+                            const SizedBox(width: 8),
+                            Icon(
+                              Icons.cloud,
+                              size: 16,
+                              color: connectionStatus.hasCloud
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+                            ),
+                          ],
+                        )
+                      : null,
                 ),
                 Consumer<ScooterService>(
                   builder: (context, scooterService, child) {
@@ -661,6 +762,7 @@ class SavedScooterCard extends StatelessWidget {
                         ),
                         ListTile(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                          onTap: () => _openCloudScooterInBrowser(context),
                           title: Row(
                             children: [
                               const Text("Cloud"),
@@ -782,9 +884,7 @@ class SavedScooterCard extends StatelessWidget {
                           onPressed: () async {
                             ScooterService service =
                                 context.read<ScooterService>();
-                            service.stopAutoRestart();
-                            service.myScooter?.disconnect();
-                            service.myScooter = null;
+                            await service.disconnectFromCurrentScooter();
                             rebuild();
                           },
                           icon: const Icon(
