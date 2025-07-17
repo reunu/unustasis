@@ -22,10 +22,15 @@ import '../domain/theme_helper.dart';
 import '../onboarding_screen.dart';
 import '../scooter_service.dart';
 import '../domain/scooter_state.dart';
+import '../domain/connection_status.dart';
 import '../scooter_visual.dart';
-import '../stats/stats_screen.dart';
+import '../battery_screen.dart';
+import '../scooter_screen.dart';
+import '../settings_screen.dart';
+import '../support_screen.dart';
 import '../helper_widgets/snowfall.dart';
 import '../helper_widgets/grassscape.dart';
+import '../command_service.dart';
 
 class HomeScreen extends StatefulWidget {
   final bool? forceOpen;
@@ -183,19 +188,48 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: GrassScape(),
                 ),
               SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 40,
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.max,
-                    children: [
+                child: Stack(
+                  children: [
+                    Positioned(
+                      top: 0,
+                      left: 8,
+                      child: IconButton(
+                        icon: const Icon(Icons.help_outline),
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SupportScreen(),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 0,
+                      right: 8,
+                      child: IconButton(
+                        icon: const Icon(Icons.settings),
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SettingsScreen(),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(
+                        top: 40,
+                        bottom: 40,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.max,
+                        children: [
                       InkWell(
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const StatsScreen(),
+                            builder: (context) => const ScooterScreen(),
                           ),
                         ),
                         // Hidden for stable release, but useful for various debugging
@@ -225,18 +259,59 @@ class _HomeScreenState extends State<HomeScreen> {
                           ],
                         ),
                       ),
-                      const StatusText(),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const StatusText(),
+                          const SizedBox(width: 8),
+                          const ConnectionStatusText(),
+                        ],
+                      ),
                       const SizedBox(height: 16),
-                      if (context.select<ScooterService, int?>(
-                              (service) => service.primarySOC) !=
-                          null)
-                        const BatteryBars(),
+                      if (context.select<ScooterService, String?>(
+                              (service) => service.scooterName) != null &&
+                          context.select<ScooterService, String?>(
+                              (service) => service.scooterName) !=
+                          FlutterI18n.translate(context, "stats_no_name") &&
+                          (context.select<ScooterService, int?>(
+                              (service) => service.primarySOC) != null ||
+                          context.select<ScooterService, int?>(
+                              (service) => service.secondarySOC) != null))
+                        GestureDetector(
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const BatteryScreen(),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const BatteryBars(),
+                              const SizedBox(width: 8),
+                              Icon(
+                                Icons.info_outline,
+                                size: 16,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withValues(alpha: 0.6),
+                              ),
+                            ],
+                          ),
+                        ),
                       const SizedBox(height: 16),
                       Expanded(
                         child: ScooterVisual(
                           color: context.select<ScooterService, int?>(
                                   (service) => service.scooterColor) ??
                               1,
+                          colorHex: context.select<ScooterService, String?>(
+                                  (service) => service.scooterColorHex),
+                          cloudImageUrl: context.select<ScooterService, String?>(
+                                  (service) => service.scooterCloudImageUrl),
+                          hasCustomColor: context.select<ScooterService, bool>(
+                                  (service) => service.scooterHasCustomColor),
                           state: context.select(
                               (ScooterService service) => service.state),
                           scanning: context.select(
@@ -253,14 +328,19 @@ class _HomeScreenState extends State<HomeScreen> {
                         mainAxisSize: MainAxisSize.max,
                         children: [
                           const SeatButton(),
-                          Selector<ScooterService, ScooterState?>(
-                              selector: (context, service) => service.state,
-                              builder: (context, state, _) {
+                          Selector<ScooterService, ({ScooterState? state, bool lockAvailable, bool unlockAvailable, bool wakeUpAvailable})>(
+                              selector: (context, service) => (
+                                state: service.state,
+                                lockAvailable: service.isCommandAvailableCached(CommandType.lock),
+                                unlockAvailable: service.isCommandAvailableCached(CommandType.unlock),
+                                wakeUpAvailable: service.isCommandAvailableCached(CommandType.wakeUp),
+                              ),
+                              builder: (context, data, _) {
                                 return Expanded(
                                   child: ScooterPowerButton(
-                                      action: state != null &&
-                                              state.isReadyForLockChange
-                                          ? (state.isOn
+                                      action: data.state != null &&
+                                              data.state!.isReadyForLockChange
+                                          ? (data.state!.isOn && data.lockAvailable
                                               ? () async {
                                                   try {
                                                     await context
@@ -292,7 +372,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                         msg: e.toString());
                                                   }
                                                 }
-                                              : (state == ScooterState.standby
+                                              : (data.state == ScooterState.standby && data.unlockAvailable
                                                   ? () async {
                                                       try {
                                                         await context
@@ -314,8 +394,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                                         );
                                                       }
                                                     }
-                                                  : (state ==
-                                                          ScooterState.standby
+                                                  : (data.state ==
+                                                          ScooterState.standby && data.unlockAvailable
                                                       ? () {
                                                           context
                                                               .read<
@@ -323,15 +403,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                                               .unlock();
                                                           // TODO: Flash hazards in visual
                                                         }
-                                                      : context
-                                                          .read<
-                                                              ScooterService>()
-                                                          .wakeUpAndUnlock)))
+                                                      : (data.wakeUpAvailable
+                                                          ? context
+                                                              .read<
+                                                                  ScooterService>()
+                                                              .wakeUpAndUnlock
+                                                          : null))))
                                           : null,
-                                      icon: state != null && state.isOn
+                                      icon: data.state != null && data.state!.isOn
                                           ? Icons.lock_open
                                           : Icons.lock_outline,
-                                      label: state != null && state.isOn
+                                      label: data.state != null && data.state!.isOn
                                           ? FlutterI18n.translate(
                                               context, "home_lock_button")
                                           : FlutterI18n.translate(
@@ -385,10 +467,12 @@ class _HomeScreenState extends State<HomeScreen> {
                               }),
                         ],
                       )
-                    ],
+                      ],
+                    ),
                   ),
-                ),
+                ],
               ),
+            ),
             ],
           ),
         ),
@@ -412,7 +496,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           actions: <Widget>[
             TextButton(
-              child: const Text('OK'),
+              child: Text(FlutterI18n.translate(context, "ok")),
               onPressed: () {
                 Navigator.of(context).pop();
               },
@@ -508,7 +592,7 @@ class SeatButton extends StatelessWidget {
           return Expanded(
             child: ScooterActionButton(
               onPressed: context.select(
-                          (ScooterService service) => service.connected) &&
+                          (ScooterService service) => service.isCommandAvailableCached(CommandType.openSeat)) &&
                       data.state != null &&
                       data.seatClosed == true &&
                       context.select(
@@ -552,27 +636,30 @@ class BatteryBars extends StatelessWidget {
           return Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              SizedBox(
-                  width: MediaQuery.of(context).size.width / 6,
-                  child: LinearProgressIndicator(
-                    backgroundColor: Colors.black26,
-                    minHeight: 8,
-                    borderRadius: BorderRadius.circular(8),
-                    value: data.primarySOC! / 100.0,
-                    color: dataIsOld
-                        ? Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.4)
-                        : data.primarySOC! <= 15
-                            ? Theme.of(context).colorScheme.error
-                            : Theme.of(context).colorScheme.primary,
-                  )),
-              const SizedBox(width: 8),
-              Text("${data.primarySOC}%"),
-              if (data.secondarySOC != null && data.secondarySOC! > 0)
+              const SizedBox(width: 16),
+              if (data.primarySOC != null) ...[
+                SizedBox(
+                    width: MediaQuery.of(context).size.width / 6,
+                    child: LinearProgressIndicator(
+                      backgroundColor: Colors.black26,
+                      minHeight: 8,
+                      borderRadius: BorderRadius.circular(8),
+                      value: data.primarySOC! / 100.0,
+                      color: dataIsOld
+                          ? Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.4)
+                          : data.primarySOC! <= 15
+                              ? Theme.of(context).colorScheme.error
+                              : Theme.of(context).colorScheme.primary,
+                    )),
+                const SizedBox(width: 8),
+                Text("${data.primarySOC}%"),
+              ],
+              if (data.primarySOC != null && data.secondarySOC != null && data.secondarySOC! > 0)
                 const VerticalDivider(),
-              if (data.secondarySOC != null && data.secondarySOC! > 0)
+              if (data.secondarySOC != null && data.secondarySOC! > 0) ...[
                 SizedBox(
                     width: MediaQuery.of(context).size.width / 6,
                     child: LinearProgressIndicator(
@@ -589,10 +676,9 @@ class BatteryBars extends StatelessWidget {
                               ? Theme.of(context).colorScheme.error
                               : Theme.of(context).colorScheme.primary,
                     )),
-              if (data.secondarySOC != null && data.secondarySOC! > 0)
                 const SizedBox(width: 8),
-              if (data.secondarySOC != null && data.secondarySOC! > 0)
                 Text("${data.secondarySOC}%"),
+              ],
             ],
           );
         });
@@ -606,31 +692,36 @@ class StatusText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Selector<ScooterService,
-            ({bool connected, bool scanning, ScooterState? state})>(
+    return Selector<ScooterService, ({ConnectionStatus connectionStatus, ScooterState? scooterState})>(
         selector: (context, service) => (
-              state: service.state,
-              scanning: service.scanning,
-              connected: service.connected
-            ),
+          connectionStatus: service.connectionStatus,
+          scooterState: service.state
+        ),
         builder: (context, data, _) {
+          String statusText;
+          
+          // If we have a scooter state, show that; otherwise show connection status
+          if (data.scooterState != null) {
+            statusText = data.scooterState!.name(context);
+          } else {
+            // Fallback to connection status
+            switch (data.connectionStatus) {
+              case ConnectionStatus.none:
+                statusText = FlutterI18n.translate(context, "home_loading_state");
+                break;
+              case ConnectionStatus.ble:
+              case ConnectionStatus.cloud:
+              case ConnectionStatus.both:
+                statusText = FlutterI18n.translate(context, "state_name_unknown");
+                break;
+              case ConnectionStatus.offline:
+                statusText = FlutterI18n.translate(context, "state_name_disconnected");
+                break;
+            }
+          }
+          
           return Text(
-            data.scanning &&
-                    (data.state == null ||
-                        data.state == ScooterState.disconnected)
-                ? (context.read<ScooterService>().savedScooters.isNotEmpty
-                    ? FlutterI18n.translate(context, "home_scanning_known")
-                    : FlutterI18n.translate(context, "home_scanning"))
-                : ((data.state != null
-                        ? data.state!.name(context)
-                        : FlutterI18n.translate(
-                            context, "home_loading_state")) +
-                    (data.connected &&
-                            context.select<ScooterService, bool?>(
-                                    (service) => service.handlebarsLocked) ==
-                                false
-                        ? FlutterI18n.translate(context, "home_unlocked")
-                        : "")),
+            statusText,
             style: Theme.of(context).textTheme.titleMedium,
           );
         });
@@ -844,5 +935,120 @@ class _ScooterPowerButtonState extends State<ScooterPowerButton>
         ),
       ],
     );
+  }
+}
+
+class ConnectionStatusText extends StatefulWidget {
+  const ConnectionStatusText({
+    super.key,
+  });
+
+  @override
+  State<ConnectionStatusText> createState() => _ConnectionStatusTextState();
+}
+
+class _ConnectionStatusTextState extends State<ConnectionStatusText>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+    _pulseAnimation = Tween<double>(
+      begin: 0.4,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Selector<ScooterService, ({ConnectionStatus connectionStatus, bool scanning, bool cloudConnecting, ScooterState? state})>(
+        selector: (context, service) => (
+          connectionStatus: service.connectionStatus,
+          scanning: service.scanning,
+          cloudConnecting: service.cloudConnecting,
+          state: service.state,
+        ),
+        builder: (context, data, _) {
+          final primaryColor = Theme.of(context).colorScheme.primary;
+          final disabledColor = Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4);
+          
+          bool bleConnected = data.connectionStatus == ConnectionStatus.ble || 
+                             data.connectionStatus == ConnectionStatus.both;
+          bool cloudConnected = data.connectionStatus == ConnectionStatus.cloud || 
+                               data.connectionStatus == ConnectionStatus.both;
+          
+          // Check if BLE or cloud is connecting
+          bool bleConnecting = data.scanning || 
+                              data.state == ScooterState.connectingSpecific || 
+                              data.state == ScooterState.connectingAuto;
+          bool cloudConnecting = data.cloudConnecting;
+          
+          // Start/stop animation based on connecting states
+          bool shouldAnimate = bleConnecting || cloudConnecting;
+          if (shouldAnimate && !_animationController.isAnimating) {
+            _animationController.repeat(reverse: true);
+          } else if (!shouldAnimate && _animationController.isAnimating) {
+            _animationController.stop();
+            _animationController.reset();
+          }
+          
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              bleConnecting 
+                ? AnimatedBuilder(
+                    animation: _pulseAnimation,
+                    builder: (context, child) {
+                      return Icon(
+                        Icons.bluetooth,
+                        size: 16,
+                        color: bleConnected 
+                          ? primaryColor 
+                          : disabledColor.withValues(alpha: _pulseAnimation.value),
+                      );
+                    },
+                  )
+                : Icon(
+                    Icons.bluetooth,
+                    size: 16,
+                    color: bleConnected ? primaryColor : disabledColor,
+                  ),
+              const SizedBox(width: 8),
+              cloudConnecting 
+                ? AnimatedBuilder(
+                    animation: _pulseAnimation,
+                    builder: (context, child) {
+                      return Icon(
+                        Icons.cloud,
+                        size: 16,
+                        color: cloudConnected 
+                          ? primaryColor 
+                          : disabledColor.withValues(alpha: _pulseAnimation.value),
+                      );
+                    },
+                  )
+                : Icon(
+                    Icons.cloud,
+                    size: 16,
+                    color: cloudConnected ? primaryColor : disabledColor,
+                  ),
+            ],
+          );
+        });
   }
 }

@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../domain/scooter_state.dart';
+import '../domain/saved_scooter.dart';
 import '../domain/theme_helper.dart';
+import '../services/image_cache_service.dart';
 
 class ScooterVisual extends StatelessWidget {
   final ScooterState? state;
@@ -12,6 +15,9 @@ class ScooterVisual extends StatelessWidget {
   final bool blinkerLeft;
   final bool blinkerRight;
   final int? color;
+  final String? colorHex;
+  final String? cloudImageUrl;
+  final bool hasCustomColor;
   final bool winter;
   final bool aprilFools;
 
@@ -23,6 +29,9 @@ class ScooterVisual extends StatelessWidget {
       this.winter = false,
       this.aprilFools = false,
       this.color,
+      this.colorHex,
+      this.cloudImageUrl,
+      this.hasCustomColor = false,
       super.key});
 
   @override
@@ -58,16 +67,16 @@ class ScooterVisual extends StatelessWidget {
                     ),
                     secondChild: Opacity(
                       opacity: 1,
-                      child: Image(
-                        image: AssetImage(
-                            "images/scooter/base_${aprilFools ? 9 : color ?? 1}.webp"),
-                      ),
+                      child: _buildScooterImage(),
                     ),
-                    crossFadeState: state == ScooterState.disconnected
+                    crossFadeState: state == ScooterState.disconnected ||
+                            state == ScooterState.connectingAuto
                         ? CrossFadeState.showFirst
                         : CrossFadeState.showSecond,
                   ),
-                  if (winter && state != ScooterState.disconnected)
+                  if (winter && 
+                      state != ScooterState.disconnected && 
+                      state != ScooterState.connectingAuto)
                     AnimatedCrossFade(
                       duration: const Duration(milliseconds: 500),
                       firstChild: const Image(
@@ -104,6 +113,70 @@ class ScooterVisual extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// Builds the main scooter image, handling both local assets and cloud images
+  Widget _buildScooterImage() {
+    if (hasCustomColor && cloudImageUrl != null) {
+      // Use cached cloud image for custom colors - use "front" image for main screen
+      return FutureBuilder<File?>(
+        future: ImageCacheService().getImage(cloudImageUrl!),
+        builder: (context, snapshot) {
+          if (snapshot.hasData && snapshot.data != null) {
+            return Image.file(
+              snapshot.data!,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                // Fallback to color-based placeholder
+                return _buildColorPlaceholder();
+              },
+            );
+          } else if (snapshot.hasError) {
+            return _buildColorPlaceholder();
+          } else {
+            // Loading state - show asset image while loading
+            return Image(
+              image: AssetImage(
+                  "images/scooter/base_${aprilFools ? 9 : color ?? 1}.webp"),
+            );
+          }
+        },
+      );
+    } else {
+      // Use local asset image for predefined colors
+      return Image(
+        image: AssetImage(
+            "images/scooter/base_${aprilFools ? 9 : color ?? 1}.webp"),
+      );
+    }
+  }
+
+  /// Builds a color-based placeholder when cloud image fails to load
+  Widget _buildColorPlaceholder() {
+    Color effectiveColor = _getEffectiveColor();
+    
+    return Container(
+      width: double.infinity,
+      height: 200,
+      decoration: BoxDecoration(
+        color: effectiveColor.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: effectiveColor,
+          width: 2,
+        ),
+      ),
+      child: Icon(
+        Icons.electric_scooter,
+        size: 120,
+        color: effectiveColor,
+      ),
+    );
+  }
+
+  /// Gets the effective color for display
+  Color _getEffectiveColor() {
+    return SavedScooter.getEffectiveColor(colorHex: colorHex, colorIndex: color);
   }
 
   IconData stateIcon() {

@@ -16,6 +16,7 @@ import '../control_screen.dart';
 import '../domain/theme_helper.dart';
 import '../domain/scooter_keyless_distance.dart';
 import '../scooter_service.dart';
+import 'cloud_settings_section.dart';
 
 class SettingsSection extends StatefulWidget {
   const SettingsSection({super.key});
@@ -336,6 +337,8 @@ class _SettingsSectionState extends State<SettingsSection> {
                   seasonal = value;
                 });
               }),
+        // Cloud Settings Section
+        const CloudSettingsSection(),
         Header(FlutterI18n.translate(context, "stats_settings_section_about")),
         ListTile(
           leading: const Icon(Icons.privacy_tip_outlined),
