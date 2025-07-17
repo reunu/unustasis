@@ -921,17 +921,24 @@ class SavedScooterListItem extends StatelessWidget {
           }
         }
       } : null,
+      onLongPress: () async {
+        HapticFeedback.mediumImpact();
+        savedScooter.autoConnect = !savedScooter.autoConnect;
+        rebuild();
+      },
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           borderRadius: const BorderRadius.all(Radius.circular(12)),
           color: Theme.of(context).colorScheme.surfaceContainer,
         ),
-        child: Column(
-        children: [
-          // First row: Scooter image and name
-          Row(
-            children: [
+        child: Stack(
+          children: [
+            Column(
+              children: [
+                // First row: Scooter image and name
+                Row(
+                  children: [
               // Scooter image - half the current size with connection indicator
               Padding(
                 padding: const EdgeInsets.all(8),
@@ -1108,7 +1115,20 @@ class SavedScooterListItem extends StatelessWidget {
           ),
         ],
         ),
+        // Auto-connect indicator in top right corner
+        if (savedScooter.autoConnect)
+          Positioned(
+            top: 8,
+            right: 8,
+            child: Icon(
+              Icons.sync,
+              size: 20,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+      ],
       ),
+    ),
     );
   }
 
