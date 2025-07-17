@@ -687,7 +687,7 @@ class SavedScooterCard extends StatelessWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  "Unlink",
+                                  FlutterI18n.translate(context, "cloud_unlink_button"),
                                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     color: Theme.of(context).colorScheme.error,
                                   ),
@@ -734,7 +734,7 @@ class SavedScooterCard extends StatelessWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  "Link",
+                                  FlutterI18n.translate(context, "cloud_link_button"),
                                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     color: Theme.of(context).colorScheme.primary,
                                   ),

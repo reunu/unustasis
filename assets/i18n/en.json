@@ -208,6 +208,13 @@
     "controls_blink_right": "Blink right",
     "controls_blink_hazard": "Hazard lights",
     "controls_blink_off": "Turn off",
+    "controls_alerts_title": "Alerts",
+    "controls_locate": "Locate",
+    "controls_honk": "Honk",
+    "controls_alarm": "Alarm",
+    "controls_diagnostics_title": "Diagnostics",
+    "controls_ping": "Ping",
+    "controls_get_state": "Get Status",
     "settings_report": "Report an issue with the app",
     "settings_report_description": "If the app doesn't work as expected, you can send a report to the developers.\n\nThe report will include error logs from the last few minutes, so please use this feature directly after the error occurs.",
     "settings_report_proceed": "Continue",
@@ -270,6 +277,8 @@
     "cloud_auto_match_message": "Found cloud scooter '{cloudName}' matching your local scooter '{localName}' by Bluetooth address. Link automatically?",
     "cloud_manual_select": "Choose manually",
     "cloud_auto_link": "Link automatically",
+    "cloud_link_button": "Link",
+    "cloud_unlink_button": "Unlink",
     "cancel": "Cancel",
     "confirm": "Confirm"
 }

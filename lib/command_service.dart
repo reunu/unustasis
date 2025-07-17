@@ -10,6 +10,9 @@ enum CommandType {
   blinkerOff,
   honk,
   alarm,
+  locate,
+  ping,
+  getState,
 }
 
 abstract class CommandService {

@@ -214,6 +214,13 @@
     "controls_blink_right": "Rechts blinken",
     "controls_blink_hazard": "Warnblinker",
     "controls_blink_off": "Blinker aus",
+    "controls_alerts_title": "Warnungen",
+    "controls_locate": "Orten",
+    "controls_honk": "Hupen",
+    "controls_alarm": "Alarm",
+    "controls_diagnostics_title": "Diagnose",
+    "controls_ping": "Ping",
+    "controls_get_state": "Status abrufen",
     "settings_report": "Fehler mit der App melden",
     "settings_report_description": "Wenn die App nicht wie erwartet funktioniert, kannst du dies den Entwicklern melden.\n\nDer Bericht enthält Nutzungsdaten der letzten paar Minuten, also nutze diese Funktion bitte unmittelbar nachdem ein Fehler auftritt.",
     "settings_report_proceed": "Fortsetzen",
@@ -278,6 +285,8 @@
     "cloud_auto_match_message": "Cloud-Roller '{cloudName}' gefunden, der mit deinem lokalen Roller '{localName}' über Bluetooth-Adresse übereinstimmt. Automatisch verknüpfen?",
     "cloud_manual_select": "Manuell auswählen",
     "cloud_auto_link": "Automatisch verknüpfen",
+    "cloud_link_button": "Verknüpfen",
+    "cloud_unlink_button": "Trennen",
     "cancel": "Abbrechen",
     "confirm": "Bestätigen"
 }
