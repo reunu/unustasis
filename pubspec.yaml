@@ -61,6 +61,9 @@ dependencies:
   appcheck: ^1.5.2
   home_widget: ^0.7.0
   pausable_timer: ^3.1.0+3
+  flutter_secure_storage: ^9.2.2
+  app_links: ^6.3.2
+  crypto: ^3.0.3
   workmanager:
     git:
       url: https://github.com/fluttercommunity/flutter_workmanager.git
