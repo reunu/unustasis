@@ -69,6 +69,8 @@ class ScooterService with ChangeNotifier {
   
   // Command availability cache
   Map<CommandType, bool> _commandAvailabilityCache = {};
+  DateTime? _lastCommandRefresh;
+  String? _lastConnectionState;
   
   // Cloud connectivity cache
   bool _isCloudOnline = false;
@@ -1161,9 +1163,11 @@ class ScooterService with ChangeNotifier {
   void _setupConnectionListeners() {
     if (_bleConnectionService != null) {
       _bleConnectionService!.connectionStream.listen((scooterId) {
-        log.info("BLE connection state changed: $scooterId");
-        // Only refresh command availability when BLE connection changes
-        // Don't re-check cloud status - we already did that once
+        // Skip null or empty state changes to prevent spam
+        if (scooterId != null && scooterId.isNotEmpty) {
+          log.info("BLE connection state changed: $scooterId");
+        }
+        // Always refresh command availability on connection changes
         _refreshCommandAvailabilityFromConnectionState();
       });
     }
@@ -1172,7 +1176,6 @@ class ScooterService with ChangeNotifier {
   /// Refresh command availability based on current connection state (without re-checking cloud)
   void _refreshCommandAvailabilityFromConnectionState() {
     if (_currentScooter == null) {
-      log.info("_refreshCommandAvailabilityFromConnectionState: No current scooter");
       _commandAvailabilityCache.clear();
       connected = false;
       state = ScooterState.disconnected;
@@ -1180,18 +1183,34 @@ class ScooterService with ChangeNotifier {
       return;
     }
     
-    // Ensure services are initialized
-    _ensureCloudServicesInitialized();
-    _ensureBLECommandServiceInitialized();
-    _ensureCloudCommandServiceInitialized();
-    
     // Simple logic: if BLE is connected, enable BLE commands
     // If cloud is available (from our one-time check), enable cloud commands
     bool bleConnected = _bleConnectionService?.isConnectedTo(_currentScooter!.id) ?? false;
     bool cloudAvailable = _currentScooter!.cloudScooterId != null && _isCloudOnline;
     
-    log.info("_refreshCommandAvailabilityFromConnectionState: BLE connected: $bleConnected, Cloud available: $cloudAvailable");
-    log.info("_refreshCommandAvailabilityFromConnectionState: Current scooter cloudScooterId: ${_currentScooter!.cloudScooterId}, _isCloudOnline: $_isCloudOnline");
+    // Create state signature for debouncing
+    String currentState = "${bleConnected ? 'B' : ''}${cloudAvailable ? 'C' : ''}";
+    
+    // Debounce: skip if called within 500ms with same state
+    final now = DateTime.now();
+    if (_lastCommandRefresh != null && 
+        _lastConnectionState == currentState &&
+        now.difference(_lastCommandRefresh!).inMilliseconds < 500) {
+      return;
+    }
+    
+    // Only log on state changes
+    if (_lastConnectionState != currentState) {
+      log.info("Connection state: BLE=$bleConnected, Cloud=$cloudAvailable");
+    }
+    
+    _lastCommandRefresh = now;
+    _lastConnectionState = currentState;
+    
+    // Ensure services are initialized
+    _ensureCloudServicesInitialized();
+    _ensureBLECommandServiceInitialized();
+    _ensureCloudCommandServiceInitialized();
     
     // Update legacy connection state
     if (bleConnected || cloudAvailable) {
@@ -1216,12 +1235,10 @@ class ScooterService with ChangeNotifier {
         "lastPingInt": DateTime.now().millisecondsSinceEpoch,
       });
       
-      log.info("_refreshCommandAvailabilityFromConnectionState: Setting connected = true");
     } else {
       connected = false;
       state = ScooterState.disconnected;
       _foundSth = false;
-      log.info("_refreshCommandAvailabilityFromConnectionState: Setting connected = false");
     }
     
     for (CommandType command in CommandType.values) {
@@ -1238,7 +1255,6 @@ class ScooterService with ChangeNotifier {
       _commandAvailabilityCache[command] = available;
     }
     
-    log.info("_refreshCommandAvailabilityFromConnectionState: Command availability cache updated: $_commandAvailabilityCache");
     notifyListeners();
   }
   
@@ -1281,18 +1297,33 @@ class ScooterService with ChangeNotifier {
         if (scooterData.containsKey('batteries')) {
           final batteries = scooterData['batteries'];
           if (batteries is Map) {
-            if (batteries.containsKey('battery0') && batteries['battery0']['present'] == true) {
-              final level = batteries['battery0']['level'];
-              if (level != null) {
-                primarySOC = int.tryParse(level.toString().split('.')[0]) ?? primarySOC;
-                log.info("Updated primary battery from cloud: ${level}% -> $primarySOC%");
+            // Primary battery (battery0)
+            if (batteries.containsKey('battery0')) {
+              final battery0 = batteries['battery0'];
+              if (battery0 is Map && battery0['present'] == true) {
+                final level = battery0['level'];
+                if (level != null) {
+                  primarySOC = int.tryParse(level.toString().split('.')[0]) ?? primarySOC;
+                  log.info("Updated primary battery from cloud: ${level}% -> $primarySOC%");
+                }
               }
             }
-            if (batteries.containsKey('battery1') && batteries['battery1']['present'] == true) {
-              final level = batteries['battery1']['level'];
-              if (level != null) {
-                secondarySOC = int.tryParse(level.toString().split('.')[0]) ?? secondarySOC;
-                log.info("Updated secondary battery from cloud: ${level}% -> $secondarySOC%");
+            
+            // Secondary battery (battery1)
+            if (batteries.containsKey('battery1')) {
+              final battery1 = batteries['battery1'];
+              if (battery1 is Map) {
+                if (battery1['present'] == true) {
+                  final level = battery1['level'];
+                  if (level != null) {
+                    secondarySOC = int.tryParse(level.toString().split('.')[0]) ?? secondarySOC;
+                    log.info("Updated secondary battery from cloud: ${level}% -> $secondarySOC%");
+                  }
+                } else {
+                  // Battery is not present, set to -1 to indicate absence
+                  secondarySOC = -1;
+                  log.info("Updated secondary battery from cloud: not present -> secondarySOC=-1");
+                }
               }
             }
             
@@ -1354,6 +1385,25 @@ class ScooterService with ChangeNotifier {
               }
             }
           }
+        }
+        
+        // Persist all cloud updates to saved scooter
+        if (_currentScooter != null) {
+          _currentScooter!.lastPrimarySOC = primarySOC;
+          _currentScooter!.lastSecondarySOC = secondarySOC;
+          _currentScooter!.lastAuxSOC = auxSOC;
+          _currentScooter!.lastCbbSOC = cbbSOC;
+          if (lastPing != null) {
+            _currentScooter!.lastPing = lastPing!;
+          }
+          // Note: seatClosed is not persisted to SavedScooter as it's a live state
+          
+          // Update the saved scooters map and persist to storage
+          savedScooters[_currentScooter!.id] = _currentScooter!;
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString("savedScooters", jsonEncode(savedScooters));
+          
+          log.info("Persisted cloud updates to saved scooter: ${_currentScooter!.name}");
         }
       } else {
         _isCloudOnline = false;
