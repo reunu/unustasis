@@ -372,7 +372,8 @@ class SavedScooterCard extends StatelessWidget {
                       .withValues(alpha: 0.1),
                 ),
                 ListTile(
-                  title: const Text("ID"),
+                  title:
+                      Text(FlutterI18n.translate(context, "stats_scooter_id")),
                   subtitle: Text(savedScooter.id),
                 ),
                 Divider(

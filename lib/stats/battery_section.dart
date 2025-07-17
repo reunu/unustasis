@@ -62,12 +62,16 @@ class _BatterySectionState extends State<BatterySection> {
                         (primaryRange == 0 && secondaryRange == 0)
                             ? FlutterI18n.translate(
                                 context, "stats_no_batteries")
-                            : FlutterI18n.translate(
-                                context, "stats_range_until_throttled",
-                                translationParams: {
-                                    "range":
-                                        "${math.max(0, primaryRange - 9) + math.max(0, secondaryRange - 9)}"
-                                  }),
+                            : ((data.primarySOC ?? 0) <= 15 &&
+                                    (data.secondarySOC ?? 0) <= 15)
+                                ? FlutterI18n.translate(
+                                    context, "stats_range_throttled")
+                                : FlutterI18n.translate(
+                                    context, "stats_range_until_throttled",
+                                    translationParams: {
+                                        "range":
+                                            "${math.max(0, primaryRange - 9) + math.max(0, secondaryRange - 9)}"
+                                      }),
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                     ],
