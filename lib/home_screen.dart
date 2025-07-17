@@ -205,7 +205,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       top: 0,
                       right: 8,
                       child: IconButton(
-                        icon: const Icon(Icons.settings),
+                        icon: const Icon(Icons.settings_outlined),
                         onPressed: () => Navigator.push(
                           context,
                           MaterialPageRoute(
