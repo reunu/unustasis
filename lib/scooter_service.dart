@@ -729,24 +729,49 @@ class ScooterService with ChangeNotifier {
       // get the first one, hook into its connection, and remember the ID for future reference
       connectToScooterId(systemScooters.first.remoteId.toString());
     } else {
-      try {
-        log.fine("Looking for nearby scooters");
-        // If not, start scanning for nearby scooters
-        getNearbyScooters().listen((foundScooter) async {
-          // there's one! Attempt to connect to it
-          flutterBluePlus.stopScan();
-          connectToScooterId(foundScooter.remoteId.toString());
-        });
-      } catch (e, stack) {
-        // Guess this one is not happy with us
-        // TODO: Handle errors more elegantly
-        log.severe("Error during search or connect!", e, stack);
-        Fluttertoast.showToast(msg: "Error during search or connect!");
+      // Try to connect to the most recent scooter via both BLE and cloud
+      SavedScooter? mostRecentScooter = await getMostRecentScooter();
+      if (mostRecentScooter != null) {
+        log.info("Attempting to connect to most recent scooter: ${mostRecentScooter.name}");
+        
+        // If the most recent scooter is cloud-linked, try both BLE and cloud in parallel
+        if (mostRecentScooter.cloudScooterId != null) {
+          log.info("Most recent scooter is cloud-linked, attempting both BLE and cloud connection");
+          await setCurrentScooter(mostRecentScooter);
+        } else {
+          // Only try BLE connection for non-cloud-linked scooters
+          log.info("Most recent scooter is BLE-only, attempting BLE connection");
+          bool connected = await attemptLatestAutoConnection();
+          if (!connected) {
+            log.info("Direct connection failed, falling back to scanning");
+            _startBLEScanning();
+          }
+        }
+      } else {
+        log.info("No recent scooter found, starting BLE scanning");
+        _startBLEScanning();
       }
     }
 
     if (restart) {
       startAutoRestart();
+    }
+  }
+
+  /// Helper method to start BLE scanning for nearby scooters
+  void _startBLEScanning() {
+    try {
+      log.fine("Looking for nearby scooters");
+      getNearbyScooters().listen((foundScooter) async {
+        // there's one! Attempt to connect to it
+        flutterBluePlus.stopScan();
+        connectToScooterId(foundScooter.remoteId.toString());
+      });
+    } catch (e, stack) {
+      // Guess this one is not happy with us
+      // TODO: Handle errors more elegantly
+      log.severe("Error during search or connect!", e, stack);
+      Fluttertoast.showToast(msg: "Error during search or connect!");
     }
   }
 
