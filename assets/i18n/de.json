@@ -53,7 +53,7 @@
     "state_name_booting": "Fährt hoch...",
     "state_name_unknown": "Verbunden",
     "state_name_disconnected": "Getrennt",
-    "state_name_linking": "Verbindet...",
+    "state_name_linking": "Verbinde...",
     "state_desc_standby": "Dein Roller ist im Standbymodus",
     "state_desc_off": "Dein Roller ist komplett heruntergefahren",
     "state_desc_parked": "Dein Roller ist an und geparkt",

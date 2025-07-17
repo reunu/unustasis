@@ -1378,7 +1378,7 @@ class ScooterService with ChangeNotifier {
         return ScooterState.hibernating;
       default:
         log.warning("Unknown cloud state: $cloudState");
-        return ScooterState.cloudConnected; // Fallback
+        return ScooterState.unknown; // Fallback
     }
   }
 
