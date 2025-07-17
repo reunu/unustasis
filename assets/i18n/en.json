@@ -278,6 +278,10 @@
     "cloud_auto_link": "Link automatically",
     "cloud_link_button": "Link",
     "cloud_unlink_button": "Unlink",
+    "ok": "OK",
+    "id": "ID",
+    "cloud": "Cloud",
+    "not_linked": "Not linked",
     "cancel": "Cancel",
     "confirm": "Confirm"
 }

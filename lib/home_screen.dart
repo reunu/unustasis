@@ -496,7 +496,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           actions: <Widget>[
             TextButton(
-              child: const Text('OK'),
+              child: Text(FlutterI18n.translate(context, "ok")),
               onPressed: () {
                 Navigator.of(context).pop();
               },

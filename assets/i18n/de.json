@@ -276,6 +276,10 @@
     "cloud_auto_link": "Automatisch verknüpfen",
     "cloud_link_button": "Verknüpfen",
     "cloud_unlink_button": "Trennen",
+    "ok": "OK",
+    "id": "ID",
+    "cloud": "Cloud",
+    "not_linked": "Nicht verknüpft",
     "cancel": "Abbrechen",
     "confirm": "Bestätigen"
 }

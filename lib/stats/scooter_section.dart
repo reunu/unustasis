@@ -637,7 +637,7 @@ class SavedScooterCard extends StatelessWidget {
                 ),
                 ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                  title: const Text("ID"),
+                  title: Text(FlutterI18n.translate(context, "id")),
                   subtitle: Text(
                     savedScooter.id,
                     overflow: TextOverflow.ellipsis,
@@ -684,7 +684,7 @@ class SavedScooterCard extends StatelessWidget {
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                           title: Row(
                             children: [
-                              const Text("Cloud"),
+                              Text(FlutterI18n.translate(context, "cloud")),
                               const SizedBox(width: 8),
                               Container(
                                 width: 8,
@@ -747,8 +747,8 @@ class SavedScooterCard extends StatelessWidget {
                         ),
                         ListTile(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                          title: const Text("Cloud"),
-                          subtitle: const Text("Not linked"),
+                          title: Text(FlutterI18n.translate(context, "cloud")),
+                          subtitle: Text(FlutterI18n.translate(context, "not_linked")),
                           trailing: GestureDetector(
                             onTap: () => _linkToCloudScooter(context),
                             child: Row(

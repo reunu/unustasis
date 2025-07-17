@@ -276,6 +276,10 @@
     "cloud_auto_link": "Link 'em up!",
     "cloud_link_button": "Link",
     "cloud_unlink_button": "Unlink",
+    "ok": "Aye",
+    "id": "Ship ID",
+    "cloud": "Fleet",
+    "not_linked": "No fleet link",
     "cancel": "Belay that",
     "confirm": "Aye, do it"
 }
