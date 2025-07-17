@@ -8,10 +8,22 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'scooter_service.dart';
 
+/// Cloud service for Sunshine scooter management with OAuth 2.0 + PKCE authentication
+/// 
+/// OAuth Client ID Configuration:
+/// - Default: Uses hardcoded client ID for development
+/// - Environment: Set OAUTH_CLIENT_ID environment variable
+/// - Build time: flutter build apk --dart-define=OAUTH_CLIENT_ID=your_client_id
+/// - Local development: Add oauth.clientId=your_client_id to local.properties
+///
+/// Security: Client secret has been removed and PKCE is used for secure authentication
 class CloudService {
   static const String _baseUrl = 'https://sunshine.rescoot.org/api/v1';
   static const String _oauthUrl = 'https://sunshine.rescoot.org/oauth';
-  static const String _clientId = 'Q20PF36dOaO1FDw0NEzkP1jNtPT12w_onMuwr5nS5I0';
+  static const String _clientId = String.fromEnvironment(
+    'OAUTH_CLIENT_ID',
+    defaultValue: 'Q20PF36dOaO1FDw0NEzkP1jNtPT12w_onMuwr5nS5I0',
+  );
   static const String _redirectUri = 'unustasis://oauth/callback';
 
   final ScooterService scooterService;
