@@ -206,6 +206,13 @@
     "controls_blink_right": "Steer right",
     "controls_blink_hazard": "Alert the crew!",
     "controls_blink_off": "Stop blinkin'",
+    "controls_alerts_title": "Alarms",
+    "controls_locate": "Find me ship",
+    "controls_honk": "Sound the horn",
+    "controls_alarm": "Raise alarm",
+    "controls_diagnostics_title": "Ship's Logs",
+    "controls_ping": "Ping",
+    "controls_get_state": "Check status",
     "settings_report": "Report an issue with yer app",
     "settings_report_description": "If the app doesn't work as expected, you can send a report to the developers.\n\nThe report will include error logs from the last few minutes, so please use this feature directly after the error occurs.",
     "settings_report_proceed": "Continue",
@@ -267,6 +274,8 @@
     "cloud_auto_match_message": "Found cloud vessel '{cloudName}' matching yer local ship '{localName}' by signal beacon. Link the ships automatically?",
     "cloud_manual_select": "Choose me own ship",
     "cloud_auto_link": "Link 'em up!",
+    "cloud_link_button": "Link",
+    "cloud_unlink_button": "Unlink",
     "cancel": "Belay that",
     "confirm": "Aye, do it"
 }

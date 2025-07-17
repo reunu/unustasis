@@ -89,12 +89,15 @@ class CloudCommandService implements CommandService {
       case CommandType.openSeat:
       case CommandType.honk:
       case CommandType.alarm:
+      case CommandType.locate:
         return true;
       case CommandType.hibernate:
       case CommandType.blinkerLeft:
       case CommandType.blinkerRight:
       case CommandType.blinkerBoth:
       case CommandType.blinkerOff:
+      case CommandType.ping:
+      case CommandType.getState:
         return false;
     }
   }
@@ -123,6 +126,12 @@ class CloudCommandService implements CommandService {
         return 'honk';
       case CommandType.alarm:
         return 'alarm';
+      case CommandType.locate:
+        return 'locate';
+      case CommandType.ping:
+        return 'ping';
+      case CommandType.getState:
+        return 'get_state';
     }
   }
 
@@ -155,6 +164,9 @@ class CloudCommandService implements CommandService {
       case CommandType.blinkerOff:
       case CommandType.honk:
       case CommandType.alarm:
+      case CommandType.locate:
+      case CommandType.ping:
+      case CommandType.getState:
         return true;
       case CommandType.wakeUp:
         return false; // Not supported in cloud API
