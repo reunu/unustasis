@@ -996,7 +996,7 @@ class SavedScooterCard extends StatelessWidget {
                         width: 16,
                         height: 16,
                         decoration: BoxDecoration(
-                          color: Color(int.parse('FF${customColorHex.replaceAll('#', '')}', radix: 16)),
+                          color: SavedScooter.hexToColor(customColorHex),
                           shape: BoxShape.circle,
                           border: Border.fromBorderSide(
                             BorderSide(
@@ -1014,7 +1014,7 @@ class SavedScooterCard extends StatelessWidget {
                   _colorRadioTile(
                     colorName: "black",
                     colorValue: 0,
-                    color: Colors.black,
+                    color: SavedScooter.getPredefinedColor(0),
                     selectedValue: selectedValue,
                     onChanged: (value) {
                       setState(() {
@@ -1026,7 +1026,7 @@ class SavedScooterCard extends StatelessWidget {
                   _colorRadioTile(
                     colorName: "white",
                     colorValue: 1,
-                    color: Colors.white,
+                    color: SavedScooter.getPredefinedColor(1),
                     selectedValue: selectedValue,
                     onChanged: (value) {
                       setState(() {
@@ -1038,7 +1038,7 @@ class SavedScooterCard extends StatelessWidget {
                   _colorRadioTile(
                     colorName: "green",
                     colorValue: 2,
-                    color: Colors.green.shade900,
+                    color: SavedScooter.getPredefinedColor(2),
                     selectedValue: selectedValue,
                     onChanged: (value) {
                       setState(() {
@@ -1050,7 +1050,7 @@ class SavedScooterCard extends StatelessWidget {
                   _colorRadioTile(
                     colorName: "gray",
                     colorValue: 3,
-                    color: Colors.grey,
+                    color: SavedScooter.getPredefinedColor(3),
                     selectedValue: selectedValue,
                     onChanged: (value) {
                       setState(() {
@@ -1062,7 +1062,7 @@ class SavedScooterCard extends StatelessWidget {
                   _colorRadioTile(
                     colorName: "orange",
                     colorValue: 4,
-                    color: Colors.deepOrange.shade400,
+                    color: SavedScooter.getPredefinedColor(4),
                     selectedValue: selectedValue,
                     onChanged: (value) {
                       setState(() {
@@ -1074,7 +1074,7 @@ class SavedScooterCard extends StatelessWidget {
                   _colorRadioTile(
                     colorName: "red",
                     colorValue: 5,
-                    color: Colors.red,
+                    color: SavedScooter.getPredefinedColor(5),
                     selectedValue: selectedValue,
                     onChanged: (value) {
                       setState(() {
@@ -1086,7 +1086,7 @@ class SavedScooterCard extends StatelessWidget {
                   _colorRadioTile(
                     colorName: "blue",
                     colorValue: 6,
-                    color: Colors.blue,
+                    color: SavedScooter.getPredefinedColor(6),
                     selectedValue: selectedValue,
                     onChanged: (value) {
                       setState(() {
@@ -1099,7 +1099,7 @@ class SavedScooterCard extends StatelessWidget {
                     _colorRadioTile(
                       colorName: "eclipse",
                       colorValue: 7,
-                      color: Colors.grey.shade800,
+                      color: SavedScooter.getPredefinedColor(7),
                       selectedValue: selectedValue,
                       onChanged: (value) {
                         setState(() {
@@ -1112,7 +1112,7 @@ class SavedScooterCard extends StatelessWidget {
                     _colorRadioTile(
                       colorName: "idioteque",
                       colorValue: 8,
-                      color: Colors.teal.shade200,
+                      color: SavedScooter.getPredefinedColor(8),
                       selectedValue: selectedValue,
                       onChanged: (value) {
                         setState(() {
@@ -1125,7 +1125,7 @@ class SavedScooterCard extends StatelessWidget {
                     _colorRadioTile(
                       colorName: "hover",
                       colorValue: 9,
-                      color: Colors.lightBlue,
+                      color: SavedScooter.getPredefinedColor(9),
                       selectedValue: selectedValue,
                       onChanged: (value) {
                         setState(() {
@@ -1297,7 +1297,7 @@ class SavedScooterCard extends StatelessWidget {
       return colorHex ?? 'Custom color';
     } else {
       final colorId = cloudData['color_id'] as int?;
-      return _getColorNameFromId(colorId ?? 1);
+      return SavedScooter.getColorName(colorId ?? 1);
     }
   }
 
@@ -1306,25 +1306,8 @@ class SavedScooterCard extends StatelessWidget {
     if (scooter.hasCustomColor) {
       return scooter.colorHex ?? 'Custom color';
     } else {
-      return _getColorNameFromId(scooter.color);
+      return SavedScooter.getColorName(scooter.color);
     }
-  }
-
-  /// Maps color ID to human-readable name
-  String _getColorNameFromId(int colorId) {
-    const colorNames = {
-      0: 'Black',
-      1: 'White', 
-      2: 'Green',
-      3: 'Gray',
-      4: 'Orange',
-      5: 'Red',
-      6: 'Blue',
-      7: 'Eclipse',
-      8: 'Idioteque',
-      9: 'Hover',
-    };
-    return colorNames[colorId] ?? 'Unknown';
   }
 }
 
@@ -1371,7 +1354,7 @@ class _CloudScooterSelectionDialog extends StatelessWidget {
                                 width: 32,
                                 height: 32,
                                 decoration: BoxDecoration(
-                                  color: Color(int.parse(colorHex.replaceAll('#', '0xFF'))),
+                                  color: SavedScooter.hexToColor(colorHex),
                                   shape: BoxShape.circle,
                                   border: Border.all(
                                     color: Colors.grey.shade400,
