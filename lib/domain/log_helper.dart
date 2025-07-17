@@ -44,7 +44,12 @@ class LogHelper {
   void addLog(LogRecord record) {
     if (kDebugMode && record.level >= Level.INFO) {
       Fluttertoast.showToast(
-          msg: record.message, fontSize: 6, toastLength: Toast.LENGTH_SHORT);
+        msg: record.message,
+        fontSize: 12.0,
+        backgroundColor: Colors.grey.shade800,  // fluttertoast android logspams if no background color is set
+        textColor: Colors.white,
+        toastLength: Toast.LENGTH_SHORT
+      );
     }
     // ignore: avoid_print
     print(record);
