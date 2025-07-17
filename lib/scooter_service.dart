@@ -262,6 +262,12 @@ class ScooterService with ChangeNotifier {
         return FlutterI18n.translate(context, "controls_blink_hazard");
       case CommandType.blinkerOff:
         return FlutterI18n.translate(context, "controls_blink_off");
+      case CommandType.locate:
+        return FlutterI18n.translate(context, "controls_locate");
+      case CommandType.ping:
+        return FlutterI18n.translate(context, "controls_ping");
+      case CommandType.getState:
+        return FlutterI18n.translate(context, "controls_get_state");
     }
   }
 
@@ -969,6 +975,24 @@ class ScooterService with ChangeNotifier {
     }
   }
 
+  Future<void> locate({BuildContext? context}) async {
+    if (!await _executeCommand(CommandType.locate, context: context)) {
+      throw Exception("Failed to locate scooter");
+    }
+  }
+
+  Future<void> pingScooter({BuildContext? context}) async {
+    if (!await _executeCommand(CommandType.ping, context: context)) {
+      throw Exception("Failed to ping scooter");
+    }
+  }
+
+  Future<void> getState({BuildContext? context}) async {
+    if (!await _executeCommand(CommandType.getState, context: context)) {
+      throw Exception("Failed to get scooter state");
+    }
+  }
+
   /// Check if a command is available via BLE or cloud
   Future<bool> isCommandAvailable(CommandType command) async {
     // Ensure services are initialized
@@ -1200,6 +1224,9 @@ class ScooterService with ChangeNotifier {
       case CommandType.blinkerOff:
       case CommandType.honk:
       case CommandType.alarm:
+      case CommandType.locate:
+      case CommandType.ping:
+      case CommandType.getState:
         return true;
       case CommandType.wakeUp:
         return false; // Not supported in cloud API

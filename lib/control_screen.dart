@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../helper_widgets/scooter_action_button.dart';
 import '../scooter_service.dart';
 import '../command_service.dart';
+import '../features.dart';
 
 class ControlScreen extends StatefulWidget {
   const ControlScreen({super.key});
@@ -31,6 +32,11 @@ class _ControlScreenState extends State<ControlScreen> {
         bool blinkerRightAvailable,
         bool blinkerBothAvailable,
         bool blinkerOffAvailable,
+        bool locateAvailable,
+        bool honkAvailable,
+        bool alarmAvailable,
+        bool pingAvailable,
+        bool getStateAvailable,
       })>(
         selector: (context, service) => (
           unlockAvailable: service.isCommandAvailableCached(CommandType.unlock),
@@ -41,6 +47,11 @@ class _ControlScreenState extends State<ControlScreen> {
           blinkerRightAvailable: service.isCommandAvailableCached(CommandType.blinkerRight),
           blinkerBothAvailable: service.isCommandAvailableCached(CommandType.blinkerBoth),
           blinkerOffAvailable: service.isCommandAvailableCached(CommandType.blinkerOff),
+          locateAvailable: service.isCommandAvailableCached(CommandType.locate),
+          honkAvailable: service.isCommandAvailableCached(CommandType.honk),
+          alarmAvailable: service.isCommandAvailableCached(CommandType.alarm),
+          pingAvailable: service.isCommandAvailableCached(CommandType.ping),
+          getStateAvailable: service.isCommandAvailableCached(CommandType.getState),
         ),
         builder: (context, commandAvailability, _) => ListView(
         children: [
@@ -156,6 +167,89 @@ class _ControlScreenState extends State<ControlScreen> {
                     ),
                   ),
                 ]),
+          ),
+          // Cloud-only sections - only show if cloud features are enabled
+          FutureBuilder<bool>(
+            future: Features.isCloudConnectivityEnabled,
+            builder: (context, snapshot) {
+              if (snapshot.data != true) {
+                return const SizedBox.shrink();
+              }
+              
+              return Column(
+                children: [
+                  Header(FlutterI18n.translate(context, "controls_alerts_title")),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Expanded(
+                          child: ScooterActionButton(
+                            onPressed: commandAvailability.locateAvailable ? () {
+                              context.read<ScooterService>().locate();
+                              Navigator.of(context).pop();
+                            } : null,
+                            icon: Icons.location_pin,
+                            label: FlutterI18n.translate(context, "controls_locate"),
+                          ),
+                        ),
+                        Expanded(
+                          child: ScooterActionButton(
+                            onPressed: commandAvailability.honkAvailable ? () {
+                              context.read<ScooterService>().honk();
+                              Navigator.of(context).pop();
+                            } : null,
+                            icon: Icons.campaign_outlined,
+                            label: FlutterI18n.translate(context, "controls_honk"),
+                          ),
+                        ),
+                        Expanded(
+                          child: ScooterActionButton(
+                            onPressed: commandAvailability.alarmAvailable ? () {
+                              context.read<ScooterService>().alarm();
+                              Navigator.of(context).pop();
+                            } : null,
+                            icon: Icons.warning_outlined,
+                            label: FlutterI18n.translate(context, "controls_alarm"),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Header(FlutterI18n.translate(context, "controls_diagnostics_title")),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Expanded(
+                          child: ScooterActionButton(
+                            onPressed: commandAvailability.pingAvailable ? () {
+                              context.read<ScooterService>().pingScooter();
+                              Navigator.of(context).pop();
+                            } : null,
+                            icon: Icons.sensors_outlined,
+                            label: FlutterI18n.translate(context, "controls_ping"),
+                          ),
+                        ),
+                        Expanded(
+                          child: ScooterActionButton(
+                            onPressed: commandAvailability.getStateAvailable ? () {
+                              context.read<ScooterService>().getState();
+                              Navigator.of(context).pop();
+                            } : null,
+                            icon: Icons.refresh_outlined,
+                            label: FlutterI18n.translate(context, "controls_get_state"),
+                          ),
+                        ),
+                        const Expanded(child: SizedBox()), // Empty space for symmetry
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),

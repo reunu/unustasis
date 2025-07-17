@@ -75,6 +75,10 @@ class BLECommandService implements CommandService {
         return 'scooter:horn honk';
       case CommandType.alarm:
         return 'scooter:alarm start';
+      case CommandType.locate:
+      case CommandType.ping:
+      case CommandType.getState:
+        throw UnsupportedError('Command $command is not supported via BLE');
     }
   }
 
