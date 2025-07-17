@@ -272,7 +272,6 @@ void onStart(ServiceInstance service) async {
 
   // listen to changes
   scooterService.addListener(() async {
-    Logger("bgservice").info("ScooterService updated");
     passToWidget(
       connected: scooterService.connected,
       lastPing: scooterService.lastPing,
