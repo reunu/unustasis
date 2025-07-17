@@ -118,6 +118,7 @@ void workmanagerCallback() {
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {
   Logger("bgservice").onRecord.listen((record) {
+    // ignore: avoid_print
     print(
         "[${record.level.name}] ${record.time}: ${record.message} ${record.error ?? ""} ${record.stackTrace ?? ""}");
   });
