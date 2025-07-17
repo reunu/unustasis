@@ -14,7 +14,7 @@ class CloudCommandService implements CommandService {
   @override
   Future<bool> isAvailable(CommandType command) async {
     // Check if command is supported in cloud
-    if (!_isCommandSupportedInCloud(command)) {
+    if (!isCommandSupportedInCloud(command)) {
       return false;
     }
 
@@ -152,7 +152,7 @@ class CloudCommandService implements CommandService {
     }
   }
 
-  bool _isCommandSupportedInCloud(CommandType command) {
+  bool isCommandSupportedInCloud(CommandType command) {
     switch (command) {
       case CommandType.lock:
       case CommandType.unlock:

@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -1228,7 +1227,7 @@ class ScooterService with ChangeNotifier {
         available = true;
       } else if (cloudAvailable) {
         // Only cloud-supported commands available
-        available = _isCommandSupportedInCloud(command);
+        available = _cloudCommandService!.isCommandSupportedInCloud(command);
       }
       
       _commandAvailabilityCache[command] = available;
@@ -1238,27 +1237,6 @@ class ScooterService with ChangeNotifier {
     notifyListeners();
   }
   
-  /// Check if command is supported in cloud (copied from CloudCommandService)
-  bool _isCommandSupportedInCloud(CommandType command) {
-    switch (command) {
-      case CommandType.lock:
-      case CommandType.unlock:
-      case CommandType.hibernate:
-      case CommandType.openSeat:
-      case CommandType.blinkerLeft:
-      case CommandType.blinkerRight:
-      case CommandType.blinkerBoth:
-      case CommandType.blinkerOff:
-      case CommandType.honk:
-      case CommandType.alarm:
-      case CommandType.locate:
-      case CommandType.ping:
-      case CommandType.getState:
-        return true;
-      case CommandType.wakeUp:
-        return false; // Not supported in cloud API
-    }
-  }
   
   /// Refresh cloud online status for current scooter
   Future<void> _refreshCloudOnlineStatus() async {
