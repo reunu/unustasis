@@ -418,10 +418,15 @@ class _BatterySectionState extends State<BatterySection> {
   }
 
   AlertDialog _auxDiagnosticDialog(BuildContext context) {
-    int? auxSOC = context.select<ScooterService, int?>((service) => service.auxSOC);
-    AUXChargingState? auxCharging = context.select<ScooterService, AUXChargingState?>((service) => service.auxCharging);
-    int? auxVoltage = context.select<ScooterService, int?>((service) => service.auxVoltage);
-    DateTime? lastPing = context.select<ScooterService, DateTime?>((service) => service.lastPing);
+    int? auxSOC =
+        context.select<ScooterService, int?>((service) => service.auxSOC);
+    AUXChargingState? auxCharging =
+        context.select<ScooterService, AUXChargingState?>(
+            (service) => service.auxCharging);
+    int? auxVoltage =
+        context.select<ScooterService, int?>((service) => service.auxVoltage);
+    DateTime? lastPing = context
+        .select<ScooterService, DateTime?>((service) => service.lastPing);
 
     return AlertDialog(
       title: Text(
@@ -436,10 +441,14 @@ class _BatterySectionState extends State<BatterySection> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text("SOC: ${auxSOC ?? "Unknown"}%"),
-          Text("${FlutterI18n.translate(context, "stats_battery_charging_state")}: ${auxCharging?.name(context) ?? "Unknown"}"),
-          Text("${FlutterI18n.translate(context, "stats_battery_voltage")}: ${auxVoltage ?? "Unknown"}mV"),
-          Text("${FlutterI18n.translate(context, "stats_battery_type")}: ${FlutterI18n.translate(context, "stats_aux_desc")}"),
-          Text("${FlutterI18n.translate(context, "stats_battery_last_update")}: ${lastPing?.toString().split('.').first ?? "Never"}"),
+          Text(
+              "${FlutterI18n.translate(context, "stats_battery_charging_state")}: ${auxCharging?.name(context) ?? "Unknown "}"),
+          Text(
+              "${FlutterI18n.translate(context, "stats_battery_voltage")}: ${auxVoltage ?? "Unknown "}mV"),
+          Text(
+              "${FlutterI18n.translate(context, "stats_battery_type")}: ${FlutterI18n.translate(context, "stats_aux_desc")}"),
+          Text(
+              "${FlutterI18n.translate(context, "stats_battery_last_update")}: ${lastPing?.toString().split('.').first ?? "Never"}"),
         ],
       ),
       actions: [
@@ -447,18 +456,24 @@ class _BatterySectionState extends State<BatterySection> {
           onPressed: () {
             Navigator.of(context).pop();
           },
-          child: Text(FlutterI18n.translate(context, "stats_diagnostics_close")),
+          child:
+              Text(FlutterI18n.translate(context, "stats_diagnostics_close")),
         ),
       ],
     );
   }
 
   AlertDialog _cbbDiagnosticDialog(BuildContext context) {
-    int? cbbSOC = context.select<ScooterService, int?>((service) => service.cbbSOC);
-    bool? cbbCharging = context.select<ScooterService, bool?>((service) => service.cbbCharging);
-    int? cbbVoltage = context.select<ScooterService, int?>((service) => service.cbbVoltage);
-    int? cbbCapacity = context.select<ScooterService, int?>((service) => service.cbbCapacity);
-    DateTime? lastPing = context.select<ScooterService, DateTime?>((service) => service.lastPing);
+    int? cbbSOC =
+        context.select<ScooterService, int?>((service) => service.cbbSOC);
+    bool? cbbCharging =
+        context.select<ScooterService, bool?>((service) => service.cbbCharging);
+    int? cbbVoltage =
+        context.select<ScooterService, int?>((service) => service.cbbVoltage);
+    int? cbbCapacity =
+        context.select<ScooterService, int?>((service) => service.cbbCapacity);
+    DateTime? lastPing = context
+        .select<ScooterService, DateTime?>((service) => service.lastPing);
 
     return AlertDialog(
       title: Text(
@@ -473,11 +488,16 @@ class _BatterySectionState extends State<BatterySection> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text("SOC: ${cbbSOC ?? "Unknown"}%"),
-          Text("${FlutterI18n.translate(context, "stats_battery_charging_state")}: ${cbbCharging == true ? "Charging" : cbbCharging == false ? "Not charging" : "Unknown"}"),
-          Text("${FlutterI18n.translate(context, "stats_battery_voltage")}: ${cbbVoltage ?? "Unknown"}mV"),
-          Text("${FlutterI18n.translate(context, "stats_battery_capacity")}: ${cbbCapacity ?? "Unknown"}mAh"),
-          Text("${FlutterI18n.translate(context, "stats_battery_type")}: ${FlutterI18n.translate(context, "stats_cbb_desc")}"),
-          Text("${FlutterI18n.translate(context, "stats_battery_last_update")}: ${lastPing?.toString().split('.').first ?? "Never"}"),
+          Text(
+              "${FlutterI18n.translate(context, "stats_battery_charging_state")}: ${cbbCharging == true ? "Charging" : cbbCharging == false ? "Not charging" : "Unknown"}"),
+          Text(
+              "${FlutterI18n.translate(context, "stats_battery_voltage")}: ${cbbVoltage ?? "Unknown "}mV"),
+          Text(
+              "${FlutterI18n.translate(context, "stats_battery_capacity")}: ${cbbCapacity ?? "Unknown "}mAh"),
+          Text(
+              "${FlutterI18n.translate(context, "stats_battery_type")}: ${FlutterI18n.translate(context, "stats_cbb_desc")}"),
+          Text(
+              "${FlutterI18n.translate(context, "stats_battery_last_update")}: ${lastPing?.toString().split('.').first ?? "Never"}"),
         ],
       ),
       actions: [
@@ -485,7 +505,8 @@ class _BatterySectionState extends State<BatterySection> {
           onPressed: () {
             Navigator.of(context).pop();
           },
-          child: Text(FlutterI18n.translate(context, "stats_diagnostics_close")),
+          child:
+              Text(FlutterI18n.translate(context, "stats_diagnostics_close")),
         ),
       ],
     );
@@ -507,12 +528,14 @@ class _BatterySectionState extends State<BatterySection> {
             case ScooterBatteryType.secondary:
               showDialog(
                   context: context,
-                  builder: (context) => _mainBatteryDiagnosticDialog(context, type, soc, cycles));
+                  builder: (context) =>
+                      _mainBatteryDiagnosticDialog(context, type, soc, cycles));
               break;
             case ScooterBatteryType.nfc:
               showDialog(
                   context: context,
-                  builder: (context) => _nfcBatteryDiagnosticDialog(context, soc, cycles));
+                  builder: (context) =>
+                      _nfcBatteryDiagnosticDialog(context, soc, cycles));
               break;
             default:
               break;
@@ -618,7 +641,8 @@ class _BatterySectionState extends State<BatterySection> {
     );
   }
 
-  AlertDialog _mainBatteryDiagnosticDialog(BuildContext context, ScooterBatteryType type, int soc, int? cycles) {
+  AlertDialog _mainBatteryDiagnosticDialog(
+      BuildContext context, ScooterBatteryType type, int soc, int? cycles) {
     return AlertDialog(
       title: Text(
         FlutterI18n.translate(
@@ -632,12 +656,17 @@ class _BatterySectionState extends State<BatterySection> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text("SOC: $soc%"),
-          if (cycles != null) Text("${FlutterI18n.translate(context, "stats_battery_cycles")}: $cycles"),
-          Text("${FlutterI18n.translate(context, "stats_battery_range")}: ${(45 * (soc / 100)).round()} km"),
-          Text("${FlutterI18n.translate(context, "stats_battery_capacity")}: ${(soc * 450).round()} Wh / 45000 Wh"),
-          Text("${FlutterI18n.translate(context, "stats_battery_last_update")}: ${context.select<ScooterService, DateTime?>(
-            (service) => service.lastPing,
-          )?.toString().split('.').first ?? "Never"}"),
+          if (cycles != null)
+            Text(
+                "${FlutterI18n.translate(context, "stats_battery_cycles")}: $cycles"),
+          Text(
+              "${FlutterI18n.translate(context, "stats_battery_range")}: ${(45 * (soc / 100)).round()} km"),
+          Text(
+              "${FlutterI18n.translate(context, "stats_battery_capacity")}: ${(soc * 450).round()} Wh / 45000 Wh"),
+          Text(
+              "${FlutterI18n.translate(context, "stats_battery_last_update")}: ${context.select<ScooterService, DateTime?>(
+                    (service) => service.lastPing,
+                  )?.toString().split('.').first ?? "Never"}"),
         ],
       ),
       actions: [
@@ -645,13 +674,15 @@ class _BatterySectionState extends State<BatterySection> {
           onPressed: () {
             Navigator.of(context).pop();
           },
-          child: Text(FlutterI18n.translate(context, "stats_diagnostics_close")),
+          child:
+              Text(FlutterI18n.translate(context, "stats_diagnostics_close")),
         ),
       ],
     );
   }
 
-  AlertDialog _nfcBatteryDiagnosticDialog(BuildContext context, int soc, int? cycles) {
+  AlertDialog _nfcBatteryDiagnosticDialog(
+      BuildContext context, int soc, int? cycles) {
     return AlertDialog(
       title: Text(
         FlutterI18n.translate(
@@ -665,10 +696,15 @@ class _BatterySectionState extends State<BatterySection> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text("SOC: $soc%"),
-          if (cycles != null) Text("${FlutterI18n.translate(context, "stats_battery_cycles")}: $cycles"),
-          Text("${FlutterI18n.translate(context, "stats_battery_range")}: ${(45 * (soc / 100)).round()} km"),
-          Text("${FlutterI18n.translate(context, "stats_battery_capacity")}: ${(soc * 450).round()} Wh / 45000 Wh"),
-          Text("${FlutterI18n.translate(context, "stats_battery_read_method")}: NFC"),
+          if (cycles != null)
+            Text(
+                "${FlutterI18n.translate(context, "stats_battery_cycles")}: $cycles"),
+          Text(
+              "${FlutterI18n.translate(context, "stats_battery_range")}: ${(45 * (soc / 100)).round()} km"),
+          Text(
+              "${FlutterI18n.translate(context, "stats_battery_capacity")}: ${(soc * 450).round()} Wh / 45000 Wh"),
+          Text(
+              "${FlutterI18n.translate(context, "stats_battery_read_method")}: NFC"),
         ],
       ),
       actions: [
@@ -676,10 +712,10 @@ class _BatterySectionState extends State<BatterySection> {
           onPressed: () {
             Navigator.of(context).pop();
           },
-          child: Text(FlutterI18n.translate(context, "stats_diagnostics_close")),
+          child:
+              Text(FlutterI18n.translate(context, "stats_diagnostics_close")),
         ),
       ],
     );
   }
-
 }
