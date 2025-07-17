@@ -39,7 +39,7 @@ extension ConnectionStatusExtension on ConnectionStatus {
       case ConnectionStatus.both:
         return FlutterI18n.translate(context, "connection_status_desc_both");
       case ConnectionStatus.offline:
-        return FlutterI18n.translate(context, "connection_status_desc_offline");
+        return FlutterI18n.translate(context, "state_name_disconnected");
     }
   }
   
@@ -51,7 +51,7 @@ extension ConnectionStatusExtension on ConnectionStatus {
       case ConnectionStatus.ble:
         return Theme.of(context).colorScheme.primary;
       case ConnectionStatus.cloud:
-        return Theme.of(context).colorScheme.primary.withOpacity(0.7);
+        return Theme.of(context).colorScheme.primary.withValues(alpha: 0.7);
       case ConnectionStatus.both:
         return Theme.of(context).colorScheme.primary;
       case ConnectionStatus.offline:
