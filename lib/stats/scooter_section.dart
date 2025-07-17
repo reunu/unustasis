@@ -6,6 +6,7 @@ import 'package:logging/logging.dart';
 import 'package:maps_launcher/maps_launcher.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unustasis/home_screen.dart';
 
 import '../stats/stats_screen.dart';
 import '../onboarding_screen.dart';
@@ -17,11 +18,9 @@ import '../scooter_service.dart';
 class ScooterSection extends StatefulWidget {
   const ScooterSection({
     super.key,
-    required this.dataIsOld,
     this.onNavigateBack,
   });
 
-  final bool dataIsOld;
   final VoidCallback? onNavigateBack;
 
   @override
@@ -217,107 +216,68 @@ class SavedScooterCard extends StatelessWidget {
                         ),
                   ),
                 const SizedBox(height: 4),
-                InkWell(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const SizedBox(width: 32),
-                      Text(
-                        savedScooter.name,
-                        style: Theme.of(context).textTheme.headlineMedium,
-                      ),
-                      const SizedBox(width: 12),
-                      const Icon(
-                        Icons.edit_outlined,
-                        size: 20,
-                      ),
-                    ],
+                // Scooter name and edit button
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(width: 32),
+                        Text(
+                          savedScooter.name,
+                          style: Theme.of(context).textTheme.headlineMedium,
+                        ),
+                        const SizedBox(width: 12),
+                        const Icon(
+                          Icons.edit_outlined,
+                          size: 20,
+                        ),
+                      ],
+                    ),
+                    onTap: () async {
+                      HapticFeedback.mediumImpact();
+                      String? newName =
+                          await showRenameDialog(savedScooter.name, context);
+                      if (newName != null &&
+                          newName.isNotEmpty &&
+                          newName != savedScooter.name &&
+                          context.mounted) {
+                        context.read<ScooterService>().renameSavedScooter(
+                            name: newName, id: savedScooter.id);
+                        rebuild();
+                      }
+                    },
                   ),
-                  onTap: () async {
-                    HapticFeedback.mediumImpact();
-                    String? newName =
-                        await showRenameDialog(savedScooter.name, context);
-                    if (newName != null &&
-                        newName.isNotEmpty &&
-                        newName != savedScooter.name &&
-                        context.mounted) {
-                      context.read<ScooterService>().renameSavedScooter(
-                          name: newName, id: savedScooter.id);
-                      rebuild();
-                    }
-                  },
                 ),
-                const SizedBox(height: 4),
-                if (connected)
-                  Text(
-                    context
-                            .select<ScooterService, ScooterState?>(
-                                (service) => service.state)
-                            ?.description(context) ??
-                        FlutterI18n.translate(context, "stats_unknown"),
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                if (!connected)
-                  Column(
-                    children: [
-                      Text(
-                        FlutterI18n.translate(context, "state_name_disconnected"),
+                const SizedBox(height: 2),
+                // Scooter state or last ping
+                connected
+                    ? Text(
+                        context
+                                .select<ScooterService, ScooterState?>(
+                                    (service) => service.state)
+                                ?.description(context) ??
+                            FlutterI18n.translate(context, "stats_unknown"),
+                        style: Theme.of(context).textTheme.titleMedium,
+                      )
+                    : Text(
+                        FlutterI18n.translate(context, "stats_last_ping_toast",
+                            translationParams: {
+                              "time": savedScooter.lastPing
+                                  .calculateTimeDifferenceInShort(context)
+                                  .toLowerCase()
+                            }),
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
-                      if (savedScooter.lastPrimarySOC != null || savedScooter.lastSecondarySOC != null)
-                        const SizedBox(height: 4),
-                      if (savedScooter.lastPrimarySOC != null || savedScooter.lastSecondarySOC != null)
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            if (savedScooter.lastPrimarySOC != null) ...[
-                              SizedBox(
-                                width: 60,
-                                child: LinearProgressIndicator(
-                                  backgroundColor: Colors.black26,
-                                  minHeight: 6,
-                                  borderRadius: BorderRadius.circular(6),
-                                  value: savedScooter.lastPrimarySOC! / 100.0,
-                                  color: savedScooter.lastPrimarySOC! <= 15
-                                      ? Theme.of(context).colorScheme.error
-                                      : Theme.of(context).colorScheme.primary,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                "${savedScooter.lastPrimarySOC}%",
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                                ),
-                              ),
-                            ],
-                            if (savedScooter.lastPrimarySOC != null && savedScooter.lastSecondarySOC != null && savedScooter.lastSecondarySOC! > 0)
-                              const VerticalDivider(width: 16),
-                            if (savedScooter.lastSecondarySOC != null && savedScooter.lastSecondarySOC! > 0) ...[
-                              SizedBox(
-                                width: 60,
-                                child: LinearProgressIndicator(
-                                  backgroundColor: Colors.black26,
-                                  minHeight: 6,
-                                  borderRadius: BorderRadius.circular(6),
-                                  value: savedScooter.lastSecondarySOC! / 100.0,
-                                  color: savedScooter.lastSecondarySOC! <= 15
-                                      ? Theme.of(context).colorScheme.error
-                                      : Theme.of(context).colorScheme.primary,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                "${savedScooter.lastSecondarySOC}%",
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                    ],
-                  ),
+                SizedBox(height: 12),
+                BatteryBars(
+                  primarySOC: savedScooter.lastPrimarySOC,
+                  secondarySOC: savedScooter.lastSecondarySOC,
+                  dataIsOld: savedScooter.dataIsOld,
+                ),
                 const SizedBox(height: 24),
                 Divider(
                   indent: 16,
@@ -328,25 +288,6 @@ class SavedScooterCard extends StatelessWidget {
                       .onSurface
                       .withValues(alpha: 0.1),
                 ),
-                if (!connected)
-                  ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                    title: Text(FlutterI18n.translate(
-                        context, "stats_last_ping_title")),
-                    subtitle: Text(FlutterI18n.translate(
-                        context, "stats_last_ping",
-                        translationParams: {
-                          "time": savedScooter.lastPing
-                              .calculateTimeDifferenceInShort(context)
-                              .toLowerCase()
-                        })),
-                    onTap: () {
-                      Fluttertoast.showToast(
-                          msg: savedScooter.lastPing
-                              .toString()
-                              .substring(0, 16));
-                    },
-                  ),
                 if (savedScooter.lastLocation != null && !connected)
                   Divider(
                     indent: 16,
@@ -484,20 +425,21 @@ class SavedScooterCard extends StatelessWidget {
                             try {
                               log.info(
                                   "Trying to connect to ${savedScooter.id}");
-                              
+
                               // Start the connection but don't wait for it to fully complete
                               // Just initiate it and navigate back immediately
                               context
                                   .read<ScooterService>()
                                   .connectToScooterId(savedScooter.id);
-                              
+
                               if (context.mounted) {
                                 context
                                     .read<ScooterService>()
                                     .startAutoRestart();
                                 rebuild();
                                 // Navigate back to main screen after initiating connection
-                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                WidgetsBinding.instance
+                                    .addPostFrameCallback((_) {
                                   onNavigateBack?.call();
                                 });
                               }

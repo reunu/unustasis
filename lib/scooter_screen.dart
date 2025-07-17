@@ -39,29 +39,12 @@ class ScooterScreen extends StatelessWidget {
         ],
       ),
       body: Container(
-        decoration: BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment.center,
-            radius: 1.3,
-            colors: [
-              Theme.of(context).colorScheme.surface,
-              Theme.of(context).colorScheme.surface,
-            ],
-          ),
-        ),
-        child: Selector<ScooterService, DateTime?>(
-          selector: (context, service) => service.lastPing,
-          builder: (context, lastPing, _) {
-            bool dataIsOld = lastPing == null ||
-                lastPing.difference(DateTime.now()).inMinutes.abs() > 5;
-            return ScooterSection(
-              dataIsOld: dataIsOld,
-              onNavigateBack: () {
-                if (Navigator.of(context).canPop()) {
-                  Navigator.of(context).pop();
-                }
-              },
-            );
+        color: Theme.of(context).colorScheme.surface,
+        child: ScooterSection(
+          onNavigateBack: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            }
           },
         ),
       ),
