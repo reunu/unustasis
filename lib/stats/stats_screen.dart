@@ -113,7 +113,7 @@ class _StatsScreenState extends State<StatsScreen> {
                       // BATTERY TAB
                       BatterySection(dataIsOld: dataIsOld),
                       // SCOOTER TAB
-                      ScooterSection(dataIsOld: dataIsOld),
+                      ScooterSection(),
                       // SETTINGS TAB
                       const SettingsSection(),
                       // SUPPORT TAB

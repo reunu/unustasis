@@ -23,7 +23,10 @@ import '../onboarding_screen.dart';
 import '../scooter_service.dart';
 import '../domain/scooter_state.dart';
 import '../scooter_visual.dart';
-import '../stats/stats_screen.dart';
+import '../battery_screen.dart';
+import '../scooter_screen.dart';
+import '../settings_screen.dart';
+import '../support_screen.dart';
 import '../helper_widgets/snowfall.dart';
 import '../helper_widgets/grassscape.dart';
 
@@ -142,210 +145,306 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: GrassScape(),
                 ),
               SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 40,
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.max,
-                    children: [
-                      InkWell(
-                        onTap: () => Navigator.push(
+                child: Stack(
+                  children: [
+                    Positioned(
+                      top: 0,
+                      left: 8,
+                      child: IconButton(
+                        icon: const Icon(Icons.help_outline),
+                        onPressed: () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const StatsScreen(),
+                            builder: (context) => const SupportScreen(),
                           ),
                         ),
-                        // Hidden for stable release, but useful for various debugging
-                        // onLongPress: () =>
-                        //     showHandlebarWarning(didNotUnlock: false),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SizedBox(
-                                width: context.select(
-                                        (ScooterService service) =>
-                                            service.connected)
-                                    ? 32
-                                    : 0),
-                            Text(
-                              context.select<ScooterService, String?>(
-                                      (service) => service.scooterName) ??
-                                  FlutterI18n.translate(
-                                      context, "stats_no_name"),
-                              style: Theme.of(context).textTheme.headlineLarge,
-                            ),
-                            const SizedBox(width: 16),
-                            const Icon(
-                              Icons.arrow_forward_ios_rounded,
-                              size: 16,
-                            ),
-                          ],
+                      ),
+                    ),
+                    Positioned(
+                      top: 0,
+                      right: 8,
+                      child: IconButton(
+                        icon: const Icon(Icons.settings_outlined),
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SettingsScreen(),
+                          ),
                         ),
                       ),
-                      const StatusText(),
-                      const SizedBox(height: 16),
-                      if (context.select<ScooterService, int?>(
-                              (service) => service.primarySOC) !=
-                          null)
-                        const BatteryBars(),
-                      const SizedBox(height: 16),
-                      Expanded(
-                        child: ScooterVisual(
-                          color: context.select<ScooterService, int?>(
-                                  (service) => service.scooterColor) ??
-                              1,
-                          state: context.select(
-                              (ScooterService service) => service.state),
-                          scanning: context.select(
-                              (ScooterService service) => service.scanning),
-                          blinkerLeft: _hazards,
-                          blinkerRight: _hazards,
-                          winter: _snowing,
-                          aprilFools: _forceHover,
-                        ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(
+                        top: 40,
+                        bottom: 40,
                       ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         mainAxisSize: MainAxisSize.max,
                         children: [
-                          const SeatButton(),
-                          Selector<ScooterService, ScooterState?>(
-                              selector: (context, service) => service.state,
-                              builder: (context, state, _) {
-                                return Expanded(
-                                  child: ScooterPowerButton(
-                                      action: state != null &&
-                                              state.isReadyForLockChange
-                                          ? (state.isOn
-                                              ? () async {
-                                                  try {
-                                                    await context
-                                                        .read<ScooterService>()
-                                                        .lock();
-                                                    if (context.mounted &&
-                                                        context
-                                                            .read<
-                                                                ScooterService>()
-                                                            .hazardLocking) {
-                                                      _flashHazards(1);
-                                                    }
-                                                  } on SeatOpenException catch (_) {
-                                                    log.warning(
-                                                        "Seat is open, showing alert");
-                                                    showSeatWarning();
-                                                  } on HandlebarLockException catch (_) {
-                                                    log.warning(
-                                                        "Handlebars are still unlocked, showing alert");
-                                                    showHandlebarWarning(
-                                                      didNotUnlock: false,
-                                                    );
-                                                  } catch (e, stack) {
-                                                    log.severe(
-                                                        "Problem opening the seat",
-                                                        e,
-                                                        stack);
-                                                    Fluttertoast.showToast(
-                                                        msg: e.toString());
-                                                  }
-                                                }
-                                              : (state == ScooterState.standby
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(8),
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const ScooterScreen(),
+                                ),
+                              ),
+                              // Hidden for stable release, but useful for various debugging
+                              // onLongPress: () =>
+                              //     showHandlebarWarning(didNotUnlock: false),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  SizedBox(
+                                      width: context.select(
+                                              (ScooterService service) =>
+                                                  service.connected)
+                                          ? 32
+                                          : 0),
+                                  Text(
+                                    context.select<ScooterService, String?>(
+                                            (service) => service.scooterName) ??
+                                        FlutterI18n.translate(
+                                            context, "stats_no_name"),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .headlineLarge,
+                                  ),
+                                  const SizedBox(width: 16),
+                                  const Icon(
+                                    Icons.arrow_forward_ios_rounded,
+                                    size: 16,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const StatusText(),
+                          if (context.select<ScooterService, String?>(
+                                      (service) => service.scooterName) !=
+                                  null &&
+                              context.select<ScooterService, String?>(
+                                      (service) => service.scooterName) !=
+                                  FlutterI18n.translate(
+                                      context, "stats_no_name") &&
+                              (context.select<ScooterService, int?>(
+                                          (service) => service.primarySOC) !=
+                                      null ||
+                                  context.select<ScooterService, int?>(
+                                          (service) => service.secondarySOC) !=
+                                      null))
+                            Material(
+                              borderRadius: BorderRadius.circular(8),
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(8),
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const BatteryScreen(),
+                                  ),
+                                ),
+                                child: Container(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      BatteryBars(
+                                          primarySOC: context.select<ScooterService, int?>(
+                                              (service) => service.primarySOC),
+                                          secondarySOC:
+                                              context.select<ScooterService, int?>(
+                                                  (service) =>
+                                                      service.secondarySOC),
+                                          dataIsOld: context.select<ScooterService, DateTime?>(
+                                                      (service) =>
+                                                          service.lastPing) ==
+                                                  null
+                                              ? true
+                                              : context
+                                                      .select<ScooterService, DateTime?>((service) => service.lastPing)!
+                                                      .difference(DateTime.now())
+                                                      .inMinutes
+                                                      .abs() >
+                                                  5),
+                                      const SizedBox(width: 8),
+                                      const Icon(
+                                        Icons.arrow_forward_ios_rounded,
+                                        size: 12,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          Expanded(
+                            child: ScooterVisual(
+                              color: context.select<ScooterService, int?>(
+                                      (service) => service.scooterColor) ??
+                                  1,
+                              state: context.select(
+                                  (ScooterService service) => service.state),
+                              scanning: context.select(
+                                  (ScooterService service) => service.scanning),
+                              blinkerLeft: _hazards,
+                              blinkerRight: _hazards,
+                              winter: _snowing,
+                              aprilFools: _forceHover,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            mainAxisSize: MainAxisSize.max,
+                            children: [
+                              const SeatButton(),
+                              Selector<ScooterService, ScooterState?>(
+                                  selector: (context, service) => service.state,
+                                  builder: (context, state, _) {
+                                    return Expanded(
+                                      child: ScooterPowerButton(
+                                          action: state != null &&
+                                                  state.isReadyForLockChange
+                                              ? (state.isOn
                                                   ? () async {
                                                       try {
                                                         await context
                                                             .read<
                                                                 ScooterService>()
-                                                            .unlock();
+                                                            .lock();
                                                         if (context.mounted &&
                                                             context
                                                                 .read<
                                                                     ScooterService>()
                                                                 .hazardLocking) {
-                                                          _flashHazards(2);
+                                                          _flashHazards(1);
                                                         }
+                                                      } on SeatOpenException catch (_) {
+                                                        log.warning(
+                                                            "Seat is open, showing alert");
+                                                        showSeatWarning();
                                                       } on HandlebarLockException catch (_) {
                                                         log.warning(
-                                                            "Handlebars are still locked, showing alert");
+                                                            "Handlebars are still unlocked, showing alert");
                                                         showHandlebarWarning(
-                                                          didNotUnlock: true,
+                                                          didNotUnlock: false,
                                                         );
+                                                      } catch (e, stack) {
+                                                        log.severe(
+                                                            "Problem opening the seat",
+                                                            e,
+                                                            stack);
+                                                        Fluttertoast.showToast(
+                                                            msg: e.toString());
                                                       }
                                                     }
                                                   : (state ==
                                                           ScooterState.standby
-                                                      ? () {
-                                                          context
+                                                      ? () async {
+                                                          try {
+                                                            await context
+                                                                .read<
+                                                                    ScooterService>()
+                                                                .unlock();
+                                                            if (context
+                                                                    .mounted &&
+                                                                context
+                                                                    .read<
+                                                                        ScooterService>()
+                                                                    .hazardLocking) {
+                                                              _flashHazards(2);
+                                                            }
+                                                          } on HandlebarLockException catch (_) {
+                                                            log.warning(
+                                                                "Handlebars are still locked, showing alert");
+                                                            showHandlebarWarning(
+                                                              didNotUnlock:
+                                                                  true,
+                                                            );
+                                                          }
+                                                        }
+                                                      : (state ==
+                                                              ScooterState
+                                                                  .standby
+                                                          ? () {
+                                                              context
+                                                                  .read<
+                                                                      ScooterService>()
+                                                                  .unlock();
+                                                              // TODO: Flash hazards in visual
+                                                            }
+                                                          : context
                                                               .read<
                                                                   ScooterService>()
-                                                              .unlock();
-                                                          // TODO: Flash hazards in visual
-                                                        }
-                                                      : context
+                                                              .wakeUpAndUnlock)))
+                                              : null,
+                                          icon: state != null && state.isOn
+                                              ? Icons.lock_open
+                                              : Icons.lock_outline,
+                                          label: state != null && state.isOn
+                                              ? FlutterI18n.translate(
+                                                  context, "home_lock_button")
+                                              : FlutterI18n.translate(context,
+                                                  "home_unlock_button")),
+                                    );
+                                  }),
+                              Selector<ScooterService,
+                                      ({bool scanning, bool connected})>(
+                                  selector: (context, service) => (
+                                        scanning: service.scanning,
+                                        connected: service.connected
+                                      ),
+                                  builder: (context, state, _) {
+                                    return Expanded(
+                                      child: ScooterActionButton(
+                                          onPressed: !state.scanning
+                                              ? () {
+                                                  if (!state.connected) {
+                                                    log.info(
+                                                        "Manually reconnecting...");
+                                                    try {
+                                                      context
                                                           .read<
                                                               ScooterService>()
-                                                          .wakeUpAndUnlock)))
-                                          : null,
-                                      icon: state != null && state.isOn
-                                          ? Icons.lock_open
-                                          : Icons.lock_outline,
-                                      label: state != null && state.isOn
-                                          ? FlutterI18n.translate(
-                                              context, "home_lock_button")
-                                          : FlutterI18n.translate(
-                                              context, "home_unlock_button")),
-                                );
-                              }),
-                          Selector<ScooterService,
-                                  ({bool scanning, bool connected})>(
-                              selector: (context, service) => (
-                                    scanning: service.scanning,
-                                    connected: service.connected
-                                  ),
-                              builder: (context, state, _) {
-                                return Expanded(
-                                  child: ScooterActionButton(
-                                      onPressed: !state.scanning
-                                          ? () {
-                                              if (!state.connected) {
-                                                log.info(
-                                                    "Manually reconnecting...");
-                                                try {
-                                                  context
-                                                      .read<ScooterService>()
-                                                      .start();
-                                                } catch (e, stack) {
-                                                  log.severe(
-                                                      "Reconnect button failed",
-                                                      e,
-                                                      stack);
+                                                          .start();
+                                                    } catch (e, stack) {
+                                                      log.severe(
+                                                          "Reconnect button failed",
+                                                          e,
+                                                          stack);
+                                                    }
+                                                  } else {
+                                                    Navigator.push(
+                                                      context,
+                                                      MaterialPageRoute(
+                                                        builder: (context) =>
+                                                            const ControlScreen(),
+                                                      ),
+                                                    );
+                                                  }
                                                 }
-                                              } else {
-                                                Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder: (context) =>
-                                                        const ControlScreen(),
-                                                  ),
-                                                );
-                                              }
-                                            }
-                                          : null,
-                                      icon: !state.connected
-                                          ? Icons.refresh_rounded
-                                          : Icons.more_vert_rounded,
-                                      label: !state.connected
-                                          ? FlutterI18n.translate(
-                                              context, "home_reconnect_button")
-                                          : FlutterI18n.translate(
-                                              context, "home_controls_button")),
-                                );
-                              }),
+                                              : null,
+                                          icon: !state.connected
+                                              ? Icons.refresh_rounded
+                                              : Icons.more_vert_rounded,
+                                          label: !state.connected
+                                              ? FlutterI18n.translate(context,
+                                                  "home_reconnect_button")
+                                              : FlutterI18n.translate(context,
+                                                  "home_controls_button")),
+                                    );
+                                  }),
+                            ],
+                          )
                         ],
-                      )
-                    ],
-                  ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -493,68 +592,66 @@ class SeatButton extends StatelessWidget {
 
 class BatteryBars extends StatelessWidget {
   const BatteryBars({
+    required this.primarySOC,
+    required this.secondarySOC,
+    required this.dataIsOld,
     super.key,
   });
 
+  final int? primarySOC;
+  final int? secondarySOC;
+  final bool? dataIsOld;
+
   @override
   Widget build(BuildContext context) {
-    return Selector<ScooterService,
-            ({DateTime? lastPing, int? primarySOC, int? secondarySOC})>(
-        selector: (context, service) => (
-              lastPing: service.lastPing,
-              primarySOC: service.primarySOC,
-              secondarySOC: service.secondarySOC
-            ),
-        builder: (context, data, _) {
-          bool dataIsOld = data.lastPing == null ||
-              data.lastPing!.difference(DateTime.now()).inMinutes.abs() > 5;
-          return Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SizedBox(
-                  width: MediaQuery.of(context).size.width / 6,
-                  child: LinearProgressIndicator(
-                    backgroundColor: Colors.black26,
-                    minHeight: 8,
-                    borderRadius: BorderRadius.circular(8),
-                    value: data.primarySOC! / 100.0,
-                    color: dataIsOld
-                        ? Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.4)
-                        : data.primarySOC! <= 15
-                            ? Theme.of(context).colorScheme.error
-                            : Theme.of(context).colorScheme.primary,
-                  )),
-              const SizedBox(width: 8),
-              Text("${data.primarySOC}%"),
-              if (data.secondarySOC != null && data.secondarySOC! > 0)
-                const VerticalDivider(),
-              if (data.secondarySOC != null && data.secondarySOC! > 0)
-                SizedBox(
-                    width: MediaQuery.of(context).size.width / 6,
-                    child: LinearProgressIndicator(
-                      backgroundColor: Colors.black26,
-                      minHeight: 8,
-                      borderRadius: BorderRadius.circular(8),
-                      value: data.secondarySOC! / 100.0,
-                      color: dataIsOld
-                          ? Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withValues(alpha: 0.4)
-                          : data.secondarySOC! <= 15
-                              ? Theme.of(context).colorScheme.error
-                              : Theme.of(context).colorScheme.primary,
-                    )),
-              if (data.secondarySOC != null && data.secondarySOC! > 0)
-                const SizedBox(width: 8),
-              if (data.secondarySOC != null && data.secondarySOC! > 0)
-                Text("${data.secondarySOC}%"),
-            ],
-          );
-        });
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const SizedBox(width: 16),
+        if (primarySOC != null) ...[
+          SizedBox(
+              width: MediaQuery.of(context).size.width / 6,
+              child: LinearProgressIndicator(
+                backgroundColor: Colors.black26,
+                minHeight: 8,
+                borderRadius: BorderRadius.circular(8),
+                value: primarySOC! / 100.0,
+                color: (dataIsOld ?? true) // if null or true, data is old
+                    ? Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.4)
+                    : primarySOC! <= 15
+                        ? Theme.of(context).colorScheme.error
+                        : Theme.of(context).colorScheme.primary,
+              )),
+          const SizedBox(width: 8),
+          Text("$primarySOC%"),
+        ],
+        if (primarySOC != null && secondarySOC != null && secondarySOC! > 0)
+          const VerticalDivider(),
+        if (secondarySOC != null && secondarySOC! > 0) ...[
+          SizedBox(
+              width: MediaQuery.of(context).size.width / 6,
+              child: LinearProgressIndicator(
+                backgroundColor: Colors.black26,
+                minHeight: 8,
+                borderRadius: BorderRadius.circular(8),
+                value: secondarySOC! / 100.0,
+                color: (dataIsOld ?? true) // if null or true, data is old
+                    ? Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.4)
+                    : secondarySOC! <= 15
+                        ? Theme.of(context).colorScheme.error
+                        : Theme.of(context).colorScheme.primary,
+              )),
+          const SizedBox(width: 8),
+          Text("$secondarySOC%"),
+        ],
+      ],
+    );
   }
 }
 
