@@ -8,13 +8,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:home_widget/home_widget.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helper_widgets/scooter_action_button.dart';
+import '../helper_widgets/onboarding_popups.dart';
 import '../handlebar_warning.dart';
 import '../control_screen.dart';
 import '../domain/icomoon.dart';
@@ -79,56 +79,15 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _showOnboardings() async {
+  Future<void> _showNotifications() async {
     SharedPreferencesAsync prefs = SharedPreferencesAsync();
-    if (Platform.isAndroid && await prefs.getBool("widgetOnboarded") != true) {
-      await showWidgetOnboarding();
+    if (Platform.isAndroid &&
+        await prefs.getBool("widgetOnboarded") != true &&
+        mounted) {
+      await showWidgetOnboarding(context);
       await prefs.setBool("widgetOnboarded", true);
     }
-  }
-
-  Future<void> showWidgetOnboarding() async {
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false, // user must tap button!
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title:
-              Text(FlutterI18n.translate(context, "widget_onboarding_title")),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: <Widget>[
-                Text(FlutterI18n.translate(context, "widget_onboarding_body")),
-              ],
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: Text(
-                  FlutterI18n.translate(context, "widget_onboarding_place")),
-              onPressed: () async {
-                if ((await HomeWidget.isRequestPinWidgetSupported()) == true) {
-                  HomeWidget.requestPinWidget(
-                    name: 'HomeWidgetReceiver',
-                    androidName: 'HomeWidgetReceiver',
-                    qualifiedAndroidName:
-                        'de.freal.unustasis.HomeWidgetReceiver',
-                  );
-                }
-                if (context.mounted) Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: Text(
-                  FlutterI18n.translate(context, "widget_onboarding_dismiss")),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
+    if (mounted) await showServerNotifications(context);
   }
 
   void _flashHazards(int times) async {
@@ -518,7 +477,7 @@ class _HomeScreenState extends State<HomeScreen> {
     } else {
       // already onboarded, set up and proceed with home page
       _startSeasonal();
-      _showOnboardings();
+      _showNotifications();
       // start the scooter service if we're not coming from onboarding
       if (mounted && context.read<ScooterService>().myScooter == null) {
         context.read<ScooterService>().start();
