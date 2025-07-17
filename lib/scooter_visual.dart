@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../domain/scooter_state.dart';
+import '../domain/saved_scooter.dart';
 import '../domain/theme_helper.dart';
 import '../domain/color_utils.dart';
 import '../services/image_cache_service.dart';
@@ -364,12 +365,7 @@ class _ScooterVisualState extends State<ScooterVisual> {
 
   /// Gets the effective color for display
   Color _getEffectiveColor() {
-    if (colorHex != null) {
-      return ColorUtils.parseHexColor(colorHex) ?? ColorUtils.getColorValue(color ?? 1);
-    }
-    
-    // Return predefined color
-    return ColorUtils.getColorValue(color ?? 1);
+    return SavedScooter.getEffectiveColor(colorHex: colorHex, colorIndex: color);
   }
 
   IconData stateIcon() {

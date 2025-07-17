@@ -160,9 +160,79 @@ class SavedScooter {
   /// Returns the effective color to display - either hex color or predefined color
   String get effectiveColorHex {
     if (_colorHex != null) return _colorHex!;
-    return ColorUtils.colorToHex(ColorUtils.getColorValue(_color));
+    return getPredefinedColorHex(_color);
   }
 
+  /// Maps predefined color indices to hex values
+  static String getPredefinedColorHex(int colorIndex) {
+    const colorMap = {
+      0: '#000000', // black
+      1: '#FFFFFF', // white
+      2: '#1B5E20', // green
+      3: '#9E9E9E', // gray
+      4: '#FF5722', // orange
+      5: '#F44336', // red
+      6: '#2196F3', // blue
+      7: '#424242', // eclipse
+      8: '#4DB6AC', // idioteque
+      9: '#03A9F4', // hover
+    };
+    return colorMap[colorIndex] ?? '#FFFFFF';
+  }
+
+  /// Maps predefined color indices to Flutter Colors
+  static Color getPredefinedColor(int colorIndex) {
+    const colorMap = {
+      0: Colors.black,
+      1: Colors.white,
+      2: Colors.green,
+      3: Colors.grey,
+      4: Colors.deepOrange,
+      5: Colors.red,
+      6: Colors.blue,
+      7: Colors.grey,
+      8: Colors.teal,
+      9: Colors.lightBlue,
+    };
+    return colorMap[colorIndex] ?? Colors.white;
+  }
+
+  /// Maps predefined color indices to human-readable names
+  static String getColorName(int colorIndex) {
+    const colorNames = {
+      0: 'Black',
+      1: 'White', 
+      2: 'Green',
+      3: 'Gray',
+      4: 'Orange',
+      5: 'Red',
+      6: 'Blue',
+      7: 'Eclipse',
+      8: 'Idioteque',
+      9: 'Hover',
+    };
+    return colorNames[colorIndex] ?? 'Unknown';
+  }
+
+  /// Converts hex color string to Flutter Color
+  static Color hexToColor(String hexColor) {
+    final hex = hexColor.replaceAll('#', '');
+    return Color(int.parse('FF$hex', radix: 16));
+  }
+
+  /// Gets the effective color (hex or predefined) for a given color setup
+  static Color getEffectiveColor({String? colorHex, int? colorIndex}) {
+    if (colorHex != null) {
+      return hexToColor(colorHex);
+    }
+    return getPredefinedColor(colorIndex ?? 1);
+  }
+
+  /// Gets the effective color hex (custom hex or predefined) for a given color setup
+  static String getEffectiveColorHex({String? colorHex, int? colorIndex}) {
+    if (colorHex != null) return colorHex;
+    return getPredefinedColorHex(colorIndex ?? 1);
+  }
 
   BluetoothDevice get bluetoothDevice => BluetoothDevice.fromId(_id);
 
@@ -253,10 +323,7 @@ class SavedScooter {
   
   /// Gets the Flutter Color object for this scooter
   Color get effectiveColor {
-    if (_colorHex != null) {
-      return ColorUtils.parseHexColor(_colorHex) ?? ColorUtils.getColorValue(_color);
-    }
-    return ColorUtils.getColorValue(_color);
+    return getEffectiveColor(colorHex: _colorHex, colorIndex: _color);
   }
 
   void updateSharedPreferences() async {
