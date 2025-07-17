@@ -223,5 +223,13 @@
     "bgscan_warning_confirm": "Yarr, sail ahead!",
     "bgscan_warning_intro": "Background scannin’ be in the beta brig, and may stir up trouble such as one or more o’ these cursed effects:",
     "bgscan_warning_lostpairing": "Loss o’ pairin’! If ye linger too long on the edge o’ yer ship’s ghostly range, the bond may break, and ye’ll need yer keycard to unlock ‘er and forge the link anew.",
-    "bgscan_warning_title": "Uncharted waters!"
+    "bgscan_warning_title": "Uncharted waters!",
+    "stats_battery_capacity": "Capacity",
+    "stats_battery_charging_state": "Charging",
+    "stats_battery_cycles": "Cycles",
+    "stats_battery_last_update": "Last update",
+    "stats_battery_range": "Range",
+    "stats_battery_read_method": "Read method",
+    "stats_battery_type": "Type",
+    "stats_battery_voltage": "Voltage"
 }
