@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:math';
+import 'package:crypto/crypto.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
@@ -6,11 +8,22 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'scooter_service.dart';
 
+/// Cloud service for Sunshine scooter management with OAuth 2.0 + PKCE authentication
+/// 
+/// OAuth Client ID Configuration:
+/// - Default: Uses hardcoded client ID for development
+/// - Environment: Set OAUTH_CLIENT_ID environment variable
+/// - Build time: flutter build apk --dart-define=OAUTH_CLIENT_ID=your_client_id
+/// - Local development: Add oauth.clientId=your_client_id to local.properties
+///
+/// Security: Client secret has been removed and PKCE is used for secure authentication
 class CloudService {
   static const String _baseUrl = 'https://sunshine.rescoot.org/api/v1';
   static const String _oauthUrl = 'https://sunshine.rescoot.org/oauth';
-  static const String _clientId = 'Q20PF36dOaO1FDw0NEzkP1jNtPT12w_onMuwr5nS5I0';
-  static const String _clientSecret = 'd_paqhM3O1EgFLez_vJs-WG20g0vt3yHS7ULMtg2aCQ';
+  static const String _clientId = String.fromEnvironment(
+    'OAUTH_CLIENT_ID',
+    defaultValue: 'Q20PF36dOaO1FDw0NEzkP1jNtPT12w_onMuwr5nS5I0',
+  );
   static const String _redirectUri = 'unustasis://oauth/callback';
 
   final ScooterService scooterService;
@@ -28,10 +41,26 @@ class CloudService {
 
   CloudService(this.scooterService);
 
-  // OAuth Authentication
+  String _generateCodeVerifier() {
+    final random = Random.secure();
+    final bytes = List<int>.generate(32, (_) => random.nextInt(256));
+    return base64UrlEncode(bytes).replaceAll('=', '');
+  }
+
+  String _generateCodeChallenge(String verifier) {
+    final bytes = utf8.encode(verifier);
+    final digest = sha256.convert(bytes);
+    return base64UrlEncode(digest.bytes).replaceAll('=', '');
+  }
+
+  // OAuth Authentication with PKCE
   Future<void> initiateOAuth() async {
     final state = DateTime.now().millisecondsSinceEpoch.toString();
+    final codeVerifier = _generateCodeVerifier();
+    final codeChallenge = _generateCodeChallenge(codeVerifier);
+    
     await _secureStorage.write(key: 'oauth_state', value: state);
+    await _secureStorage.write(key: 'code_verifier', value: codeVerifier);
 
     final authUrl = Uri.parse('$_oauthUrl/authorize').replace(queryParameters: {
       'client_id': _clientId,
@@ -39,6 +68,8 @@ class CloudService {
       'response_type': 'code',
       'state': state,
       'scope': 'read write scooter_control',
+      'code_challenge': codeChallenge,
+      'code_challenge_method': 'S256',
     });
 
     try {
@@ -61,6 +92,7 @@ class CloudService {
 
       await _exchangeCodeForTokens(code);
       await _secureStorage.delete(key: 'oauth_state');
+      await _secureStorage.delete(key: 'code_verifier');
       return true;
     } catch (e, stack) {
       log.severe('OAuth callback failed', e, stack);
@@ -69,15 +101,20 @@ class CloudService {
   }
 
   Future<void> _exchangeCodeForTokens(String code) async {
+    final codeVerifier = await _secureStorage.read(key: 'code_verifier');
+    if (codeVerifier == null) {
+      throw Exception('Code verifier not found');
+    }
+
     final response = await http.post(
       Uri.parse('$_oauthUrl/token'),
       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
       body: {
         'grant_type': 'authorization_code',
         'client_id': _clientId,
-        'client_secret': _clientSecret,
         'code': code,
         'redirect_uri': _redirectUri,
+        'code_verifier': codeVerifier,
       },
     );
 
@@ -146,7 +183,6 @@ class CloudService {
         body: {
           'grant_type': 'refresh_token',
           'client_id': _clientId,
-          'client_secret': _clientSecret,
           'refresh_token': refreshToken,
         },
       );
