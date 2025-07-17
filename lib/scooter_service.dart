@@ -1182,6 +1182,11 @@ class ScooterService with ChangeNotifier {
       return;
     }
     
+    // Ensure services are initialized
+    _ensureCloudServicesInitialized();
+    _ensureBLECommandServiceInitialized();
+    _ensureCloudCommandServiceInitialized();
+    
     // Simple logic: if BLE is connected, enable BLE commands
     // If cloud is available (from our one-time check), enable cloud commands
     bool bleConnected = _bleConnectionService?.isConnectedTo(_currentScooter!.id) ?? false;
