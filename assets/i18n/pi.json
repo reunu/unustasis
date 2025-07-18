@@ -223,5 +223,7 @@
     "bgscan_warning_confirm": "Yarr, sail ahead!",
     "bgscan_warning_intro": "Background scannin’ be in the beta brig, and may stir up trouble such as one or more o’ these cursed effects:",
     "bgscan_warning_lostpairing": "Loss o’ pairin’! If ye linger too long on the edge o’ yer ship’s ghostly range, the bond may break, and ye’ll need yer keycard to unlock ‘er and forge the link anew.",
-    "bgscan_warning_title": "Uncharted waters!"
+    "bgscan_warning_title": "Uncharted waters!",
+    "stats_auto_connect_off": "Roller verbindet nur manuell",
+    "stats_auto_connect_on": "Will board ship as soon as it's in the port"
 }

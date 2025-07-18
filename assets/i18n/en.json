@@ -232,5 +232,7 @@
     "bgscan_warning_intro": "Background scanning is currently in beta and may cause one or more of these issues:",
     "bgscan_warning_battery": "Significantly higher battery drain. Depending on your phone, this may reduce your phone's battery life by about 5-10% per charge. Your scooter's battery will not be affected.",
     "bgscan_warning_lostpairing": "Loss of pairing. If you spend a lot of time with your scooter just barely in range, the pairing to your scooter may be lost and you will need your keycard to unlock and re-pair it.",
-    "bgscan_warning_accidentalturnon": "If you have keyless unlock enabled, your phone may accidentally unlock or open your scooter if you walk past it. Always be careful that your scooter is locked before leaving it in a public place."
+    "bgscan_warning_accidentalturnon": "If you have keyless unlock enabled, your phone may accidentally unlock or open your scooter if you walk past it. Always be careful that your scooter is locked before leaving it in a public place.",
+    "stats_auto_connect_on": "Scooter will connect if in range",
+    "stats_auto_connect_off": "Scooter will only connect manually"
 }
