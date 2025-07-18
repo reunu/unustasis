@@ -233,5 +233,5 @@
     "bgscan_warning_intro": "Die Hintergrundsuche ist aktuell eine Beta-Funktion und kann eines oder mehrere dieser Probleme verursachen:",
     "bgscan_warning_lostpairing": "Verlust der Kopplung. Wenn du viel Zeit mit deinem Scooter nur knapp in Reichweite verbringst, kann die Kopplung des Handys mit dem Scooter verloren gehen. In diesem Fall braucht es die Schlüsselkarte, um ihn zu entsperren und neu zu koppeln.",
     "stats_auto_connect_on": "Roller verbindet automatisch",
-    "stats_auto_connect_off": "Will only board ship on your command, captain!"
+    "stats_auto_connect_off": "Roller verbindet nur manuell"
 }
