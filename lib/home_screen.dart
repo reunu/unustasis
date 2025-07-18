@@ -258,6 +258,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     mainAxisSize: MainAxisSize.min,
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
+                                      const SizedBox(width: 16),
                                       BatteryBars(
                                           primarySOC: context.select<ScooterService, int?>(
                                               (service) => service.primarySOC),
@@ -599,25 +600,29 @@ class BatteryBars extends StatelessWidget {
     required this.primarySOC,
     required this.secondarySOC,
     required this.dataIsOld,
+    this.compact = false,
+    this.alignment = MainAxisAlignment.center,
     super.key,
   });
 
   final int? primarySOC;
   final int? secondarySOC;
   final bool? dataIsOld;
+  final bool compact;
+  final MainAxisAlignment alignment;
 
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisAlignment: alignment,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        const SizedBox(width: 16),
         if (primarySOC != null) ...[
           SizedBox(
-              width: MediaQuery.of(context).size.width / 6,
+              width: compact ? 40 : MediaQuery.of(context).size.width / 6,
               child: LinearProgressIndicator(
                 backgroundColor: Colors.black26,
-                minHeight: 8,
+                minHeight: compact ? 6 : 8,
                 borderRadius: BorderRadius.circular(8),
                 value: primarySOC! / 100.0,
                 color: (dataIsOld ?? true) // if null or true, data is old
@@ -630,16 +635,17 @@ class BatteryBars extends StatelessWidget {
                         : Theme.of(context).colorScheme.primary,
               )),
           const SizedBox(width: 8),
-          Text("$primarySOC%"),
+          Text("$primarySOC%",
+              style: compact ? Theme.of(context).textTheme.bodySmall : null),
         ],
         if (primarySOC != null && secondarySOC != null && secondarySOC! > 0)
           const VerticalDivider(),
         if (secondarySOC != null && secondarySOC! > 0) ...[
           SizedBox(
-              width: MediaQuery.of(context).size.width / 6,
+              width: compact ? 40 : MediaQuery.of(context).size.width / 6,
               child: LinearProgressIndicator(
                 backgroundColor: Colors.black26,
-                minHeight: 8,
+                minHeight: compact ? 6 : 8,
                 borderRadius: BorderRadius.circular(8),
                 value: secondarySOC! / 100.0,
                 color: (dataIsOld ?? true) // if null or true, data is old
@@ -652,7 +658,8 @@ class BatteryBars extends StatelessWidget {
                         : Theme.of(context).colorScheme.primary,
               )),
           const SizedBox(width: 8),
-          Text("$secondarySOC%"),
+          Text("$secondarySOC%",
+              style: compact ? Theme.of(context).textTheme.bodySmall : null),
         ],
       ],
     );

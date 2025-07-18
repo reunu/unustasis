@@ -290,7 +290,7 @@ class SavedScooterCard extends StatelessWidget {
                             }),
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
-                SizedBox(height: 12),
+                SizedBox(height: 8),
                 BatteryBars(
                   primarySOC: savedScooter.lastPrimarySOC,
                   secondarySOC: savedScooter.lastSecondarySOC,
@@ -968,76 +968,12 @@ class SavedScooterListItem extends StatelessWidget {
                           // Battery SOC data
                           if (savedScooter.lastPrimarySOC != null ||
                               savedScooter.lastSecondarySOC != null) ...[
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                if (savedScooter.lastPrimarySOC != null) ...[
-                                  SizedBox(
-                                    width: 50,
-                                    child: LinearProgressIndicator(
-                                      backgroundColor: Colors.black26,
-                                      minHeight: 4,
-                                      borderRadius: BorderRadius.circular(4),
-                                      value:
-                                          savedScooter.lastPrimarySOC! / 100.0,
-                                      color: savedScooter.lastPrimarySOC! <= 15
-                                          ? Theme.of(context).colorScheme.error
-                                          : Theme.of(context)
-                                              .colorScheme
-                                              .primary,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    "${savedScooter.lastPrimarySOC}%",
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
-                                        ?.copyWith(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface
-                                              .withValues(alpha: 0.7),
-                                        ),
-                                  ),
-                                ],
-                                if (savedScooter.lastPrimarySOC != null &&
-                                    savedScooter.lastSecondarySOC != null &&
-                                    savedScooter.lastSecondarySOC! > 0)
-                                  const SizedBox(width: 12),
-                                if (savedScooter.lastSecondarySOC != null &&
-                                    savedScooter.lastSecondarySOC! > 0) ...[
-                                  SizedBox(
-                                    width: 50,
-                                    child: LinearProgressIndicator(
-                                      backgroundColor: Colors.black26,
-                                      minHeight: 4,
-                                      borderRadius: BorderRadius.circular(4),
-                                      value: savedScooter.lastSecondarySOC! /
-                                          100.0,
-                                      color: savedScooter.lastSecondarySOC! <=
-                                              15
-                                          ? Theme.of(context).colorScheme.error
-                                          : Theme.of(context)
-                                              .colorScheme
-                                              .primary,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    "${savedScooter.lastSecondarySOC}%",
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
-                                        ?.copyWith(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface
-                                              .withValues(alpha: 0.7),
-                                        ),
-                                  ),
-                                ],
-                              ],
+                            BatteryBars(
+                              primarySOC: savedScooter.lastPrimarySOC,
+                              secondarySOC: savedScooter.lastSecondarySOC,
+                              dataIsOld: savedScooter.dataIsOld,
+                              compact: true,
+                              alignment: MainAxisAlignment.start,
                             ),
                           ],
                           // Location on separate line (for disconnected scooters)
