@@ -182,44 +182,56 @@ class _HomeScreenState extends State<HomeScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         mainAxisSize: MainAxisSize.max,
                         children: [
-                          Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(8),
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const ScooterScreen(),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(8),
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const ScooterScreen(),
+                                  ),
                                 ),
-                              ),
-                              // Hidden for stable release, but useful for various debugging
-                              // onLongPress: () =>
-                              //     showHandlebarWarning(didNotUnlock: false),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  SizedBox(
-                                      width: context.select(
-                                              (ScooterService service) =>
-                                                  service.connected)
-                                          ? 32
-                                          : 0),
-                                  Text(
-                                    context.select<ScooterService, String?>(
-                                            (service) => service.scooterName) ??
-                                        FlutterI18n.translate(
-                                            context, "stats_no_name"),
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .headlineLarge,
-                                  ),
-                                  const SizedBox(width: 16),
-                                  const Icon(
-                                    Icons.arrow_forward_ios_rounded,
-                                    size: 16,
-                                  ),
-                                ],
+                                // Hidden for stable release, but useful for various debugging
+                                // onLongPress: () =>
+                                //     showHandlebarWarning(didNotUnlock: false),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    SizedBox(
+                                        width: context.select(
+                                                (ScooterService service) =>
+                                                    service.connected)
+                                            ? 32
+                                            : 0),
+                                    Flexible(
+                                      child: Text(
+                                        context.select<ScooterService, String?>(
+                                                (service) =>
+                                                    service.scooterName) ??
+                                            FlutterI18n.translate(
+                                                context, "stats_no_name"),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .headlineLarge
+                                            ?.copyWith(
+                                                height: 1.1,
+                                                ),
+                                        textAlign: TextAlign.center,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    const Icon(
+                                      Icons.arrow_forward_ios_rounded,
+                                      size: 16,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
