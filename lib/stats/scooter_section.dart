@@ -244,9 +244,17 @@ class SavedScooterCard extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const SizedBox(width: 32),
-                        Text(
-                          savedScooter.name,
-                          style: Theme.of(context).textTheme.headlineMedium,
+                        Flexible(
+                          child: Text(
+                            savedScooter.name,
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineMedium
+                                ?.copyWith(
+                                  height: 1.1,
+                                ),
+                            textAlign: TextAlign.center,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         const Icon(
@@ -865,6 +873,17 @@ class SavedScooterListItem extends StatelessWidget {
       onLongPress: () async {
         HapticFeedback.mediumImpact();
         savedScooter.autoConnect = !savedScooter.autoConnect;
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              savedScooter.autoConnect
+                  ? FlutterI18n.translate(context, "stats_auto_connect_on")
+                  : FlutterI18n.translate(context, "stats_auto_connect_off"),
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
         rebuild();
       },
       child: Container(
@@ -932,25 +951,33 @@ class SavedScooterListItem extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          GestureDetector(
-                            onLongPress: () async {
-                              HapticFeedback.mediumImpact();
-                              String? newName = await showRenameDialog(
-                                  savedScooter.name, context);
-                              if (newName != null &&
-                                  newName.isNotEmpty &&
-                                  newName != savedScooter.name &&
-                                  context.mounted) {
-                                context
-                                    .read<ScooterService>()
-                                    .renameSavedScooter(
-                                        name: newName, id: savedScooter.id);
-                                rebuild();
-                              }
-                            },
-                            child: Text(
-                              savedScooter.name,
-                              style: Theme.of(context).textTheme.titleLarge,
+                          Padding(
+                            padding: const EdgeInsets.only(right: 16),
+                            child: GestureDetector(
+                              onLongPress: () async {
+                                HapticFeedback.mediumImpact();
+                                String? newName = await showRenameDialog(
+                                    savedScooter.name, context);
+                                if (newName != null &&
+                                    newName.isNotEmpty &&
+                                    newName != savedScooter.name &&
+                                    context.mounted) {
+                                  context
+                                      .read<ScooterService>()
+                                      .renameSavedScooter(
+                                          name: newName, id: savedScooter.id);
+                                  rebuild();
+                                }
+                              },
+                              child: Text(
+                                savedScooter.name,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleLarge
+                                    ?.copyWith(
+                                      height: 1.1,
+                                    ),
+                              ),
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -1004,6 +1031,7 @@ class SavedScooterListItem extends StatelessWidget {
                                           color: Theme.of(context)
                                               .colorScheme
                                               .primary,
+                                          decoration: TextDecoration.underline,
                                         ),
                                     overflow: TextOverflow.ellipsis,
                                   );
