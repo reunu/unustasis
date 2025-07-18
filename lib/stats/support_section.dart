@@ -169,6 +169,7 @@ class FaqWidget extends StatelessWidget {
           return ListView.separated(
             physics: const NeverScrollableScrollPhysics(),
             shrinkWrap: true,
+            padding: EdgeInsets.zero,
             itemCount: faq.length,
             separatorBuilder: (context, index) => Divider(
               indent: 16,
@@ -188,6 +189,7 @@ class FaqWidget extends StatelessWidget {
                   curve: Curves.easeInOutCubicEmphasized,
                 ),
                 initiallyExpanded: false,
+                maintainState: false,
                 iconColor: Theme.of(context).colorScheme.onSurface,
                 leading: index == 0
                     ? const Icon(Icons.bluetooth)
@@ -198,6 +200,7 @@ class FaqWidget extends StatelessWidget {
                 title: Text(
                   category.key.toString(),
                 ),
+                childrenPadding: EdgeInsets.zero,
                 children: [
                   for (MapEntry question in category.value.entries)
                     ExpansionTile(
@@ -206,15 +209,17 @@ class FaqWidget extends StatelessWidget {
                           duration: Durations.medium4,
                           curve: Curves.easeInOutCubicEmphasized,
                         ),
+                        maintainState: false,
                         iconColor: Theme.of(context).colorScheme.onSurface,
                         backgroundColor:
                             Theme.of(context).colorScheme.surfaceContainer,
                         tilePadding: const EdgeInsets.only(
                             left: 32, right: 16, top: 8, bottom: 8),
                         title: Text(question.key.toString()),
+                        childrenPadding: EdgeInsets.zero,
                         children: [
                           Padding(
-                            padding: const EdgeInsets.fromLTRB(32, 0, 16, 32),
+                            padding: const EdgeInsets.fromLTRB(32, 0, 16, 16),
                             child: Text(
                               question.value.toString(),
                               style: TextStyle(

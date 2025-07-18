@@ -47,15 +47,6 @@ void main() async {
     savedLocale = Locale(Platform.localeName.split('_').first);
   }
 
-  // WIDGET TESTING
-  //HomeWidget.setAppGroupId("group.de.freal.unustasis");
-  //await HomeWidget.saveWidgetData<String>("scooterName", "Test Scooter");
-  //await HomeWidget.saveWidgetData<bool>("connected", true);
-  //await HomeWidget.updateWidget(
-  //  qualifiedAndroidName: 'de.freal.unustasis.HomeWidgetReceiver',
-  //  iOSName: "ScooterWidget",
-  //);
-
   // here goes nothing...
   setupBackgroundService();
 

@@ -181,6 +181,7 @@ Future<void> setWidgetScanning(bool scanning) async {
 @pragma("vm:entry-point")
 FutureOr<void> backgroundCallback(Uri? data) async {
   print("Unu widget received data: $data");
+  await HomeWidget.setAppGroupId('de.freal.unustasis');
   if (await FlutterBackgroundService().isRunning() == false) {
     final service = FlutterBackgroundService();
     await service.startService();

@@ -144,6 +144,10 @@ class SavedScooter {
     );
   }
 
+  bool get dataIsOld {
+    return _lastPing.difference(DateTime.now()).inMinutes.abs() > 5;
+  }
+
   void updateSharedPreferences() async {
     SharedPreferencesAsync prefs = SharedPreferencesAsync();
     Map<String, dynamic> savedScooters =

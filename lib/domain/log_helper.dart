@@ -14,8 +14,9 @@ import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:unustasis/domain/scooter_keyless_distance.dart';
-import 'package:unustasis/scooter_service.dart';
+
+import '../domain/scooter_keyless_distance.dart';
+import '../scooter_service.dart';
 
 class LogHelper {
   // Private constructor
@@ -43,7 +44,12 @@ class LogHelper {
   void addLog(LogRecord record) {
     if (kDebugMode && record.level >= Level.INFO) {
       Fluttertoast.showToast(
-          msg: record.message, fontSize: 6, toastLength: Toast.LENGTH_SHORT);
+        msg: record.message,
+        fontSize: 12.0,
+        backgroundColor: Colors.grey.shade800,  // fluttertoast android logspams if no background color is set
+        textColor: Colors.white,
+        toastLength: Toast.LENGTH_SHORT
+      );
     }
     // ignore: avoid_print
     print(record);
