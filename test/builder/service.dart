@@ -26,8 +26,8 @@ class CharacteristicBuilder {
   final ServiceCharacteristicsBuilder serviceCharacteristicsBuilder;
   final String serviceId;
 
-  CharacteristicBuilder(this.bluetoothService, this.bluetoothDevice,
-      this.serviceCharacteristicsBuilder, this.serviceId);
+  CharacteristicBuilder(
+      this.bluetoothService, this.bluetoothDevice, this.serviceCharacteristicsBuilder, this.serviceId);
 
   ServiceCharacteristicsBuilder characteristic(String characteristicsId) {
     var characteristics = [bcm(characteristicsId)];
@@ -35,8 +35,7 @@ class CharacteristicBuilder {
     return serviceCharacteristicsBuilder;
   }
 
-  ServiceCharacteristicsBuilder characteristics(
-      List<String> characteristicsId) {
+  ServiceCharacteristicsBuilder characteristics(List<String> characteristicsId) {
     var characteristics = characteristicsId.map((c) => bcm(c)).toList();
     when(bluetoothService.characteristics).thenReturn(characteristics);
     return serviceCharacteristicsBuilder;
@@ -68,7 +67,6 @@ class ServiceCharacteristicsBuilder {
     when(bluetoothService.serviceUuid).thenReturn(Guid(serviceId));
     bluetoothServiceList.add(bluetoothService);
 
-    return CharacteristicBuilder(
-        bluetoothService, bluetoothDevice, this, serviceId);
+    return CharacteristicBuilder(bluetoothService, bluetoothDevice, this, serviceId);
   }
 }

@@ -6,50 +6,24 @@ void main() {
   group('ScooterState', () {
     test('fromStateAndPowerState', () {
       expect(
-          ScooterState.fromStateAndPowerState(
-              'off', ScooterPowerState.hibernating),
-          equals(ScooterState.hibernating));
-      expect(
-          ScooterState.fromStateAndPowerState(
-              'stand-by', ScooterPowerState.hibernatingImminent),
+          ScooterState.fromStateAndPowerState('off', ScooterPowerState.hibernating), equals(ScooterState.hibernating));
+      expect(ScooterState.fromStateAndPowerState('stand-by', ScooterPowerState.hibernatingImminent),
           equals(ScooterState.hibernatingImminent));
-      expect(
-          ScooterState.fromStateAndPowerState('off', ScooterPowerState.booting),
-          equals(ScooterState.booting));
+      expect(ScooterState.fromStateAndPowerState('off', ScooterPowerState.booting), equals(ScooterState.booting));
 
       // see https://github.com/reunu/unustasis/issues/20
-      expect(
-          ScooterState.fromStateAndPowerState(
-              'stand-by', ScooterPowerState.booting),
-          equals(ScooterState.standby));
+      expect(ScooterState.fromStateAndPowerState('stand-by', ScooterPowerState.booting), equals(ScooterState.standby));
 
-      expect(
-          ScooterState.fromStateAndPowerState(
-              'stand-by', ScooterPowerState.running),
-          equals(ScooterState.standby));
-      expect(
-          ScooterState.fromStateAndPowerState(
-              'off', ScooterPowerState.suspending),
-          equals(ScooterState.off));
-      expect(
-          ScooterState.fromStateAndPowerState(
-              'parked', ScooterPowerState.running),
-          equals(ScooterState.parked));
-      expect(
-          ScooterState.fromStateAndPowerState(
-              'shutting-down', ScooterPowerState.unknown),
+      expect(ScooterState.fromStateAndPowerState('stand-by', ScooterPowerState.running), equals(ScooterState.standby));
+      expect(ScooterState.fromStateAndPowerState('off', ScooterPowerState.suspending), equals(ScooterState.off));
+      expect(ScooterState.fromStateAndPowerState('parked', ScooterPowerState.running), equals(ScooterState.parked));
+      expect(ScooterState.fromStateAndPowerState('shutting-down', ScooterPowerState.unknown),
           equals(ScooterState.shuttingDown));
       expect(
-          ScooterState.fromStateAndPowerState(
-              'ready-to-drive', ScooterPowerState.running),
-          equals(ScooterState.ready));
+          ScooterState.fromStateAndPowerState('ready-to-drive', ScooterPowerState.running), equals(ScooterState.ready));
 
-      expect(ScooterState.fromStateAndPowerState('', ScooterPowerState.unknown),
-          equals(ScooterState.unknown));
-      expect(
-          ScooterState.fromStateAndPowerState(
-              'unknown', ScooterPowerState.unknown),
-          equals(ScooterState.unknown));
+      expect(ScooterState.fromStateAndPowerState('', ScooterPowerState.unknown), equals(ScooterState.unknown));
+      expect(ScooterState.fromStateAndPowerState('unknown', ScooterPowerState.unknown), equals(ScooterState.unknown));
     });
 
     test('isOn', () {

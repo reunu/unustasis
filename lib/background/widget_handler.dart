@@ -56,11 +56,9 @@ void passToWidget({
 }) async {
   if (connected != _connected ||
       (scooterState?.isOn) != (_scooterState?.isOn) ||
-      (scooterState?.isReadyForSeatOpen) !=
-          (_scooterState?.isReadyForSeatOpen) ||
+      (scooterState?.isReadyForSeatOpen) != (_scooterState?.isReadyForSeatOpen) ||
       lastPing?.calculateTimeDifferenceInShort() != _lastPingDifference ||
-      getStateNameForWidget(scooterState) !=
-          _stateName || //_scooterState || // th is state is ignored in the widget
+      getStateNameForWidget(scooterState) != _stateName || //_scooterState || // th is state is ignored in the widget
       primarySOC != _primarySOC ||
       secondarySOC != _secondarySOC ||
       scooterName != _scooterName ||
@@ -145,14 +143,10 @@ Future<void> setWidgetScanning(bool scanning) async {
   await HomeWidget.saveWidgetData<bool>("scanning", scanning);
   await HomeWidget.saveWidgetData<String>(
     "stateName",
-    scanning
-        ? ScooterState.linking.getNameStatic()
-        : ScooterState.disconnected.getNameStatic(),
+    scanning ? ScooterState.linking.getNameStatic() : ScooterState.disconnected.getNameStatic(),
   );
 
-  _stateName = scanning
-      ? ScooterState.linking.getNameStatic()
-      : ScooterState.disconnected.getNameStatic();
+  _stateName = scanning ? ScooterState.linking.getNameStatic() : ScooterState.disconnected.getNameStatic();
   await HomeWidget.updateWidget(
     qualifiedAndroidName: 'de.freal.unustasis.HomeWidgetReceiver',
   );

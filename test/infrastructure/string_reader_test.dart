@@ -26,10 +26,8 @@ void main() {
 }
 
 MockBluetoothCharacteristic buildCharacterWithState(List<int> stateAsByteList) {
-  MockBluetoothCharacteristic mockCharacteristic =
-      MockBluetoothCharacteristic();
-  when(mockCharacteristic.setNotifyValue(any))
-      .thenAnswer((_) => Future.value(true));
+  MockBluetoothCharacteristic mockCharacteristic = MockBluetoothCharacteristic();
+  when(mockCharacteristic.setNotifyValue(any)).thenAnswer((_) => Future.value(true));
   when(mockCharacteristic.read()).thenAnswer((_) => Future.value([0]));
   when(mockCharacteristic.lastValueStream).thenAnswer((_) {
     return Stream.fromIterable([stateAsByteList]);

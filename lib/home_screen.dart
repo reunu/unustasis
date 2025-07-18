@@ -81,9 +81,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _showNotifications() async {
     SharedPreferencesAsync prefs = SharedPreferencesAsync();
-    if (Platform.isAndroid &&
-        await prefs.getBool("widgetOnboarded") != true &&
-        mounted) {
+    if (Platform.isAndroid && await prefs.getBool("widgetOnboarded") != true && mounted) {
       await showWidgetOnboarding(context);
       await prefs.setBool("widgetOnboarded", true);
     }
@@ -122,25 +120,19 @@ class _HomeScreenState extends State<HomeScreen> {
             alignment: Alignment.center,
             children: [
               StateCircle(
-                connected: context
-                    .select((ScooterService service) => service.connected),
-                scooterState:
-                    context.select((ScooterService service) => service.state),
-                scanning: context
-                    .select((ScooterService service) => service.scanning),
+                connected: context.select((ScooterService service) => service.connected),
+                scooterState: context.select((ScooterService service) => service.state),
+                scanning: context.select((ScooterService service) => service.scanning),
               ),
               if (_snowing)
                 SnowfallBackground(
                   backgroundColor: Colors.transparent,
-                  snowflakeColor: context.isDarkMode
-                      ? Colors.white.withValues(alpha: 0.15)
-                      : Colors.black.withValues(alpha: 0.05),
+                  snowflakeColor:
+                      context.isDarkMode ? Colors.white.withValues(alpha: 0.15) : Colors.black.withValues(alpha: 0.05),
                 ),
               if (_spring)
                 AnimatedOpacity(
-                  opacity: context.watch<ScooterService>().connected == true
-                      ? 1.0
-                      : 0.0,
+                  opacity: context.watch<ScooterService>().connected == true ? 1.0 : 0.0,
                   duration: Duration(milliseconds: 500),
                   child: GrassScape(),
                 ),
@@ -202,24 +194,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     SizedBox(
-                                        width: context.select(
-                                                (ScooterService service) =>
-                                                    service.connected)
-                                            ? 32
-                                            : 0),
+                                        width: context.select((ScooterService service) => service.connected) ? 32 : 0),
                                     Flexible(
                                       child: Text(
-                                        context.select<ScooterService, String?>(
-                                                (service) =>
-                                                    service.scooterName) ??
-                                            FlutterI18n.translate(
-                                                context, "stats_no_name"),
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .headlineLarge
-                                            ?.copyWith(
-                                                height: 1.1,
-                                                ),
+                                        context.select<ScooterService, String?>((service) => service.scooterName) ??
+                                            FlutterI18n.translate(context, "stats_no_name"),
+                                        style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                                              height: 1.1,
+                                            ),
                                         textAlign: TextAlign.center,
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
@@ -236,19 +218,11 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                           const StatusText(),
-                          if (context.select<ScooterService, String?>(
-                                      (service) => service.scooterName) !=
-                                  null &&
-                              context.select<ScooterService, String?>(
-                                      (service) => service.scooterName) !=
-                                  FlutterI18n.translate(
-                                      context, "stats_no_name") &&
-                              (context.select<ScooterService, int?>(
-                                          (service) => service.primarySOC) !=
-                                      null ||
-                                  context.select<ScooterService, int?>(
-                                          (service) => service.secondarySOC) !=
-                                      null))
+                          if (context.select<ScooterService, String?>((service) => service.scooterName) != null &&
+                              context.select<ScooterService, String?>((service) => service.scooterName) !=
+                                  FlutterI18n.translate(context, "stats_no_name") &&
+                              (context.select<ScooterService, int?>((service) => service.primarySOC) != null ||
+                                  context.select<ScooterService, int?>((service) => service.secondarySOC) != null))
                             Material(
                               borderRadius: BorderRadius.circular(8),
                               color: Colors.transparent,
@@ -268,15 +242,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                     children: [
                                       const SizedBox(width: 16),
                                       BatteryBars(
-                                          primarySOC: context.select<ScooterService, int?>(
-                                              (service) => service.primarySOC),
+                                          primarySOC:
+                                              context.select<ScooterService, int?>((service) => service.primarySOC),
                                           secondarySOC:
-                                              context.select<ScooterService, int?>(
-                                                  (service) =>
-                                                      service.secondarySOC),
+                                              context.select<ScooterService, int?>((service) => service.secondarySOC),
                                           dataIsOld: context.select<ScooterService, DateTime?>(
-                                                      (service) =>
-                                                          service.lastPing) ==
+                                                      (service) => service.lastPing) ==
                                                   null
                                               ? true
                                               : context
@@ -297,13 +268,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           Expanded(
                             child: ScooterVisual(
-                              color: context.select<ScooterService, int?>(
-                                      (service) => service.scooterColor) ??
-                                  1,
-                              state: context.select(
-                                  (ScooterService service) => service.state),
-                              scanning: context.select(
-                                  (ScooterService service) => service.scanning),
+                              color: context.select<ScooterService, int?>((service) => service.scooterColor) ?? 1,
+                              state: context.select((ScooterService service) => service.state),
+                              scanning: context.select((ScooterService service) => service.scanning),
                               blinkerLeft: _hazards,
                               blinkerRight: _hazards,
                               winter: _snowing,
@@ -321,135 +288,85 @@ class _HomeScreenState extends State<HomeScreen> {
                                   builder: (context, state, _) {
                                     return Expanded(
                                       child: ScooterPowerButton(
-                                          action: state != null &&
-                                                  state.isReadyForLockChange
+                                          action: state != null && state.isReadyForLockChange
                                               ? (state.isOn
                                                   ? () async {
                                                       try {
-                                                        await context
-                                                            .read<
-                                                                ScooterService>()
-                                                            .lock();
+                                                        await context.read<ScooterService>().lock();
                                                         if (context.mounted &&
-                                                            context
-                                                                .read<
-                                                                    ScooterService>()
-                                                                .hazardLocking) {
+                                                            context.read<ScooterService>().hazardLocking) {
                                                           _flashHazards(1);
                                                         }
                                                       } on SeatOpenException catch (_) {
-                                                        log.warning(
-                                                            "Seat is open, showing alert");
+                                                        log.warning("Seat is open, showing alert");
                                                         showSeatWarning();
                                                       } on HandlebarLockException catch (_) {
-                                                        log.warning(
-                                                            "Handlebars are still unlocked, showing alert");
+                                                        log.warning("Handlebars are still unlocked, showing alert");
                                                         showHandlebarWarning(
                                                           didNotUnlock: false,
                                                         );
                                                       } catch (e, stack) {
-                                                        log.severe(
-                                                            "Problem opening the seat",
-                                                            e,
-                                                            stack);
-                                                        Fluttertoast.showToast(
-                                                            msg: e.toString());
+                                                        log.severe("Problem opening the seat", e, stack);
+                                                        Fluttertoast.showToast(msg: e.toString());
                                                       }
                                                     }
-                                                  : (state ==
-                                                          ScooterState.standby
+                                                  : (state == ScooterState.standby
                                                       ? () async {
                                                           try {
-                                                            await context
-                                                                .read<
-                                                                    ScooterService>()
-                                                                .unlock();
-                                                            if (context
-                                                                    .mounted &&
-                                                                context
-                                                                    .read<
-                                                                        ScooterService>()
-                                                                    .hazardLocking) {
+                                                            await context.read<ScooterService>().unlock();
+                                                            if (context.mounted &&
+                                                                context.read<ScooterService>().hazardLocking) {
                                                               _flashHazards(2);
                                                             }
                                                           } on HandlebarLockException catch (_) {
-                                                            log.warning(
-                                                                "Handlebars are still locked, showing alert");
+                                                            log.warning("Handlebars are still locked, showing alert");
                                                             showHandlebarWarning(
-                                                              didNotUnlock:
-                                                                  true,
+                                                              didNotUnlock: true,
                                                             );
                                                           }
                                                         }
-                                                      : (state ==
-                                                              ScooterState
-                                                                  .standby
+                                                      : (state == ScooterState.standby
                                                           ? () {
-                                                              context
-                                                                  .read<
-                                                                      ScooterService>()
-                                                                  .unlock();
+                                                              context.read<ScooterService>().unlock();
                                                               // TODO: Flash hazards in visual
                                                             }
-                                                          : context
-                                                              .read<
-                                                                  ScooterService>()
-                                                              .wakeUpAndUnlock)))
+                                                          : context.read<ScooterService>().wakeUpAndUnlock)))
                                               : null,
-                                          icon: state != null && state.isOn
-                                              ? Icons.lock_open
-                                              : Icons.lock_outline,
+                                          icon: state != null && state.isOn ? Icons.lock_open : Icons.lock_outline,
                                           label: state != null && state.isOn
-                                              ? FlutterI18n.translate(
-                                                  context, "home_lock_button")
-                                              : FlutterI18n.translate(context,
-                                                  "home_unlock_button")),
+                                              ? FlutterI18n.translate(context, "home_lock_button")
+                                              : FlutterI18n.translate(context, "home_unlock_button")),
                                     );
                                   }),
-                              Selector<ScooterService,
-                                      ({bool scanning, bool connected})>(
-                                  selector: (context, service) => (
-                                        scanning: service.scanning,
-                                        connected: service.connected
-                                      ),
+                              Selector<ScooterService, ({bool scanning, bool connected})>(
+                                  selector: (context, service) =>
+                                      (scanning: service.scanning, connected: service.connected),
                                   builder: (context, state, _) {
                                     return Expanded(
                                       child: ScooterActionButton(
                                           onPressed: !state.scanning
                                               ? () {
                                                   if (!state.connected) {
-                                                    log.info(
-                                                        "Manually reconnecting...");
+                                                    log.info("Manually reconnecting...");
                                                     try {
-                                                      context
-                                                          .read<
-                                                              ScooterService>()
-                                                          .start();
+                                                      context.read<ScooterService>().start();
                                                     } catch (e, stack) {
-                                                      log.severe(
-                                                          "Reconnect button failed",
-                                                          e,
-                                                          stack);
+                                                      log.severe("Reconnect button failed", e, stack);
                                                     }
                                                   } else {
                                                     Navigator.push(
                                                       context,
                                                       MaterialPageRoute(
-                                                        builder: (context) =>
-                                                            const ControlScreen(),
+                                                        builder: (context) => const ControlScreen(),
                                                       ),
                                                     );
                                                   }
                                                 }
                                               : null,
-                                          icon: !state.connected
-                                              ? Icons.refresh_rounded
-                                              : Icons.more_vert_rounded,
+                                          icon: !state.connected ? Icons.refresh_rounded : Icons.more_vert_rounded,
                                           label: !state.connected
-                                              ? FlutterI18n.translate(context,
-                                                  "home_reconnect_button")
-                                              : FlutterI18n.translate(context,
-                                                  "home_controls_button")),
+                                              ? FlutterI18n.translate(context, "home_reconnect_button")
+                                              : FlutterI18n.translate(context, "home_controls_button")),
                                     );
                                   }),
                             ],
@@ -506,15 +423,13 @@ class _HomeScreenState extends State<HomeScreen> {
     ).then((dontShowAgain) async {
       if (dontShowAgain == true) {
         Logger("").info("Not showing unlocked handlebar warning again");
-        await SharedPreferencesAsync()
-            .setBool("unlockedHandlebarsWarning", false);
+        await SharedPreferencesAsync().setBool("unlockedHandlebarsWarning", false);
       }
     });
   }
 
   void redirectOrStart() async {
-    List<String> ids =
-        await context.read<ScooterService>().getSavedScooterIds();
+    List<String> ids = await context.read<ScooterService>().getSavedScooterIds();
     log.info("Saved scooters: $ids");
     if (mounted && ids.isEmpty && !kDebugMode) {
       FlutterNativeSplash.remove();
@@ -533,8 +448,7 @@ class _HomeScreenState extends State<HomeScreen> {
         context.read<ScooterService>().start();
       }
     }
-    if ((await SharedPreferencesAsync().getBool("biometrics") ?? false) &&
-        mounted) {
+    if ((await SharedPreferencesAsync().getBool("biometrics") ?? false) && mounted) {
       context.read<ScooterService>().optionalAuth = false;
       final LocalAuthentication auth = LocalAuthentication();
       try {
@@ -543,8 +457,7 @@ class _HomeScreenState extends State<HomeScreen> {
         );
         if (!mounted) return;
         if (!didAuthenticate) {
-          Fluttertoast.showToast(
-              msg: FlutterI18n.translate(context, "biometrics_failed"));
+          Fluttertoast.showToast(msg: FlutterI18n.translate(context, "biometrics_failed"));
           Navigator.of(context).pop();
           SystemNavigator.pop();
         } else {
@@ -553,8 +466,7 @@ class _HomeScreenState extends State<HomeScreen> {
       } catch (e, stack) {
         log.info("Biometrics failed", e, stack);
 
-        Fluttertoast.showToast(
-            msg: FlutterI18n.translate(context, "biometrics_failed"));
+        Fluttertoast.showToast(msg: FlutterI18n.translate(context, "biometrics_failed"));
         Navigator.of(context).pop();
 
         SystemNavigator.pop();
@@ -573,30 +485,22 @@ class SeatButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Selector<ScooterService, ({bool? seatClosed, ScooterState? state})>(
-        selector: (context, service) =>
-            (seatClosed: service.seatClosed, state: service.state),
+        selector: (context, service) => (seatClosed: service.seatClosed, state: service.state),
         builder: (context, data, _) {
           return Expanded(
             child: ScooterActionButton(
-              onPressed: context.select(
-                          (ScooterService service) => service.connected) &&
+              onPressed: context.select((ScooterService service) => service.connected) &&
                       data.state != null &&
                       data.seatClosed == true &&
-                      context.select(
-                              (ScooterService service) => service.scanning) ==
-                          false &&
+                      context.select((ScooterService service) => service.scanning) == false &&
                       data.state!.isReadyForSeatOpen == true
                   ? context.read<ScooterService>().openSeat
                   : null,
               label: data.seatClosed == false
                   ? FlutterI18n.translate(context, "home_seat_button_open")
                   : FlutterI18n.translate(context, "home_seat_button_closed"),
-              icon: data.seatClosed == false
-                  ? Icomoon.seat_open
-                  : Icomoon.seat_closed,
-              iconColor: data.seatClosed == false
-                  ? Theme.of(context).colorScheme.error
-                  : null,
+              icon: data.seatClosed == false ? Icomoon.seat_open : Icomoon.seat_closed,
+              iconColor: data.seatClosed == false ? Theme.of(context).colorScheme.error : null,
             ),
           );
         });
@@ -634,20 +538,15 @@ class BatteryBars extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 value: primarySOC! / 100.0,
                 color: (dataIsOld ?? true) // if null or true, data is old
-                    ? Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.4)
+                    ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4)
                     : primarySOC! <= 15
                         ? Theme.of(context).colorScheme.error
                         : Theme.of(context).colorScheme.primary,
               )),
           const SizedBox(width: 8),
-          Text("$primarySOC%",
-              style: compact ? Theme.of(context).textTheme.bodySmall : null),
+          Text("$primarySOC%", style: compact ? Theme.of(context).textTheme.bodySmall : null),
         ],
-        if (primarySOC != null && secondarySOC != null && secondarySOC! > 0)
-          const VerticalDivider(),
+        if (primarySOC != null && secondarySOC != null && secondarySOC! > 0) const VerticalDivider(),
         if (secondarySOC != null && secondarySOC! > 0) ...[
           SizedBox(
               width: compact ? 40 : MediaQuery.of(context).size.width / 6,
@@ -657,17 +556,13 @@ class BatteryBars extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 value: secondarySOC! / 100.0,
                 color: (dataIsOld ?? true) // if null or true, data is old
-                    ? Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.4)
+                    ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4)
                     : secondarySOC! <= 15
                         ? Theme.of(context).colorScheme.error
                         : Theme.of(context).colorScheme.primary,
               )),
           const SizedBox(width: 8),
-          Text("$secondarySOC%",
-              style: compact ? Theme.of(context).textTheme.bodySmall : null),
+          Text("$secondarySOC%", style: compact ? Theme.of(context).textTheme.bodySmall : null),
         ],
       ],
     );
@@ -681,29 +576,20 @@ class StatusText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Selector<ScooterService,
-            ({bool connected, bool scanning, ScooterState? state})>(
-        selector: (context, service) => (
-              state: service.state,
-              scanning: service.scanning,
-              connected: service.connected
-            ),
+    return Selector<ScooterService, ({bool connected, bool scanning, ScooterState? state})>(
+        selector: (context, service) =>
+            (state: service.state, scanning: service.scanning, connected: service.connected),
         builder: (context, data, _) {
           return Text(
-            data.scanning &&
-                    (data.state == null ||
-                        data.state == ScooterState.disconnected)
+            data.scanning && (data.state == null || data.state == ScooterState.disconnected)
                 ? (context.read<ScooterService>().savedScooters.isNotEmpty
                     ? FlutterI18n.translate(context, "home_scanning_known")
                     : FlutterI18n.translate(context, "home_scanning"))
                 : ((data.state != null
                         ? data.state!.name(context)
-                        : FlutterI18n.translate(
-                            context, "home_loading_state")) +
+                        : FlutterI18n.translate(context, "home_loading_state")) +
                     (data.connected &&
-                            context.select<ScooterService, bool?>(
-                                    (service) => service.handlebarsLocked) ==
-                                false
+                            context.select<ScooterService, bool?>((service) => service.handlebarsLocked) == false
                         ? FlutterI18n.translate(context, "home_unlocked")
                         : "")),
             style: Theme.of(context).textTheme.titleMedium,
@@ -747,16 +633,9 @@ class StateCircle extends StatelessWidget {
           borderRadius: BorderRadius.circular(999),
           color: _scooterState?.isOn == true
               ? context.isDarkMode
-                  ? HSLColor.fromColor(Theme.of(context).colorScheme.primary)
-                      .withLightness(0.18)
-                      .toColor()
-                  : HSLColor.fromColor(Theme.of(context).colorScheme.primary)
-                      .withAlpha(0.3)
-                      .toColor()
-              : Theme.of(context)
-                  .colorScheme
-                  .surfaceContainer
-                  .withValues(alpha: context.isDarkMode ? 0.5 : 0.7),
+                  ? HSLColor.fromColor(Theme.of(context).colorScheme.primary).withLightness(0.18).toColor()
+                  : HSLColor.fromColor(Theme.of(context).colorScheme.primary).withAlpha(0.3).toColor()
+              : Theme.of(context).colorScheme.surfaceContainer.withValues(alpha: context.isDarkMode ? 0.5 : 0.7),
         ),
       ),
     );
@@ -785,8 +664,7 @@ class ScooterPowerButton extends StatefulWidget {
   State<ScooterPowerButton> createState() => _ScooterPowerButtonState();
 }
 
-class _ScooterPowerButtonState extends State<ScooterPowerButton>
-    with SingleTickerProviderStateMixin {
+class _ScooterPowerButtonState extends State<ScooterPowerButton> with SingleTickerProviderStateMixin {
   bool loading = false;
   bool disabled = false;
   int? randomEgg = Random().nextInt(8);
@@ -859,8 +737,7 @@ class _ScooterPowerButtonState extends State<ScooterPowerButton>
                               loading = false;
                               scale = 1.1; // Overshoot bounce
                             });
-                            Future.delayed(const Duration(milliseconds: 200),
-                                () {
+                            Future.delayed(const Duration(milliseconds: 200), () {
                               setState(() {
                                 scale = 1.0; // Return to normal size
                               });
@@ -868,19 +745,15 @@ class _ScooterPowerButtonState extends State<ScooterPowerButton>
                           });
                         },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 24),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
                     decoration: widget._easterEgg == true
                         ? BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
                                 width: 2,
-                                color: !disabled && widget._easterEgg == true
-                                    ? mainColor
-                                    : Colors.transparent),
+                                color: !disabled && widget._easterEgg == true ? mainColor : Colors.transparent),
                             image: DecorationImage(
-                                image: AssetImage(
-                                    "images/decoration/egg_$randomEgg.webp"),
+                                image: AssetImage("images/decoration/egg_$randomEgg.webp"),
                                 fit: BoxFit.cover,
                                 opacity: disabled ? 0.3 : 1),
                           )
@@ -896,8 +769,7 @@ class _ScooterPowerButtonState extends State<ScooterPowerButton>
                           )
                         : Icon(
                             widget._icon,
-                            color: widget._easterEgg == true &&
-                                    !context.isDarkMode
+                            color: widget._easterEgg == true && !context.isDarkMode
                                 ? (disabled ? Colors.black26 : Colors.black87)
                                 : Theme.of(context).colorScheme.surface,
                             size: 28,
@@ -911,10 +783,7 @@ class _ScooterPowerButtonState extends State<ScooterPowerButton>
         const SizedBox(height: 16),
         Text(
           widget._label,
-          style: Theme.of(context)
-              .textTheme
-              .labelLarge
-              ?.copyWith(color: mainColor),
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(color: mainColor),
           textAlign: TextAlign.center,
         ),
       ],

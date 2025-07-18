@@ -42,8 +42,7 @@ class ScooterVisual extends StatelessWidget {
                   AnimatedCrossFade(
                     duration: const Duration(milliseconds: 500),
                     firstChild: Shimmer.fromColors(
-                      baseColor:
-                          context.isDarkMode ? Colors.black : Colors.black45,
+                      baseColor: context.isDarkMode ? Colors.black : Colors.black45,
                       highlightColor: scanning
                           ? Colors.transparent
                           : context.isDarkMode
@@ -59,28 +58,23 @@ class ScooterVisual extends StatelessWidget {
                     secondChild: Opacity(
                       opacity: 1,
                       child: Image(
-                        image: AssetImage(
-                            "images/scooter/base_${aprilFools ? 9 : color ?? 1}.webp"),
+                        image: AssetImage("images/scooter/base_${aprilFools ? 9 : color ?? 1}.webp"),
                       ),
                     ),
-                    crossFadeState: state == ScooterState.disconnected
-                        ? CrossFadeState.showFirst
-                        : CrossFadeState.showSecond,
+                    crossFadeState:
+                        state == ScooterState.disconnected ? CrossFadeState.showFirst : CrossFadeState.showSecond,
                   ),
                   if (winter && state != ScooterState.disconnected)
                     AnimatedCrossFade(
                       duration: const Duration(milliseconds: 500),
                       firstChild: const Image(
-                        image: AssetImage(
-                            "images/scooter/seasonal/winter_on.webp"),
+                        image: AssetImage("images/scooter/seasonal/winter_on.webp"),
                       ),
                       secondChild: const Image(
-                        image: AssetImage(
-                            "images/scooter/seasonal/winter_off.webp"),
+                        image: AssetImage("images/scooter/seasonal/winter_off.webp"),
                       ),
-                      crossFadeState: state != null && state!.isOn
-                          ? CrossFadeState.showFirst
-                          : CrossFadeState.showSecond,
+                      crossFadeState:
+                          state != null && state!.isOn ? CrossFadeState.showFirst : CrossFadeState.showSecond,
                     ),
                   AnimatedOpacity(
                     opacity: state != null && state!.isOn ? 1.0 : 0.0,
@@ -133,8 +127,7 @@ class BlinkerWidget extends StatefulWidget {
   final bool blinkerLeft;
   final bool blinkerRight;
 
-  const BlinkerWidget(
-      {required this.blinkerLeft, required this.blinkerRight, super.key});
+  const BlinkerWidget({required this.blinkerLeft, required this.blinkerRight, super.key});
 
   @override
   State<BlinkerWidget> createState() => _BlinkerWidgetState();

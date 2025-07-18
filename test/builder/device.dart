@@ -22,20 +22,15 @@ class DeviceBuilder {
     when(bluetoothDevice.advName).thenReturn(advName);
     when(bluetoothDevice.isDisconnected).thenReturn(false);
     // nothing to do here, just empty
-    when(bluetoothDevice.discoverServices())
-        .thenAnswer((_) => Future.value(<BluetoothService>[]));
+    when(bluetoothDevice.discoverServices()).thenAnswer((_) => Future.value(<BluetoothService>[]));
 
-    when(flutterBluePlus.systemDevices)
-        .thenAnswer((_) => Future.value([bluetoothDevice]));
+    when(flutterBluePlus.systemDevices).thenAnswer((_) => Future.value([bluetoothDevice]));
 
     AdvertisementData advertisementDataMock = MockAdvertisementData();
     when(flutterBluePlus.onScanResults).thenAnswer((_) {
       return Stream.value([
         ScanResult(
-            device: bluetoothDevice,
-            advertisementData: advertisementDataMock,
-            rssi: 0,
-            timeStamp: DateTime.now())
+            device: bluetoothDevice, advertisementData: advertisementDataMock, rssi: 0, timeStamp: DateTime.now())
       ]);
     });
   }

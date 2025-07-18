@@ -119,13 +119,9 @@ class SavedScooter {
         id: id,
         name: map['name'],
         color: map['color'],
-        lastPing: map.containsKey('lastPing')
-            ? DateTime.fromMicrosecondsSinceEpoch(map['lastPing'])
-            : DateTime.now(),
+        lastPing: map.containsKey('lastPing') ? DateTime.fromMicrosecondsSinceEpoch(map['lastPing']) : DateTime.now(),
         autoConnect: map['autoConnect'],
-        lastLocation: map['lastLocation'] != null
-            ? LatLng.fromJson(map['lastLocation'])
-            : null,
+        lastLocation: map['lastLocation'] != null ? LatLng.fromJson(map['lastLocation']) : null,
         lastPrimarySOC: map['lastPrimarySOC'],
         lastSecondarySOC: map['lastSecondarySOC'],
         lastCbbSOC: map['lastCbbSOC'],
@@ -139,8 +135,7 @@ class SavedScooter {
   void updateSharedPreferences() async {
     SharedPreferencesAsync prefs = SharedPreferencesAsync();
     Map<String, dynamic> savedScooters =
-        jsonDecode(await prefs.getString("savedScooters") ?? "{}")
-            as Map<String, dynamic>;
+        jsonDecode(await prefs.getString("savedScooters") ?? "{}") as Map<String, dynamic>;
     savedScooters[_id] = toJson();
     await prefs.setString("savedScooters", jsonEncode(savedScooters));
   }

@@ -25,10 +25,7 @@ void main() {
           .service("9a590060-6e67-5d0d-aab9-ad9126b66f91")
           .characteristic("9a590061-6e67-5d0d-aab9-ad9126b66f91")
           .service("9a5900e0-6e67-5d0d-aab9-ad9126b66f91")
-          .characteristics([
-            "9a5900e9-6e67-5d0d-aab9-ad9126b66f91",
-            "9a5900f2-6e67-5d0d-aab9-ad9126b66f91"
-          ]);
+          .characteristics(["9a5900e9-6e67-5d0d-aab9-ad9126b66f91", "9a5900f2-6e67-5d0d-aab9-ad9126b66f91"]);
 
       WidgetsFlutterBinding.ensureInitialized();
     });

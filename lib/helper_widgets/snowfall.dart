@@ -5,15 +5,13 @@ class SnowfallBackground extends StatefulWidget {
   final Color backgroundColor;
   final Color snowflakeColor;
 
-  const SnowfallBackground(
-      {super.key, required this.backgroundColor, required this.snowflakeColor});
+  const SnowfallBackground({super.key, required this.backgroundColor, required this.snowflakeColor});
 
   @override
   SnowfallBackgroundState createState() => SnowfallBackgroundState();
 }
 
-class SnowfallBackgroundState extends State<SnowfallBackground>
-    with SingleTickerProviderStateMixin {
+class SnowfallBackgroundState extends State<SnowfallBackground> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   List<Snowflake>? _snowflakes; // Make _snowflakes nullable.
   final int _snowflakeCount = 100;
@@ -21,9 +19,7 @@ class SnowfallBackgroundState extends State<SnowfallBackground>
   @override
   void initState() {
     super.initState();
-    _controller =
-        AnimationController(vsync: this, duration: const Duration(seconds: 20))
-          ..repeat();
+    _controller = AnimationController(vsync: this, duration: const Duration(seconds: 20))..repeat();
 
     _controller.addListener(() {
       setState(() {
@@ -67,10 +63,8 @@ class Snowflake {
 
   Snowflake(double maxWidth, double maxHeight) {
     final random = Random();
-    x = random.nextDouble() *
-        maxWidth; // Now using the full width of the screen.
-    y = random.nextDouble() *
-        maxHeight; // Now using the full height of the screen.
+    x = random.nextDouble() * maxWidth; // Now using the full width of the screen.
+    y = random.nextDouble() * maxHeight; // Now using the full height of the screen.
     speed = 0.2 + random.nextDouble() * 0.8;
     radius = 0.5 + random.nextDouble() * 3;
   }
@@ -98,8 +92,7 @@ class SnowPainter extends CustomPainter {
       if (flakeY > size.height) {
         // Reset flake to the top when it goes beyond screen height.
         flakeY = 0;
-        flake.x =
-            Random().nextDouble() * size.width; // Randomize X position again.
+        flake.x = Random().nextDouble() * size.width; // Randomize X position again.
       }
 
       canvas.drawCircle(Offset(flakeX, flakeY), flake.radius, paint);

@@ -21,8 +21,7 @@ void main() async {
   LogHelper().initialize();
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
-  SystemChrome.setPreferredOrientations(
-      [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       systemNavigationBarColor: Colors.transparent,
@@ -34,8 +33,7 @@ void main() async {
 
   await migrateSharedPrefs();
 
-  final String? localeString =
-      await SharedPreferencesAsync().getString('savedLocale');
+  final String? localeString = await SharedPreferencesAsync().getString('savedLocale');
   if (localeString != null) {
     Logger("Main").fine("Saved locale: $localeString");
     savedLocale = Locale(localeString);
@@ -83,8 +81,7 @@ class _MyAppState extends State<MyApp> {
         appBarTheme: const AppBarTheme(
           centerTitle: true,
         ),
-        textTheme: GoogleFonts.nunitoTextTheme(
-            ThemeData(brightness: Brightness.light).textTheme),
+        textTheme: GoogleFonts.nunitoTextTheme(ThemeData(brightness: Brightness.light).textTheme),
         brightness: Brightness.light,
         useMaterial3: true,
         colorScheme: ColorScheme.light(
@@ -111,8 +108,7 @@ class _MyAppState extends State<MyApp> {
         appBarTheme: const AppBarTheme(
           centerTitle: true,
         ),
-        textTheme: GoogleFonts.nunitoTextTheme(
-            ThemeData(brightness: Brightness.dark).textTheme),
+        textTheme: GoogleFonts.nunitoTextTheme(ThemeData(brightness: Brightness.dark).textTheme),
         brightness: Brightness.dark,
         useMaterial3: true,
         colorScheme: ColorScheme.dark(
@@ -144,8 +140,7 @@ class _MyAppState extends State<MyApp> {
             forcedLocale: widget.savedLocale,
           ),
           missingTranslationHandler: (key, locale) {
-            Logger("Main").warning(
-                "--- Missing Key: $key, languageCode: ${locale?.languageCode}");
+            Logger("Main").warning("--- Missing Key: $key, languageCode: ${locale?.languageCode}");
           },
         ),
       ],

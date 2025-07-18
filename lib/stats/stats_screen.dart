@@ -38,10 +38,7 @@ class _StatsScreenState extends State<StatsScreen> {
                   isScrollable: true,
                   tabAlignment: TabAlignment.center,
                   labelPadding: const EdgeInsets.symmetric(horizontal: 24),
-                  unselectedLabelColor: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.3),
+                  unselectedLabelColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
                   labelColor: Theme.of(context).colorScheme.onSurface,
                   indicatorColor: Theme.of(context).colorScheme.onSurface,
                   dividerColor: Colors.transparent,
@@ -106,8 +103,7 @@ class _StatsScreenState extends State<StatsScreen> {
             child: Selector<ScooterService, DateTime?>(
                 selector: (context, service) => service.lastPing,
                 builder: (context, lastPing, _) {
-                  bool dataIsOld = lastPing == null ||
-                      lastPing.difference(DateTime.now()).inMinutes.abs() > 5;
+                  bool dataIsOld = lastPing == null || lastPing.difference(DateTime.now()).inMinutes.abs() > 5;
                   return TabBarView(
                     children: [
                       // BATTERY TAB
@@ -150,8 +146,7 @@ class LastPingInfo extends StatelessWidget {
         onTap: () {
           String timeDiff = lastPing?.calculateTimeDifferenceInShort(context) ??
               "???"; // somehow, we are here even though there never was a ping?
-          if (timeDiff ==
-              FlutterI18n.translate(context, "stats_last_ping_now")) {
+          if (timeDiff == FlutterI18n.translate(context, "stats_last_ping_now")) {
             Fluttertoast.showToast(
               msg: FlutterI18n.translate(context, "stats_last_ping_toast_now"),
             );
@@ -171,10 +166,7 @@ class LastPingInfo extends StatelessWidget {
               style: TextStyle(
                 fontWeight: FontWeight.w900,
                 fontSize: 12,
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurface
-                    .withValues(alpha: 0.7),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
               ),
             ),
             const SizedBox(
@@ -182,10 +174,7 @@ class LastPingInfo extends StatelessWidget {
             ),
             Icon(
               Icons.schedule_rounded,
-              color: Theme.of(context)
-                  .colorScheme
-                  .onSurface
-                  .withValues(alpha: 0.7),
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
               size: 24,
             ),
             const SizedBox(
