@@ -161,8 +161,7 @@ struct ScooterWidgetSmallView: View {
                             Button(
                                 intent: BackgroundIntent(
                                     url: URL(
-                                        string: "unustasis://openlocation?lat=" + entry.lastLat!
-                                            + ",lon=" + entry.lastLon!
+                                        string: "unustasis://ping"
                                     ),
                                     appGroup: "group.de.freal.unustasis"
                                 )

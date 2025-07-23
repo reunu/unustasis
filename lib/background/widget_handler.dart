@@ -187,16 +187,9 @@ FutureOr<void> backgroundCallback(Uri? data) async {
     await service.startService();
   }
 
-  launchUrl(Uri.parse("https://www.unustasis.de"),
-      mode: LaunchMode.externalApplication);
-
   switch (data?.host) {
-    case "openlocation":
-      // open location in maps
-      if (await canLaunchUrl(Uri.parse(data.toString()))) {
-        await launchUrl(Uri.parse("maps://?q=Googleplex"),
-            mode: LaunchMode.externalApplication);
-      }
+    case "ping":
+      print("Pong");
     case "scan":
       setWidgetScanning(true);
       if (!backgroundScanEnabled) {
