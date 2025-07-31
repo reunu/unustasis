@@ -11,6 +11,8 @@ import workmanager
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
     SwiftFlutterBackgroundServicePlugin.taskIdentifier = "de.freal.unustasis.background"
+    WorkmanagerPlugin.registerPeriodicTask(
+      withIdentifier: "de.freal.unustasis.widget_refresh", frequency: NSNumber(value: 20 * 60))  // 20 minutes
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }

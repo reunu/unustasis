@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:ui';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:workmanager/workmanager.dart';
 
 import '../background/translate_static.dart';
 import '../background/bg_service.dart';
@@ -13,6 +15,7 @@ import '../domain/scooter_state.dart';
 bool _connected = false;
 DateTime? _lastPing;
 String? _lastPingDifference;
+String? _iOSlastPingText;
 ScooterState? _scooterState;
 String? _stateName;
 int? _primarySOC;
@@ -27,23 +30,60 @@ String _lockStateName = "Unknown";
 void setupWidget() {
   HomeWidget.setAppGroupId('group.de.freal.unustasis');
   HomeWidget.registerInteractivityCallback(backgroundCallback);
+  setupWidgetTasks();
+}
+
+String widgetTaskID = "de.freal.unustasis.widget_refresh";
+
+Future<void> setupWidgetTasks() async {
+  Workmanager().initialize(workmanagerCallback, isInDebugMode: true);
+
+  Workmanager().registerPeriodicTask(
+    widgetTaskID,
+    widgetTaskID,
+    existingWorkPolicy: ExistingWorkPolicy.replace,
+    frequency: Duration(minutes: 2),
+    initialDelay: Duration(minutes: 1),
+  );
+  print("Widget tasks initialized with workmanager ID: $widgetTaskID");
+}
+
+@pragma('vm:entry-point')
+void workmanagerCallback() {
+  Workmanager().executeTask((task, inputData) async {
+    print("Workmanager task executing: $task");
+    WidgetsFlutterBinding.ensureInitialized();
+    DartPluginRegistrant.ensureInitialized();
+    if (task == widgetTaskID) {
+      await updateWidgetPing();
+    }
+    // Return true to indicate success to Workmanager.
+    return true;
+  });
 }
 
 Future<void> updateWidgetPing() async {
+  HomeWidget.setAppGroupId('group.de.freal.unustasis');
   if (_lastPing != null) {
     // just use the cached ping
     _lastPingDifference = _lastPing?.calculateTimeDifferenceInShort();
+    _iOSlastPingText = getLocalizedTimeDiff(_lastPing);
   } else {
     // get the last ping from widget data
     int? lastPingInt = await HomeWidget.getWidgetData<int?>("lastPing");
     if (lastPingInt != null) {
       _lastPing = DateTime.fromMillisecondsSinceEpoch(lastPingInt);
       _lastPingDifference = _lastPing?.calculateTimeDifferenceInShort();
+      _iOSlastPingText = getLocalizedTimeDiff(_lastPing);
     }
   }
   await HomeWidget.saveWidgetData<String?>(
     "lastPingDifference",
     _lastPingDifference,
+  );
+  await HomeWidget.saveWidgetData<String>(
+    "iOSlastPingText",
+    _iOSlastPingText,
   );
   await HomeWidget.updateWidget(
     qualifiedAndroidName: 'de.freal.unustasis.HomeWidgetReceiver',
@@ -83,6 +123,7 @@ void passToWidget({
     _connected = connected;
     _lastPing = lastPing;
     _lastPingDifference = lastPing?.calculateTimeDifferenceInShort();
+    _iOSlastPingText = getLocalizedTimeDiff(lastPing);
     _scooterState = scooterState;
     _stateName = getStateNameForWidget(scooterState);
     _primarySOC = primarySOC;
@@ -114,6 +155,11 @@ void passToWidget({
     await HomeWidget.saveWidgetData<String?>(
       "lastPingDifference",
       _lastPingDifference,
+    );
+
+    await HomeWidget.saveWidgetData<String>(
+      "iOSlastPingText",
+      _iOSlastPingText,
     );
 
     await HomeWidget.saveWidgetData<int>("soc1", primarySOC);
@@ -182,14 +228,17 @@ Future<void> setWidgetScanning(bool scanning) async {
 FutureOr<void> backgroundCallback(Uri? data) async {
   print("Unu widget received data: $data");
   await HomeWidget.setAppGroupId('de.freal.unustasis');
-  if (await FlutterBackgroundService().isRunning() == false) {
-    final service = FlutterBackgroundService();
-    await service.startService();
+
+  try {
+    if (await FlutterBackgroundService().isRunning() == false) {
+      final service = FlutterBackgroundService();
+      await service.startService();
+    }
+  } catch (e) {
+    print("Error starting background service: $e");
   }
 
   switch (data?.host) {
-    case "ping":
-      print("Pong");
     case "scan":
       setWidgetScanning(true);
       if (!backgroundScanEnabled) {
@@ -201,6 +250,8 @@ FutureOr<void> backgroundCallback(Uri? data) async {
       FlutterBackgroundService().invoke("unlock");
     case "openseat":
       FlutterBackgroundService().invoke("openseat");
+    default:
+      print("Unknown command: ${data?.host}");
   }
   await HomeWidget.updateWidget(
     qualifiedAndroidName: 'de.freal.unustasis.HomeWidgetReceiver',

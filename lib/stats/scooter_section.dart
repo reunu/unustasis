@@ -6,7 +6,6 @@ import 'package:logging/logging.dart';
 import 'package:maps_launcher/maps_launcher.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:unustasis/home_screen.dart';
 
 import '../home_screen.dart';
 import '../stats/stats_screen.dart';
@@ -294,7 +293,7 @@ class SavedScooterCard extends StatelessWidget {
                         FlutterI18n.translate(context, "stats_last_ping_toast",
                             translationParams: {
                               "time": savedScooter.lastPing
-                                  .calculateTimeDifferenceInShort(context)
+                                  .calculateExactTimeDifferenceInShort(context)
                                   .toLowerCase()
                             }),
                         style: Theme.of(context).textTheme.titleMedium,
@@ -1045,7 +1044,7 @@ class SavedScooterListItem extends StatelessWidget {
                           if (!connected) ...[
                             const SizedBox(height: 4),
                             Text(
-                              "${savedScooter.lastPing.calculateTimeDifferenceInShort(context).toLowerCase()} ago",
+                              "${savedScooter.lastPing.calculateExactTimeDifferenceInShort(context).toLowerCase()} ago",
                               style: Theme.of(context)
                                   .textTheme
                                   .bodySmall

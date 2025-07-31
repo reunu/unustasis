@@ -81,7 +81,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _showNotifications() async {
     SharedPreferencesAsync prefs = SharedPreferencesAsync();
-    if (await prefs.getBool("widgetOnboarded") != true &&
+    if (Platform.isAndroid &&
+        await prefs.getBool("widgetOnboarded") != true &&
         mounted) {
       await showWidgetOnboarding(context);
       await prefs.setBool("widgetOnboarded", true);
@@ -217,8 +218,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                             .textTheme
                                             .headlineLarge
                                             ?.copyWith(
-                                                height: 1.1,
-                                                ),
+                                              height: 1.1,
+                                            ),
                                         textAlign: TextAlign.center,
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,

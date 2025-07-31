@@ -7,7 +7,6 @@ import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:easy_dynamic_theme/easy_dynamic_theme.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:home_widget/home_widget.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -103,7 +102,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Unustasis',
+      title: 'unustasis',
       theme: ThemeData(
         appBarTheme: const AppBarTheme(
           centerTitle: true,

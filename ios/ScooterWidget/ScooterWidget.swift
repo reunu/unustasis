@@ -8,6 +8,7 @@ struct Provider: TimelineProvider {
             date: Date(),
             connected: true,
             lastPingDifference: nil,
+            lastPingText: nil,
             stateName: "Standby",
             locked: true,
             seatOpenable: true,
@@ -19,7 +20,7 @@ struct Provider: TimelineProvider {
             lastLon: "-122.4194",
             seatClosed: true,
             scanning: false,
-            lockStateName: "Unknown"
+            lockStateName: "Unknown",
         )
     }
 
@@ -27,6 +28,7 @@ struct Provider: TimelineProvider {
         let prefs = UserDefaults(suiteName: "group.de.freal.unustasis")
         let connected = prefs?.bool(forKey: "connected")
         let lastPingDifference = prefs?.string(forKey: "lastPingDifference")
+        let lastPingText = prefs?.string(forKey: "iOSlastPingText")
         let stateName = prefs?.string(forKey: "stateName")
         let locked = prefs?.bool(forKey: "locked")
         let seatOpenable = prefs?.bool(forKey: "seatOpenable")
@@ -43,6 +45,7 @@ struct Provider: TimelineProvider {
             date: Date(),
             connected: connected ?? false,
             lastPingDifference: lastPingDifference,
+            lastPingText: lastPingText,
             stateName: stateName,
             locked: locked,
             seatOpenable: seatOpenable,
@@ -73,6 +76,7 @@ struct ScooterStatusEntry: TimelineEntry {
     // Data fields as saved by widget_handler.dart
     let connected: Bool
     let lastPingDifference: String?
+    let lastPingText: String?
     let stateName: String?
     let locked: Bool?
     let seatOpenable: Bool?
@@ -96,15 +100,18 @@ struct ScooterWidget: Widget {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
             if #available(iOS 17.0, *) {
                 ScooterWidgetEntryView(entry: entry)
-                    .padding(16)
                     .containerBackground(.fill.quaternary, for: .widget)
             } else {
                 ScooterWidgetEntryView(entry: entry)
-                    .padding(16)
                     .background()
             }
         }
-        .supportedFamilies([.systemSmall])
+        .supportedFamilies([
+            .systemSmall,
+            .accessoryCircular,
+            .accessoryRectangular,
+            .accessoryInline,
+        ])
         .contentMarginsDisabled()
         .configurationDisplayName("Scooter Status")
         .description("Shows your unu Scooter's last known status")
@@ -120,6 +127,12 @@ struct ScooterWidgetEntryView: View {
         switch family {
         // case .systemMedium:
         //     ScooterWidgetMediumView(entry: entry)
+        case .accessoryRectangular:
+            ScooterWidgetLockScreenView(entry: entry)
+        case .accessoryCircular:
+            ScooterWidgetCircularView(entry: entry)
+        case .accessoryInline:
+            ScooterWidgetInlineView(entry: entry)
         default:
             ScooterWidgetSmallView(entry: entry)
         }
@@ -134,7 +147,7 @@ struct ScooterWidgetSmallView: View {
         ZStack(alignment: .topLeading) {
             VStack(alignment: .leading, spacing: 6) {
                 // Scooter name and last ping
-                Text(entry.lockStateName)
+                Text(entry.lastPingText ?? "unustasis")
                     .font(.system(size: 12, weight: .regular))
                     .multilineTextAlignment(.leading)
                     .foregroundColor(Color.secondary)
@@ -156,36 +169,123 @@ struct ScooterWidgetSmallView: View {
                     Spacer()
                     HStack {
                         Spacer()
-                        let hasLocation = (entry.lastLat != "0.0" && entry.lastLon != "0.0")
-                        if hasLocation {
-                            Button(
-                                intent: BackgroundIntent(
-                                    url: URL(
-                                        string: "unustasis://ping"
-                                    ),
-                                    appGroup: "group.de.freal.unustasis"
-                                )
-                            ) {
-                                Image(systemName: "location")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(Color.primary)
+                        if false {  // Placeholder for future use
+                            let loading = entry.scanning ?? false
+                            if !loading {
+                                Button(
+                                    intent: BackgroundIntent(
+                                        url: URL(
+                                            string: "unustasis://ping"
+                                        ),
+                                        appGroup: "group.de.freal.unustasis"
+                                    )
+                                ) {
+                                    Image(systemName: "lock")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(Color.primary)
+                                }
+                            } else {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .fill(.quaternary.opacity(0.5))
+                                        .frame(width: 36, height: 36)
+                                    ProgressView()
+                                        .progressViewStyle(
+                                            CircularProgressViewStyle(tint: Color.primary))
+                                }
+                                .allowsHitTesting(false)  // disables interaction
                             }
-                        } else {
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 16)
-                                    .fill(.quaternary.opacity(0.5))
-                                    .frame(width: 36, height: 36)
-                                Image(systemName: "location.slash")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(Color.secondary)
-                            }
-                            .allowsHitTesting(false)  // disables interaction
                         }
                     }
-                }
 
+                }
             }
         }
+        .padding(16)
+    }
+}
+
+// CIRCULAR WIDGET
+struct ScooterWidgetCircularView: View {
+    var entry: Provider.Entry
+    var hasSecondarySOC: Bool {
+        guard let soc2 = entry.secondarySOC else { return false }
+        return soc2 > 0
+    }
+    var body: some View {
+        ZStack {
+            // primary SOC gauge
+            Gauge(
+                value: Double(entry.primarySOC ?? 0),
+                in: 0...100,
+            ) {
+                let iconSize: CGFloat = hasSecondarySOC ? 24 : 32
+                Image("scooter_icon")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .foregroundColor(Color.primary)
+                    .frame(width: iconSize, height: iconSize)
+            }
+            .gaugeStyle(.accessoryCircularCapacity)
+            // secondary SOC gauge
+            if hasSecondarySOC {
+                Gauge(
+                    value: Double(entry.secondarySOC!),
+                    in: 0...100,
+                ) {
+
+                }.padding(8)
+                    .gaugeStyle(.accessoryCircularCapacity)
+            }
+        }
+    }
+}
+
+// RECTANGULAR LOCK SCREEN WIDGET
+struct ScooterWidgetLockScreenView: View {
+    var entry: Provider.Entry
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 8) {
+            // Scooter icon
+            Image("scooter_icon")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .foregroundColor(Color.primary)
+                .frame(width: 24, height: 32)
+                .padding(.top, 4)  // Shift scooter down slightly to adjust for top-heavy image
+            // Scooter details
+            VStack(alignment: .leading, spacing: 2) {
+                // Scooter name and last ping
+                Text(entry.scooterName ?? "unu Scooter")
+                    .font(.system(size: 16, weight: .bold))
+                    .lineLimit(1)
+                    .fixedSize(horizontal: false, vertical: true)
+                // Battery items
+                VStack(alignment: .leading, spacing: 0) {
+                    BatteryBar(soc: entry.primarySOC)
+                    if let soc2 = entry.secondarySOC, soc2 > 0 {
+                        BatteryBar(soc: soc2)
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct ScooterWidgetInlineView: View {
+    var entry: Provider.Entry
+
+    private var displayText: String {
+        var text = "\(entry.scooterName ?? "Scoote Pro"): \(entry.primarySOC ?? 0)%"
+        if let secondarySOC = entry.secondarySOC, secondarySOC > 0 {
+            text += "∙\(secondarySOC)%"
+        }
+        return text
+    }
+
+    var body: some View {
+        Text(displayText)
     }
 }
 
@@ -215,7 +315,7 @@ struct BatteryItem: View {
         case 0...20:
             return Color.red
         default:
-            return Color.primary
+            return Color.accentColor
         }
     }
 
@@ -238,6 +338,28 @@ struct BatteryItem: View {
     }
 }
 
+struct BatteryBar: View {
+    var soc: Int?
+
+    var body: some View {
+        if let soc = soc {
+            HStack(alignment: .center, spacing: 4) {
+                Text("\(soc)%")
+                    .font(.system(size: 10))
+                    .foregroundColor(Color.secondary)
+                Gauge(
+                    value: Double(soc),
+                    in: 0...100
+                ) {}
+                .gaugeStyle(.accessoryLinearCapacity)
+            }
+        } else {
+            EmptyView()
+        }
+    }
+
+}
+
 #Preview(as: .systemMedium) {
     ScooterWidget()
 } timeline: {
@@ -245,6 +367,7 @@ struct BatteryItem: View {
         date: Date(),
         connected: true,
         lastPingDifference: nil,
+        lastPingText: nil,
         stateName: "Standby",
         locked: true,
         seatOpenable: true,
@@ -267,6 +390,7 @@ struct BatteryItem: View {
         date: Date(),
         connected: true,
         lastPingDifference: nil,
+        lastPingText: "2h ago",
         stateName: "Standby",
         locked: true,
         seatOpenable: true,

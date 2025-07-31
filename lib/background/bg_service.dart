@@ -22,18 +22,6 @@ FlutterBluePlusMockable fbp = FlutterBluePlusMockable();
 ScooterService scooterService =
     ScooterService(fbp, isInBackgroundService: true);
 
-Future<void> setupWidgetTasks() async {
-  Workmanager().initialize(workmanagerCallback, isInDebugMode: false);
-
-  Workmanager().registerPeriodicTask(
-    "hourly-updater",
-    "updateWidget",
-    existingWorkPolicy: ExistingWorkPolicy.replace,
-    frequency: Duration(hours: 1),
-    initialDelay: Duration(minutes: 1),
-  );
-}
-
 Future<void> setupBackgroundService() async {
   final log = Logger("setupBackgroundService");
   final service = FlutterBackgroundService();
@@ -71,10 +59,6 @@ Future<void> setupBackgroundService() async {
   );
 
   service.startService();
-
-  if (Platform.isAndroid) {
-    await setupWidgetTasks();
-  }
 
   if (!backgroundScanEnabled) {
     dismissNotification();
@@ -127,19 +111,6 @@ void _disableScanning() async {
     ?..pause()
     ..reset();
   scooterService.rssiTimer.pause();
-}
-
-@pragma('vm:entry-point')
-void workmanagerCallback() {
-  Workmanager().executeTask((task, inputData) async {
-    WidgetsFlutterBinding.ensureInitialized();
-    DartPluginRegistrant.ensureInitialized();
-    if (task == "updateWidget") {
-      await updateWidgetPing();
-    }
-    // Return true to indicate success to Workmanager.
-    return true;
-  });
 }
 
 @pragma('vm:entry-point')
@@ -304,6 +275,10 @@ void onStart(ServiceInstance service) async {
       setWidgetScanning(false);
       if (scooterService.connected) scooterService.openSeat();
     }
+  });
+
+  service.on("test").listen((data) async {
+    print("Test command received by background service! Data: $data");
   });
 
   // listen to changes
