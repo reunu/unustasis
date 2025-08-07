@@ -165,6 +165,8 @@ void passToWidget({
     await HomeWidget.updateWidget(
       iOSName: "ScooterWidget",
     );
+  } else {
+    // no relevant changes, no need to update
   }
 }
 

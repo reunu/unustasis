@@ -126,21 +126,21 @@ class SavedScooter {
     Map<String, dynamic> map,
   ) {
     return SavedScooter(
-        id: id,
-        name: map['name'],
-        color: map['color'],
-        lastPing: map.containsKey('lastPing')
-            ? DateTime.fromMicrosecondsSinceEpoch(map['lastPing'])
-            : DateTime.now(),
-        autoConnect: map['autoConnect'],
-        lastLocation: map['lastLocation'] != null
-            ? LatLng.fromJson(map['lastLocation'])
-            : null,
-        lastPrimarySOC: map['lastPrimarySOC'],
-        lastSecondarySOC: map['lastSecondarySOC'],
-        lastCbbSOC: map['lastCbbSOC'],
-        lastAuxSOC: map['lastAuxSOC'],
-        handlebarsLocked: map['handlebarsLocked'],
+      id: id,
+      name: map['name'],
+      color: map['color'],
+      lastPing: map.containsKey('lastPing')
+          ? DateTime.fromMicrosecondsSinceEpoch(map['lastPing'])
+          : DateTime.now(),
+      autoConnect: map['autoConnect'],
+      lastLocation: map['lastLocation'] != null
+          ? LatLng.fromJson(map['lastLocation'])
+          : null,
+      lastPrimarySOC: map['lastPrimarySOC'],
+      lastSecondarySOC: map['lastSecondarySOC'],
+      lastCbbSOC: map['lastCbbSOC'],
+      lastAuxSOC: map['lastAuxSOC'],
+      handlebarsLocked: map['handlebarsLocked'],
     );
   }
 
