@@ -8,7 +8,6 @@ import 'package:home_widget/home_widget.dart';
 import 'package:logging/logging.dart';
 import 'package:pausable_timer/pausable_timer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:workmanager/workmanager.dart';
 
 import '../background/widget_handler.dart';
 import '../flutter/blue_plus_mockable.dart';

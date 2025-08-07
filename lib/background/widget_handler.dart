@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:latlong2/latlong.dart';
+
 import 'package:workmanager/workmanager.dart';
 
 import '../background/translate_static.dart';
@@ -36,30 +37,19 @@ void setupWidget() {
 String widgetTaskID = "de.freal.unustasis.widget_refresh";
 
 Future<void> setupWidgetTasks() async {
-  Workmanager().initialize(workmanagerCallback, isInDebugMode: true);
+  Workmanager().initialize(workmanagerCallback);
 
-  Workmanager().registerPeriodicTask(
+  await Workmanager().registerPeriodicTask(
     widgetTaskID,
     widgetTaskID,
-    existingWorkPolicy: ExistingWorkPolicy.replace,
-    frequency: Duration(minutes: 2),
+    existingWorkPolicy: ExistingPeriodicWorkPolicy.update,
+    frequency: Duration(minutes: 20),
     initialDelay: Duration(minutes: 1),
   );
   print("Widget tasks initialized with workmanager ID: $widgetTaskID");
-}
 
-@pragma('vm:entry-point')
-void workmanagerCallback() {
-  Workmanager().executeTask((task, inputData) async {
-    print("Workmanager task executing: $task");
-    WidgetsFlutterBinding.ensureInitialized();
-    DartPluginRegistrant.ensureInitialized();
-    if (task == widgetTaskID) {
-      await updateWidgetPing();
-    }
-    // Return true to indicate success to Workmanager.
-    return true;
-  });
+  print(
+      "Scheduled workmanager tasks: ${await Workmanager().printScheduledTasks()}");
 }
 
 Future<void> updateWidgetPing() async {
@@ -180,6 +170,7 @@ void passToWidget({
       lastLocation?.longitude.toString() ?? "0.0",
     );
 
+    print("Attempting to update widget!");
     // once everything is set, rebuild the widget
     await HomeWidget.updateWidget(
       qualifiedAndroidName: 'de.freal.unustasis.HomeWidgetReceiver',
@@ -227,7 +218,7 @@ Future<void> setWidgetScanning(bool scanning) async {
 @pragma("vm:entry-point")
 FutureOr<void> backgroundCallback(Uri? data) async {
   print("Unu widget received data: $data");
-  await HomeWidget.setAppGroupId('de.freal.unustasis');
+  await HomeWidget.setAppGroupId('group.de.freal.unustasis');
 
   try {
     if (await FlutterBackgroundService().isRunning() == false) {
@@ -257,6 +248,22 @@ FutureOr<void> backgroundCallback(Uri? data) async {
     qualifiedAndroidName: 'de.freal.unustasis.HomeWidgetReceiver',
     iOSName: "ScooterWidget",
   );
+}
+
+@pragma('vm:entry-point')
+void workmanagerCallback() {
+  Workmanager().executeTask((task, inputData) async {
+    print("Workmanager task executing: $task");
+    WidgetsFlutterBinding.ensureInitialized();
+    DartPluginRegistrant.ensureInitialized();
+    if (task == widgetTaskID) {
+      await updateWidgetPing();
+    } else {
+      print("Unknown task: $task");
+    }
+    // Return true to indicate success to Workmanager.
+    return Future.value(true);
+  });
 }
 
 extension DateTimeExtension on DateTime {

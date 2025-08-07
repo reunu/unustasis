@@ -48,6 +48,7 @@ void main() async {
 
   // here goes nothing...
   setupBackgroundService();
+  setupWidget();
 
   runApp(ChangeNotifierProvider(
       create: (context) => ScooterService(FlutterBluePlusMockable()),
@@ -78,25 +79,22 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   @override
   void initState() {
+    scooterService.addListener(() async {
+      print("ScooterService updated");
+      passToWidget(
+        connected: scooterService.connected,
+        lastPing: scooterService.lastPing,
+        scooterState: scooterService.state,
+        primarySOC: scooterService.primarySOC,
+        secondarySOC: scooterService.secondarySOC,
+        scooterName: scooterService.scooterName,
+        scooterColor: scooterService.scooterColor,
+        lastLocation: scooterService.lastLocation,
+        seatClosed: scooterService.seatClosed,
+        scooterLocked: scooterService.handlebarsLocked,
+      );
+    });
     super.initState();
-    if (Platform.isIOS) {
-      setupWidget();
-      scooterService.addListener(() async {
-        print("ScooterService updated");
-        passToWidget(
-          connected: scooterService.connected,
-          lastPing: scooterService.lastPing,
-          scooterState: scooterService.state,
-          primarySOC: scooterService.primarySOC,
-          secondarySOC: scooterService.secondarySOC,
-          scooterName: scooterService.scooterName,
-          scooterColor: scooterService.scooterColor,
-          lastLocation: scooterService.lastLocation,
-          seatClosed: scooterService.seatClosed,
-          scooterLocked: scooterService.handlebarsLocked,
-        );
-      });
-    }
   }
 
   @override

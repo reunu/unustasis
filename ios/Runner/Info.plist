@@ -4,9 +4,8 @@
 	<dict>
 		<key>BGTaskSchedulerPermittedIdentifiers</key>
 		<array>
-			<string>de.freal.unustasis.background</string>
 			<string>de.freal.unustasis.widget_refresh</string>
-
+			<string>de.freal.unustasis.background</string>
 		</array>
 		<key>CADisableMinimumFrameDurationOnPhone</key>
 		<true />
