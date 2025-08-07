@@ -47,10 +47,6 @@ Future<void> setupWidgetTasks() async {
     frequency: Duration(minutes: 20),
     initialDelay: Duration(minutes: 1),
   );
-  print("Widget tasks initialized with workmanager ID: $widgetTaskID");
-
-  print(
-      "Scheduled workmanager tasks: ${await Workmanager().printScheduledTasks()}");
 }
 
 Future<void> updateWidgetPing() async {
@@ -208,7 +204,6 @@ Future<void> setWidgetScanning(bool scanning) async {
 
 @pragma("vm:entry-point")
 FutureOr<void> backgroundCallback(Uri? data) async {
-  print("Unu widget received data: $data");
   await HomeWidget.setAppGroupId('group.de.freal.unustasis');
 
   try {
