@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -94,8 +95,12 @@ void passToWidget({
   bool? seatClosed,
   bool? scooterLocked,
 }) async {
-  HomeWidget.setAppGroupId('group.de.freal.unustasis');
-  if (connected != _connected ||
+  bool updateiOS = primarySOC != _primarySOC ||
+      secondarySOC != _secondarySOC ||
+      lastPing != _lastPing ||
+      scooterName != _scooterName;
+
+  bool updateAndroid = connected != _connected ||
       (scooterState?.isOn) != (_scooterState?.isOn) ||
       (scooterState?.isReadyForSeatOpen) !=
           (_scooterState?.isReadyForSeatOpen) ||
@@ -108,76 +113,62 @@ void passToWidget({
       scooterColor != _scooterColor ||
       lastLocation != _lastLocation ||
       seatClosed != _seatClosed ||
-      scooterLocked != _scooterLocked) {
-    // update cached values
-    _connected = connected;
-    _lastPing = lastPing;
-    _lastPingDifference = lastPing?.calculateTimeDifferenceInShort();
-    _iOSlastPingText = getLocalizedTimeDiff(lastPing);
-    _scooterState = scooterState;
-    _stateName = getStateNameForWidget(scooterState);
-    _primarySOC = primarySOC;
-    _secondarySOC = secondarySOC;
-    _scooterName = scooterName;
-    _scooterColor = scooterColor;
-    _lastLocation = lastLocation;
-    _seatClosed = seatClosed;
-    _scooterLocked = scooterLocked;
-    _lockStateName = getLocalizedLockStateName(scooterLocked ?? true);
+      scooterLocked != _scooterLocked;
 
-    await HomeWidget.saveWidgetData<bool>("connected", connected);
-    if (scooterState != null) {
-      await HomeWidget.saveWidgetData<bool>("locked", !scooterState.isOn);
-      await HomeWidget.saveWidgetData<bool>(
-        "seatOpenable",
-        scooterState.isReadyForSeatOpen,
-      );
-    }
+  // update cached values
+  _connected = connected;
+  _lastPing = lastPing ?? _lastPing;
+  _lastPingDifference =
+      lastPing?.calculateTimeDifferenceInShort() ?? _lastPingDifference;
+  _iOSlastPingText = getLocalizedTimeDiff(lastPing) ?? _iOSlastPingText;
+  _scooterState = scooterState ?? _scooterState;
+  _stateName = getStateNameForWidget(scooterState) ?? _stateName;
+  _primarySOC = primarySOC ?? _primarySOC;
+  _secondarySOC = secondarySOC ?? _secondarySOC;
+  _scooterName = scooterName ?? _scooterName;
+  _scooterColor = scooterColor ?? _scooterColor;
+  _lastLocation = lastLocation ?? _lastLocation;
+  _seatClosed = seatClosed ?? _seatClosed;
+  _scooterLocked = scooterLocked ?? _scooterLocked;
+  _lockStateName = getLocalizedLockStateName(scooterLocked ?? true);
 
-    // Not broadcasting "linking" state by default
-    await HomeWidget.saveWidgetData<String>("stateName", _stateName);
-
-    await HomeWidget.saveWidgetData<int?>(
-      "lastPing",
-      _lastPing?.millisecondsSinceEpoch,
-    );
-
-    await HomeWidget.saveWidgetData<String?>(
-      "lastPingDifference",
-      _lastPingDifference,
-    );
-
-    await HomeWidget.saveWidgetData<String>(
-      "iOSlastPingText",
-      _iOSlastPingText,
-    );
-
-    await HomeWidget.saveWidgetData<int>("soc1", primarySOC);
-    await HomeWidget.saveWidgetData<int?>("soc2", secondarySOC);
-    await HomeWidget.saveWidgetData<String>("scooterName", scooterName);
-    await HomeWidget.saveWidgetData<int>("scooterColor", scooterColor);
-    await HomeWidget.saveWidgetData("seatClosed", seatClosed);
+  // update widget data storage
+  await HomeWidget.saveWidgetData<bool>("connected", _connected);
+  if (_scooterState != null) {
+    await HomeWidget.saveWidgetData<bool>("locked", _scooterState!.isOn);
     await HomeWidget.saveWidgetData<bool>(
-        "scooterLocked", scooterLocked ?? true);
-    await HomeWidget.saveWidgetData<String>("lockStateName", _lockStateName);
+        "seatOpenable", _scooterState!.isReadyForSeatOpen);
+  }
+  await HomeWidget.saveWidgetData<String>("stateName", _stateName);
+  await HomeWidget.saveWidgetData<int?>(
+      "lastPing", _lastPing?.millisecondsSinceEpoch);
+  await HomeWidget.saveWidgetData<String?>(
+      "lastPingDifference", _lastPingDifference);
+  await HomeWidget.saveWidgetData<String>("iOSlastPingText", _iOSlastPingText);
+  await HomeWidget.saveWidgetData<int>("soc1", _primarySOC);
+  await HomeWidget.saveWidgetData<int?>("soc2", _secondarySOC);
+  await HomeWidget.saveWidgetData<String>("scooterName", _scooterName);
+  await HomeWidget.saveWidgetData<int>("scooterColor", _scooterColor);
+  await HomeWidget.saveWidgetData("seatClosed", _seatClosed);
+  await HomeWidget.saveWidgetData<bool>(
+      "scooterLocked", _scooterLocked ?? true);
+  await HomeWidget.saveWidgetData<String>("lockStateName", _lockStateName);
+  await HomeWidget.saveWidgetData<String>(
+      "lastLat", _lastLocation?.latitude.toString() ?? "0.0");
+  await HomeWidget.saveWidgetData<String>(
+      "lastLon", _lastLocation?.longitude.toString() ?? "0.0");
 
-    await HomeWidget.saveWidgetData<String>(
-      "lastLat",
-      lastLocation?.latitude.toString() ?? "0.0",
-    );
-    await HomeWidget.saveWidgetData<String>(
-      "lastLon",
-      lastLocation?.longitude.toString() ?? "0.0",
-    );
-
-    print("Attempting to update widget!");
+  // finally, update if necessary
+  if (Platform.isAndroid && updateAndroid) {
     // once everything is set, rebuild the widget
     await HomeWidget.updateWidget(
       qualifiedAndroidName: 'de.freal.unustasis.HomeWidgetReceiver',
+    );
+  } else if (Platform.isIOS && updateiOS) {
+    await HomeWidget.setAppGroupId('group.de.freal.unustasis');
+    await HomeWidget.updateWidget(
       iOSName: "ScooterWidget",
     );
-  } else {
-    // no relevant changes, no need to update
   }
 }
 

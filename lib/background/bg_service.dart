@@ -25,7 +25,6 @@ Future<void> setupBackgroundService() async {
   final log = Logger("setupBackgroundService");
   final service = FlutterBackgroundService();
 
-  HomeWidget.setAppGroupId("group.de.freal.unustasis");
   HomeWidget.registerInteractivityCallback(backgroundCallback);
 
   backgroundScanEnabled =
@@ -197,20 +196,22 @@ void onStart(ServiceInstance service) async {
         }
       }
       if (data?["updateSavedScooters"] == true) {
-        scooterService.refetchSavedScooters();
+        await scooterService.refetchSavedScooters();
       }
 
-      passToWidget(
-        connected: scooterService.connected,
-        lastPing: scooterService.lastPing,
-        scooterState: scooterService.state,
-        primarySOC: scooterService.primarySOC,
-        secondarySOC: scooterService.secondarySOC,
-        scooterName: scooterService.scooterName,
-        scooterColor: scooterService.scooterColor,
-        lastLocation: scooterService.lastLocation,
-        seatClosed: scooterService.seatClosed,
-      );
+      Future.delayed(const Duration(seconds: 3), () {
+        passToWidget(
+          connected: scooterService.connected,
+          lastPing: scooterService.lastPing,
+          scooterState: scooterService.state,
+          primarySOC: scooterService.primarySOC,
+          secondarySOC: scooterService.secondarySOC,
+          scooterName: scooterService.scooterName,
+          scooterColor: scooterService.scooterColor,
+          lastLocation: scooterService.lastLocation,
+          seatClosed: scooterService.seatClosed,
+        );
+      });
     } catch (e, stack) {
       Logger("bgservice")
           .severe("Something bad happened on command: $e", e, stack);
