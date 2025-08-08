@@ -1108,32 +1108,6 @@ class ScooterService with ChangeNotifier {
     notifyListeners();
   }
 
-  void recolorSavedScooter({String? id, required int color}) async {
-    id ??= myScooter?.remoteId.toString();
-    if (id == null) {
-      log.warning(
-          "Attempted to recolor scooter, but no ID was given and we're not connected to anything!");
-      return;
-    }
-    if (savedScooters[id] == null) {
-      savedScooters[id] = SavedScooter(
-        color: color,
-        id: id,
-      );
-    } else {
-      savedScooters[id]!.color = color;
-    }
-
-    updateBackgroundService({"updateSavedScooters": true});
-    if ((await getMostRecentScooter())?.id == id) {
-      // if we're recoloring the most recent scooter, update the color immediately
-      scooterColor = color;
-      updateBackgroundService({"scooterColor": color});
-    }
-    // let the background service know too right away
-    notifyListeners();
-  }
-
   void updateBackgroundService(dynamic data) {
     if (!isInBackgroundService) {
       FlutterBackgroundService().invoke("update", data);
