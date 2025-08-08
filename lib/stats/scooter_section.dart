@@ -6,7 +6,6 @@ import 'package:logging/logging.dart';
 import 'package:maps_launcher/maps_launcher.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:unustasis/home_screen.dart';
 
 import '../home_screen.dart';
 import '../stats/stats_screen.dart';

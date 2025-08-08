@@ -80,7 +80,6 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     scooterService.addListener(() async {
-      print("ScooterService updated");
       passToWidget(
         connected: scooterService.connected,
         lastPing: scooterService.lastPing,
