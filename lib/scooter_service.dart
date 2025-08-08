@@ -26,7 +26,7 @@ const bootingTimeSeconds = 25;
 const keylessCooldownSeconds = 60;
 const handlebarCheckSeconds = 5;
 
-class ScooterService with ChangeNotifier {
+class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   final log = Logger('ScooterService');
   Map<String, SavedScooter> savedScooters = {};
   BluetoothDevice? myScooter; // reserved for a connected scooter!
@@ -38,6 +38,7 @@ class ScooterService with ChangeNotifier {
   bool _hazardLocking = false;
   bool _warnOfUnlockedHandlebars = true;
   bool _autoUnlockCooldown = false;
+  AppLifecycleState? _lastLifecycleState;
   SharedPreferencesOptions prefOptions = SharedPreferencesOptions();
 
   SharedPreferencesAsync prefs = SharedPreferencesAsync();
@@ -73,6 +74,13 @@ class ScooterService with ChangeNotifier {
   // On initialization...
   ScooterService(this.flutterBluePlus, {this.isInBackgroundService = false}) {
     loadCachedData();
+
+    // Register for app lifecycle callbacks (only if not in background service)
+    if (!isInBackgroundService) {
+      WidgetsBinding.instance.addObserver(this);
+      log.info("Registered for app lifecycle callbacks");
+    }
+
     // update the "scanning" listener
     flutterBluePlus.isScanning.listen((isScanning) {
       scanning = isScanning;
@@ -1136,7 +1144,53 @@ class ScooterService with ChangeNotifier {
     _locationTimer.cancel();
     rssiTimer.cancel();
     _manualRefreshTimer.cancel();
+
+    // Unregister lifecycle observer
+    if (!isInBackgroundService) {
+      WidgetsBinding.instance.removeObserver(this);
+    }
+
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    log.info("App lifecycle state changed: $_lastLifecycleState -> $state");
+
+    // Check if app is returning to foreground from background
+    if (_lastLifecycleState != null &&
+        (_lastLifecycleState == AppLifecycleState.paused ||
+            _lastLifecycleState == AppLifecycleState.inactive ||
+            _lastLifecycleState == AppLifecycleState.hidden) &&
+        state == AppLifecycleState.resumed) {
+      log.info("App resumed from background - checking connection status");
+      _handleAppResumedFromBackground();
+    }
+
+    _lastLifecycleState = state;
+  }
+
+  void _handleAppResumedFromBackground() async {
+    // Only attempt reconnection if we have saved scooters and are not currently connected
+    if (savedScooters.isNotEmpty && !connected && !scanning) {
+      log.info("App resumed: attempting automatic reconnection");
+
+      try {
+        // Small delay to let the app settle
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        // Try to reconnect to the last known scooter
+        start();
+      } catch (e, stack) {
+        log.warning(
+            "Error during automatic reconnection on app resume", e, stack);
+      }
+    } else {
+      log.info(
+          "App resumed: no reconnection needed (connected: $connected, scanning: $scanning, saved scooters: ${savedScooters.length})");
+    }
   }
 
   Future<void> _sleepSeconds(double seconds) {
