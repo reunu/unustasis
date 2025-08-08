@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -16,6 +17,7 @@ import '../domain/log_helper.dart';
 import '../flutter/blue_plus_mockable.dart';
 import '../home_screen.dart';
 import '../scooter_service.dart';
+import '../background/widget_handler.dart';
 
 void main() async {
   LogHelper().initialize();
@@ -44,9 +46,9 @@ void main() async {
     savedLocale = Locale(Platform.localeName.split('_').first);
   }
 
-  if (Platform.isAndroid) {
-    setupBackgroundService();
-  }
+  // here goes nothing...
+  setupBackgroundService();
+  setupWidget();
 
   runApp(ChangeNotifierProvider(
       create: (context) => ScooterService(FlutterBluePlusMockable()),
@@ -76,9 +78,28 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   @override
+  void initState() {
+    scooterService.addListener(() async {
+      passToWidget(
+        connected: scooterService.connected,
+        lastPing: scooterService.lastPing,
+        scooterState: scooterService.state,
+        primarySOC: scooterService.primarySOC,
+        secondarySOC: scooterService.secondarySOC,
+        scooterName: scooterService.scooterName,
+        scooterColor: scooterService.scooterColor,
+        lastLocation: scooterService.lastLocation,
+        seatClosed: scooterService.seatClosed,
+        scooterLocked: scooterService.handlebarsLocked,
+      );
+    });
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Unustasis',
+      title: 'unustasis',
       theme: ThemeData(
         appBarTheme: const AppBarTheme(
           centerTitle: true,

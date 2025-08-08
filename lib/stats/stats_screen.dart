@@ -113,7 +113,7 @@ class _StatsScreenState extends State<StatsScreen> {
                       // BATTERY TAB
                       BatterySection(dataIsOld: dataIsOld),
                       // SCOOTER TAB
-                      ScooterSection(dataIsOld: dataIsOld),
+                      ScooterSection(),
                       // SETTINGS TAB
                       const SettingsSection(),
                       // SUPPORT TAB
@@ -148,7 +148,8 @@ class LastPingInfo extends StatelessWidget {
       },
       child: InkWell(
         onTap: () {
-          String timeDiff = lastPing?.calculateTimeDifferenceInShort(context) ??
+          String timeDiff = lastPing
+                  ?.calculateExactTimeDifferenceInShort(context) ??
               "???"; // somehow, we are here even though there never was a ping?
           if (timeDiff ==
               FlutterI18n.translate(context, "stats_last_ping_now")) {
@@ -167,7 +168,7 @@ class LastPingInfo extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
-              lastPing?.calculateTimeDifferenceInShort(context) ?? "???",
+              lastPing?.calculateExactTimeDifferenceInShort(context) ?? "???",
               style: TextStyle(
                 fontWeight: FontWeight.w900,
                 fontSize: 12,
@@ -199,7 +200,7 @@ class LastPingInfo extends StatelessWidget {
 }
 
 extension DateTimeExtension on DateTime {
-  String calculateTimeDifferenceInShort(BuildContext context) {
+  String calculateExactTimeDifferenceInShort(BuildContext context) {
     final originalDate = DateTime.now();
     final difference = originalDate.difference(this);
 
