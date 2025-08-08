@@ -218,8 +218,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                             .textTheme
                                             .headlineLarge
                                             ?.copyWith(
-                                                height: 1.1,
-                                                ),
+                                              height: 1.1,
+                                            ),
                                         textAlign: TextAlign.center,
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,

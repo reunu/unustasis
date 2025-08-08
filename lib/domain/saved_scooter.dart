@@ -16,6 +16,7 @@ class SavedScooter {
   int? _lastCbbSOC;
   int? _lastAuxSOC;
   LatLng? _lastLocation;
+  bool? _handlebarsLocked;
 
   SavedScooter({
     required String id,
@@ -28,6 +29,7 @@ class SavedScooter {
     int? lastCbbSOC,
     int? lastAuxSOC,
     LatLng? lastLocation,
+    bool? handlebarsLocked,
   })  : _name = name ?? "Scooter Pro",
         _id = id,
         _color = color ?? 1,
@@ -37,7 +39,8 @@ class SavedScooter {
         _lastSecondarySOC = lastSecondarySOC,
         _lastCbbSOC = lastCbbSOC,
         _lastAuxSOC = lastAuxSOC,
-        _lastLocation = lastLocation;
+        _lastLocation = lastLocation,
+        _handlebarsLocked = handlebarsLocked;
 
   set name(String name) {
     _name = name;
@@ -85,6 +88,11 @@ class SavedScooter {
     updateSharedPreferences();
   }
 
+  set handlebarsLocked(bool? handlebarsLocked) {
+    _handlebarsLocked = handlebarsLocked;
+    updateSharedPreferences();
+  }
+
   String get name => _name;
   String get id => _id;
   int get color => _color;
@@ -95,6 +103,7 @@ class SavedScooter {
   int? get lastCbbSOC => _lastCbbSOC;
   int? get lastAuxSOC => _lastAuxSOC;
   LatLng? get lastLocation => _lastLocation;
+  bool? get handlebarsLocked => _handlebarsLocked;
 
   BluetoothDevice get bluetoothDevice => BluetoothDevice.fromId(_id);
 
@@ -109,6 +118,7 @@ class SavedScooter {
         'lastCbbSOC': _lastCbbSOC,
         'lastAuxSOC': _lastAuxSOC,
         'lastLocation': _lastLocation?.toJson(),
+        'handlebarsLocked': _handlebarsLocked,
       };
 
   factory SavedScooter.fromJson(
@@ -116,20 +126,22 @@ class SavedScooter {
     Map<String, dynamic> map,
   ) {
     return SavedScooter(
-        id: id,
-        name: map['name'],
-        color: map['color'],
-        lastPing: map.containsKey('lastPing')
-            ? DateTime.fromMicrosecondsSinceEpoch(map['lastPing'])
-            : DateTime.now(),
-        autoConnect: map['autoConnect'],
-        lastLocation: map['lastLocation'] != null
-            ? LatLng.fromJson(map['lastLocation'])
-            : null,
-        lastPrimarySOC: map['lastPrimarySOC'],
-        lastSecondarySOC: map['lastSecondarySOC'],
-        lastCbbSOC: map['lastCbbSOC'],
-        lastAuxSOC: map['lastAuxSOC']);
+      id: id,
+      name: map['name'],
+      color: map['color'],
+      lastPing: map.containsKey('lastPing')
+          ? DateTime.fromMicrosecondsSinceEpoch(map['lastPing'])
+          : DateTime.now(),
+      autoConnect: map['autoConnect'],
+      lastLocation: map['lastLocation'] != null
+          ? LatLng.fromJson(map['lastLocation'])
+          : null,
+      lastPrimarySOC: map['lastPrimarySOC'],
+      lastSecondarySOC: map['lastSecondarySOC'],
+      lastCbbSOC: map['lastCbbSOC'],
+      lastAuxSOC: map['lastAuxSOC'],
+      handlebarsLocked: map['handlebarsLocked'],
+    );
   }
 
   bool get dataIsOld {

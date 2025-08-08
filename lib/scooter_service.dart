@@ -172,6 +172,7 @@ class ScooterService with ChangeNotifier {
     _scooterName = mostRecentScooter?.name;
     _scooterColor = mostRecentScooter?.color;
     _lastLocation = mostRecentScooter?.lastLocation;
+    _handlebarsLocked = mostRecentScooter?.handlebarsLocked;
     return;
   }
 
@@ -224,6 +225,13 @@ class ScooterService with ChangeNotifier {
     _lastPing = DateTime.now();
     _scooterName = "Demo Scooter";
 
+    //SharedPreferencesAsync().setString(
+    //  "savedScooters",
+    //  jsonEncode(
+    //      savedScooters.map((key, value) => MapEntry(key, value.toJson()))),
+    //);
+    //updateBackgroundService({"updateSavedScooters": true});
+
     notifyListeners();
   }
 
@@ -253,6 +261,12 @@ class ScooterService with ChangeNotifier {
   bool? get handlebarsLocked => _handlebarsLocked;
   set handlebarsLocked(bool? handlebarsLocked) {
     _handlebarsLocked = handlebarsLocked;
+    // Cache the value in SavedScooter if possible
+    if (myScooter != null &&
+        savedScooters.containsKey(myScooter!.remoteId.toString())) {
+      savedScooters[myScooter!.remoteId.toString()]!.handlebarsLocked =
+          handlebarsLocked;
+    }
     notifyListeners();
   }
 
@@ -966,6 +980,7 @@ class ScooterService with ChangeNotifier {
         _scooterName = mostRecentScooter.name;
         _scooterColor = mostRecentScooter.color;
         _lastLocation = mostRecentScooter.lastLocation;
+        _handlebarsLocked = mostRecentScooter.handlebarsLocked;
       } else {
         // no saved scooters, reset streams
         _lastPing = null;
@@ -1050,12 +1065,17 @@ class ScooterService with ChangeNotifier {
       savedScooters[id]!.name = name;
     }
 
-    updateBackgroundService({"updateSavedScooters": true});
-    if ((await getMostRecentScooter())?.id == id) {
-      // if we're renaming the most recent scooter, update the name immediately
+    await prefs.setString("savedScooters", jsonEncode(savedScooters));
+
+    bool isMostRecent = (await getMostRecentScooter())?.id == id;
+    if (isMostRecent) {
       scooterName = name;
-      updateBackgroundService({"scooterName": name});
     }
+
+    updateBackgroundService({
+      "updateSavedScooters": true,
+      if (isMostRecent) "scooterName": name,
+    });
     // let the background service know too right away
     notifyListeners();
   }
@@ -1076,12 +1096,14 @@ class ScooterService with ChangeNotifier {
       savedScooters[id]!.color = color;
     }
 
-    updateBackgroundService({"updateSavedScooters": true});
-    if ((await getMostRecentScooter())?.id == id) {
-      // if we're recoloring the most recent scooter, update the color immediately
+    bool isMostRecent = (await getMostRecentScooter())?.id == id;
+    if (isMostRecent) {
       scooterColor = color;
-      updateBackgroundService({"scooterColor": color});
     }
+    updateBackgroundService({
+      "updateSavedScooters": true,
+      if (isMostRecent) "scooterColor": color,
+    });
     // let the background service know too right away
     notifyListeners();
   }

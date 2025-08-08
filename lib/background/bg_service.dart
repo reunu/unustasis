@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -7,7 +8,6 @@ import 'package:home_widget/home_widget.dart';
 import 'package:logging/logging.dart';
 import 'package:pausable_timer/pausable_timer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:workmanager/workmanager.dart';
 
 import '../background/widget_handler.dart';
 import '../flutter/blue_plus_mockable.dart';
@@ -21,28 +21,20 @@ FlutterBluePlusMockable fbp = FlutterBluePlusMockable();
 ScooterService scooterService =
     ScooterService(fbp, isInBackgroundService: true);
 
-Future<void> setupWidgetTasks() async {
-  Workmanager().initialize(workmanagerCallback, isInDebugMode: false);
-
-  Workmanager().registerPeriodicTask(
-    "hourly-updater",
-    "updateWidget",
-    existingWorkPolicy: ExistingWorkPolicy.replace,
-    frequency: Duration(hours: 1),
-    initialDelay: Duration(minutes: 1),
-  );
-}
-
 Future<void> setupBackgroundService() async {
   final log = Logger("setupBackgroundService");
   final service = FlutterBackgroundService();
+
+  HomeWidget.registerInteractivityCallback(backgroundCallback);
 
   backgroundScanEnabled =
       (await SharedPreferences.getInstance()).getBool("backgroundScan") ??
           false;
   log.info("Background scan: $backgroundScanEnabled");
 
-  await setupNotifications();
+  if (Platform.isAndroid) {
+    await setupNotifications();
+  }
 
   await service.configure(
     iosConfiguration: IosConfiguration(
@@ -64,9 +56,7 @@ Future<void> setupBackgroundService() async {
     ),
   );
 
-  HomeWidget.registerInteractivityCallback(backgroundCallback);
-
-  await setupWidgetTasks();
+  service.startService();
 
   if (!backgroundScanEnabled) {
     dismissNotification();
@@ -75,8 +65,27 @@ Future<void> setupBackgroundService() async {
 
 @pragma('vm:entry-point')
 Future<bool> onIosBackground(ServiceInstance service) async {
+  // this will be updated occasionally by the system
+  print("Background service started on iOS!");
+  // Ensure that the Flutter engine is initialized.
   WidgetsFlutterBinding.ensureInitialized();
   DartPluginRegistrant.ensureInitialized();
+  // Set up a scooter service instance.
+  scooterService = ScooterService(fbp, isInBackgroundService: true);
+  // Make sure scooterService has time to initialize all values
+  await Future.delayed(const Duration(seconds: 5));
+  // update the widget
+  passToWidget(
+    connected: scooterService.connected,
+    lastPing: scooterService.lastPing,
+    scooterState: scooterService.state,
+    primarySOC: scooterService.primarySOC,
+    secondarySOC: scooterService.secondarySOC,
+    scooterName: scooterService.scooterName,
+    scooterColor: scooterService.scooterColor,
+    lastLocation: scooterService.lastLocation,
+    seatClosed: scooterService.seatClosed,
+  );
   return true;
 }
 
@@ -100,19 +109,6 @@ void _disableScanning() async {
     ?..pause()
     ..reset();
   scooterService.rssiTimer.pause();
-}
-
-@pragma('vm:entry-point')
-void workmanagerCallback() {
-  Workmanager().executeTask((task, inputData) async {
-    WidgetsFlutterBinding.ensureInitialized();
-    DartPluginRegistrant.ensureInitialized();
-    if (task == "updateWidget") {
-      await updateWidgetPing();
-    }
-    // Return true to indicate success to Workmanager.
-    return true;
-  });
 }
 
 @pragma('vm:entry-point')
@@ -140,7 +136,9 @@ void onStart(ServiceInstance service) async {
     }
   }
 
+  print("Seeding widget with initial data");
   // seed widget
+  await HomeWidget.setAppGroupId("group.de.freal.unustasis");
   Future.delayed(const Duration(seconds: 5), () {
     passToWidget(
         connected: scooterService.connected,
@@ -153,6 +151,8 @@ void onStart(ServiceInstance service) async {
         lastLocation: scooterService.lastLocation,
         seatClosed: scooterService.seatClosed);
   });
+  print(
+      "Widget seeded with initial data. ScooterName: ${scooterService.scooterName}");
 
   service.on("autoUnlockCooldown").listen((data) async {
     Logger("bgservice").info("Received autoUnlockCooldown command");
@@ -196,20 +196,22 @@ void onStart(ServiceInstance service) async {
         }
       }
       if (data?["updateSavedScooters"] == true) {
-        scooterService.refetchSavedScooters();
+        await scooterService.refetchSavedScooters();
       }
 
-      passToWidget(
-        connected: scooterService.connected,
-        lastPing: scooterService.lastPing,
-        scooterState: scooterService.state,
-        primarySOC: scooterService.primarySOC,
-        secondarySOC: scooterService.secondarySOC,
-        scooterName: scooterService.scooterName,
-        scooterColor: scooterService.scooterColor,
-        lastLocation: scooterService.lastLocation,
-        seatClosed: scooterService.seatClosed,
-      );
+      Future.delayed(const Duration(seconds: 3), () {
+        passToWidget(
+          connected: scooterService.connected,
+          lastPing: scooterService.lastPing,
+          scooterState: scooterService.state,
+          primarySOC: scooterService.primarySOC,
+          secondarySOC: scooterService.secondarySOC,
+          scooterName: scooterService.scooterName,
+          scooterColor: scooterService.scooterColor,
+          lastLocation: scooterService.lastLocation,
+          seatClosed: scooterService.seatClosed,
+        );
+      });
     } catch (e, stack) {
       Logger("bgservice")
           .severe("Something bad happened on command: $e", e, stack);
@@ -275,6 +277,10 @@ void onStart(ServiceInstance service) async {
     }
   });
 
+  service.on("test").listen((data) async {
+    print("Test command received by background service! Data: $data");
+  });
+
   // listen to changes
   scooterService.addListener(() async {
     Logger("bgservice").info("ScooterService updated");
@@ -288,6 +294,7 @@ void onStart(ServiceInstance service) async {
       scooterColor: scooterService.scooterColor,
       lastLocation: scooterService.lastLocation,
       seatClosed: scooterService.seatClosed,
+      scooterLocked: scooterService.handlebarsLocked,
     );
     if (backgroundScanEnabled) {
       updateNotification();

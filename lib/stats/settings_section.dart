@@ -372,7 +372,7 @@ class _SettingsSectionState extends State<SettingsSection> {
                     context: context,
                     applicationName: packageInfo.hasData
                         ? packageInfo.data!.appName
-                        : "Unustasis",
+                        : "unustasis",
                     applicationVersion: packageInfo.hasData
                         ? packageInfo.data!.version
                         : "?.?.?",
