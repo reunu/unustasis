@@ -50,6 +50,8 @@ Future<void> setupWidgetTasks() async {
 }
 
 Future<void> updateWidgetPing() async {
+  setWidgetScanning(false);
+  setWidgetUnlocking(false);
   HomeWidget.setAppGroupId('group.de.freal.unustasis');
   if (_lastPing != null) {
     // just use the cached ping
