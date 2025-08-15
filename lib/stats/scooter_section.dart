@@ -8,7 +8,6 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../home_screen.dart';
-import '../stats/stats_screen.dart';
 import '../onboarding_screen.dart';
 import '../domain/saved_scooter.dart';
 import '../domain/scooter_state.dart';
@@ -1161,5 +1160,24 @@ class SavedScooterListItem extends StatelessWidget {
         );
       },
     );
+  }
+}
+
+extension DateTimeExtension on DateTime {
+  String calculateExactTimeDifferenceInShort(BuildContext context) {
+    final originalDate = DateTime.now();
+    final difference = originalDate.difference(this);
+
+    if ((difference.inDays / 7).floor() >= 1) {
+      return '${(difference.inDays / 7).floor()}W';
+    } else if (difference.inDays >= 1) {
+      return '${difference.inDays}D';
+    } else if (difference.inHours >= 1) {
+      return '${difference.inHours}H';
+    } else if (difference.inMinutes >= 1) {
+      return '${difference.inMinutes}M';
+    } else {
+      return FlutterI18n.translate(context, "stats_last_ping_now");
+    }
   }
 }
