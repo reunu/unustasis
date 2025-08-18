@@ -46,9 +46,10 @@ class LogHelper {
       Fluttertoast.showToast(
         msg: record.message,
         fontSize: 12.0,
-        backgroundColor: Colors.grey.shade800,  // fluttertoast android logspams if no background color is set
+        backgroundColor: Colors.black.withValues(alpha: 0.7),  // fluttertoast android logspams if no background color is set
         textColor: Colors.white,
-        toastLength: Toast.LENGTH_SHORT
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
       );
     }
     // ignore: avoid_print
