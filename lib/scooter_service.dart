@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:core';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -113,10 +114,13 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       ..start();
     _manualRefreshTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
       if (myScooter != null && myScooter!.isConnected) {
-        // only refresh state and seatbox, for now
-        log.info("Auto-refresh...");
-        characteristicRepository.stateCharacteristic!.read();
-        characteristicRepository.seatCharacteristic!.read();
+        try {
+          log.info("Auto-refresh...");
+          characteristicRepository.stateCharacteristic!.read();
+          characteristicRepository.seatCharacteristic!.read();
+        } on StateError catch (e) {
+          log.fine("Characteristics not yet initialized, skipping auto-refresh");
+        }
       }
     });
   }
