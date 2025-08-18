@@ -409,8 +409,8 @@ class _SettingsSectionState extends State<SettingsSection> {
               FlutterI18n.translate(context, "bgscan_warning_title"),
               textAlign: TextAlign.center,
             ),
-            content: ListView(
-              shrinkWrap: true,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   FlutterI18n.translate(context, "bgscan_warning_intro"),
