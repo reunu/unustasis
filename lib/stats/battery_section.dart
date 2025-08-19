@@ -8,7 +8,7 @@ import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:logging/logging.dart';
 import 'package:nfc_manager/nfc_manager.dart';
-import 'package:nfc_manager/src/nfc_manager_android/tags/mifare_ultralight.dart';
+import 'package:nfc_manager/nfc_manager_android.dart';
 import 'package:provider/provider.dart';
 
 import '../domain/scooter_battery.dart';
