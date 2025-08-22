@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -6,15 +7,18 @@ import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:easy_dynamic_theme/easy_dynamic_theme.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:home_widget/home_widget.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences/util/legacy_to_async_migration_util.dart';
 
 import '../background/bg_service.dart';
 import '../domain/log_helper.dart';
 import '../flutter/blue_plus_mockable.dart';
 import '../home_screen.dart';
 import '../scooter_service.dart';
+import '../background/widget_handler.dart';
 
 void main() async {
   LogHelper().initialize();
@@ -28,11 +32,14 @@ void main() async {
     ),
   );
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  await HomeWidget.setAppGroupId("group.de.freal.unustasis");
 
   Locale? savedLocale;
 
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  final String? localeString = prefs.getString('savedLocale');
+  await migrateSharedPrefs();
+
+  final String? localeString =
+      await SharedPreferencesAsync().getString('savedLocale');
   if (localeString != null) {
     Logger("Main").fine("Saved locale: $localeString");
     savedLocale = Locale(localeString);
@@ -41,9 +48,9 @@ void main() async {
     savedLocale = Locale(Platform.localeName.split('_').first);
   }
 
-  if (Platform.isAndroid) {
-    setupBackgroundService();
-  }
+  // here goes nothing...
+  setupBackgroundService();
+  setupWidget();
 
   runApp(ChangeNotifierProvider(
       create: (context) => ScooterService(FlutterBluePlusMockable()),
@@ -52,6 +59,15 @@ void main() async {
           savedLocale: savedLocale,
         ),
       )));
+}
+
+Future<void> migrateSharedPrefs() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  await migrateLegacySharedPreferencesToSharedPreferencesAsyncIfNecessary(
+    legacySharedPreferencesInstance: prefs,
+    sharedPreferencesAsyncOptions: SharedPreferencesOptions(),
+    migrationCompletedKey: 'migrationCompleted',
+  );
 }
 
 class MyApp extends StatefulWidget {
@@ -63,6 +79,25 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    scooterService.addListener(() async {
+      passToWidget(
+        connected: scooterService.connected,
+        lastPing: scooterService.lastPing,
+        scooterState: scooterService.state,
+        primarySOC: scooterService.primarySOC,
+        secondarySOC: scooterService.secondarySOC,
+        scooterName: scooterService.scooterName,
+        scooterColor: scooterService.scooterColor,
+        lastLocation: scooterService.lastLocation,
+        seatClosed: scooterService.seatClosed,
+        scooterLocked: scooterService.handlebarsLocked,
+      );
+    });
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -87,6 +122,12 @@ class _MyAppState extends State<MyApp> {
           onError: Colors.white,
           surfaceContainer: Colors.grey.shade200,
         ),
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: <TargetPlatform, PageTransitionsBuilder>{
+            // Set the predictive back transitions for Android.
+            TargetPlatform.android: PredictiveBackPageTransitionsBuilder(),
+          },
+        ),
         /* dark theme settings */
       ),
       darkTheme: ThemeData(
@@ -109,7 +150,12 @@ class _MyAppState extends State<MyApp> {
           surfaceContainer: Colors.grey.shade900,
           onError: Colors.white,
         ),
-        /* dark theme settings */
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: <TargetPlatform, PageTransitionsBuilder>{
+            // Set the predictive back transitions for Android.
+            TargetPlatform.android: PredictiveBackPageTransitionsBuilder(),
+          },
+        ),
       ),
       themeMode: EasyDynamicTheme.of(context).themeMode,
       localizationsDelegates: [

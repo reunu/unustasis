@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -15,10 +16,11 @@ class SavedScooter {
   int? _lastCbbSOC;
   int? _lastAuxSOC;
   LatLng? _lastLocation;
+  bool? _handlebarsLocked;
 
   SavedScooter({
-    required String name,
     required String id,
+    String? name,
     int? color,
     DateTime? lastPing,
     bool? autoConnect,
@@ -27,7 +29,8 @@ class SavedScooter {
     int? lastCbbSOC,
     int? lastAuxSOC,
     LatLng? lastLocation,
-  })  : _name = name,
+    bool? handlebarsLocked,
+  })  : _name = name ?? "Scooter Pro",
         _id = id,
         _color = color ?? 1,
         _lastPing = lastPing ?? DateTime.now(),
@@ -36,7 +39,8 @@ class SavedScooter {
         _lastSecondarySOC = lastSecondarySOC,
         _lastCbbSOC = lastCbbSOC,
         _lastAuxSOC = lastAuxSOC,
-        _lastLocation = lastLocation;
+        _lastLocation = lastLocation,
+        _handlebarsLocked = handlebarsLocked;
 
   set name(String name) {
     _name = name;
@@ -56,6 +60,7 @@ class SavedScooter {
   set autoConnect(bool autoConnect) {
     _autoConnect = autoConnect;
     updateSharedPreferences();
+    FlutterBackgroundService().invoke("update", {"updateSavedScooters": true});
   }
 
   set lastPrimarySOC(int? lastPrimarySOC) {
@@ -83,6 +88,11 @@ class SavedScooter {
     updateSharedPreferences();
   }
 
+  set handlebarsLocked(bool? handlebarsLocked) {
+    _handlebarsLocked = handlebarsLocked;
+    updateSharedPreferences();
+  }
+
   String get name => _name;
   String get id => _id;
   int get color => _color;
@@ -93,6 +103,7 @@ class SavedScooter {
   int? get lastCbbSOC => _lastCbbSOC;
   int? get lastAuxSOC => _lastAuxSOC;
   LatLng? get lastLocation => _lastLocation;
+  bool? get handlebarsLocked => _handlebarsLocked;
 
   BluetoothDevice get bluetoothDevice => BluetoothDevice.fromId(_id);
 
@@ -107,6 +118,7 @@ class SavedScooter {
         'lastCbbSOC': _lastCbbSOC,
         'lastAuxSOC': _lastAuxSOC,
         'lastLocation': _lastLocation?.toJson(),
+        'handlebarsLocked': _handlebarsLocked,
       };
 
   factory SavedScooter.fromJson(
@@ -114,27 +126,34 @@ class SavedScooter {
     Map<String, dynamic> map,
   ) {
     return SavedScooter(
-        id: id,
-        name: map['name'],
-        color: map['color'],
-        lastPing: map.containsKey('lastPing')
-            ? DateTime.fromMicrosecondsSinceEpoch(map['lastPing'])
-            : DateTime.now(),
-        autoConnect: map['autoConnect'],
-        lastLocation: map['lastLocation'] != null
-            ? LatLng.fromJson(map['lastLocation'])
-            : null,
-        lastPrimarySOC: map['lastPrimarySOC'],
-        lastSecondarySOC: map['lastSecondarySOC'],
-        lastCbbSOC: map['lastCbbSOC'],
-        lastAuxSOC: map['lastAuxSOC']);
+      id: id,
+      name: map['name'],
+      color: map['color'],
+      lastPing: map.containsKey('lastPing')
+          ? DateTime.fromMicrosecondsSinceEpoch(map['lastPing'])
+          : DateTime.now(),
+      autoConnect: map['autoConnect'],
+      lastLocation: map['lastLocation'] != null
+          ? LatLng.fromJson(map['lastLocation'])
+          : null,
+      lastPrimarySOC: map['lastPrimarySOC'],
+      lastSecondarySOC: map['lastSecondarySOC'],
+      lastCbbSOC: map['lastCbbSOC'],
+      lastAuxSOC: map['lastAuxSOC'],
+      handlebarsLocked: map['handlebarsLocked'],
+    );
+  }
+
+  bool get dataIsOld {
+    return _lastPing.difference(DateTime.now()).inMinutes.abs() > 5;
   }
 
   void updateSharedPreferences() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
+    SharedPreferencesAsync prefs = SharedPreferencesAsync();
     Map<String, dynamic> savedScooters =
-        jsonDecode(prefs.getString("savedScooters")!) as Map<String, dynamic>;
+        jsonDecode(await prefs.getString("savedScooters") ?? "{}")
+            as Map<String, dynamic>;
     savedScooters[_id] = toJson();
-    prefs.setString("savedScooters", jsonEncode(savedScooters));
+    await prefs.setString("savedScooters", jsonEncode(savedScooters));
   }
 }

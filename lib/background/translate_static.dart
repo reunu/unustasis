@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import '../background/widget_handler.dart';
 import '../domain/scooter_state.dart';
 
 extension ScooterStateName on ScooterState? {
@@ -87,6 +88,58 @@ String getLocalizedNotificationAction(String actionId) {
         return "Open seat";
       default:
         return "ERROR";
+    }
+  }
+}
+
+String? getLocalizedTimeDiff(DateTime? lastPing) {
+  String lang = PlatformDispatcher.instance.locale.languageCode;
+
+  if (lastPing == null) {
+    return null;
+  }
+
+  String? timeDiff = lastPing.calculateTimeDifferenceInShort();
+
+  if (lang == "de") {
+    if (timeDiff == null) {
+      return "Vor kurzem";
+    } else if (timeDiff == "1d") {
+      return "Gestern";
+    } else if (timeDiff == "2d") {
+      return "Vorgestern";
+    }
+    return "Vor $timeDiff";
+  } else {
+    if (timeDiff == null) {
+      return "Just now";
+    } else if (timeDiff == "1d") {
+      return "Yesterday";
+    }
+    return "$timeDiff ago";
+  }
+}
+
+String getLocalizedLockStateName(bool? locked) {
+  String lang = PlatformDispatcher.instance.locale.languageCode;
+
+  if (lang == "de") {
+    switch (locked) {
+      case true:
+        return "Verriegelt";
+      case false:
+        return "Offen";
+      default:
+        return "Unbekannt";
+    }
+  } else {
+    switch (locked) {
+      case true:
+        return "Locked";
+      case false:
+        return "Unlocked";
+      default:
+        return "Unknown";
     }
   }
 }

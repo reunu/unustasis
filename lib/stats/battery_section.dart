@@ -8,7 +8,7 @@ import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:logging/logging.dart';
 import 'package:nfc_manager/nfc_manager.dart';
-import 'package:nfc_manager/platform_tags.dart';
+import 'package:nfc_manager/nfc_manager_android.dart';
 import 'package:provider/provider.dart';
 
 import '../domain/scooter_battery.dart';
@@ -243,20 +243,7 @@ class _BatterySectionState extends State<BatterySection> {
                         });
                         // Start Session
                         NfcManager.instance.startSession(
-                          onError: (error) {
-                            log.severe("NFC Error!", error.message);
-                            if (mounted) {
-                              Fluttertoast.showToast(
-                                msg: FlutterI18n.translate(
-                                    context, "stats_nfc_error"),
-                              );
-                            }
-                            setState(() {
-                              nfcScanning = false;
-                              showNfcNotice = false;
-                            });
-                            throw error;
-                          },
+                          pollingOptions: {NfcPollingOption.iso14443},
                           onDiscovered: (NfcTag tag) async {
                             noticeTimer.cancel();
                             setState(() {
@@ -269,9 +256,8 @@ class _BatterySectionState extends State<BatterySection> {
                               Uint8List socData;
                               Uint8List cycleData;
                               // Read from battery
-                              if (Platform.isWindows) {
-                                MifareUltralight? mifare =
-                                    MifareUltralight.from(tag);
+                              if (Platform.isAndroid) {
+                                var mifare = MifareUltralightAndroid.from(tag);
                                 if (mifare == null) {
                                   Fluttertoast.showToast(
                                     msg: FlutterI18n.translate(
@@ -418,6 +404,16 @@ class _BatterySectionState extends State<BatterySection> {
   }
 
   AlertDialog _auxDiagnosticDialog(BuildContext context) {
+    int? auxSOC =
+        context.select<ScooterService, int?>((service) => service.auxSOC);
+    AUXChargingState? auxCharging =
+        context.select<ScooterService, AUXChargingState?>(
+            (service) => service.auxCharging);
+    int? auxVoltage =
+        context.select<ScooterService, int?>((service) => service.auxVoltage);
+    DateTime? lastPing = context
+        .select<ScooterService, DateTime?>((service) => service.lastPing);
+
     return AlertDialog(
       title: Text(
         FlutterI18n.translate(
@@ -430,15 +426,15 @@ class _BatterySectionState extends State<BatterySection> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text("SOC: ${auxSOC ?? "Unknown"}%"),
           Text(
-              "SOC: ${context.select<ScooterService, int?>((service) => service.auxSOC) ?? "??? "}%"),
-          Text(context
-                  .select<ScooterService, AUXChargingState?>(
-                      (service) => service.auxCharging)
-                  ?.name(context) ??
-              "???"),
+              "${FlutterI18n.translate(context, "stats_battery_charging_state")}: ${auxCharging?.name(context) ?? "Unknown "}"),
           Text(
-              "Voltage: ${context.select<ScooterService, int?>((service) => service.auxVoltage) ?? "??? "}mV"),
+              "${FlutterI18n.translate(context, "stats_battery_voltage")}: ${auxVoltage ?? "Unknown "}mV"),
+          Text(
+              "${FlutterI18n.translate(context, "stats_battery_type")}: ${FlutterI18n.translate(context, "stats_aux_desc")}"),
+          Text(
+              "${FlutterI18n.translate(context, "stats_battery_last_update")}: ${lastPing?.toString().split('.').first ?? "Never"}"),
         ],
       ),
       actions: [
@@ -454,6 +450,17 @@ class _BatterySectionState extends State<BatterySection> {
   }
 
   AlertDialog _cbbDiagnosticDialog(BuildContext context) {
+    int? cbbSOC =
+        context.select<ScooterService, int?>((service) => service.cbbSOC);
+    bool? cbbCharging =
+        context.select<ScooterService, bool?>((service) => service.cbbCharging);
+    int? cbbVoltage =
+        context.select<ScooterService, int?>((service) => service.cbbVoltage);
+    int? cbbCapacity =
+        context.select<ScooterService, int?>((service) => service.cbbCapacity);
+    DateTime? lastPing = context
+        .select<ScooterService, DateTime?>((service) => service.lastPing);
+
     return AlertDialog(
       title: Text(
         FlutterI18n.translate(
@@ -466,17 +473,17 @@ class _BatterySectionState extends State<BatterySection> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text("SOC: ${cbbSOC ?? "Unknown"}%"),
           Text(
-              "SOC: ${context.select<ScooterService, int?>((service) => service.cbbSOC) ?? "??? "}%"),
-          Text((context.select<ScooterService, bool?>(
-                      (service) => service.cbbCharging)) ==
-                  true
-              ? "Charging"
-              : "Not charging"),
+              "${FlutterI18n.translate(context, "stats_battery_charging_state")}: ${cbbCharging == true ? "Charging" : cbbCharging == false ? "Not charging" : "Unknown"}"),
           Text(
-              "Voltage: ${context.select<ScooterService, int?>((service) => service.cbbVoltage) ?? "??? "}mV"),
+              "${FlutterI18n.translate(context, "stats_battery_voltage")}: ${cbbVoltage ?? "Unknown "}mV"),
           Text(
-              "Capacity: ${context.select<ScooterService, int?>((service) => service.cbbCapacity) ?? "??? "}mAh"),
+              "${FlutterI18n.translate(context, "stats_battery_capacity")}: ${cbbCapacity ?? "Unknown "}mAh"),
+          Text(
+              "${FlutterI18n.translate(context, "stats_battery_type")}: ${FlutterI18n.translate(context, "stats_cbb_desc")}"),
+          Text(
+              "${FlutterI18n.translate(context, "stats_battery_last_update")}: ${lastPing?.toString().split('.').first ?? "Never"}"),
         ],
       ),
       actions: [
@@ -499,102 +506,202 @@ class _BatterySectionState extends State<BatterySection> {
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Container(
-        height: 160,
-        padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainer,
-          borderRadius: BorderRadius.circular(16.0),
-          border: (soc <= 15 && !old)
-              ? Border.all(
-                  color: Colors.red,
-                  width: 2,
-                )
-              : null,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          mainAxisSize: MainAxisSize.max,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.max,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    type.name(context).toUpperCase(),
-                    style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 12,
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.5)),
-                  ),
-                  const SizedBox(height: 32),
-                  Expanded(
-                    child: Image.asset(
-                      type.imagePath(soc),
-                      fit: BoxFit.contain,
-                      alignment: Alignment.bottomCenter,
+      child: GestureDetector(
+        onLongPress: () {
+          HapticFeedback.mediumImpact();
+          switch (type) {
+            case ScooterBatteryType.primary:
+            case ScooterBatteryType.secondary:
+              showDialog(
+                  context: context,
+                  builder: (context) =>
+                      _mainBatteryDiagnosticDialog(context, type, soc, cycles));
+              break;
+            case ScooterBatteryType.nfc:
+              showDialog(
+                  context: context,
+                  builder: (context) =>
+                      _nfcBatteryDiagnosticDialog(context, soc, cycles));
+              break;
+            default:
+              break;
+          }
+        },
+        child: Container(
+          height: 160,
+          padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainer,
+            borderRadius: BorderRadius.circular(16.0),
+            border: (soc <= 15 && !old)
+                ? Border.all(
+                    color: Colors.red,
+                    width: 2,
+                  )
+                : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisSize: MainAxisSize.max,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.max,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      type.name(context).toUpperCase(),
+                      style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 12,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.5)),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 32),
+                    Expanded(
+                      child: Image.asset(
+                        type.imagePath(soc),
+                        fit: BoxFit.contain,
+                        alignment: Alignment.bottomCenter,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(width: 16.0), // for padding
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.max,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    type.description(context),
-                    textAlign: TextAlign.end,
-                    style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 12,
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.5)),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    type.socText(soc, context),
-                    style: Theme.of(context).textTheme.displaySmall,
-                    textScaler: TextScaler.noScaling,
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      if (cycles != null)
+              const SizedBox(width: 16.0), // for padding
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.max,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      type.description(context),
+                      textAlign: TextAlign.end,
+                      style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 12,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.5)),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      type.socText(soc, context),
+                      style: Theme.of(context).textTheme.displaySmall,
+                      textScaler: TextScaler.noScaling,
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        if (cycles != null)
+                          const Icon(
+                            Icons.refresh,
+                            size: 16,
+                          ),
+                        const SizedBox(width: 4),
+                        if (cycles != null) Text(cycles.toString()),
+                        const SizedBox(width: 8),
                         const Icon(
-                          Icons.refresh,
+                          Icons.navigation_outlined,
                           size: 16,
                         ),
-                      const SizedBox(width: 4),
-                      if (cycles != null) Text(cycles.toString()),
-                      const SizedBox(width: 8),
-                      const Icon(
-                        Icons.navigation_outlined,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 4),
-                      Text("${(45 * (soc / 100)).round()} km")
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                ],
+                        const SizedBox(width: 4),
+                        Text("${(45 * (soc / 100)).round()} km")
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  AlertDialog _mainBatteryDiagnosticDialog(
+      BuildContext context, ScooterBatteryType type, int soc, int? cycles) {
+    return AlertDialog(
+      title: Text(
+        FlutterI18n.translate(
+          context,
+          "stats_diagnostics_title",
+          translationParams: {"type": type.name(context).toUpperCase()},
+        ),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("SOC: $soc%"),
+          if (cycles != null)
+            Text(
+                "${FlutterI18n.translate(context, "stats_battery_cycles")}: $cycles"),
+          Text(
+              "${FlutterI18n.translate(context, "stats_battery_range")}: ${(45 * (soc / 100)).round()} km"),
+          Text(
+              "${FlutterI18n.translate(context, "stats_battery_capacity")}: ${(soc * 450).round()} Wh / 45000 Wh"),
+          Text(
+              "${FlutterI18n.translate(context, "stats_battery_last_update")}: ${context.select<ScooterService, DateTime?>(
+                    (service) => service.lastPing,
+                  )?.toString().split('.').first ?? "Never"}"),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+          child:
+              Text(FlutterI18n.translate(context, "stats_diagnostics_close")),
+        ),
+      ],
+    );
+  }
+
+  AlertDialog _nfcBatteryDiagnosticDialog(
+      BuildContext context, int soc, int? cycles) {
+    return AlertDialog(
+      title: Text(
+        FlutterI18n.translate(
+          context,
+          "stats_diagnostics_title",
+          translationParams: {"type": "NFC"},
+        ),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("SOC: $soc%"),
+          if (cycles != null)
+            Text(
+                "${FlutterI18n.translate(context, "stats_battery_cycles")}: $cycles"),
+          Text(
+              "${FlutterI18n.translate(context, "stats_battery_range")}: ${(45 * (soc / 100)).round()} km"),
+          Text(
+              "${FlutterI18n.translate(context, "stats_battery_capacity")}: ${(soc * 450).round()} Wh / 45000 Wh"),
+          Text(
+              "${FlutterI18n.translate(context, "stats_battery_read_method")}: NFC"),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+          child:
+              Text(FlutterI18n.translate(context, "stats_diagnostics_close")),
+        ),
+      ],
     );
   }
 }

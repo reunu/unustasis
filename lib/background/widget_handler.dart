@@ -1,8 +1,13 @@
 import 'dart:async';
+import 'dart:io';
+import 'dart:ui';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:latlong2/latlong.dart';
+
+import 'package:workmanager/workmanager.dart';
 
 import '../background/translate_static.dart';
 import '../background/bg_service.dart';
@@ -12,6 +17,7 @@ import '../domain/scooter_state.dart';
 bool _connected = false;
 DateTime? _lastPing;
 String? _lastPingDifference;
+String? _iOSlastPingText;
 ScooterState? _scooterState;
 String? _stateName;
 int? _primarySOC;
@@ -20,25 +26,57 @@ String? _scooterName;
 int? _scooterColor;
 LatLng? _lastLocation;
 bool? _seatClosed;
+bool? _scooterLocked = true;
+String _lockStateName = "Unknown";
+
+void setupWidget() {
+  HomeWidget.setAppGroupId('group.com.unumotors.ossapp');
+  HomeWidget.registerInteractivityCallback(backgroundCallback);
+  setupWidgetTasks();
+}
+
+String widgetTaskID = "com.unumotors.ossapp.widget_refresh";
+
+Future<void> setupWidgetTasks() async {
+  Workmanager().initialize(workmanagerCallback);
+
+  await Workmanager().registerPeriodicTask(
+    widgetTaskID,
+    widgetTaskID,
+    existingWorkPolicy: ExistingPeriodicWorkPolicy.update,
+    frequency: Duration(minutes: 20),
+    initialDelay: Duration(minutes: 1),
+  );
+}
 
 Future<void> updateWidgetPing() async {
+  setWidgetScanning(false);
+  setWidgetUnlocking(false);
+  HomeWidget.setAppGroupId('group.com.unumotors.ossapp');
   if (_lastPing != null) {
     // just use the cached ping
     _lastPingDifference = _lastPing?.calculateTimeDifferenceInShort();
+    _iOSlastPingText = getLocalizedTimeDiff(_lastPing);
   } else {
     // get the last ping from widget data
     int? lastPingInt = await HomeWidget.getWidgetData<int?>("lastPing");
     if (lastPingInt != null) {
       _lastPing = DateTime.fromMillisecondsSinceEpoch(lastPingInt);
       _lastPingDifference = _lastPing?.calculateTimeDifferenceInShort();
+      _iOSlastPingText = getLocalizedTimeDiff(_lastPing);
     }
   }
   await HomeWidget.saveWidgetData<String?>(
     "lastPingDifference",
     _lastPingDifference,
   );
+  await HomeWidget.saveWidgetData<String>(
+    "iOSlastPingText",
+    _iOSlastPingText,
+  );
   await HomeWidget.updateWidget(
     qualifiedAndroidName: 'com.unumotors.ossapp.HomeWidgetReceiver',
+    iOSName: "ScooterWidget",
   );
   return;
 }
@@ -53,8 +91,14 @@ void passToWidget({
   int? scooterColor,
   LatLng? lastLocation,
   bool? seatClosed,
+  bool? scooterLocked,
 }) async {
-  if (connected != _connected ||
+  bool updateiOS = primarySOC != _primarySOC ||
+      secondarySOC != _secondarySOC ||
+      lastPing != _lastPing ||
+      scooterName != _scooterName;
+
+  bool updateAndroid = connected != _connected ||
       (scooterState?.isOn) != (_scooterState?.isOn) ||
       (scooterState?.isReadyForSeatOpen) !=
           (_scooterState?.isReadyForSeatOpen) ||
@@ -66,60 +110,62 @@ void passToWidget({
       scooterName != _scooterName ||
       scooterColor != _scooterColor ||
       lastLocation != _lastLocation ||
-      seatClosed != _seatClosed) {
-    // update cached values
-    _connected = connected;
-    _lastPing = lastPing;
-    _lastPingDifference = lastPing?.calculateTimeDifferenceInShort();
-    _scooterState = scooterState;
-    _stateName = getStateNameForWidget(scooterState);
-    _primarySOC = primarySOC;
-    _secondarySOC = secondarySOC;
-    _scooterName = scooterName;
-    _scooterColor = scooterColor;
-    _lastLocation = lastLocation;
-    _seatClosed = seatClosed;
+      seatClosed != _seatClosed ||
+      scooterLocked != _scooterLocked;
 
-    await HomeWidget.saveWidgetData<bool>("connected", connected);
-    if (scooterState != null) {
-      await HomeWidget.saveWidgetData<bool>("locked", !scooterState.isOn);
-      await HomeWidget.saveWidgetData<bool>(
-        "seatOpenable",
-        scooterState.isReadyForSeatOpen,
-      );
-    }
+  // update cached values
+  _connected = connected;
+  _lastPing = lastPing ?? _lastPing;
+  _lastPingDifference =
+      lastPing?.calculateTimeDifferenceInShort() ?? _lastPingDifference;
+  _iOSlastPingText = getLocalizedTimeDiff(lastPing) ?? _iOSlastPingText;
+  _scooterState = scooterState ?? _scooterState;
+  _stateName = getStateNameForWidget(scooterState) ?? _stateName;
+  _primarySOC = primarySOC ?? _primarySOC;
+  _secondarySOC = secondarySOC ?? _secondarySOC;
+  _scooterName = scooterName ?? _scooterName;
+  _scooterColor = scooterColor ?? _scooterColor;
+  _lastLocation = lastLocation ?? _lastLocation;
+  _seatClosed = seatClosed ?? _seatClosed;
+  _scooterLocked = scooterLocked ?? _scooterLocked;
+  _lockStateName = getLocalizedLockStateName(scooterLocked ?? true);
 
-    // Not broadcasting "linking" state by default
-    await HomeWidget.saveWidgetData<String>("stateName", _stateName);
+  // update widget data storage
+  await HomeWidget.saveWidgetData<bool>("connected", _connected);
+  if (_scooterState != null) {
+    await HomeWidget.saveWidgetData<bool>("locked", _scooterState!.isOn);
+    await HomeWidget.saveWidgetData<bool>(
+        "seatOpenable", _scooterState!.isReadyForSeatOpen);
+  }
+  await HomeWidget.saveWidgetData<String>("stateName", _stateName);
+  await HomeWidget.saveWidgetData<int?>(
+      "lastPing", _lastPing?.millisecondsSinceEpoch);
+  await HomeWidget.saveWidgetData<String?>(
+      "lastPingDifference", _lastPingDifference);
+  await HomeWidget.saveWidgetData<String>("iOSlastPingText", _iOSlastPingText);
+  await HomeWidget.saveWidgetData<int>("soc1", _primarySOC);
+  await HomeWidget.saveWidgetData<int?>("soc2", _secondarySOC);
+  await HomeWidget.saveWidgetData<String>("scooterName", _scooterName);
+  await HomeWidget.saveWidgetData<int>("scooterColor", _scooterColor);
+  await HomeWidget.saveWidgetData("seatClosed", _seatClosed);
+  await HomeWidget.saveWidgetData<bool>(
+      "scooterLocked", _scooterLocked ?? true);
+  await HomeWidget.saveWidgetData<String>("lockStateName", _lockStateName);
+  await HomeWidget.saveWidgetData<String>(
+      "lastLat", _lastLocation?.latitude.toString() ?? "0.0");
+  await HomeWidget.saveWidgetData<String>(
+      "lastLon", _lastLocation?.longitude.toString() ?? "0.0");
 
-    await HomeWidget.saveWidgetData<int?>(
-      "lastPing",
-      _lastPing?.millisecondsSinceEpoch,
-    );
-
-    await HomeWidget.saveWidgetData<String?>(
-      "lastPingDifference",
-      _lastPingDifference,
-    );
-
-    await HomeWidget.saveWidgetData<int>("soc1", primarySOC);
-    await HomeWidget.saveWidgetData<int?>("soc2", secondarySOC);
-    await HomeWidget.saveWidgetData<String>("scooterName", scooterName);
-    await HomeWidget.saveWidgetData<int>("scooterColor", scooterColor);
-    await HomeWidget.saveWidgetData("seatClosed", seatClosed);
-
-    await HomeWidget.saveWidgetData<String>(
-      "lastLat",
-      lastLocation?.latitude.toString() ?? "0.0",
-    );
-    await HomeWidget.saveWidgetData<String>(
-      "lastLon",
-      lastLocation?.longitude.toString() ?? "0.0",
-    );
-
+  // finally, update if necessary
+  if (Platform.isAndroid && updateAndroid) {
     // once everything is set, rebuild the widget
     await HomeWidget.updateWidget(
       qualifiedAndroidName: 'com.unumotors.ossapp.HomeWidgetReceiver',
+    );
+  } else if (Platform.isIOS && updateiOS) {
+    await HomeWidget.setAppGroupId('group.com.unumotors.ossapp');
+    await HomeWidget.updateWidget(
+      iOSName: "ScooterWidget",
     );
   } else {
     // no relevant changes, no need to update
@@ -138,6 +184,7 @@ Future<void> setWidgetUnlocking(bool unlocking) async {
   await HomeWidget.saveWidgetData<bool>("scanning", unlocking);
   await HomeWidget.updateWidget(
     qualifiedAndroidName: 'com.unumotors.ossapp.HomeWidgetReceiver',
+    iOSName: "ScooterWidget",
   );
 }
 
@@ -155,16 +202,23 @@ Future<void> setWidgetScanning(bool scanning) async {
       : ScooterState.disconnected.getNameStatic();
   await HomeWidget.updateWidget(
     qualifiedAndroidName: 'com.unumotors.ossapp.HomeWidgetReceiver',
+    iOSName: "ScooterWidget",
   );
 }
 
 @pragma("vm:entry-point")
 FutureOr<void> backgroundCallback(Uri? data) async {
-  await HomeWidget.setAppGroupId('com.unumotors.ossapp');
-  if (await FlutterBackgroundService().isRunning() == false) {
-    final service = FlutterBackgroundService();
-    await service.startService();
+  await HomeWidget.setAppGroupId('group.com.unumotors.ossapp');
+
+  try {
+    if (await FlutterBackgroundService().isRunning() == false) {
+      final service = FlutterBackgroundService();
+      await service.startService();
+    }
+  } catch (e) {
+    print("Error starting background service: $e");
   }
+
   switch (data?.host) {
     case "scan":
       setWidgetScanning(true);
@@ -177,10 +231,29 @@ FutureOr<void> backgroundCallback(Uri? data) async {
       FlutterBackgroundService().invoke("unlock");
     case "openseat":
       FlutterBackgroundService().invoke("openseat");
+    default:
+      print("Unknown command: ${data?.host}");
   }
   await HomeWidget.updateWidget(
     qualifiedAndroidName: 'com.unumotors.ossapp.HomeWidgetReceiver',
+    iOSName: "ScooterWidget",
   );
+}
+
+@pragma('vm:entry-point')
+void workmanagerCallback() {
+  Workmanager().executeTask((task, inputData) async {
+    print("Workmanager task executing: $task");
+    WidgetsFlutterBinding.ensureInitialized();
+    DartPluginRegistrant.ensureInitialized();
+    if (task == widgetTaskID) {
+      await updateWidgetPing();
+    } else {
+      print("Unknown task: $task");
+    }
+    // Return true to indicate success to Workmanager.
+    return Future.value(true);
+  });
 }
 
 extension DateTimeExtension on DateTime {
