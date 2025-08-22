@@ -32,7 +32,7 @@ void main() async {
     ),
   );
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-  await HomeWidget.setAppGroupId("group.de.freal.unustasis");
+  await HomeWidget.setAppGroupId("group.com.unumotors.ossapp");
 
   Locale? savedLocale;
 

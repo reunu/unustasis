@@ -138,7 +138,7 @@ void onStart(ServiceInstance service) async {
 
   print("Seeding widget with initial data");
   // seed widget
-  await HomeWidget.setAppGroupId("group.de.freal.unustasis");
+  await HomeWidget.setAppGroupId("group.com.unumotors.ossapp");
   Future.delayed(const Duration(seconds: 5), () {
     passToWidget(
         connected: scooterService.connected,
