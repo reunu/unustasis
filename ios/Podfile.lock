@@ -117,7 +117,7 @@ SPEC CHECKSUMS:
   home_widget: f169fc41fd807b4d46ab6615dc44d62adbf9f64f
   local_auth_darwin: 553ce4f9b16d3fdfeafce9cf042e7c9f77c1c391
   maps_launcher: edf829809ba9e894d70e569bab11c16352dedb45
-  nfc_manager: 9c40fe22528ab871ca11e52ea8b95790e9d92ca2
+  nfc_manager: f6d5609c09b4640b914a3dc67479a2e392965fd0
   package_info_plus: af8e2ca6888548050f16fa2f1938db7b5a5df499
   path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
   shared_preferences_foundation: 9e1978ff2562383bd5676f64ec4e9aa8fa06a6f7

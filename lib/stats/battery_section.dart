@@ -8,7 +8,7 @@ import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:logging/logging.dart';
 import 'package:nfc_manager/nfc_manager.dart';
-import 'package:nfc_manager/platform_tags.dart';
+import 'package:nfc_manager/nfc_manager_android.dart';
 import 'package:provider/provider.dart';
 
 import '../domain/scooter_battery.dart';
@@ -243,20 +243,7 @@ class _BatterySectionState extends State<BatterySection> {
                         });
                         // Start Session
                         NfcManager.instance.startSession(
-                          onError: (error) {
-                            log.severe("NFC Error!", error.message);
-                            if (mounted) {
-                              Fluttertoast.showToast(
-                                msg: FlutterI18n.translate(
-                                    context, "stats_nfc_error"),
-                              );
-                            }
-                            setState(() {
-                              nfcScanning = false;
-                              showNfcNotice = false;
-                            });
-                            throw error;
-                          },
+                          pollingOptions: {NfcPollingOption.iso14443},
                           onDiscovered: (NfcTag tag) async {
                             noticeTimer.cancel();
                             setState(() {
@@ -269,9 +256,8 @@ class _BatterySectionState extends State<BatterySection> {
                               Uint8List socData;
                               Uint8List cycleData;
                               // Read from battery
-                              if (Platform.isWindows) {
-                                MifareUltralight? mifare =
-                                    MifareUltralight.from(tag);
+                              if (Platform.isAndroid) {
+                                var mifare = MifareUltralightAndroid.from(tag);
                                 if (mifare == null) {
                                   Fluttertoast.showToast(
                                     msg: FlutterI18n.translate(
