@@ -195,6 +195,7 @@ class Leaf {
   double rotationSpeed;
   double swayAmplitude;
   double swayPhase;
+  double swayIncrement;
   ui.Image image;
   double maxWidth;
   double maxHeight;
@@ -208,24 +209,38 @@ class Leaf {
     required this.rotationSpeed,
     required this.swayAmplitude,
     required this.swayPhase,
+    required this.swayIncrement,
     required this.image,
     required this.maxWidth,
     required this.maxHeight,
   });
 
+  // global values for all leaves
+  static const minSize = 15.0;
+  static const maxSize = 45.0;
+  static const minSpeed = 0.3;
+  static const maxSpeed = 1;
+  static const minRotationSpeed = -0.015;
+  static const maxRotationSpeed = 0.015;
+  static const minSwayAmplitude = 6.0;
+  static const maxSwayAmplitude = 10.0;
+  static const minSwayIncrement = 0.006;
+  static const maxSwayIncrement = 0.008;
+
   factory Leaf.random(double maxWidth, double maxHeight, ui.Image image) {
     final rnd = Random();
-    final size = 20 + rnd.nextDouble() * 40; // leaf size in px (20..60)
+    final size = minSize + rnd.nextDouble() * (maxSize - minSize);
     return Leaf(
       x: rnd.nextDouble() * maxWidth,
       y: rnd.nextDouble() * maxHeight,
       size: size,
-      // Slower vertical motion and gentler rotation for a calmer effect.
-      speed: 1 + rnd.nextDouble() * 0.5,
+      // Use global bounds for speed
+      speed: minSpeed + rnd.nextDouble() * (maxSpeed - minSpeed),
       rotation: rnd.nextDouble() * pi * 2,
-      rotationSpeed: (rnd.nextDouble() - 0.5) * 0.025,
-      swayAmplitude: 8 + rnd.nextDouble() * 6,
+      rotationSpeed: minRotationSpeed + rnd.nextDouble() * (maxRotationSpeed - minRotationSpeed),
+      swayAmplitude: minSwayAmplitude + rnd.nextDouble() * (maxSwayAmplitude - minSwayAmplitude),
       swayPhase: rnd.nextDouble() * pi * 2,
+      swayIncrement: minSwayIncrement + rnd.nextDouble() * (maxSwayIncrement - minSwayIncrement),
       image: image,
       maxWidth: maxWidth,
       maxHeight: maxHeight,
@@ -235,8 +250,8 @@ class Leaf {
   void updatePosition() {
     y += speed;
     rotation += rotationSpeed;
-    // Smaller sway increment and smaller horizontal displacement for slower motion.
-    swayPhase += 0.006 + (rotationSpeed.abs() * 0.002);
+    // Advance sway using the per-leaf increment within global bounds.
+    swayPhase += swayIncrement;
     x += sin(swayPhase) * (swayAmplitude * 0.1);
 
     // Keep x within bounds, wrap horizontally.
@@ -250,12 +265,13 @@ class Leaf {
       // parameters using the same distributions as the initial generator.
       y = -rnd.nextDouble() * maxHeight * 0.2; // start slightly above
       x = rnd.nextDouble() * maxWidth;
-      speed = 1 + rnd.nextDouble() * 0.5;
+      speed = minSpeed + rnd.nextDouble() * (maxSpeed - minSpeed);
       rotation = rnd.nextDouble() * pi * 2;
-      rotationSpeed = (rnd.nextDouble() - 0.5) * 0.025;
-      swayAmplitude = 8 + rnd.nextDouble() * 6;
+      rotationSpeed = minRotationSpeed + rnd.nextDouble() * (maxRotationSpeed - minRotationSpeed);
+      swayAmplitude = minSwayAmplitude + rnd.nextDouble() * (maxSwayAmplitude - minSwayAmplitude);
       swayPhase = rnd.nextDouble() * pi * 2;
-      size = 20 + rnd.nextDouble() * 40;
+      swayIncrement = minSwayIncrement + rnd.nextDouble() * (maxSwayIncrement - minSwayIncrement);
+      size = minSize + rnd.nextDouble() * (maxSize - minSize);
     }
   }
 }
