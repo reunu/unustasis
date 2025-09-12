@@ -138,18 +138,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 fall: _fall && !context.isDarkMode,
               ),
               if (_fall && !context.isDarkMode)
-                Opacity(
-                  opacity: 1, // TODO maybe make it a bit more subtle?
-                  child: LeavesBackground(
-                    backgroundColor: Colors.transparent,
-                    leafColors: const [
-                      Color(0xFF8B4000), // brown
-                      Color(0xFFFF8C00), // dark orange
-                      Color(0xFFFFC107), // amber
-                      Color(0xFFB7410E), // russet
-                    ],
-                    leafCount: 20,
-                  ),
+                LeavesBackground(
+                  backgroundColor: Colors.transparent,
+                  leafColors: const [
+                    Color(0xFF8B4000), // brown
+                    Color(0xFFFF8C00), // dark orange
+                    Color(0xFFFFC107), // amber
+                    Color(0xFFB7410E), // russet
+                  ],
+                  leafCount: 20,
                 ),
               if (_snowing)
                 SnowfallBackground(
@@ -217,7 +214,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 ),
                                 // Hidden for stable release, but useful for various debugging
-                                onLongPress: () => context.read<ScooterService>().addDemoData(),
+                                // onLongPress: () => context.read<ScooterService>().addDemoData(),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   mainAxisSize: MainAxisSize.min,
