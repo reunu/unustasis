@@ -64,7 +64,8 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   void loadCachedData() async {
     savedScooters = await getSavedScooters();
     log.info(
-        "Loaded ${savedScooters.length} saved scooters from SharedPreferences");
+      "Loaded ${savedScooters.length} saved scooters from SharedPreferences",
+    );
     await seedStreamsWithCache();
     log.info("Seeded streams with cached values");
     restoreCachedSettings();
@@ -118,7 +119,9 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
           characteristicRepository.stateCharacteristic!.read();
           characteristicRepository.seatCharacteristic!.read();
         } on StateError catch (e) {
-          log.fine("Characteristics not yet initialized, skipping auto-refresh");
+          log.fine(
+            "Characteristics not yet initialized, skipping auto-refresh",
+          );
         }
       }
     });
@@ -126,13 +129,11 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
 
   Future<void> restoreCachedSettings() async {
     _autoUnlock = await prefs.getBool("autoUnlock") ?? false;
-    _autoUnlockThreshold = await prefs.getInt("autoUnlockThreshold") ??
-        ScooterKeylessDistance.regular.threshold;
+    _autoUnlockThreshold = await prefs.getInt("autoUnlockThreshold") ?? ScooterKeylessDistance.regular.threshold;
     optionalAuth = !(await prefs.getBool("biometrics") ?? false);
     _openSeatOnUnlock = await prefs.getBool("openSeatOnUnlock") ?? false;
     _hazardLocking = await prefs.getBool("hazardLocking") ?? false;
-    _warnOfUnlockedHandlebars =
-        await prefs.getBool("unlockedHandlebarsWarning") ?? true;
+    _warnOfUnlockedHandlebars = await prefs.getBool("unlockedHandlebarsWarning") ?? true;
   }
 
   Future<SavedScooter?> getMostRecentScooter() async {
@@ -146,18 +147,19 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       log.info("Only one saved scooter found, returning it one way or another");
       if (savedScooters.values.first.autoConnect == false) {
         log.info(
-            "we'll reenable autoconnect for this scooter, since it's the only one available");
+          "we'll reenable autoconnect for this scooter, since it's the only one available",
+        );
         savedScooters.values.first.autoConnect = true;
         updateBackgroundService({"updateSavedScooters": true});
       }
       return savedScooters.values.first;
     } else {
-      List<SavedScooter> autoConnectScooters =
-          filterAutoConnectScooters(savedScooters).values.toList();
+      List<SavedScooter> autoConnectScooters = filterAutoConnectScooters(
+        savedScooters,
+      ).values.toList();
       // get the saved scooter with the most recent ping
       for (var scooter in autoConnectScooters) {
-        if (mostRecentScooter == null ||
-            scooter.lastPing.isAfter(mostRecentScooter.lastPing)) {
+        if (mostRecentScooter == null || scooter.lastPing.isAfter(mostRecentScooter.lastPing)) {
           mostRecentScooter = scooter;
         }
       }
@@ -195,7 +197,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       "12345": SavedScooter(
         name: "Demo Scooter",
         id: "12345",
-        color: 1,
+        color: 0,
         lastPing: DateTime.now(),
         lastLocation: const LatLng(0, 0),
         lastPrimarySOC: 53,
@@ -273,10 +275,8 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   set handlebarsLocked(bool? handlebarsLocked) {
     _handlebarsLocked = handlebarsLocked;
     // Cache the value in SavedScooter if possible
-    if (myScooter != null &&
-        savedScooters.containsKey(myScooter!.remoteId.toString())) {
-      savedScooters[myScooter!.remoteId.toString()]!.handlebarsLocked =
-          handlebarsLocked;
+    if (myScooter != null && savedScooters.containsKey(myScooter!.remoteId.toString())) {
+      savedScooters[myScooter!.remoteId.toString()]!.handlebarsLocked = handlebarsLocked;
     }
     notifyListeners();
   }
@@ -423,12 +423,9 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       List<BluetoothDevice> foundScooters = await getSystemScooters();
       if (foundScooters.isNotEmpty) {
         log.fine("Found system scooter");
-        foundScooters = foundScooters.where(
-          (foundScooter) {
-            return !excludedScooterIds
-                .contains(foundScooter.remoteId.toString());
-          },
-        ).toList();
+        foundScooters = foundScooters.where((foundScooter) {
+          return !excludedScooterIds.contains(foundScooter.remoteId.toString());
+        }).toList();
         if (foundScooters.isNotEmpty) {
           log.fine("System scooter is not excluded from search, returning!");
           return foundScooters.first;
@@ -436,8 +433,9 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       }
     }
     log.info("Searching nearby devices");
-    await for (BluetoothDevice foundScooter
-        in getNearbyScooters(preferSavedScooters: excludedScooterIds.isEmpty)) {
+    await for (BluetoothDevice foundScooter in getNearbyScooters(
+      preferSavedScooters: excludedScooterIds.isEmpty,
+    )) {
       log.fine("Found scooter: ${foundScooter.remoteId.toString()}");
       if (!excludedScooterIds.contains(foundScooter.remoteId.toString())) {
         log.fine("Scooter's ID is not excluded, stopping scan and returning!");
@@ -451,11 +449,13 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
 
   Future<List<BluetoothDevice>> getSystemScooters() async {
     // See if the phone is already connected to a scooter. If so, hook into that.
-    List<BluetoothDevice> systemDevices = await flutterBluePlus
-        .systemDevices([Guid("9a590000-6e67-5d0d-aab9-ad9126b66f91")]);
+    List<BluetoothDevice> systemDevices = await flutterBluePlus.systemDevices([
+      Guid("9a590000-6e67-5d0d-aab9-ad9126b66f91"),
+    ]);
     List<BluetoothDevice> systemScooters = [];
-    List<String> savedScooterIds =
-        await getSavedScooterIds(onlyAutoConnect: true);
+    List<String> savedScooterIds = await getSavedScooterIds(
+      onlyAutoConnect: true,
+    );
     for (var device in systemDevices) {
       // see if this is a scooter we saved and want to (auto-)connect to
       if (savedScooterIds.contains(device.remoteId.toString())) {
@@ -466,19 +466,23 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     return systemScooters;
   }
 
-  Stream<BluetoothDevice> getNearbyScooters(
-      {bool preferSavedScooters = true}) async* {
+  Stream<BluetoothDevice> getNearbyScooters({
+    bool preferSavedScooters = true,
+  }) async* {
     List<BluetoothDevice> foundScooterCache = [];
-    List<String> savedScooterIds =
-        await getSavedScooterIds(onlyAutoConnect: true);
+    List<String> savedScooterIds = await getSavedScooterIds(
+      onlyAutoConnect: true,
+    );
     if (savedScooterIds.isEmpty && savedScooters.isNotEmpty) {
       log.info(
-          "We have ${savedScooters.length} saved scooters, but getSavedScooterIds returned an empty list. Probably no auto-connect enabled scooters, so we're not even scanning.");
+        "We have ${savedScooters.length} saved scooters, but getSavedScooterIds returned an empty list. Probably no auto-connect enabled scooters, so we're not even scanning.",
+      );
       return;
     }
     if (savedScooters.isNotEmpty && preferSavedScooters) {
       log.info(
-          "Looking for our scooters, since we have ${savedScooters.length} saved scooters");
+        "Looking for our scooters, since we have ${savedScooters.length} saved scooters",
+      );
       try {
         flutterBluePlus.startScan(
           withRemoteIds: savedScooterIds, // look for OUR scooter
@@ -536,7 +540,8 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
         await setUpCharacteristics(myScooter!);
       } on UnavailableCharacteristicsException {
         log.warning(
-            "Some characteristics are null, if this turns out to be a rare issue we might display a toast here in the future");
+          "Some characteristics are null, if this turns out to be a rare issue we might display a toast here in the future",
+        );
         // Fluttertoast.showToast(
         // msg: "Scooter firmware outdated, some features may not work");
       }
@@ -582,9 +587,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       FlutterNativeSplash.remove();
     });
     // Try to turn on Bluetooth (Android-Only)
-    await FlutterBluePlus.adapterState
-        .where((val) => val == BluetoothAdapterState.on)
-        .first;
+    await FlutterBluePlus.adapterState.where((val) => val == BluetoothAdapterState.on).first;
 
     // TODO: prompt users to turn on bluetooth manually
 
@@ -630,8 +633,9 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   void startAutoRestart() async {
     if (!_autoRestarting) {
       _autoRestarting = true;
-      _autoRestartSubscription =
-          flutterBluePlus.isScanning.listen((scanState) async {
+      _autoRestartSubscription = flutterBluePlus.isScanning.listen((
+        scanState,
+      ) async {
         // retry if we stop scanning without having found anything
         if (scanState == false && !_foundSth) {
           await Future.delayed(const Duration(seconds: 3));
@@ -691,7 +695,8 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       await characteristicRepository.findAll();
 
       log.info(
-          "Found all characteristics! StateCharacteristic is: ${characteristicRepository.stateCharacteristic}");
+        "Found all characteristics! StateCharacteristic is: ${characteristicRepository.stateCharacteristic}",
+      );
       _scooterReader = ScooterReader(
         characteristicRepository: characteristicRepository,
         service: this,
@@ -701,7 +706,8 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       // check if any of the characteristics are null, and if so, throw an error
       if (characteristicRepository.anyAreNull()) {
         log.warning(
-            "Some characteristics are null, throwing exception to warn further up the chain!");
+          "Some characteristics are null, throwing exception to warn further up the chain!",
+        );
         throw UnavailableCharacteristicsException();
       }
     } catch (e) {
@@ -741,7 +747,9 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     wakeUp();
 
     await _waitForScooterState(
-        ScooterState.standby, const Duration(seconds: bootingTimeSeconds + 5));
+      ScooterState.standby,
+      const Duration(seconds: bootingTimeSeconds + 5),
+    );
 
     if (_state == ScooterState.standby) {
       unlock();
@@ -820,15 +828,17 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   }
 
   Future<void> wakeUp() async {
-    _sendCommand("wakeup",
-        characteristic:
-            characteristicRepository.hibernationCommandCharacteristic);
+    _sendCommand(
+      "wakeup",
+      characteristic: characteristicRepository.hibernationCommandCharacteristic,
+    );
   }
 
   Future<void> hibernate() async {
-    _sendCommand("hibernate",
-        characteristic:
-            characteristicRepository.hibernationCommandCharacteristic);
+    _sendCommand(
+      "hibernate",
+      characteristic: characteristicRepository.hibernationCommandCharacteristic,
+    );
   }
 
   void _pollLocation() async {
@@ -857,8 +867,10 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     // When we reach here, permissions are granted and we can
     // continue accessing the position of the device.
     Position position = await Geolocator.getCurrentPosition();
-    savedScooters[myScooter!.remoteId.toString()]!.lastLocation =
-        LatLng(position.latitude, position.longitude);
+    savedScooters[myScooter!.remoteId.toString()]!.lastLocation = LatLng(
+      position.latitude,
+      position.longitude,
+    );
   }
 
   // HELPER FUNCTIONS
@@ -893,11 +905,11 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       await scooter.connect();
     }
     await scooter.discoverServices();
-    BluetoothCharacteristic? commandCharacteristic =
-        CharacteristicRepository.findCharacteristic(
-            scooter,
-            "9a590000-6e67-5d0d-aab9-ad9126b66f91",
-            "9a590001-6e67-5d0d-aab9-ad9126b66f91");
+    BluetoothCharacteristic? commandCharacteristic = CharacteristicRepository.findCharacteristic(
+      scooter,
+      "9a590000-6e67-5d0d-aab9-ad9126b66f91",
+      "9a590001-6e67-5d0d-aab9-ad9126b66f91",
+    );
     await commandCharacteristic!.write(ascii.encode(command));
   }
 
@@ -917,7 +929,9 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   }
 
   Future<void> _waitForScooterState(
-      ScooterState expectedScooterState, Duration limit) async {
+    ScooterState expectedScooterState,
+    Duration limit,
+  ) async {
     Completer<void> completer = Completer<void>();
 
     // Check new state every 2s
@@ -948,8 +962,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     Map<String, SavedScooter> scooters = {};
     try {
       Map<String, dynamic> savedScooterData =
-          jsonDecode((await prefs.getString("savedScooters"))!)
-              as Map<String, dynamic>;
+          jsonDecode((await prefs.getString("savedScooters"))!) as Map<String, dynamic>;
       log.info("Found ${savedScooterData.length} saved scooters");
       // convert the saved scooter data to SavedScooter objects
       for (String id in savedScooterData.keys) {
@@ -966,7 +979,8 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   }
 
   Map<String, SavedScooter> filterAutoConnectScooters(
-      Map<String, SavedScooter> scooters) {
+    Map<String, SavedScooter> scooters,
+  ) {
     if (scooters.length == 1) {
       return Map.from(scooters);
     } else {
@@ -1007,8 +1021,9 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     notifyListeners();
   }
 
-  Future<List<String>> getSavedScooterIds(
-      {bool onlyAutoConnect = false}) async {
+  Future<List<String>> getSavedScooterIds({
+    bool onlyAutoConnect = false,
+  }) async {
     if (savedScooters.isNotEmpty) {
       log.info("Getting ids of already fetched scooters");
       if (onlyAutoConnect) {
@@ -1028,7 +1043,8 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
         return savedScooters.keys.toList();
       } else {
         log.info(
-            "No saved scooters found in SharedPreferences, returning empty list");
+          "No saved scooters found in SharedPreferences, returning empty list",
+        );
         return [];
       }
     }
@@ -1064,14 +1080,12 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     id ??= myScooter?.remoteId.toString();
     if (id == null) {
       log.warning(
-          "Attempted to rename scooter, but no ID was given and we're not connected to anything!");
+        "Attempted to rename scooter, but no ID was given and we're not connected to anything!",
+      );
       return;
     }
     if (savedScooters[id] == null) {
-      savedScooters[id] = SavedScooter(
-        name: name,
-        id: id,
-      );
+      savedScooters[id] = SavedScooter(name: name, id: id);
     } else {
       savedScooters[id]!.name = name;
     }
@@ -1095,14 +1109,12 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     id ??= myScooter?.remoteId.toString();
     if (id == null) {
       log.warning(
-          "Attempted to recolor scooter, but no ID was given and we're not connected to anything!");
+        "Attempted to recolor scooter, but no ID was given and we're not connected to anything!",
+      );
       return;
     }
     if (savedScooters[id] == null) {
-      savedScooters[id] = SavedScooter(
-        color: color,
-        id: id,
-      );
+      savedScooters[id] = SavedScooter(color: color, id: id);
     } else {
       savedScooters[id]!.color = color;
     }
@@ -1188,11 +1200,15 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
         start();
       } catch (e, stack) {
         log.warning(
-            "Error during automatic reconnection on app resume", e, stack);
+          "Error during automatic reconnection on app resume",
+          e,
+          stack,
+        );
       }
     } else {
       log.info(
-          "App resumed: no reconnection needed (connected: $connected, scanning: $scanning, saved scooters: ${savedScooters.length})");
+        "App resumed: no reconnection needed (connected: $connected, scanning: $scanning, saved scooters: ${savedScooters.length})",
+      );
     }
   }
 

@@ -100,11 +100,9 @@ void passToWidget({
 
   bool updateAndroid = connected != _connected ||
       (scooterState?.isOn) != (_scooterState?.isOn) ||
-      (scooterState?.isReadyForSeatOpen) !=
-          (_scooterState?.isReadyForSeatOpen) ||
+      (scooterState?.isReadyForSeatOpen) != (_scooterState?.isReadyForSeatOpen) ||
       lastPing?.calculateTimeDifferenceInShort() != _lastPingDifference ||
-      getStateNameForWidget(scooterState) !=
-          _stateName || //_scooterState || // th is state is ignored in the widget
+      getStateNameForWidget(scooterState) != _stateName || //_scooterState || // th is state is ignored in the widget
       primarySOC != _primarySOC ||
       secondarySOC != _secondarySOC ||
       scooterName != _scooterName ||
@@ -116,8 +114,7 @@ void passToWidget({
   // update cached values
   _connected = connected;
   _lastPing = lastPing ?? _lastPing;
-  _lastPingDifference =
-      lastPing?.calculateTimeDifferenceInShort() ?? _lastPingDifference;
+  _lastPingDifference = lastPing?.calculateTimeDifferenceInShort() ?? _lastPingDifference;
   _iOSlastPingText = getLocalizedTimeDiff(lastPing) ?? _iOSlastPingText;
   _scooterState = scooterState ?? _scooterState;
   _stateName = getStateNameForWidget(scooterState) ?? _stateName;
@@ -134,27 +131,21 @@ void passToWidget({
   await HomeWidget.saveWidgetData<bool>("connected", _connected);
   if (_scooterState != null) {
     await HomeWidget.saveWidgetData<bool>("locked", _scooterState!.isOn);
-    await HomeWidget.saveWidgetData<bool>(
-        "seatOpenable", _scooterState!.isReadyForSeatOpen);
+    await HomeWidget.saveWidgetData<bool>("seatOpenable", _scooterState!.isReadyForSeatOpen);
   }
   await HomeWidget.saveWidgetData<String>("stateName", _stateName);
-  await HomeWidget.saveWidgetData<int?>(
-      "lastPing", _lastPing?.millisecondsSinceEpoch);
-  await HomeWidget.saveWidgetData<String?>(
-      "lastPingDifference", _lastPingDifference);
+  await HomeWidget.saveWidgetData<int?>("lastPing", _lastPing?.millisecondsSinceEpoch);
+  await HomeWidget.saveWidgetData<String?>("lastPingDifference", _lastPingDifference);
   await HomeWidget.saveWidgetData<String>("iOSlastPingText", _iOSlastPingText);
   await HomeWidget.saveWidgetData<int>("soc1", _primarySOC);
   await HomeWidget.saveWidgetData<int?>("soc2", _secondarySOC);
   await HomeWidget.saveWidgetData<String>("scooterName", _scooterName);
   await HomeWidget.saveWidgetData<int>("scooterColor", _scooterColor);
   await HomeWidget.saveWidgetData("seatClosed", _seatClosed);
-  await HomeWidget.saveWidgetData<bool>(
-      "scooterLocked", _scooterLocked ?? true);
+  await HomeWidget.saveWidgetData<bool>("scooterLocked", _scooterLocked ?? true);
   await HomeWidget.saveWidgetData<String>("lockStateName", _lockStateName);
-  await HomeWidget.saveWidgetData<String>(
-      "lastLat", _lastLocation?.latitude.toString() ?? "0.0");
-  await HomeWidget.saveWidgetData<String>(
-      "lastLon", _lastLocation?.longitude.toString() ?? "0.0");
+  await HomeWidget.saveWidgetData<String>("lastLat", _lastLocation?.latitude.toString() ?? "0.0");
+  await HomeWidget.saveWidgetData<String>("lastLon", _lastLocation?.longitude.toString() ?? "0.0");
 
   // finally, update if necessary
   if (Platform.isAndroid && updateAndroid) {
@@ -192,14 +183,10 @@ Future<void> setWidgetScanning(bool scanning) async {
   await HomeWidget.saveWidgetData<bool>("scanning", scanning);
   await HomeWidget.saveWidgetData<String>(
     "stateName",
-    scanning
-        ? ScooterState.linking.getNameStatic()
-        : ScooterState.disconnected.getNameStatic(),
+    scanning ? ScooterState.linking.getNameStatic() : ScooterState.disconnected.getNameStatic(),
   );
 
-  _stateName = scanning
-      ? ScooterState.linking.getNameStatic()
-      : ScooterState.disconnected.getNameStatic();
+  _stateName = scanning ? ScooterState.linking.getNameStatic() : ScooterState.disconnected.getNameStatic();
   await HomeWidget.updateWidget(
     qualifiedAndroidName: 'de.freal.unustasis.HomeWidgetReceiver',
     iOSName: "ScooterWidget",

@@ -5,8 +5,7 @@ import '../domain/scooter_state.dart';
 
 extension ScooterStateName on ScooterState? {
   String getNameStatic({String? languageCode}) {
-    String lang =
-        languageCode ?? PlatformDispatcher.instance.locale.languageCode;
+    String lang = languageCode ?? PlatformDispatcher.instance.locale.languageCode;
 
     if (lang == "de") {
       switch (this) {

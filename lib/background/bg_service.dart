@@ -18,8 +18,7 @@ bool backgroundScanEnabled = true;
 PausableTimer? _rescanTimer;
 
 FlutterBluePlusMockable fbp = FlutterBluePlusMockable();
-ScooterService scooterService =
-    ScooterService(fbp, isInBackgroundService: true);
+ScooterService scooterService = ScooterService(fbp, isInBackgroundService: true);
 
 Future<void> setupBackgroundService() async {
   final log = Logger("setupBackgroundService");
@@ -27,9 +26,7 @@ Future<void> setupBackgroundService() async {
 
   HomeWidget.registerInteractivityCallback(backgroundCallback);
 
-  backgroundScanEnabled =
-      (await SharedPreferences.getInstance()).getBool("backgroundScan") ??
-          false;
+  backgroundScanEnabled = (await SharedPreferences.getInstance()).getBool("backgroundScan") ?? false;
   log.info("Background scan: $backgroundScanEnabled");
 
   if (Platform.isAndroid) {
@@ -48,8 +45,7 @@ Future<void> setupBackgroundService() async {
       isForegroundMode: true,
       autoStartOnBoot: true,
       foregroundServiceTypes: [AndroidForegroundType.connectedDevice],
-      notificationChannelId:
-          notificationChannelId, // this must match with notification channel you created above.
+      notificationChannelId: notificationChannelId, // this must match with notification channel you created above.
       initialNotificationTitle: 'Unu Scooter',
       initialNotificationContent: 'You can dismiss this notification.',
       foregroundServiceNotificationId: notificationId,
@@ -115,18 +111,14 @@ void _disableScanning() async {
 void onStart(ServiceInstance service) async {
   Logger("bgservice").onRecord.listen((record) {
     // ignore: avoid_print
-    print(
-        "[${record.level.name}] ${record.time}: ${record.message} ${record.error ?? ""} ${record.stackTrace ?? ""}");
+    print("[${record.level.name}] ${record.time}: ${record.message} ${record.error ?? ""} ${record.stackTrace ?? ""}");
   });
   Logger("bgservice").info("Background service started!");
   DartPluginRegistrant.ensureInitialized();
 
-  backgroundScanEnabled =
-      (await SharedPreferences.getInstance()).getBool("backgroundScan") ??
-          false;
+  backgroundScanEnabled = (await SharedPreferences.getInstance()).getBool("backgroundScan") ?? false;
 
-  if (service is AndroidServiceInstance &&
-      await service.isForegroundService()) {
+  if (service is AndroidServiceInstance && await service.isForegroundService()) {
     if (backgroundScanEnabled) {
       Logger("bgservice").info("Running first connection cycle");
       _enableScanning();
@@ -151,8 +143,7 @@ void onStart(ServiceInstance service) async {
         lastLocation: scooterService.lastLocation,
         seatClosed: scooterService.seatClosed);
   });
-  print(
-      "Widget seeded with initial data. ScooterName: ${scooterService.scooterName}");
+  print("Widget seeded with initial data. ScooterName: ${scooterService.scooterName}");
 
   service.on("autoUnlockCooldown").listen((data) async {
     Logger("bgservice").info("Received autoUnlockCooldown command");
@@ -182,8 +173,7 @@ void onStart(ServiceInstance service) async {
         scooterService.scooterColor = data!["scooterColor"];
       }
       if (data?["lastPingInt"] != null) {
-        scooterService.lastPing =
-            DateTime.fromMillisecondsSinceEpoch(data!["lastPingInt"]);
+        scooterService.lastPing = DateTime.fromMillisecondsSinceEpoch(data!["lastPingInt"]);
       }
       if (data?["backgroundScan"] != null) {
         if (data!["backgroundScan"] == false && backgroundScanEnabled) {
@@ -213,8 +203,7 @@ void onStart(ServiceInstance service) async {
         );
       });
     } catch (e, stack) {
-      Logger("bgservice")
-          .severe("Something bad happened on command: $e", e, stack);
+      Logger("bgservice").severe("Something bad happened on command: $e", e, stack);
     }
   });
 
@@ -303,8 +292,7 @@ void onStart(ServiceInstance service) async {
 
   _rescanTimer = PausableTimer.periodic(const Duration(seconds: 35), () async {
     if (!backgroundScanEnabled) {
-      Logger("bgservice").info(
-          "Oh boy, the timer must've killed itself/been killed. Resetting!");
+      Logger("bgservice").info("Oh boy, the timer must've killed itself/been killed. Resetting!");
       _rescanTimer
         ?..pause()
         ..reset();
@@ -313,8 +301,7 @@ void onStart(ServiceInstance service) async {
     if (backgroundScanEnabled &&
         service is AndroidServiceInstance &&
         await service.isForegroundService() &&
-        (await scooterService.getSavedScooterIds(onlyAutoConnect: true))
-            .isNotEmpty &&
+        (await scooterService.getSavedScooterIds(onlyAutoConnect: true)).isNotEmpty &&
         !scooterService.scanning &&
         !scooterService.connected) {
       attemptConnectionCycle();

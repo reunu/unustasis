@@ -79,8 +79,7 @@ class FlutterBluePlusMockable {
     return FlutterBluePlus.connectedDevices;
   }
 
-  Future<List<BluetoothDevice>> Function(List<Guid> withServices)
-      get systemDevices {
+  Future<List<BluetoothDevice>> Function(List<Guid> withServices) get systemDevices {
     return FlutterBluePlus.systemDevices;
   }
 

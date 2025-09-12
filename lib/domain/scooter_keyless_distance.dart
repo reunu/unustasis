@@ -14,8 +14,7 @@ enum ScooterKeylessDistance {
   final String _translationKey;
 
   static fromThreshold(int threshold) {
-    return ScooterKeylessDistance.values
-        .firstWhere((distance) => distance.threshold == threshold);
+    return ScooterKeylessDistance.values.firstWhere((distance) => distance.threshold == threshold);
   }
 
   static getMinThresholdDistance() {

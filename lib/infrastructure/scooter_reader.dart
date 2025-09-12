@@ -13,9 +13,7 @@ class ScooterReader {
 
   final ScooterService _service;
 
-  ScooterReader(
-      {required ScooterService service,
-      required CharacteristicRepository characteristicRepository})
+  ScooterReader({required ScooterService service, required CharacteristicRepository characteristicRepository})
       : _characteristicRepository = characteristicRepository,
         _service = service;
 
@@ -32,8 +30,7 @@ class ScooterReader {
   // for all others, we can assume they're not null!
 
   void _subscribeState() {
-    StringReader("State", _characteristicRepository.stateCharacteristic!)
-        .readAndSubscribe((String value) {
+    StringReader("State", _characteristicRepository.stateCharacteristic!).readAndSubscribe((String value) {
       _state = ScooterState.fromString(value);
       _updateScooterState();
     });
@@ -41,9 +38,7 @@ class ScooterReader {
 
   void _subscribePowerStateForHibernation() {
     if (_characteristicRepository.powerStateCharacteristic != null) {
-      StringReader("Power State",
-              _characteristicRepository.powerStateCharacteristic!)
-          .readAndSubscribe((String value) {
+      StringReader("Power State", _characteristicRepository.powerStateCharacteristic!).readAndSubscribe((String value) {
         _powerState = ScooterPowerState.fromString(value);
         _updateScooterState();
       });
@@ -52,8 +47,7 @@ class ScooterReader {
 
   Future<void> _updateScooterState() async {
     ScooterState? oldState = _service.state;
-    ScooterState? newState =
-        ScooterState.fromStateAndPowerState(_state, _powerState);
+    ScooterState? newState = ScooterState.fromStateAndPowerState(_state, _powerState);
     _service.state = newState;
     _service.ping();
 
@@ -65,16 +59,14 @@ class ScooterReader {
   }
 
   void _subscribeSeat() {
-    StringReader("Seat", _characteristicRepository.seatCharacteristic!)
-        .readAndSubscribe((String seatState) {
+    StringReader("Seat", _characteristicRepository.seatCharacteristic!).readAndSubscribe((String seatState) {
       _service.seatClosed = seatState != "open";
       _service.ping();
     });
   }
 
   void _subscribeHandlebars() {
-    StringReader(
-            "Handlebars", _characteristicRepository.handlebarCharacteristic!)
+    StringReader("Handlebars", _characteristicRepository.handlebarCharacteristic!)
         .readAndSubscribe((String handlebarState) {
       _service.handlebarsLocked = handlebarState != "unlocked";
       _service.ping();
@@ -83,25 +75,17 @@ class ScooterReader {
 
   void _subscribeBatteries() {
     var auxBatteryReader = BatteryReader(ScooterBatteryType.aux, _service);
-    auxBatteryReader
-        .readAndSubscribeSOC(_characteristicRepository.auxSOCCharacteristic!);
-    auxBatteryReader.readAndSubscribeCharging(
-        _characteristicRepository.auxChargingCharacteristic!);
-    auxBatteryReader.readAndSubscribeVoltage(
-        _characteristicRepository.auxVoltageCharacteristic!);
+    auxBatteryReader.readAndSubscribeSOC(_characteristicRepository.auxSOCCharacteristic!);
+    auxBatteryReader.readAndSubscribeCharging(_characteristicRepository.auxChargingCharacteristic!);
+    auxBatteryReader.readAndSubscribeVoltage(_characteristicRepository.auxVoltageCharacteristic!);
 
     var cbbBatteryReader = BatteryReader(ScooterBatteryType.cbb, _service);
-    cbbBatteryReader
-        .readAndSubscribeSOC(_characteristicRepository.cbbSOCCharacteristic!);
-    cbbBatteryReader.readAndSubscribeCharging(
-        _characteristicRepository.cbbChargingCharacteristic!);
-    cbbBatteryReader.readAndSubscribeVoltage(
-        _characteristicRepository.cbbVoltageCharacteristic!);
-    cbbBatteryReader.readAndSubscribeCapacity(
-        _characteristicRepository.cbbCapacityCharacteristic!);
+    cbbBatteryReader.readAndSubscribeSOC(_characteristicRepository.cbbSOCCharacteristic!);
+    cbbBatteryReader.readAndSubscribeCharging(_characteristicRepository.cbbChargingCharacteristic!);
+    cbbBatteryReader.readAndSubscribeVoltage(_characteristicRepository.cbbVoltageCharacteristic!);
+    cbbBatteryReader.readAndSubscribeCapacity(_characteristicRepository.cbbCapacityCharacteristic!);
 
-    var primaryBatteryReader =
-        BatteryReader(ScooterBatteryType.primary, _service);
+    var primaryBatteryReader = BatteryReader(ScooterBatteryType.primary, _service);
     primaryBatteryReader.readAndSubscribeSOC(
       _characteristicRepository.primarySOCCharacteristic!,
     );
@@ -109,8 +93,7 @@ class ScooterReader {
       _characteristicRepository.primaryCyclesCharacteristic!,
     );
 
-    var secondaryBatteryReader =
-        BatteryReader(ScooterBatteryType.secondary, _service);
+    var secondaryBatteryReader = BatteryReader(ScooterBatteryType.secondary, _service);
     secondaryBatteryReader.readAndSubscribeSOC(
       _characteristicRepository.secondarySOCCharacteristic!,
     );

@@ -27,8 +27,7 @@ Future<void> showWidgetOnboarding(BuildContext context) async {
         ),
         actions: <Widget>[
           TextButton(
-            child:
-                Text(FlutterI18n.translate(context, "widget_onboarding_place")),
+            child: Text(FlutterI18n.translate(context, "widget_onboarding_place")),
             onPressed: () async {
               if ((await HomeWidget.isRequestPinWidgetSupported()) == true) {
                 HomeWidget.requestPinWidget(
@@ -41,8 +40,7 @@ Future<void> showWidgetOnboarding(BuildContext context) async {
             },
           ),
           TextButton(
-            child: Text(
-                FlutterI18n.translate(context, "widget_onboarding_dismiss")),
+            child: Text(FlutterI18n.translate(context, "widget_onboarding_dismiss")),
             onPressed: () {
               Navigator.of(context).pop();
             },
@@ -60,8 +58,7 @@ Future<void> showServerNotifications(BuildContext context) async {
   // get the notifications json from https://reunu.github.io/unustasis/notifications.json
   List<dynamic> notifications;
   try {
-    final response = await get(
-        Uri.parse("https://reunu.github.io/unustasis/notifications.json"));
+    final response = await get(Uri.parse("https://reunu.github.io/unustasis/notifications.json"));
     if (response.statusCode != 200) {
       log.warning("Failed to fetch notifications: ${response.statusCode}");
       return;
@@ -79,8 +76,7 @@ Future<void> showServerNotifications(BuildContext context) async {
   }
 
   SharedPreferencesAsync prefs = SharedPreferencesAsync();
-  List<String> shownServerNotifications =
-      await prefs.getStringList("shownServerNotifications") ?? [];
+  List<String> shownServerNotifications = await prefs.getStringList("shownServerNotifications") ?? [];
   String appName = (await PackageInfo.fromPlatform()).appName;
   String platform = Platform.operatingSystem;
 
@@ -101,8 +97,7 @@ Future<void> showServerNotifications(BuildContext context) async {
       continue;
     }
     // check if this is meant for this platform
-    if (notification['platform'] != null &&
-        notification['platform'] != platform) {
+    if (notification['platform'] != null && notification['platform'] != platform) {
       log.info(
           "Notification ${notification['id']} is only meant for this platform: ${notification['platform']}. Skipping.");
       continue;
@@ -119,22 +114,15 @@ Future<void> showServerNotifications(BuildContext context) async {
       timestamp = DateTime.parse(notification['timestamp']);
       durationDays = notification['duration-days'] as int;
       if (durationDays < 0) {
-        log.warning(
-            "Invalid duration for notification ${notification['id']}: $durationDays days");
+        log.warning("Invalid duration for notification ${notification['id']}: $durationDays days");
         continue;
       }
-      if (timestamp.isAfter(DateTime.now()) ||
-          timestamp
-              .add(Duration(days: durationDays))
-              .isBefore(DateTime.now())) {
-        log.info(
-            "Notification ${notification['id']} is not valid for current time");
+      if (timestamp.isAfter(DateTime.now()) || timestamp.add(Duration(days: durationDays)).isBefore(DateTime.now())) {
+        log.info("Notification ${notification['id']} is not valid for current time");
         continue;
       }
     } catch (e) {
-      log.warning(
-          "Invalid date format for notification ${notification['id']}: ${notification['timestamp']}",
-          e);
+      log.warning("Invalid date format for notification ${notification['id']}: ${notification['timestamp']}", e);
       continue;
     }
     // make sure we still have a context
@@ -149,15 +137,13 @@ Future<void> showServerNotifications(BuildContext context) async {
       barrierDismissible: true, // user can dismiss the dialog
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text(notification['title']
-                  [FlutterI18n.currentLocale(context)?.languageCode] ??
+          title: Text(notification['title'][FlutterI18n.currentLocale(context)?.languageCode] ??
               notification['title']['en'] ??
               "Notification"),
           content: SingleChildScrollView(
             child: ListBody(
               children: <Widget>[
-                Text(notification['body']
-                        [FlutterI18n.currentLocale(context)?.languageCode] ??
+                Text(notification['body'][FlutterI18n.currentLocale(context)?.languageCode] ??
                     notification['body']['en'] ??
                     ""),
               ],
@@ -166,23 +152,19 @@ Future<void> showServerNotifications(BuildContext context) async {
           actions: <Widget>[
             if (notification["action-url"] != null)
               TextButton(
-                child: Text(notification["action-text"]
-                        [FlutterI18n.currentLocale(context)?.languageCode] ??
+                child: Text(notification["action-text"][FlutterI18n.currentLocale(context)?.languageCode] ??
                     notification["action-text"]["en"] ??
                     "Open"),
                 onPressed: () async {
-                  if (await canLaunchUrl(
-                      Uri.parse(notification["action-url"]))) {
+                  if (await canLaunchUrl(Uri.parse(notification["action-url"]))) {
                     await launchUrl(Uri.parse(notification["action-url"]));
                   } else {
-                    log.warning(
-                        "Could not launch URL: ${notification["action-url"]}");
+                    log.warning("Could not launch URL: ${notification["action-url"]}");
                   }
                 },
               ),
             TextButton(
-              child: Text(notification["dismiss-text"]
-                      [FlutterI18n.currentLocale(context)?.languageCode] ??
+              child: Text(notification["dismiss-text"][FlutterI18n.currentLocale(context)?.languageCode] ??
                   notification["dismiss-text"]["en"] ??
                   "Dismiss"),
               onPressed: () {
@@ -197,6 +179,5 @@ Future<void> showServerNotifications(BuildContext context) async {
     shownServerNotifications.add(notification['id']);
     // save the list of shown notifications
   }
-  await prefs.setStringList(
-      "shownServerNotifications", shownServerNotifications);
+  await prefs.setStringList("shownServerNotifications", shownServerNotifications);
 }

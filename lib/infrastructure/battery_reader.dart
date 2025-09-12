@@ -69,8 +69,7 @@ class BatteryReader {
   void readAndSubscribeCharging(
     BluetoothCharacteristic chargingCharacteristic,
   ) {
-    StringReader("${_battery.name} charging", chargingCharacteristic)
-        .readAndSubscribe((String chargingState) {
+    StringReader("${_battery.name} charging", chargingCharacteristic).readAndSubscribe((String chargingState) {
       switch (_battery) {
         case ScooterBatteryType.cbb:
           if (chargingState == "charging") {
@@ -152,17 +151,13 @@ class BatteryReader {
   Future<void> _writeSocToCache(int soc) async {
     switch (_battery) {
       case ScooterBatteryType.primary:
-        _service.savedScooters[_service.myScooter!.remoteId.toString()]!
-            .lastPrimarySOC = soc;
+        _service.savedScooters[_service.myScooter!.remoteId.toString()]!.lastPrimarySOC = soc;
       case ScooterBatteryType.secondary:
-        _service.savedScooters[_service.myScooter!.remoteId.toString()]!
-            .lastSecondarySOC = soc;
+        _service.savedScooters[_service.myScooter!.remoteId.toString()]!.lastSecondarySOC = soc;
       case ScooterBatteryType.cbb:
-        _service.savedScooters[_service.myScooter!.remoteId.toString()]!
-            .lastCbbSOC = soc;
+        _service.savedScooters[_service.myScooter!.remoteId.toString()]!.lastCbbSOC = soc;
       case ScooterBatteryType.aux:
-        _service.savedScooters[_service.myScooter!.remoteId.toString()]!
-            .lastAuxSOC = soc;
+        _service.savedScooters[_service.myScooter!.remoteId.toString()]!.lastAuxSOC = soc;
       default:
         // the SOC of "NFC"-type batteries is a single reading and should not be cached
         break;
@@ -177,9 +172,6 @@ class BatteryReader {
     }
 
     // Little-endian to big-endian interpretation (important for proper UInt32 conversion)
-    return (uint32data[3] << 24) +
-        (uint32data[2] << 16) +
-        (uint32data[1] << 8) +
-        uint32data[0];
+    return (uint32data[3] << 24) + (uint32data[2] << 16) + (uint32data[1] << 8) + uint32data[0];
   }
 }
