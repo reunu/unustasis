@@ -74,8 +74,8 @@ class _HomeScreenState extends State<HomeScreen> {
             // Easter season, place some easter eggs!
             setState(() => _spring = true);
           }
-        case 9:
-          // October, that's fall by day and halloween by night
+        case 10:
+          // October, it's fall by day and halloween by night
           setState(() => _fall = true);
         // who knows what else might be in the future?
       }
