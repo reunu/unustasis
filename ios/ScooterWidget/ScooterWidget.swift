@@ -277,7 +277,7 @@ struct ScooterWidgetInlineView: View {
     var entry: Provider.Entry
 
     private var displayText: String {
-        var text = "\(entry.scooterName ?? "Scoote Pro"): \(entry.primarySOC ?? 0)%"
+        var text = "\(entry.scooterName ?? "unu Scooter"): \(entry.primarySOC ?? 0)%"
         if let secondarySOC = entry.secondarySOC, secondarySOC > 0 {
             text += "∙\(secondarySOC)%"
         }
