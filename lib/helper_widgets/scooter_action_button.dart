@@ -41,10 +41,7 @@ class ScooterActionButton extends StatelessWidget {
         const SizedBox(height: 16),
         Text(
           _label,
-          style: Theme.of(context)
-              .textTheme
-              .labelLarge
-              ?.copyWith(color: mainColor),
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(color: mainColor),
         ),
       ],
     );

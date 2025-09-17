@@ -6,8 +6,7 @@ import 'package:http/http.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class GeoHelper {
-  static Future<String?> getAddress(
-      LatLng? position, BuildContext context) async {
+  static Future<String?> getAddress(LatLng? position, BuildContext context) async {
     if (position == null) {
       return null;
     }

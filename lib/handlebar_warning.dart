@@ -30,15 +30,13 @@ class _HandlebarWarningState extends State<HandlebarWarning> {
             height: 160,
           ),
           const SizedBox(height: 24),
-          Text(FlutterI18n.translate(context,
-              "${widget.didNotUnlock ? "locked" : "unlocked"}_handlebar_alert_title")),
+          Text(FlutterI18n.translate(context, "${widget.didNotUnlock ? "locked" : "unlocked"}_handlebar_alert_title")),
         ],
       ),
       content: SingleChildScrollView(
         child: ListBody(
           children: <Widget>[
-            Text(FlutterI18n.translate(context,
-                "${widget.didNotUnlock ? "locked" : "unlocked"}_handlebar_alert_body")),
+            Text(FlutterI18n.translate(context, "${widget.didNotUnlock ? "locked" : "unlocked"}_handlebar_alert_body")),
             if (!widget.didNotUnlock)
               CheckboxListTile(
                 contentPadding: EdgeInsets.all(0),
@@ -49,8 +47,7 @@ class _HandlebarWarningState extends State<HandlebarWarning> {
                     dontShowAgain = value ?? false;
                   });
                 },
-                title: Text(FlutterI18n.translate(
-                    context, "unlocked_handlebar_alert_ignore")),
+                title: Text(FlutterI18n.translate(context, "unlocked_handlebar_alert_ignore")),
               )
           ],
         ),
@@ -63,8 +60,8 @@ class _HandlebarWarningState extends State<HandlebarWarning> {
           },
         ),
         TextButton(
-          child: Text(FlutterI18n.translate(context,
-              "${widget.didNotUnlock ? "locked" : "unlocked"}_handlebar_alert_action")),
+          child: Text(
+              FlutterI18n.translate(context, "${widget.didNotUnlock ? "locked" : "unlocked"}_handlebar_alert_action")),
           onPressed: () {
             if (widget.didNotUnlock) {
               context.read<ScooterService>().lock();

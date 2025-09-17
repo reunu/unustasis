@@ -12,8 +12,7 @@ class GrassScape extends StatelessWidget {
         Container(
           constraints: BoxConstraints.expand(),
           alignment: Alignment.center,
-          child: Image.asset(
-              'images/decoration/grass_area_${context.isDarkMode ? "dark" : "light"}.webp'),
+          child: Image.asset('images/decoration/grass_area_${context.isDarkMode ? "dark" : "light"}.webp'),
         ),
         CustomPaint(
           painter: LandPainter(context),
@@ -31,8 +30,7 @@ class LandPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    Color grassColor =
-        context.isDarkMode ? Color(0xff122a22) : Color(0xff507769);
+    Color grassColor = context.isDarkMode ? Color(0xff122a22) : Color(0xff507769);
     canvas.drawRect(
       Rect.fromLTRB(0, size.height / 2, size.width, size.height),
       Paint()..color = grassColor,
@@ -52,6 +50,5 @@ class LandPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(LandPainter oldDelegate) =>
-      oldDelegate.context.isDarkMode != context.isDarkMode;
+  bool shouldRepaint(LandPainter oldDelegate) => oldDelegate.context.isDarkMode != context.isDarkMode;
 }

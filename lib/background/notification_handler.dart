@@ -10,8 +10,7 @@ const notificationChannelId = 'unu_foreground';
 const notificationChannelName = 'Unu Background Connection';
 const notificationId = 1612;
 
-FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-    FlutterLocalNotificationsPlugin();
+FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
 Future<void> setupNotifications() async {
   await flutterLocalNotificationsPlugin.initialize(
@@ -22,21 +21,17 @@ Future<void> setupNotifications() async {
       onDidReceiveNotificationResponse: notificationTapBackground);
 
   flutterLocalNotificationsPlugin
-      .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>()
+      .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
       ?.requestNotificationsPermission();
 
   await flutterLocalNotificationsPlugin
-      .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>()
+      .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
       ?.createNotificationChannel(
         const AndroidNotificationChannel(
           notificationChannelId, // id
           notificationChannelName, // title
-          description:
-              'This channel is used for periodically checking your scooter.', // description
-          importance: Importance
-              .low, // importance must be at low or higher levelongoing: true,
+          description: 'This channel is used for periodically checking your scooter.', // description
+          importance: Importance.low, // importance must be at low or higher levelongoing: true,
         ),
       );
   return;
@@ -49,8 +44,7 @@ void updateNotification({String? debugText}) async {
       "Unu Scooter",
       scooterService.state?.getNameStatic(),
       NotificationDetails(
-        android: AndroidNotificationDetails(
-            notificationChannelId, notificationChannelName,
+        android: AndroidNotificationDetails(notificationChannelId, notificationChannelName,
             icon: 'ic_bg_service_small',
             ongoing: true,
             importance: Importance.max,
@@ -66,15 +60,12 @@ void dismissNotification() {
   flutterLocalNotificationsPlugin.cancel(notificationId);
 }
 
-List<AndroidNotificationAction> getAndroidNotificationActions(
-    ScooterState? state) {
+List<AndroidNotificationAction> getAndroidNotificationActions(ScooterState? state) {
   switch (state) {
     case ScooterState.standby:
       return [
-        AndroidNotificationAction(
-            "unlock", getLocalizedNotificationAction("unlock")),
-        AndroidNotificationAction(
-            "openseat", getLocalizedNotificationAction("openseat"))
+        AndroidNotificationAction("unlock", getLocalizedNotificationAction("unlock")),
+        AndroidNotificationAction("openseat", getLocalizedNotificationAction("openseat"))
       ];
     case ScooterState.parked:
       return [

@@ -88,22 +88,16 @@ class _ControlScreenState extends State<ControlScreen> {
               children: [
                 Expanded(
                   child: ScooterActionButton(
-                    onPressed: () => context
-                        .read<ScooterService>()
-                        .blink(left: true, right: false),
+                    onPressed: () => context.read<ScooterService>().blink(left: true, right: false),
                     icon: Icons.arrow_back_ios_new_rounded,
-                    label:
-                        FlutterI18n.translate(context, "controls_blink_left"),
+                    label: FlutterI18n.translate(context, "controls_blink_left"),
                   ),
                 ),
                 Expanded(
                   child: ScooterActionButton(
-                    onPressed: () => context
-                        .read<ScooterService>()
-                        .blink(left: false, right: true),
+                    onPressed: () => context.read<ScooterService>().blink(left: false, right: true),
                     icon: Icons.arrow_forward_ios_rounded,
-                    label:
-                        FlutterI18n.translate(context, "controls_blink_right"),
+                    label: FlutterI18n.translate(context, "controls_blink_right"),
                   ),
                 ),
               ],
@@ -111,30 +105,22 @@ class _ControlScreenState extends State<ControlScreen> {
           ),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  Expanded(
-                    child: ScooterActionButton(
-                      onPressed: () => context
-                          .read<ScooterService>()
-                          .blink(left: true, right: true),
-                      icon: Icons.code_rounded,
-                      label: FlutterI18n.translate(
-                          context, "controls_blink_hazard"),
-                    ),
-                  ),
-                  Expanded(
-                    child: ScooterActionButton(
-                      onPressed: () => context
-                          .read<ScooterService>()
-                          .blink(left: false, right: false),
-                      icon: Icons.code_off_rounded,
-                      label:
-                          FlutterI18n.translate(context, "controls_blink_off"),
-                    ),
-                  ),
-                ]),
+            child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+              Expanded(
+                child: ScooterActionButton(
+                  onPressed: () => context.read<ScooterService>().blink(left: true, right: true),
+                  icon: Icons.code_rounded,
+                  label: FlutterI18n.translate(context, "controls_blink_hazard"),
+                ),
+              ),
+              Expanded(
+                child: ScooterActionButton(
+                  onPressed: () => context.read<ScooterService>().blink(left: false, right: false),
+                  icon: Icons.code_off_rounded,
+                  label: FlutterI18n.translate(context, "controls_blink_off"),
+                ),
+              ),
+            ]),
           ),
         ],
       ),
@@ -156,19 +142,17 @@ class Header extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title,
-              style: Theme.of(context).textTheme.headlineSmall!.copyWith(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: 0.7))),
+              style: Theme.of(context)
+                  .textTheme
+                  .headlineSmall!
+                  .copyWith(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7))),
           if (subtitle != null) const SizedBox(height: 2),
           if (subtitle != null)
             Text(subtitle!,
-                style: Theme.of(context).textTheme.titleMedium!.copyWith(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.7))),
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium!
+                    .copyWith(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7))),
         ],
       ),
     );

@@ -47,8 +47,7 @@ enum ScooterState {
     }
   }
 
-  static ScooterState? fromStateAndPowerState(
-      ScooterState? state, ScooterPowerState? powerState) {
+  static ScooterState? fromStateAndPowerState(ScooterState? state, ScooterPowerState? powerState) {
     switch (powerState) {
       case ScooterPowerState.booting:
         return ScooterState.booting;
@@ -107,8 +106,7 @@ extension StateExtension on ScooterState {
       case ScooterState.hibernating:
         return FlutterI18n.translate(context, "state_name_hibernating");
       case ScooterState.hibernatingImminent:
-        return FlutterI18n.translate(
-            context, "state_name_hibernating_imminent");
+        return FlutterI18n.translate(context, "state_name_hibernating_imminent");
       case ScooterState.booting:
         return FlutterI18n.translate(context, "state_name_booting");
       case ScooterState.unknown:
@@ -135,8 +133,7 @@ extension StateExtension on ScooterState {
       case ScooterState.hibernating:
         return FlutterI18n.translate(context, "state_desc_hibernating");
       case ScooterState.hibernatingImminent:
-        return FlutterI18n.translate(
-            context, "state_desc_hibernating_imminent");
+        return FlutterI18n.translate(context, "state_desc_hibernating_imminent");
       case ScooterState.booting:
         return FlutterI18n.translate(context, "state_desc_booting");
       case ScooterState.unknown:
