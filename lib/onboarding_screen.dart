@@ -31,8 +31,7 @@ class OnboardingScreen extends StatefulWidget {
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen>
-    with TickerProviderStateMixin {
+class _OnboardingScreenState extends State<OnboardingScreen> with TickerProviderStateMixin {
   final log = Logger('OnboardingScreen');
   bool _scanning = false;
   int _step = 0;
@@ -114,8 +113,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             ),
             actions: <Widget>[
               TextButton(
-                child: Text(FlutterI18n.translate(
-                    context, "old_app_alert_acknowledge")),
+                child: Text(FlutterI18n.translate(context, "old_app_alert_acknowledge")),
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
@@ -164,12 +162,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
           );
         } else {
           return _onboardingStep(
-              heading: FlutterI18n.translate(
-                  context, "onboarding_step2_heading_error"),
-              text:
-                  FlutterI18n.translate(context, "onboarding_step2_body_error"),
-              btnText: FlutterI18n.translate(
-                  context, "onboarding_step2_button_error"),
+              heading: FlutterI18n.translate(context, "onboarding_step2_heading_error"),
+              text: FlutterI18n.translate(context, "onboarding_step2_body_error"),
+              btnText: FlutterI18n.translate(context, "onboarding_step2_button_error"),
               onPressed: () {
                 _startSearch();
               });
@@ -179,9 +174,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
         return _onboardingStep(
             heading: FlutterI18n.translate(context, "onboarding_step3_heading"),
             text: FlutterI18n.translate(context, "onboarding_step3_body",
-                translationParams: {
-                  "address": _foundScooter!.remoteId.toString()
-                }),
+                translationParams: {"address": _foundScooter!.remoteId.toString()}),
             btnText: FlutterI18n.translate(context, "onboarding_step3_button"),
             onPressed: () {
               try {
@@ -192,9 +185,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               } catch (e, stack) {
                 log.severe("Error connecting to scooter!", e, stack);
                 Fluttertoast.showToast(
-                    msg: FlutterI18n.translate(
-                        context, "onboarding_step4_error"),
-                    toastLength: Toast.LENGTH_LONG);
+                    msg: FlutterI18n.translate(context, "onboarding_step4_error"), toastLength: Toast.LENGTH_LONG);
                 setState(() {
                   _step = 2;
                 });
@@ -230,9 +221,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       appBar: AppBar(
         // only show back button if this is not initial onboarding
         automaticallyImplyLeading: widget.skipWelcome ? true : false,
-        systemOverlayStyle: SystemUiOverlayStyle(
-            statusBarBrightness:
-                context.isDarkMode ? Brightness.dark : Brightness.light),
+        systemOverlayStyle:
+            SystemUiOverlayStyle(statusBarBrightness: context.isDarkMode ? Brightness.dark : Brightness.light),
         actions: [
           IconButton(
               onPressed: () {
@@ -329,8 +319,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
       case 1:
       case 2:
-        return Lottie.asset("assets/anim/scanning.json",
-            controller: _scanningController);
+        return Lottie.asset("assets/anim/scanning.json", controller: _scanningController);
       case 3:
       case 4:
         return Lottie.asset(

@@ -46,7 +46,8 @@ class LogHelper {
       Fluttertoast.showToast(
         msg: record.message,
         fontSize: 12.0,
-        backgroundColor: Colors.black.withValues(alpha: 0.7),  // fluttertoast android logspams if no background color is set
+        backgroundColor:
+            Colors.black.withValues(alpha: 0.7), // fluttertoast android logspams if no background color is set
         textColor: Colors.white,
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.CENTER,
@@ -70,8 +71,7 @@ class LogHelper {
   void _startLogCleanup() {
     _cleanupTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
       final cutoff = DateTime.now().subtract(const Duration(minutes: 15));
-      _logBuffer
-          .removeWhere((log) => DateTime.parse(log['time']!).isBefore(cutoff));
+      _logBuffer.removeWhere((log) => DateTime.parse(log['time']!).isBefore(cutoff));
     });
   }
 
@@ -87,17 +87,14 @@ class LogHelper {
         context: context,
         builder: (context) => AlertDialog(
               title: Text(FlutterI18n.translate(context, "settings_report")),
-              content: Text(FlutterI18n.translate(
-                  context, "settings_report_description")),
+              content: Text(FlutterI18n.translate(context, "settings_report_description")),
               actions: [
                 TextButton(
                     onPressed: () => Navigator.of(context).pop(false),
-                    child: Text(FlutterI18n.translate(
-                        context, "settings_report_cancel"))),
+                    child: Text(FlutterI18n.translate(context, "settings_report_cancel"))),
                 TextButton(
                     onPressed: () => Navigator.of(context).pop(true),
-                    child: Text(FlutterI18n.translate(
-                        context, "settings_report_proceed"))),
+                    child: Text(FlutterI18n.translate(context, "settings_report_proceed"))),
               ],
             )).then((confirmed) async {
       if (confirmed == true) {

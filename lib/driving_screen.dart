@@ -68,8 +68,7 @@ class _DrivingScreenState extends State<DrivingScreen> {
     }
 
     _positionSubscription =
-        Geolocator.getPositionStream(locationSettings: locationSettings)
-            .listen((Position position) {
+        Geolocator.getPositionStream(locationSettings: locationSettings).listen((Position position) {
       if (position.speedAccuracy < 5) {
         setState(() {
           _speed = (position.speed * 3.6).round();
@@ -101,8 +100,7 @@ class _DrivingScreenState extends State<DrivingScreen> {
                     child: CircularProgressIndicator(
                       value: _speed / 120,
                       strokeWidth: 10,
-                      backgroundColor:
-                          Theme.of(context).colorScheme.surfaceContainer,
+                      backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
                     ),
                   ),
                 ),
@@ -112,9 +110,7 @@ class _DrivingScreenState extends State<DrivingScreen> {
                     crossAxisAlignment: CrossAxisAlignment.baseline,
                     textBaseline: TextBaseline.alphabetic,
                     children: [
-                      Text(_speed.toString(),
-                          style: const TextStyle(
-                              fontSize: 64, fontStyle: FontStyle.italic)),
+                      Text(_speed.toString(), style: const TextStyle(fontSize: 64, fontStyle: FontStyle.italic)),
                       const Text(" km/h", style: TextStyle(fontSize: 12)),
                     ],
                   ),
@@ -134,8 +130,7 @@ class _DrivingScreenState extends State<DrivingScreen> {
                       width: 150,
                       child: LinearProgressIndicator(
                         value: (primarySOC ?? 0) / 100,
-                        backgroundColor:
-                            Theme.of(context).colorScheme.surfaceContainer,
+                        backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
                         color: Theme.of(context).colorScheme.primary,
                         minHeight: 16,
                         borderRadius: BorderRadius.circular(8),
@@ -158,8 +153,7 @@ class _DrivingScreenState extends State<DrivingScreen> {
                       width: 150,
                       child: LinearProgressIndicator(
                         value: (secondarySOC ?? 0) / 100,
-                        backgroundColor:
-                            Theme.of(context).colorScheme.surfaceContainer,
+                        backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
                         color: Theme.of(context).colorScheme.primary,
                         minHeight: 16,
                         borderRadius: BorderRadius.circular(8),

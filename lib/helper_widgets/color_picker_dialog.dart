@@ -198,10 +198,7 @@ class _ColorPickerDialogState extends State<ColorPickerDialog> {
             color: color,
             shape: BoxShape.circle,
             border: Border.fromBorderSide(
-              BorderSide(
-                  color: Colors.grey.shade500,
-                  width: 1,
-                  strokeAlign: BorderSide.strokeAlignOutside),
+              BorderSide(color: Colors.grey.shade500, width: 1, strokeAlign: BorderSide.strokeAlignOutside),
             ),
           ),
         ),
@@ -221,8 +218,7 @@ class _ColorPickerDialogState extends State<ColorPickerDialog> {
 }
 
 /// Helper function to show the color picker dialog
-Future<int?> showColorDialog(
-    int initialValue, String scooterName, BuildContext context) {
+Future<int?> showColorDialog(int initialValue, String scooterName, BuildContext context) {
   return showDialog<int>(
     context: context,
     builder: (BuildContext context) {
