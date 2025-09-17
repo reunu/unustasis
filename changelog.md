@@ -1,4 +1,4 @@
 ### Changes:
-- Adding home screen and lock screen widgets on iOS
-- Restructuring in-app navigation for easier access
-- Various bug fixes
+- Adding a seasonal theme for fall and halloween!
+- Fixing some typos
+- Minor adjustments under the hood
