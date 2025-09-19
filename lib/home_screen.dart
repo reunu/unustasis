@@ -12,8 +12,8 @@ import 'package:local_auth/local_auth.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:unustasis/helper_widgets/leaves.dart';
 
+import '../helper_widgets/leaves.dart';
 import '../helper_widgets/scooter_action_button.dart';
 import '../helper_widgets/onboarding_popups.dart';
 import '../handlebar_warning.dart';
