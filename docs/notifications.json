@@ -57,11 +57,11 @@
         "duration-days": 14,
         "title": {
             "en": "Recent visual glitches",
-            "de": "Aktuelle Grafikprobleme",
+            "de": "Aktuelle Grafikprobleme"
         },
         "body": {
             "en": "Some people have recently been experiencing visual glitches (images appearing as pink boxes) in the app. We have already identified the issue to be with a recent iOS update, and will roll out a fix within the next weeks.\n\nIf you are affected by these glitches, fully restarting the app should hopefully fix them.",
-            "de": "In letzter Zeit wurden vermehrt Grafikprobleme (Bilder erscheinen als pinke Boxen) unter iOS gemeldet. Wir haben das Problem bereits identifiziert, und werden innnerhalb der nächsten Wochen einen Fix ausrollen.\n\nWenn du von diesem Bug betroffen bist, sollte ein Neustart der App ihn beheben.",
+            "de": "In letzter Zeit wurden vermehrt Grafikprobleme (Bilder erscheinen als pinke Boxen) unter iOS gemeldet. Wir haben das Problem bereits identifiziert, und werden innnerhalb der nächsten Wochen einen Fix ausrollen.\n\nWenn du von diesem Bug betroffen bist, sollte ein Neustart der App ihn beheben."
         },
         "dismiss-text": {
             "en": "OK",
