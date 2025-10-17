@@ -312,7 +312,7 @@ class _LeavesPainter extends CustomPainter {
       canvas.rotate(leaf.rotation);
       final dstRect = Rect.fromCenter(center: Offset.zero, width: dstSize.width, height: dstSize.height);
       final paintImage = Paint()
-        ..colorFilter = ui.ColorFilter.mode(Colors.white.withOpacity(alpha), BlendMode.modulate);
+        ..colorFilter = ui.ColorFilter.mode(Colors.white.withValues(alpha: alpha), BlendMode.modulate);
       canvas.drawImageRect(img, Rect.fromLTWH(0, 0, img.width.toDouble(), img.height.toDouble()), dstRect, paintImage);
       canvas.restore();
     }

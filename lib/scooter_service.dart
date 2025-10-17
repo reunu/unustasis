@@ -118,7 +118,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
           log.info("Auto-refresh...");
           characteristicRepository.stateCharacteristic!.read();
           characteristicRepository.seatCharacteristic!.read();
-        } on StateError catch (e) {
+        } on StateError catch (_) {
           log.fine(
             "Characteristics not yet initialized, skipping auto-refresh",
           );

@@ -62,7 +62,7 @@ Future<void> setupBackgroundService() async {
 @pragma('vm:entry-point')
 Future<bool> onIosBackground(ServiceInstance service) async {
   // this will be updated occasionally by the system
-  print("Background service started on iOS!");
+  Logger("bgservice").info("Background service started on iOS!");
   // Ensure that the Flutter engine is initialized.
   WidgetsFlutterBinding.ensureInitialized();
   DartPluginRegistrant.ensureInitialized();
@@ -128,7 +128,7 @@ void onStart(ServiceInstance service) async {
     }
   }
 
-  print("Seeding widget with initial data");
+  Logger("bgservice").info("Seeding widget with initial data");
   // seed widget
   await HomeWidget.setAppGroupId("group.de.freal.unustasis");
   Future.delayed(const Duration(seconds: 5), () {
@@ -143,7 +143,7 @@ void onStart(ServiceInstance service) async {
         lastLocation: scooterService.lastLocation,
         seatClosed: scooterService.seatClosed);
   });
-  print("Widget seeded with initial data. ScooterName: ${scooterService.scooterName}");
+  Logger("bgservice").info("Widget seeded with initial data. ScooterName: ${scooterService.scooterName}");
 
   service.on("autoUnlockCooldown").listen((data) async {
     Logger("bgservice").info("Received autoUnlockCooldown command");
@@ -267,7 +267,7 @@ void onStart(ServiceInstance service) async {
   });
 
   service.on("test").listen((data) async {
-    print("Test command received by background service! Data: $data");
+    Logger("bgservice").info("Test command received by background service! Data: $data");
   });
 
   // listen to changes

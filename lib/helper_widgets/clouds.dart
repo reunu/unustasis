@@ -13,7 +13,7 @@ class Clouds extends StatefulWidget {
   final Color? backgroundColor;
 
   // Single-purpose widget: fixed number of clouds.
-  const Clouds({Key? key, this.backgroundColor}) : super(key: key);
+  const Clouds({super.key, this.backgroundColor});
 
   @override
   State<Clouds> createState() => _CloudsState();
