@@ -286,7 +286,7 @@ class _SettingsSectionState extends State<SettingsSection> {
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 8),
             child: DropdownButtonFormField(
-              value: Locale(FlutterI18n.currentLocale(context)!.languageCode),
+              initialValue: Locale(FlutterI18n.currentLocale(context)!.languageCode),
               isExpanded: true,
               decoration: const InputDecoration(
                 contentPadding: EdgeInsets.all(16),
