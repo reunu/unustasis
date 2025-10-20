@@ -403,7 +403,8 @@ class SavedScooterCard extends StatelessWidget {
                               context.read<ScooterService>().connectToScooterId(savedScooter.id);
 
                               if (context.mounted) {
-                                context.read<ScooterService>().startAutoRestart();
+                                // Start auto-restart targeting this specific scooter
+                                context.read<ScooterService>().startAutoRestart(targetScooterId: savedScooter.id);
                                 rebuild();
                                 // Navigate back to main screen after initiating connection
                                 WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -566,7 +567,8 @@ class SavedScooterListItem extends StatelessWidget {
                 context.read<ScooterService>().connectToScooterId(savedScooter.id);
 
                 if (context.mounted) {
-                  context.read<ScooterService>().startAutoRestart();
+                  // Start auto-restart targeting this specific scooter
+                  context.read<ScooterService>().startAutoRestart(targetScooterId: savedScooter.id);
                   rebuild();
                   // Navigate back to main screen after initiating connection
                   WidgetsBinding.instance.addPostFrameCallback((_) {
