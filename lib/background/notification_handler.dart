@@ -28,10 +28,10 @@ Future<void> setupNotifications() async {
       .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
       ?.createNotificationChannel(
         const AndroidNotificationChannel(
-          notificationChannelId, // id
-          notificationChannelName, // title
-          description: 'This channel is used for periodically checking your scooter.', // description
-          importance: Importance.low, // importance must be at low or higher levelongoing: true,
+          notificationChannelId,
+          notificationChannelName,
+          description: 'This channel is used for periodically checking your scooter.',
+          importance: Importance.low,
         ),
       );
   return;
@@ -39,20 +39,27 @@ Future<void> setupNotifications() async {
 
 void updateNotification({String? debugText}) async {
   if (backgroundScanEnabled) {
-    flutterLocalNotificationsPlugin.show(
-      notificationId,
-      "Unu Scooter",
-      scooterService.state?.getNameStatic(),
-      NotificationDetails(
-        android: AndroidNotificationDetails(notificationChannelId, notificationChannelName,
-            icon: 'ic_bg_service_small',
-            ongoing: true,
-            importance: Importance.max,
-            priority: Priority.high,
-            autoCancel: false,
-            actions: getAndroidNotificationActions(scooterService.state)),
-      ),
-    );
+    final savedScooters = await scooterService.getSavedScooterIds(onlyAutoConnect: true);
+    if (savedScooters.isNotEmpty) {
+      flutterLocalNotificationsPlugin.show(
+        notificationId,
+        "Unu Scooter",
+        scooterService.state?.getNameStatic(),
+        NotificationDetails(
+          android: AndroidNotificationDetails(notificationChannelId, notificationChannelName,
+              icon: 'ic_bg_service_small',
+              ongoing: true,
+              importance: Importance.max,
+              priority: Priority.high,
+              autoCancel: false,
+              actions: getAndroidNotificationActions(scooterService.state)),
+        ),
+      );
+    } else {
+      dismissNotification();
+    }
+  } else {
+    dismissNotification();
   }
 }
 
