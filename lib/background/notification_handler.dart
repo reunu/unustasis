@@ -38,26 +38,21 @@ Future<void> setupNotifications() async {
 }
 
 void updateNotification({String? debugText}) async {
-  if (backgroundScanEnabled) {
-    final savedScooters = await scooterService.getSavedScooterIds(onlyAutoConnect: true);
-    if (savedScooters.isNotEmpty) {
-      flutterLocalNotificationsPlugin.show(
-        notificationId,
-        "Unu Scooter",
-        scooterService.state?.getNameStatic(),
-        NotificationDetails(
-          android: AndroidNotificationDetails(notificationChannelId, notificationChannelName,
-              icon: 'ic_bg_service_small',
-              ongoing: true,
-              importance: Importance.max,
-              priority: Priority.high,
-              autoCancel: false,
-              actions: getAndroidNotificationActions(scooterService.state)),
-        ),
-      );
-    } else {
-      dismissNotification();
-    }
+  if (backgroundScanEnabled && (await scooterService.getSavedScooterIds(onlyAutoConnect: true)).isNotEmpty) {
+    flutterLocalNotificationsPlugin.show(
+      notificationId,
+      "Unu Scooter",
+      scooterService.state?.getNameStatic(),
+      NotificationDetails(
+        android: AndroidNotificationDetails(notificationChannelId, notificationChannelName,
+            icon: 'ic_bg_service_small',
+            ongoing: true,
+            importance: Importance.max,
+            priority: Priority.high,
+            autoCancel: false,
+            actions: getAndroidNotificationActions(scooterService.state)),
+      ),
+    );
   } else {
     dismissNotification();
   }

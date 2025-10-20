@@ -92,6 +92,17 @@ Future<void> attemptConnectionCycle() async {
   return;
 }
 
+Future<void> _updateServiceMode(bool isForeground) async {
+  if (_serviceInstance is AndroidServiceInstance) {
+    final androidService = _serviceInstance as AndroidServiceInstance;
+    if (isForeground) {
+      await androidService.setAsForegroundService();
+    } else {
+      await androidService.setAsBackgroundService();
+    }
+  }
+}
+
 void _enableScanning() async {
   backgroundScanEnabled = true;
   _rescanTimer?.start();
@@ -99,16 +110,12 @@ void _enableScanning() async {
 
   final savedScooters = await scooterService.getSavedScooterIds(onlyAutoConnect: true);
   if (savedScooters.isNotEmpty) {
-    if (_serviceInstance is AndroidServiceInstance) {
-      await (_serviceInstance as AndroidServiceInstance).setAsForegroundService();
-    }
+    await _updateServiceMode(true);
     updateNotification();
     attemptConnectionCycle();
   } else {
     Logger("bgservice").info("No saved scooters, not showing notification");
-    if (_serviceInstance is AndroidServiceInstance) {
-      await (_serviceInstance as AndroidServiceInstance).setAsBackgroundService();
-    }
+    await _updateServiceMode(false);
     dismissNotification();
   }
 }
@@ -120,11 +127,9 @@ void _disableScanning() async {
     ?..pause()
     ..reset();
   scooterService.rssiTimer.pause();
-  if (_serviceInstance is AndroidServiceInstance) {
-    Logger("bgservice").info("Setting service as background service");
-    await (_serviceInstance as AndroidServiceInstance).setAsBackgroundService();
-    Logger("bgservice").info("Service set as background, dismissing notification");
-  }
+  Logger("bgservice").info("Setting service as background service");
+  await _updateServiceMode(false);
+  Logger("bgservice").info("Service set as background, dismissing notification");
   dismissNotification();
   Logger("bgservice").info("Background scanning disabled, notification dismissed");
 }
@@ -214,14 +219,9 @@ void onStart(ServiceInstance service) async {
       }
       if (data?["updateSavedScooters"] == true) {
         await scooterService.refetchSavedScooters();
-        // If background scan is enabled and we now have scooters, start showing notification
         if (backgroundScanEnabled) {
-          final savedScooters = await scooterService.getSavedScooterIds(onlyAutoConnect: true);
-          if (savedScooters.isNotEmpty && _serviceInstance is AndroidServiceInstance) {
-            Logger("bgservice").info("Scooters added, enabling foreground mode");
-            await (_serviceInstance as AndroidServiceInstance).setAsForegroundService();
-            updateNotification();
-          }
+          Logger("bgservice").info("Scooters updated, re-evaluating scanning state.");
+          _enableScanning();
         }
       }
 
