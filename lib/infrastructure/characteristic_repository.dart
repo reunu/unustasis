@@ -21,6 +21,7 @@ class CharacteristicRepository {
   late BluetoothCharacteristic? primarySOCCharacteristic;
   late BluetoothCharacteristic? secondaryCyclesCharacteristic;
   late BluetoothCharacteristic? secondarySOCCharacteristic;
+  late BluetoothCharacteristic? nrfVersionCharacteristic;
 
   CharacteristicRepository(this.scooter);
 
@@ -62,6 +63,8 @@ class CharacteristicRepository {
         findCharacteristic(scooter, "9a5900e0-6e67-5d0d-aab9-ad9126b66f91", "9a5900f2-6e67-5d0d-aab9-ad9126b66f91");
     secondarySOCCharacteristic =
         findCharacteristic(scooter, "9a5900e0-6e67-5d0d-aab9-ad9126b66f91", "9a5900f5-6e67-5d0d-aab9-ad9126b66f91");
+    nrfVersionCharacteristic =
+        findCharacteristic(scooter, "9a59a000-6e67-5d0d-aab9-ad9126b66f91", "9a59a001-6e67-5d0d-aab9-ad9126b66f91");
     return;
   }
 

@@ -365,6 +365,20 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     notifyListeners();
   }
 
+  String? _nrfVersion;
+  String? get nrfVersion => _nrfVersion;
+  set nrfVersion(String? nrfVersion) {
+    _nrfVersion = nrfVersion;
+    notifyListeners();
+  }
+
+  bool? _isLibrescoot;
+  bool? get isLibrescoot => _isLibrescoot;
+  set isLibrescoot(bool? isLibrescoot) {
+    _isLibrescoot = isLibrescoot;
+    notifyListeners();
+  }
+
   String? _scooterName;
   String? get scooterName => _scooterName;
   set scooterName(String? scooterName) {
