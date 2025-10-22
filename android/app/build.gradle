@@ -97,6 +97,7 @@ dependencies {
     implementation "androidx.multidex:multidex:2.0.1"
     implementation "androidx.glance:glance-material3:1.1.1"
     implementation 'androidx.compose.material:material-icons-extended:1.5.4'
+    implementation "com.google.android.gms:play-services-wearable:18.2.0"
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.3")
 }
 

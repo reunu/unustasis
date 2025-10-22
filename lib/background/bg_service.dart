@@ -254,6 +254,7 @@ void onStart(ServiceInstance service) async {
   });
 
   service.on("openseat").listen((data) async {
+    print("Received openseat command");
     Logger("bgservice").info("Received openseat command");
     if (scooterService.connected) {
       scooterService.openSeat();
