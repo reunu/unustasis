@@ -262,6 +262,7 @@ class SavedScooterCard extends StatelessWidget {
                                 ?.description(context) ??
                             FlutterI18n.translate(context, "stats_unknown"),
                         style: Theme.of(context).textTheme.titleMedium,
+                        textAlign: TextAlign.center,
                       )
                     : Text(
                         FlutterI18n.translate(context, "stats_last_ping_toast", translationParams: {
