@@ -47,10 +47,10 @@ enum ScooterState {
   }
 
   static ScooterState? fromStateAndPowerState(ScooterState? state, ScooterPowerState? powerState) {
-    // If vehicle state indicates scooter is clearly operational, trust it over a stale "booting" powerState
+    // If vehicle state indicates scooter is clearly operational or off, trust it over a stale "booting" powerState
     // This handles cases where power-manager.state is unset/stale but vehicle.state is accurate
     if (powerState == ScooterPowerState.booting &&
-        (state == ScooterState.standby || state == ScooterState.ready || state == ScooterState.parked)) {
+        (state == ScooterState.off || state == ScooterState.standby || state == ScooterState.ready || state == ScooterState.parked)) {
       return state;
     }
 
