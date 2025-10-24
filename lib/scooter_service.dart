@@ -170,8 +170,10 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   }
 
   void updateScooterPing(String id) async {
-    savedScooters[id]!.lastPing = DateTime.now();
-    updateBackgroundService({"updateSavedScooters": true});
+    if (savedScooters.containsKey(id)) {
+      savedScooters[id]!.lastPing = DateTime.now();
+      updateBackgroundService({"updateSavedScooters": true});
+    }
   }
 
   Future<void> seedStreamsWithCache() async {
