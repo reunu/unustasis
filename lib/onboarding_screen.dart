@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:logging/logging.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
@@ -275,13 +276,63 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
     );
   }
 
+  Future<bool> _checkAndRequestPermissions() async {
+    // Check if location services are enabled
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      if (mounted) {
+        Fluttertoast.showToast(
+          msg: FlutterI18n.translate(context, "location_services_disabled"),
+          toastLength: Toast.LENGTH_LONG,
+        );
+      }
+      return false;
+    }
+
+    // Check location permission (required for Bluetooth scanning on Android)
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        if (mounted) {
+          Fluttertoast.showToast(
+            msg: FlutterI18n.translate(context, "location_permission_denied"),
+            toastLength: Toast.LENGTH_LONG,
+          );
+        }
+        return false;
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      if (mounted) {
+        Fluttertoast.showToast(
+          msg: FlutterI18n.translate(context, "location_permission_denied_forever"),
+          toastLength: Toast.LENGTH_LONG,
+        );
+      }
+      return false;
+    }
+
+    return true;
+  }
+
   void _startSearch() async {
+    // Check and request permissions before scanning
+    bool hasPermissions = await _checkAndRequestPermissions();
+    if (!hasPermissions) {
+      log.warning("Permissions not granted, cannot start scanning");
+      return;
+    }
+
+    if (!mounted) return;
+
     try {
       _foundScooter = await context.read<ScooterService>().findEligibleScooter(
           excludedScooterIds: widget.excludedScooterIds ?? [],
           // exclude system scooters if we're adding an additional scooter
           includeSystemScooters: !widget.skipWelcome);
-      if (_foundScooter != null) {
+      if (_foundScooter != null && mounted) {
         setState(() {
           _step = 3;
         });
