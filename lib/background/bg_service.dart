@@ -16,7 +16,6 @@ import '../background/notification_handler.dart';
 
 bool backgroundScanEnabled = true;
 PausableTimer? _rescanTimer;
-ServiceInstance? _serviceInstance;
 
 FlutterBluePlusMockable fbp = FlutterBluePlusMockable();
 ScooterService scooterService = ScooterService(fbp, isInBackgroundService: true);
@@ -92,32 +91,23 @@ Future<void> attemptConnectionCycle() async {
   return;
 }
 
-Future<void> _updateServiceMode(bool isForeground) async {
-  if (_serviceInstance is AndroidServiceInstance) {
-    final androidService = _serviceInstance as AndroidServiceInstance;
-    if (isForeground) {
-      await androidService.setAsForegroundService();
-    } else {
-      await androidService.setAsBackgroundService();
-    }
+Future<bool> _hasActiveWidgets() async {
+  try {
+    final widgets = await HomeWidget.getInstalledWidgets();
+    return widgets.isNotEmpty;
+  } catch (e) {
+    Logger("bgservice").warning("Error checking for active widgets: $e");
+    return false;
   }
 }
 
-void _enableScanning() async {
+void _enableScanning() {
+  Logger("bgservice").info("Enabling background scanning");
   backgroundScanEnabled = true;
   _rescanTimer?.start();
   scooterService.rssiTimer.start();
-
-  final savedScooters = await scooterService.getSavedScooterIds(onlyAutoConnect: true);
-  if (savedScooters.isNotEmpty) {
-    await _updateServiceMode(true);
-    updateNotification();
-    attemptConnectionCycle();
-  } else {
-    Logger("bgservice").info("No saved scooters, not showing notification");
-    await _updateServiceMode(false);
-    dismissNotification();
-  }
+  updateNotification();
+  attemptConnectionCycle();
 }
 
 void _disableScanning() async {
@@ -127,16 +117,19 @@ void _disableScanning() async {
     ?..pause()
     ..reset();
   scooterService.rssiTimer.pause();
-  Logger("bgservice").info("Setting service as background service");
-  await _updateServiceMode(false);
-  Logger("bgservice").info("Service set as background, dismissing notification");
-  dismissNotification();
-  Logger("bgservice").info("Background scanning disabled, notification dismissed");
+
+  final hasWidgets = await _hasActiveWidgets();
+  if (hasWidgets) {
+    Logger("bgservice").info("Widgets are active, keeping notification visible");
+    updateNotification();
+  } else {
+    Logger("bgservice").info("No active widgets, dismissing notification");
+    dismissNotification();
+  }
 }
 
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {
-  _serviceInstance = service;
   Logger("bgservice").onRecord.listen((record) {
     // ignore: avoid_print
     print("[${record.level.name}] ${record.time}: ${record.message} ${record.error ?? ""} ${record.stackTrace ?? ""}");

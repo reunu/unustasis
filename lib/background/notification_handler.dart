@@ -1,5 +1,7 @@
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:home_widget/home_widget.dart';
+import 'package:logging/logging.dart';
 
 import '../background/bg_service.dart';
 import '../background/translate_static.dart';
@@ -38,7 +40,17 @@ Future<void> setupNotifications() async {
 }
 
 void updateNotification({String? debugText}) async {
-  if (backgroundScanEnabled && (await scooterService.getSavedScooterIds(onlyAutoConnect: true)).isNotEmpty) {
+  // Check if widgets are active
+  bool hasWidgets = false;
+  try {
+    final widgets = await HomeWidget.getInstalledWidgets();
+    hasWidgets = widgets.isNotEmpty;
+  } catch (e) {
+    Logger("notification").warning("Error checking for active widgets: $e");
+  }
+
+  // Show notification if background scan is enabled OR widgets are active
+  if (backgroundScanEnabled || hasWidgets) {
     flutterLocalNotificationsPlugin.show(
       notificationId,
       "Unu Scooter",
