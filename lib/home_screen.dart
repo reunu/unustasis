@@ -12,6 +12,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../helper_widgets/leaves.dart';
 import '../helper_widgets/scooter_action_button.dart';
@@ -289,28 +290,46 @@ class _HomeScreenState extends State<HomeScreen> {
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       const SizedBox(width: 16),
-                                      BatteryBars(
-                                        primarySOC: context.select<ScooterService, int?>(
-                                          (service) => service.primarySOC,
-                                        ),
-                                        secondarySOC: context.select<ScooterService, int?>(
-                                          (service) => service.secondarySOC,
-                                        ),
-                                        dataIsOld: context.select<ScooterService, DateTime?>(
-                                                  (service) => service.lastPing,
-                                                ) ==
-                                                null
-                                            ? true
-                                            : context
-                                                    .select<ScooterService, DateTime?>(
-                                                      (service) => service.lastPing,
-                                                    )!
-                                                    .difference(
-                                                      DateTime.now(),
-                                                    )
-                                                    .inMinutes
-                                                    .abs() >
-                                                5,
+                                      Builder(
+                                        builder: (context) {
+                                          final isRefreshing = context.select<ScooterService, bool>(
+                                            (service) => service.isRefreshing,
+                                          );
+                                          final dataIsOld = context.select<ScooterService, DateTime?>(
+                                                    (service) => service.lastPing,
+                                                  ) ==
+                                                  null
+                                              ? true
+                                              : context
+                                                      .select<ScooterService, DateTime?>(
+                                                        (service) => service.lastPing,
+                                                      )!
+                                                      .difference(
+                                                        DateTime.now(),
+                                                      )
+                                                      .inMinutes
+                                                      .abs() >
+                                                  5;
+
+                                          final batteryBars = BatteryBars(
+                                            primarySOC: context.select<ScooterService, int?>(
+                                              (service) => service.primarySOC,
+                                            ),
+                                            secondarySOC: context.select<ScooterService, int?>(
+                                              (service) => service.secondarySOC,
+                                            ),
+                                            dataIsOld: dataIsOld,
+                                          );
+
+                                          if (isRefreshing && dataIsOld) {
+                                            return Shimmer.fromColors(
+                                              baseColor: context.isDarkMode ? Colors.white24 : Colors.black26,
+                                              highlightColor: context.isDarkMode ? Colors.white38 : Colors.black12,
+                                              child: batteryBars,
+                                            );
+                                          }
+                                          return batteryBars;
+                                        },
                                       ),
                                       const SizedBox(width: 8),
                                       const Icon(
@@ -585,8 +604,12 @@ class SeatButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Selector<ScooterService, ({bool? seatClosed, ScooterState? state})>(
-      selector: (context, service) => (seatClosed: service.seatClosed, state: service.state),
+    return Selector<ScooterService, ({bool? seatClosed, ScooterState? state, bool isRefreshing})>(
+      selector: (context, service) => (
+        seatClosed: service.seatClosed,
+        state: service.state,
+        isRefreshing: service.isRefreshing,
+      ),
       builder: (context, data, _) {
         return Expanded(
           child: ScooterActionButton(
@@ -597,7 +620,8 @@ class SeatButton extends StatelessWidget {
                           (ScooterService service) => service.scanning,
                         ) ==
                         false &&
-                    data.state!.isReadyForSeatOpen == true
+                    data.state!.isReadyForSeatOpen == true &&
+                    !data.isRefreshing
                 ? context.read<ScooterService>().openSeat
                 : null,
             label: data.seatClosed == false

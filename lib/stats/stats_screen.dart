@@ -100,14 +100,20 @@ class _StatsScreenState extends State<StatsScreen> {
             ),
           ),
           child: SafeArea(
-            child: Selector<ScooterService, DateTime?>(
-                selector: (context, service) => service.lastPing,
-                builder: (context, lastPing, _) {
-                  bool dataIsOld = lastPing == null || lastPing.difference(DateTime.now()).inMinutes.abs() > 5;
+            child: Selector<ScooterService, ({DateTime? lastPing, bool isRefreshing})>(
+                selector: (context, service) => (
+                  lastPing: service.lastPing,
+                  isRefreshing: service.isRefreshing,
+                ),
+                builder: (context, data, _) {
+                  bool dataIsOld = data.lastPing == null || data.lastPing!.difference(DateTime.now()).inMinutes.abs() > 5;
                   return TabBarView(
                     children: [
                       // BATTERY TAB
-                      BatterySection(dataIsOld: dataIsOld),
+                      BatterySection(
+                        dataIsOld: dataIsOld,
+                        isRefreshing: data.isRefreshing,
+                      ),
                       // SCOOTER TAB
                       ScooterSection(),
                       // SETTINGS TAB

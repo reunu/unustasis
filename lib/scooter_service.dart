@@ -394,6 +394,12 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     notifyListeners();
   }
 
+  DateTime? _lastRefreshStart;
+  bool get isRefreshing {
+    if (_lastRefreshStart == null) return false;
+    return DateTime.now().difference(_lastRefreshStart!).inSeconds < 10;
+  }
+
   int? _scooterColor;
   int? get scooterColor => _scooterColor;
   set scooterColor(int? scooterColor) {
@@ -729,6 +735,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
         characteristicRepository: characteristicRepository,
         service: this,
       );
+      _lastRefreshStart = DateTime.now();
       _scooterReader.readAndSubscribe();
 
       // check if any of the characteristics are null, and if so, throw an error

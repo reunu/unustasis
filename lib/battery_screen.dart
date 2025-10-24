@@ -17,11 +17,17 @@ class BatteryScreen extends StatelessWidget {
       ),
       body: Container(
         color: Theme.of(context).colorScheme.surface,
-        child: Selector<ScooterService, DateTime?>(
-          selector: (context, service) => service.lastPing,
-          builder: (context, lastPing, _) {
-            bool dataIsOld = lastPing == null || lastPing.difference(DateTime.now()).inMinutes.abs() > 5;
-            return BatterySection(dataIsOld: dataIsOld);
+        child: Selector<ScooterService, ({DateTime? lastPing, bool isRefreshing})>(
+          selector: (context, service) => (
+            lastPing: service.lastPing,
+            isRefreshing: service.isRefreshing,
+          ),
+          builder: (context, data, _) {
+            bool dataIsOld = data.lastPing == null || data.lastPing!.difference(DateTime.now()).inMinutes.abs() > 5;
+            return BatterySection(
+              dataIsOld: dataIsOld,
+              isRefreshing: data.isRefreshing,
+            );
           },
         ),
       ),

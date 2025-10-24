@@ -10,14 +10,20 @@ import 'package:logging/logging.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:nfc_manager/nfc_manager_android.dart';
 import 'package:provider/provider.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../domain/scooter_battery.dart';
 import '../scooter_service.dart';
 
 class BatterySection extends StatefulWidget {
-  const BatterySection({required this.dataIsOld, super.key});
+  const BatterySection({
+    required this.dataIsOld,
+    required this.isRefreshing,
+    super.key,
+  });
 
   final bool dataIsOld;
+  final bool isRefreshing;
 
   @override
   State<BatterySection> createState() => _BatterySectionState();
@@ -41,7 +47,7 @@ class _BatterySectionState extends State<BatterySection> {
             builder: (context, data, _) {
               int primaryRange = data.primarySOC != null ? (45 * (data.primarySOC! / 100)).round() : 0;
               int secondaryRange = data.secondarySOC != null ? (45 * (data.secondarySOC! / 100)).round() : 0;
-              return Column(children: [
+              final displaySection = Column(children: [
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 32.0),
                   child: Column(
@@ -95,44 +101,93 @@ class _BatterySectionState extends State<BatterySection> {
                   ],
                 ),
               ]);
+
+              if (widget.isRefreshing && widget.dataIsOld) {
+                final isDark = Theme.of(context).brightness == Brightness.dark;
+                return Shimmer.fromColors(
+                  baseColor: isDark ? Colors.white24 : Colors.black26,
+                  highlightColor: isDark ? Colors.white38 : Colors.black12,
+                  child: displaySection,
+                );
+              }
+              return displaySection;
             }),
         const SizedBox(height: 32),
         if ((context.select<ScooterService, int?>((service) => service.primarySOC) ?? 0) > 0)
-          _batteryCard(
-            type: ScooterBatteryType.primary,
-            soc: context.select<ScooterService, int?>((service) => service.primarySOC)!,
-            cycles: context.select<ScooterService, int?>((service) => service.primaryCycles),
-            old: widget.dataIsOld,
+          Builder(
+            builder: (context) {
+              final card = _batteryCard(
+                type: ScooterBatteryType.primary,
+                soc: context.select<ScooterService, int?>((service) => service.primarySOC)!,
+                cycles: context.select<ScooterService, int?>((service) => service.primaryCycles),
+                old: widget.dataIsOld,
+              );
+              if (widget.isRefreshing && widget.dataIsOld) {
+                final isDark = Theme.of(context).brightness == Brightness.dark;
+                return Shimmer.fromColors(
+                  baseColor: isDark ? Colors.white24 : Colors.black26,
+                  highlightColor: isDark ? Colors.white38 : Colors.black12,
+                  child: card,
+                );
+              }
+              return card;
+            },
           ),
 
         if ((context.select<ScooterService, int?>((service) => service.secondarySOC) ?? 0) > 0)
-          _batteryCard(
-            type: ScooterBatteryType.secondary,
-            soc: context.select<ScooterService, int?>((service) => service.secondarySOC)!,
-            cycles: context.select<ScooterService, int?>((service) => service.secondaryCycles),
-            old: widget.dataIsOld,
+          Builder(
+            builder: (context) {
+              final card = _batteryCard(
+                type: ScooterBatteryType.secondary,
+                soc: context.select<ScooterService, int?>((service) => service.secondarySOC)!,
+                cycles: context.select<ScooterService, int?>((service) => service.secondaryCycles),
+                old: widget.dataIsOld,
+              );
+              if (widget.isRefreshing && widget.dataIsOld) {
+                final isDark = Theme.of(context).brightness == Brightness.dark;
+                return Shimmer.fromColors(
+                  baseColor: isDark ? Colors.white24 : Colors.black26,
+                  highlightColor: isDark ? Colors.white38 : Colors.black12,
+                  child: card,
+                );
+              }
+              return card;
+            },
           ),
-        Row(
-          children: [
-            Expanded(
-              child: _internalBatteryCard(
-                type: ScooterBatteryType.cbb,
-                soc: context.select<ScooterService, int?>((service) => service.cbbSOC) ?? 100,
-                charging: context.select<ScooterService, bool?>((service) => service.cbbCharging),
-                old: widget.dataIsOld,
-                context: context,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _internalBatteryCard(
-                type: ScooterBatteryType.aux,
-                soc: context.select<ScooterService, int?>((service) => service.auxSOC) ?? 100,
-                old: widget.dataIsOld,
-                context: context,
-              ),
-            ),
-          ],
+        Builder(
+          builder: (context) {
+            final internalBatteries = Row(
+              children: [
+                Expanded(
+                  child: _internalBatteryCard(
+                    type: ScooterBatteryType.cbb,
+                    soc: context.select<ScooterService, int?>((service) => service.cbbSOC) ?? 100,
+                    charging: context.select<ScooterService, bool?>((service) => service.cbbCharging),
+                    old: widget.dataIsOld,
+                    context: context,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _internalBatteryCard(
+                    type: ScooterBatteryType.aux,
+                    soc: context.select<ScooterService, int?>((service) => service.auxSOC) ?? 100,
+                    old: widget.dataIsOld,
+                    context: context,
+                  ),
+                ),
+              ],
+            );
+            if (widget.isRefreshing && widget.dataIsOld) {
+              final isDark = Theme.of(context).brightness == Brightness.dark;
+              return Shimmer.fromColors(
+                baseColor: isDark ? Colors.white24 : Colors.black26,
+                highlightColor: isDark ? Colors.white38 : Colors.black12,
+                child: internalBatteries,
+              );
+            }
+            return internalBatteries;
+          },
         ),
 
         // only available on Android, hidden right now though
