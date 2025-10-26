@@ -917,11 +917,12 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       characteristicToSend = characteristic;
     }
 
-    // commandCharcteristic should never be null, so we can assume it's not
-    // if the given characteristic is null, we'll "fail" quitely by sending garbage to the default command characteristic instead
+    if (characteristicToSend == null) {
+      throw "Could not send command, move closer or reconnect";
+    }
 
     try {
-      characteristicToSend!.write(ascii.encode(command));
+      characteristicToSend.write(ascii.encode(command));
     } catch (e) {
       rethrow;
     }
