@@ -45,9 +45,9 @@ Future<void> setupWidgetTasks() async {
   await Workmanager().registerPeriodicTask(
     widgetTaskID,
     widgetTaskID,
-    existingWorkPolicy: ExistingPeriodicWorkPolicy.update,
-    frequency: Duration(minutes: 20),
-    initialDelay: Duration(minutes: 1),
+    existingWorkPolicy: ExistingWorkPolicy.update,
+    frequency: const Duration(minutes: 20),
+    initialDelay: const Duration(minutes: 1),
   );
 }
 

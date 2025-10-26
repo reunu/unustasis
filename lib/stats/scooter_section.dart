@@ -19,6 +19,7 @@ import '../domain/color_utils.dart';
 import '../geo_helper.dart';
 import '../scooter_service.dart';
 import '../services/image_cache_service.dart';
+import '../background/widget_handler.dart';
 
 class ScooterSection extends StatefulWidget {
   const ScooterSection({
@@ -542,6 +543,7 @@ class SavedScooterCard extends StatelessWidget {
                             ?.description(context) ??
                         connectionStatus.description(context),
                     style: Theme.of(context).textTheme.titleMedium,
+                    textAlign: TextAlign.center,
                   ),
                 if (!connected)
                   Column(
@@ -549,6 +551,7 @@ class SavedScooterCard extends StatelessWidget {
                       Text(
                         connectionStatus.description(context),
                         style: Theme.of(context).textTheme.titleMedium,
+                        textAlign: TextAlign.center,
                       ),
                       if (savedScooter.lastPrimarySOC != null || savedScooter.lastSecondarySOC != null)
                         const SizedBox(height: 4),
@@ -623,8 +626,8 @@ class SavedScooterCard extends StatelessWidget {
                         context, "stats_last_ping",
                         translationParams: {
                           "time": savedScooter.lastPing
-                              .calculateTimeDifferenceInShort(context)
-                              .toLowerCase()
+                              .calculateTimeDifferenceInShort()
+                              ?.toLowerCase() ?? "?"
                         })),
                     onTap: () {
                       Fluttertoast.showToast(
@@ -645,10 +648,7 @@ class SavedScooterCard extends StatelessWidget {
                   ),
                 if (savedScooter.lastLocation != null && !connected)
                   ListTile(
-<<<<<<< HEAD
-=======
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16),
->>>>>>> 0ef86bb (feat: improve scooter list location display with separate ListTiles)
                     title: Text(
                       FlutterI18n.translate(context, "stats_last_seen_near"),
                     ),
@@ -929,9 +929,10 @@ class SavedScooterCard extends StatelessWidget {
                                   .read<ScooterService>()
                                   .connectToScooterId(savedScooter.id);
                               if (context.mounted) {
+                                // Start auto-restart targeting this specific scooter
                                 context
                                     .read<ScooterService>()
-                                    .startAutoRestart();
+                                    .startAutoRestart(targetScooterId: savedScooter.id);
                               }
                               rebuild();
                             } catch (e, stack) {
@@ -1446,20 +1447,9 @@ class _CloudScooterSelectionDialog extends StatelessWidget {
                                     color: Colors.grey.shade400,
                                     width: 1,
                                   ),
-                                );
-                              } else {
-                                // Loading state
-                                return SizedBox(
-                                  width: 32,
-                                  height: 32,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      SavedScooter.hexToColor(scooter['color_hex'] ?? '#FFFFFF'),
-                                    ),
-                                  ),
-                                );
-                              }
+                                ),
+                                child: const Icon(Icons.electric_scooter, size: 20),
+                              );
                             },
                           )
                         : Container(

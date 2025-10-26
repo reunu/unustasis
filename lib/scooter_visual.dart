@@ -175,20 +175,6 @@ class _ScooterVisualState extends State<ScooterVisual> {
       _doFlickerSequence();
     });
   }
-=======
-  const ScooterVisual(
-      {required this.state,
-      required this.scanning,
-      required this.blinkerLeft,
-      required this.blinkerRight,
-      this.winter = false,
-      this.aprilFools = false,
-      this.color,
-      this.colorHex,
-      this.cloudImageUrl,
-      this.hasCustomColor = false,
-      super.key});
->>>>>>> 2081bc6 (feat: update main page immediately when connecting to target scooter)
 
   @override
   Widget build(BuildContext context) {
@@ -246,42 +232,28 @@ class _ScooterVisualState extends State<ScooterVisual> {
                   crossFadeState:
                       widget.state == ScooterState.disconnected ? CrossFadeState.showFirst : CrossFadeState.showSecond,
                 ),
-                if (widget.winter && widget.state != ScooterState.disconnected)
+                if (widget.winter &&
+                    widget.state != ScooterState.disconnected &&
+                    widget.state != ScooterState.connectingAuto)
                   AnimatedCrossFade(
                     duration: const Duration(milliseconds: 500),
                     firstChild: const Image(
                       image: AssetImage(
-                        "images/scooter/seasonal/winter_on.webp",
-                      ),
+                          "images/scooter/seasonal/winter_on.webp"),
                     ),
-                    secondChild: Opacity(
-                      opacity: 1,
-                      child: _buildScooterImage(),
+                    secondChild: const Image(
+                      image: AssetImage(
+                          "images/scooter/seasonal/winter_off.webp"),
                     ),
-                    crossFadeState: state == ScooterState.disconnected ||
-                            state == ScooterState.connectingAuto
+                    crossFadeState: widget.state != null && widget.state!.isOn
                         ? CrossFadeState.showFirst
                         : CrossFadeState.showSecond,
                   ),
-                  if (winter &&
-                      state != ScooterState.disconnected &&
-                      state != ScooterState.connectingAuto)
-                    AnimatedCrossFade(
-                      duration: const Duration(milliseconds: 500),
-                      firstChild: const Image(
-                        image: AssetImage(
-                            "images/scooter/seasonal/winter_on.webp"),
-                      ),
-                      secondChild: const Image(
-                        image: AssetImage(
-                            "images/scooter/seasonal/winter_off.webp"),
-                      ),
-                      crossFadeState: state != null && state!.isOn
-                          ? CrossFadeState.showFirst
-                          : CrossFadeState.showSecond,
-                    ),
-                  AnimatedOpacity(
-                    opacity: state != null && state!.isOn ? 1.0 : 0.0,
+                AnimatedOpacity(
+                  opacity: _ringFlickering ? 0.0 : 1.0,
+                  duration: _ringOpacityDuration,
+                  child: AnimatedOpacity(
+                    opacity: widget.state != null && widget.state!.isOn ? 1.0 : 0.0,
                     duration: const Duration(milliseconds: 1000),
                     child: const Image(
                       image: AssetImage("images/scooter/light_ring.webp"),
@@ -306,10 +278,10 @@ class _ScooterVisualState extends State<ScooterVisual> {
 
   /// Builds the main scooter image, handling both local assets and cloud images
   Widget _buildScooterImage() {
-    if (hasCustomColor && cloudImageUrl != null) {
+    if (widget.hasCustomColor && widget.cloudImageUrl != null) {
       // Use cached cloud image for custom colors - use "front" image for main screen
       return FutureBuilder<File?>(
-        future: ImageCacheService().getImage(cloudImageUrl!),
+        future: ImageCacheService().getImage(widget.cloudImageUrl!),
         builder: (context, snapshot) {
           if (snapshot.hasData && snapshot.data != null) {
             return Image.file(
@@ -326,7 +298,7 @@ class _ScooterVisualState extends State<ScooterVisual> {
             // Loading state - show asset image while loading
             return Image(
               image: AssetImage(
-                  "images/scooter/base_${aprilFools ? 9 : color ?? 1}.webp"),
+                  "images/scooter/base_${widget.aprilFools ? 9 : widget.color ?? 1}.webp"),
             );
           }
         },
@@ -335,7 +307,7 @@ class _ScooterVisualState extends State<ScooterVisual> {
       // Use local asset image for predefined colors
       return Image(
         image: AssetImage(
-            "images/scooter/base_${aprilFools ? 9 : color ?? 1}.webp"),
+            "images/scooter/base_${widget.aprilFools ? 9 : widget.color ?? 1}.webp"),
       );
     }
   }
@@ -365,7 +337,7 @@ class _ScooterVisualState extends State<ScooterVisual> {
 
   /// Gets the effective color for display
   Color _getEffectiveColor() {
-    return SavedScooter.getEffectiveColor(colorHex: colorHex, colorIndex: color);
+    return SavedScooter.getEffectiveColor(colorHex: widget.colorHex, colorIndex: widget.color);
   }
 
   IconData stateIcon() {

@@ -15,6 +15,8 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helper_widgets/scooter_action_button.dart';
+import '../helper_widgets/leaves.dart';
+import '../helper_widgets/clouds.dart';
 import '../handlebar_warning.dart';
 import '../control_screen.dart';
 import '../domain/icomoon.dart';
@@ -48,6 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _snowing = false;
   bool _forceHover = false;
   bool _spring = false;
+  bool _fall = false;
 
   @override
   void initState() {
@@ -73,6 +76,9 @@ class _HomeScreenState extends State<HomeScreen> {
             // Easter season, place some easter eggs!
             setState(() => _spring = true);
           }
+        case 10:
+          // October, it's fall by day and halloween by night
+          setState(() => _fall = true);
         // who knows what else might be in the future?
       }
     }
@@ -242,24 +248,50 @@ class _HomeScreenState extends State<HomeScreen> {
                         const BatteryBars(),
                       const SizedBox(height: 16),
                       Expanded(
-                        child: ScooterVisual(
-                          color: context.select<ScooterService, int?>(
-                                  (service) => service.scooterColor) ??
-                              1,
-                          colorHex: context.select<ScooterService, String?>(
-                                  (service) => service.scooterColorHex),
-                          cloudImageUrl: context.select<ScooterService, String?>(
-                                  (service) => service.scooterCloudImageUrl),
-                          hasCustomColor: context.select<ScooterService, bool>(
-                                  (service) => service.scooterHasCustomColor),
-                          state: context.select(
-                              (ScooterService service) => service.state),
-                          scanning: context.select(
-                              (ScooterService service) => service.scanning),
-                          blinkerLeft: _hazards,
-                          blinkerRight: _hazards,
-                          winter: _snowing,
-                          aprilFools: _forceHover,
+                        child: Stack(
+                          children: [
+                            ScooterVisual(
+                              color: context.select<ScooterService, int?>(
+                                      (service) => service.scooterColor) ??
+                                  1,
+                              colorHex: context.select<ScooterService, String?>(
+                                      (service) => service.scooterColorHex),
+                              cloudImageUrl: context.select<ScooterService, String?>(
+                                      (service) => service.scooterCloudImageUrl),
+                              hasCustomColor: context.select<ScooterService, bool>(
+                                      (service) => service.scooterHasCustomColor),
+                              state: context.select(
+                                  (ScooterService service) => service.state),
+                              scanning: context.select(
+                                  (ScooterService service) => service.scanning),
+                              blinkerLeft: _hazards,
+                              blinkerRight: _hazards,
+                              winter: _snowing,
+                              aprilFools: _forceHover,
+                              halloween: _fall && context.isDarkMode,
+                            ),
+                            if (_fall && !context.isDarkMode)
+                              LeavesBackground(
+                                backgroundColor: Colors.transparent,
+                                leafColors: const [
+                                  Color(0xFF8B4000), // brown
+                                  Color(0xFFFF8C00), // dark orange
+                                  Color(0xFFFFC107), // amber
+                                  Color(0xFFB7410E), // russet
+                                ],
+                                leafCount: 15,
+                              ),
+                            if (_snowing)
+                              SnowfallBackground(
+                                backgroundColor: Colors.transparent,
+                                snowflakeColor:
+                                    context.isDarkMode ? Colors.white.withValues(alpha: 0.15) : Colors.black.withValues(alpha: 0.05),
+                              ),
+                            if (_fall && context.isDarkMode)
+                              const Clouds(
+                                backgroundColor: Colors.transparent,
+                              ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 16),
