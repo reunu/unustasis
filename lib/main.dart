@@ -12,6 +12,7 @@ import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences/util/legacy_to_async_migration_util.dart';
+import 'package:app_links/app_links.dart';
 
 import '../background/bg_service.dart';
 import '../domain/log_helper.dart';
@@ -19,6 +20,7 @@ import '../flutter/blue_plus_mockable.dart';
 import '../home_screen.dart';
 import '../scooter_service.dart';
 import '../background/widget_handler.dart';
+import '../services/image_cache_service.dart';
 
 void main() async {
   LogHelper().initialize();
@@ -77,23 +79,67 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  StreamSubscription? _linkSubscription;
+  final log = Logger('MyApp');
+  late AppLinks _appLinks;
+
   @override
   void initState() {
-    scooterService.addListener(() async {
-      passToWidget(
-        connected: scooterService.connected,
-        lastPing: scooterService.lastPing,
-        scooterState: scooterService.state,
-        primarySOC: scooterService.primarySOC,
-        secondarySOC: scooterService.secondarySOC,
-        scooterName: scooterService.scooterName,
-        scooterColor: scooterService.scooterColor,
-        lastLocation: scooterService.lastLocation,
-        seatClosed: scooterService.seatClosed,
-        scooterLocked: scooterService.handlebarsLocked,
-      );
-    });
     super.initState();
+    _initDeepLinks();
+    _initImageCache();
+  }
+
+  void _initImageCache() async {
+    try {
+      await ImageCacheService().initialize();
+      log.info('Image cache service initialized');
+    } catch (e, stack) {
+      log.severe('Failed to initialize image cache service', e, stack);
+    }
+  }
+
+  void _initDeepLinks() async {
+    try {
+      _appLinks = AppLinks();
+
+      // Handle app launch from deep link
+      final initialLink = await _appLinks.getInitialLink();
+      if (initialLink != null) {
+        _handleDeepLink(initialLink.toString());
+      }
+
+      // Handle deep links while app is running
+      _linkSubscription = _appLinks.uriLinkStream.listen(
+        (Uri uri) {
+          _handleDeepLink(uri.toString());
+        },
+        onError: (err) {
+          log.severe('Deep link error: $err');
+        },
+      );
+    } catch (e) {
+      log.severe('Failed to initialize deep links: $e');
+    }
+  }
+
+  void _handleDeepLink(String link) {
+    log.info('Received deep link: $link');
+    final uri = Uri.parse(link);
+
+    if (uri.scheme == 'unustasis' && uri.host == 'oauth' && uri.path == '/callback') {
+      // Handle OAuth callback
+      final scooterService = context.read<ScooterService>();
+      scooterService.cloudService.handleOAuthCallback(uri).then((success) {
+        if (success) {
+          log.info('OAuth callback handled successfully');
+        } else {
+          log.warning('OAuth callback failed');
+        }
+      }).catchError((e) {
+        log.severe('Error handling OAuth callback: $e');
+      });
+    }
   }
 
   @override
@@ -161,6 +207,7 @@ class _MyAppState extends State<MyApp> {
 
   @override
   void dispose() {
+    _linkSubscription?.cancel();
     super.dispose();
   }
 }

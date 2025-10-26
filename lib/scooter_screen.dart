@@ -81,13 +81,8 @@ class _ScooterScreenState extends State<ScooterScreen> {
       ),
       body: Container(
         color: Theme.of(context).colorScheme.surface,
-        child: ScooterSection(
-          isListView: _isListView,
-          onNavigateBack: () {
-            if (Navigator.of(context).canPop()) {
-              Navigator.of(context).pop();
-            }
-          },
+        child: const ScooterSection(
+          dataIsOld: false,
         ),
       ),
     );

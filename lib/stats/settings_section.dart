@@ -16,6 +16,7 @@ import '../control_screen.dart';
 import '../domain/theme_helper.dart';
 import '../domain/scooter_keyless_distance.dart';
 import '../scooter_service.dart';
+import 'cloud_settings_section.dart';
 
 class SettingsSection extends StatefulWidget {
   const SettingsSection({super.key});
@@ -333,17 +334,19 @@ class _SettingsSectionState extends State<SettingsSection> {
             DateTime.now().month == 4 ||
             DateTime.now().month == 10) // All seasonal months
           SwitchListTile(
-            secondary: const Icon(Icons.star),
-            title: Text(FlutterI18n.translate(context, "settings_seasonal")),
-            subtitle: Text(FlutterI18n.translate(context, "settings_color_info")),
-            value: seasonal,
-            onChanged: (value) async {
-              await prefs.setBool("seasonal", value);
-              setState(() {
-                seasonal = value;
-              });
-            },
-          ),
+              secondary: const Icon(Icons.star),
+              title: Text(FlutterI18n.translate(context, "settings_seasonal")),
+              subtitle:
+                  Text(FlutterI18n.translate(context, "settings_color_info")),
+              value: seasonal,
+              onChanged: (value) async {
+                await prefs.setBool("seasonal", value);
+                setState(() {
+                  seasonal = value;
+                });
+              }),
+        // Cloud Settings Section
+        const CloudSettingsSection(),
         Header(FlutterI18n.translate(context, "stats_settings_section_about")),
         ListTile(
           leading: const Icon(Icons.privacy_tip_outlined),
