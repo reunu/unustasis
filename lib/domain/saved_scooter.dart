@@ -5,7 +5,7 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class SavedScooter {
+interface class SavedScooter {
   String _name;
   String _id;
   int _color;
