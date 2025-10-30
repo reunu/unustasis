@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
-import 'package:unustasis/control_screen.dart';
-import 'package:unustasis/scooter_service.dart';
+
+import '../helper_widgets/header.dart';
+import '../scooter_service.dart';
 
 enum BlinkerMode { left, right, hazard, off }
 
@@ -13,95 +15,153 @@ class ControlSheet extends StatefulWidget {
   State<ControlSheet> createState() => _ControlSheetState();
 }
 
-class _ControlSheetState extends State<ControlSheet> {
+class _ControlSheetState extends State<ControlSheet> with TickerProviderStateMixin {
   BlinkerMode _blinkerMode = BlinkerMode.off;
 
   @override
   Widget build(BuildContext context) {
-    return BottomSheet(
-        showDragHandle: true,
-        enableDrag: true,
-        onClosing: () {},
-        builder: (context) {
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Header(FlutterI18n.translate(context, "controls_blinkers_title")),
-              SegmentedButton<BlinkerMode?>(
-                emptySelectionAllowed: true,
-                showSelectedIcon: false,
-                style: ButtonStyle(
-                  padding: WidgetStatePropertyAll<EdgeInsetsGeometry>(
-                    const EdgeInsets.symmetric(vertical: 24, horizontal: 40),
-                  ),
-                ),
-                segments: const [
-                  ButtonSegment<BlinkerMode?>(
-                    value: BlinkerMode.left,
-                    icon: Icon(Icons.chevron_left_rounded, size: 24),
-                  ),
-                  ButtonSegment<BlinkerMode?>(
-                    value: BlinkerMode.hazard,
-                    icon: Icon(Icons.warning_amber_rounded, size: 24),
-                  ),
-                  ButtonSegment<BlinkerMode?>(
-                    value: BlinkerMode.right,
-                    icon: Icon(Icons.chevron_right_rounded, size: 24),
-                  ),
-                ],
-                selected: {_blinkerMode},
-                onSelectionChanged: (value) {
-                  setState(() {
-                    if (value.isNotEmpty) {
-                      _blinkerMode = value.first!;
-                      context.read<ScooterService>().blink(
-                            left: _blinkerMode == BlinkerMode.left || _blinkerMode == BlinkerMode.hazard,
-                            right: _blinkerMode == BlinkerMode.right || _blinkerMode == BlinkerMode.hazard,
-                          );
-                    } else {
-                      _blinkerMode = BlinkerMode.off;
-                      context.read<ScooterService>().blink(left: false, right: false);
-                    }
-                  });
-                },
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Center(child: Header(FlutterI18n.translate(context, "controls_blinkers_title"))),
+          SegmentedButton<BlinkerMode?>(
+            emptySelectionAllowed: true,
+            showSelectedIcon: false,
+            style: ButtonStyle(
+              padding: WidgetStatePropertyAll<EdgeInsetsGeometry>(
+                const EdgeInsets.symmetric(vertical: 16),
               ),
-              Header(FlutterI18n.translate(context, "controls_state_title")),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextButton.icon(
-                      style: TextButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.onSurface,
-                        foregroundColor: Theme.of(context).colorScheme.surface,
-                        padding: EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      onPressed: () {
-                        // TODO
-                      },
-                      label: Text(FlutterI18n.translate(context, "controls_unlock")),
-                      icon: const Icon(Icons.lock_open_outlined),
-                    ),
-                  ),
-                  SizedBox(width: 16),
-                  Expanded(
-                    child: TextButton.icon(
-                      style: TextButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.onSurface,
-                        foregroundColor: Theme.of(context).colorScheme.surface,
-                        padding: EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      onPressed: () {
-                        // TODO
-                      },
-                      label: Text(FlutterI18n.translate(context, "controls_lock")),
-                      icon: const Icon(Icons.lock_outline_rounded),
-                    ),
-                  ),
-                ],
+            ),
+            segments: const [
+              ButtonSegment<BlinkerMode?>(
+                value: BlinkerMode.left,
+                icon: Icon(Icons.chevron_left_rounded, size: 24),
               ),
-              SizedBox(height: 32),
+              ButtonSegment<BlinkerMode?>(
+                value: BlinkerMode.hazard,
+                icon: Icon(Icons.warning_amber_rounded, size: 24),
+              ),
+              ButtonSegment<BlinkerMode?>(
+                value: BlinkerMode.right,
+                icon: Icon(Icons.chevron_right_rounded, size: 24),
+              ),
             ],
-          );
-        });
+            selected: {_blinkerMode},
+            onSelectionChanged: (value) {
+              if (value.isNotEmpty) {
+                try {
+                  context.read<ScooterService>().blink(
+                        left: _blinkerMode == BlinkerMode.left || _blinkerMode == BlinkerMode.hazard,
+                        right: _blinkerMode == BlinkerMode.right || _blinkerMode == BlinkerMode.hazard,
+                      );
+                  setState(() {
+                    _blinkerMode = value.first!;
+                  });
+                } catch (e) {
+                  Fluttertoast.showToast(msg: e.toString());
+                }
+              } else {
+                try {
+                  context.read<ScooterService>().blink(left: false, right: false);
+                } catch (e) {
+                  Fluttertoast.showToast(msg: e.toString());
+                }
+                setState(() {
+                  _blinkerMode = BlinkerMode.off;
+                });
+              }
+            },
+          ),
+          Center(child: Header(FlutterI18n.translate(context, "controls_state_title"))),
+          Row(
+            children: [
+              Expanded(
+                child: TextButton.icon(
+                  style: TextButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.onSurface,
+                    foregroundColor: Theme.of(context).colorScheme.surface,
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  onPressed: () {
+                    try {
+                      context.read<ScooterService>().unlock();
+                    } catch (e) {
+                      Fluttertoast.showToast(msg: e.toString());
+                    }
+                  },
+                  label: Text(FlutterI18n.translate(context, "controls_unlock")),
+                  icon: const Icon(Icons.lock_open_outlined),
+                ),
+              ),
+              SizedBox(width: 16),
+              Expanded(
+                child: TextButton.icon(
+                  style: TextButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.onSurface,
+                    foregroundColor: Theme.of(context).colorScheme.surface,
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  onPressed: () {
+                    try {
+                      context.read<ScooterService>().lock();
+                    } catch (e) {
+                      Fluttertoast.showToast(msg: e.toString());
+                    }
+                  },
+                  label: Text(FlutterI18n.translate(context, "controls_lock")),
+                  icon: const Icon(Icons.lock_outline_rounded),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: TextButton.icon(
+                  style: TextButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.onSurface,
+                    foregroundColor: Theme.of(context).colorScheme.surface,
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  onPressed: () {
+                    try {
+                      context.read<ScooterService>().wakeUpAndUnlock();
+                    } catch (e) {
+                      Fluttertoast.showToast(msg: e.toString());
+                    }
+                  },
+                  label: Text(FlutterI18n.translate(context, "controls_wake_up")),
+                  icon: const Icon(Icons.power_settings_new_rounded),
+                ),
+              ),
+              SizedBox(width: 16),
+              Expanded(
+                child: TextButton.icon(
+                  style: TextButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.onSurface,
+                    foregroundColor: Theme.of(context).colorScheme.surface,
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  onPressed: () {
+                    try {
+                      context.read<ScooterService>().hibernate();
+                    } catch (e) {
+                      Fluttertoast.showToast(msg: e.toString());
+                    }
+                  },
+                  label: Text(FlutterI18n.translate(context, "controls_hibernate")),
+                  icon: const Icon(Icons.nightlight_outlined),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 32),
+        ],
+      ),
+    );
   }
 }

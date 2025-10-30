@@ -12,13 +12,11 @@ import 'package:local_auth/local_auth.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:unustasis/control_sheet.dart';
 
 import '../helper_widgets/leaves.dart';
 import '../helper_widgets/scooter_action_button.dart';
 import '../helper_widgets/onboarding_popups.dart';
 import '../handlebar_warning.dart';
-import '../control_screen.dart';
 import '../domain/icomoon.dart';
 import '../domain/theme_helper.dart';
 import '../onboarding_screen.dart';
@@ -29,6 +27,7 @@ import '../battery_screen.dart';
 import '../scooter_screen.dart';
 import '../settings_screen.dart';
 import '../support_screen.dart';
+import '../control_sheet.dart';
 import '../helper_widgets/snowfall.dart';
 import '../helper_widgets/clouds.dart';
 import '../helper_widgets/grassscape.dart';
@@ -215,11 +214,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 ),
                                 // Hidden for stable release, but useful for various debugging
-                                onLongPress: () => showModalBottomSheet(
-                                    context: context,
-                                    builder: (context) {
-                                      return ControlSheet();
-                                    }),
+                                // onLongPress: () {},
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   mainAxisSize: MainAxisSize.min,
@@ -451,11 +446,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                                   );
                                                 }
                                               } else {
-                                                Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder: (context) => const ControlScreen(),
-                                                  ),
+                                                showModalBottomSheet<void>(
+                                                  context: context,
+                                                  showDragHandle: true,
+                                                  builder: (BuildContext context) {
+                                                    return ControlSheet();
+                                                  },
                                                 );
                                               }
                                             }
