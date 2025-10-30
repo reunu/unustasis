@@ -12,6 +12,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unustasis/control_sheet.dart';
 
 import '../helper_widgets/leaves.dart';
 import '../helper_widgets/scooter_action_button.dart';
@@ -214,7 +215,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 ),
                                 // Hidden for stable release, but useful for various debugging
-                                // onLongPress: () => context.read<ScooterService>().addDemoData(),
+                                onLongPress: () => showModalBottomSheet(
+                                    context: context,
+                                    builder: (context) {
+                                      return ControlSheet();
+                                    }),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   mainAxisSize: MainAxisSize.min,
