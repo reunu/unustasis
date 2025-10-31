@@ -17,6 +17,7 @@ class ControlSheet extends StatefulWidget {
 
 class _ControlSheetState extends State<ControlSheet> with TickerProviderStateMixin {
   BlinkerMode _blinkerMode = BlinkerMode.off;
+  bool _disconnectedHandled = false;
 
   @override
   Widget build(BuildContext context) {
@@ -26,6 +27,24 @@ class _ControlSheetState extends State<ControlSheet> with TickerProviderStateMix
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
+          // listen to connection state and close if disconnected
+          Selector<ScooterService, bool>(
+            selector: (context, s) => s.connected,
+            shouldRebuild: (prev, next) => !_disconnectedHandled && prev != next,
+            builder: (context, connected, _) {
+              if (!connected && !_disconnectedHandled) {
+                _disconnectedHandled = true;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!mounted) return;
+                  setState(() {
+                    _blinkerMode = BlinkerMode.off;
+                  });
+                  Navigator.of(context).pop();
+                });
+              }
+              return const SizedBox.shrink();
+            },
+          ),
           Center(child: Header(FlutterI18n.translate(context, "controls_blinkers_title"))),
           SegmentedButton<BlinkerMode?>(
             emptySelectionAllowed: true,
@@ -54,8 +73,8 @@ class _ControlSheetState extends State<ControlSheet> with TickerProviderStateMix
               if (value.isNotEmpty) {
                 try {
                   context.read<ScooterService>().blink(
-                        left: _blinkerMode == BlinkerMode.left || _blinkerMode == BlinkerMode.hazard,
-                        right: _blinkerMode == BlinkerMode.right || _blinkerMode == BlinkerMode.hazard,
+                        left: value.first == BlinkerMode.left || value.first == BlinkerMode.hazard,
+                        right: value.first == BlinkerMode.right || value.first == BlinkerMode.hazard,
                       );
                   setState(() {
                     _blinkerMode = value.first!;
@@ -66,12 +85,12 @@ class _ControlSheetState extends State<ControlSheet> with TickerProviderStateMix
               } else {
                 try {
                   context.read<ScooterService>().blink(left: false, right: false);
+                  setState(() {
+                    _blinkerMode = BlinkerMode.off;
+                  });
                 } catch (e) {
                   Fluttertoast.showToast(msg: e.toString());
                 }
-                setState(() {
-                  _blinkerMode = BlinkerMode.off;
-                });
               }
             },
           ),
@@ -159,7 +178,7 @@ class _ControlSheetState extends State<ControlSheet> with TickerProviderStateMix
               ),
             ],
           ),
-          SizedBox(height: 32),
+          SizedBox(height: 64),
         ],
       ),
     );
