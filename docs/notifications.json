@@ -48,45 +48,5 @@
             "de": "OK",
             "fr": "OK"
         }
-    },
-    {
-        "id": "ios-pink-image-error-unustasistrial",
-        "timestamp": "2025-10-01T00:00:00Z",
-        "branch": "unustasis",
-        "platform": "ios",
-        "duration-days": 14,
-        "title": {
-            "en": "Recent visual glitches",
-            "de": "Aktuelle Grafikprobleme"
-        },
-        "body": {
-            "en": "Some people have recently been experiencing visual glitches (images appearing as pink boxes) in the app. We have already identified the issue to be with a recent iOS update, and will roll out a fix within the next weeks.\n\nIf you are affected by these glitches, fully restarting the app should hopefully fix them.",
-            "de": "In letzter Zeit wurden vermehrt Grafikprobleme (Bilder erscheinen als pinke Boxen) unter iOS gemeldet. Wir haben das Problem bereits identifiziert, und werden innnerhalb der nächsten Wochen einen Fix ausrollen.\n\nWenn du von diesem Bug betroffen bist, sollte ein Neustart der App ihn beheben."
-        },
-        "dismiss-text": {
-            "en": "OK",
-            "de": "OK",
-            "fr": "OK"
-        }
-    },
-    {
-        "id": "ios-pink-image-error-stable",
-        "timestamp": "2025-10-04T00:00:00Z",
-        "branch": "unu",
-        "platform": "ios",
-        "duration-days": 7,
-        "title": {
-            "en": "Visual glitches on iOS",
-            "de": "Grafikprobleme unter iOS"
-        },
-        "body": {
-            "en": "Some people have recently reported seeing visual glitches (pink boxes) in the app. We’ve already identified the cause, and will release a fix soon.\n\nTo fix the issue temporarily, restart the app.",
-            "de": "In letzter Zeit wurden vermehrt Grafikprobleme (pinke Boxen) in der App gemeldet. Das Problem wurde bereits identifiziert, und wir veröfentlichen bald einen Fix.\n\nUm das Problem temporär zu lösen, starte die App neu."
-        },
-        "dismiss-text": {
-            "en": "OK",
-            "de": "OK",
-            "fr": "OK"
-        }
     }
 ]
