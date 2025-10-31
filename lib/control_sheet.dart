@@ -102,7 +102,7 @@ class _ControlSheetState extends State<ControlSheet> with TickerProviderStateMix
                   style: TextButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.onSurface,
                     foregroundColor: Theme.of(context).colorScheme.surface,
-                    padding: EdgeInsets.symmetric(vertical: 16),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                   onPressed: () {
                     try {
@@ -121,7 +121,7 @@ class _ControlSheetState extends State<ControlSheet> with TickerProviderStateMix
                   style: TextButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.onSurface,
                     foregroundColor: Theme.of(context).colorScheme.surface,
-                    padding: EdgeInsets.symmetric(vertical: 16),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                   onPressed: () {
                     try {
@@ -144,7 +144,7 @@ class _ControlSheetState extends State<ControlSheet> with TickerProviderStateMix
                   style: TextButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.onSurface,
                     foregroundColor: Theme.of(context).colorScheme.surface,
-                    padding: EdgeInsets.symmetric(vertical: 16),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                   onPressed: () {
                     try {
@@ -163,7 +163,7 @@ class _ControlSheetState extends State<ControlSheet> with TickerProviderStateMix
                   style: TextButton.styleFrom(
                     backgroundColor: Theme.of(context).colorScheme.onSurface,
                     foregroundColor: Theme.of(context).colorScheme.surface,
-                    padding: EdgeInsets.symmetric(vertical: 16),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                   onPressed: () {
                     try {
