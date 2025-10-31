@@ -1,4 +1,6 @@
 ### Changes:
-- Adding home screen and lock screen widgets on iOS
-- Restructuring in-app navigation for easier access
-- Various bug fixes
+- Updated, faster control screen
+- Fixing errors with the scooter reporting incorrect booting states
+- Fixing visual bugs
+- Adding nRF version detection
+- More user-friendly error handling
