@@ -32,6 +32,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   BluetoothDevice? myScooter; // reserved for a connected scooter!
   bool _foundSth = false; // whether we've found a scooter yet
   bool _autoRestarting = false;
+  String? _targetScooterId; // specific scooter ID to connect to during auto-restart
   bool _autoUnlock = false;
   int _autoUnlockThreshold = ScooterKeylessDistance.regular.threshold;
   bool _openSeatOnUnlock = false;
@@ -365,6 +366,20 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     notifyListeners();
   }
 
+  String? _nrfVersion;
+  String? get nrfVersion => _nrfVersion;
+  set nrfVersion(String? nrfVersion) {
+    _nrfVersion = nrfVersion;
+    notifyListeners();
+  }
+
+  bool? _isLibrescoot;
+  bool? get isLibrescoot => _isLibrescoot;
+  set isLibrescoot(bool? isLibrescoot) {
+    _isLibrescoot = isLibrescoot;
+    notifyListeners();
+  }
+
   String? _scooterName;
   String? get scooterName => _scooterName;
   set scooterName(String? scooterName) {
@@ -630,9 +645,11 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   }
 
   late StreamSubscription<bool> _autoRestartSubscription;
-  void startAutoRestart() async {
+  void startAutoRestart({String? targetScooterId}) async {
     if (!_autoRestarting) {
       _autoRestarting = true;
+      _targetScooterId = targetScooterId;
+      log.info("Starting auto-restart${targetScooterId != null ? " for scooter $targetScooterId" : ""}");
       _autoRestartSubscription = flutterBluePlus.isScanning.listen((
         scanState,
       ) async {
@@ -641,8 +658,18 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
           await Future.delayed(const Duration(seconds: 3));
           if (!_foundSth && !scanning && _autoRestarting) {
             // make sure nothing happened in these few seconds
-            log.info("Auto-restarting...");
-            start();
+            log.info("Auto-restarting...${_targetScooterId != null ? " targeting $_targetScooterId" : ""}");
+            if (_targetScooterId != null) {
+              // Try to connect to the specific scooter the user selected
+              try {
+                await connectToScooterId(_targetScooterId!);
+              } catch (e) {
+                log.warning("Failed to connect to target scooter $_targetScooterId during auto-restart: $e");
+              }
+            } else {
+              // Fall back to generic start() for auto-connect behavior
+              start();
+            }
           }
         }
       });
@@ -653,6 +680,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
 
   void stopAutoRestart() {
     _autoRestarting = false;
+    _targetScooterId = null;
     _autoRestartSubscription.cancel();
     log.fine("Auto-restart stopped.");
   }
@@ -889,11 +917,12 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       characteristicToSend = characteristic;
     }
 
-    // commandCharcteristic should never be null, so we can assume it's not
-    // if the given characteristic is null, we'll "fail" quitely by sending garbage to the default command characteristic instead
+    if (characteristicToSend == null) {
+      throw "Could not send command, move closer or reconnect";
+    }
 
     try {
-      characteristicToSend!.write(ascii.encode(command));
+      characteristicToSend.write(ascii.encode(command));
     } catch (e) {
       rethrow;
     }

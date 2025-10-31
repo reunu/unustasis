@@ -5,6 +5,7 @@ import '../domain/scooter_state.dart';
 import '../infrastructure/battery_reader.dart';
 import '../infrastructure/characteristic_repository.dart';
 import '../infrastructure/string_reader.dart';
+import '../infrastructure/version_reader.dart';
 
 class ScooterReader {
   final CharacteristicRepository _characteristicRepository;
@@ -23,6 +24,7 @@ class ScooterReader {
     _subscribeSeat();
     _subscribeHandlebars();
     _subscribeBatteries();
+    _readNrfVersion();
   }
 
   // some of these characteristics are only available in more recent software versions
@@ -100,5 +102,14 @@ class ScooterReader {
     secondaryBatteryReader.readAndSubscribeCycles(
       _characteristicRepository.secondaryCyclesCharacteristic!,
     );
+  }
+
+  void _readNrfVersion() {
+    if (_characteristicRepository.nrfVersionCharacteristic != null) {
+      VersionReader(
+        _characteristicRepository.nrfVersionCharacteristic!,
+        _service,
+      ).readOnce();
+    }
   }
 }
