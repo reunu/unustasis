@@ -17,7 +17,6 @@ import '../helper_widgets/leaves.dart';
 import '../helper_widgets/scooter_action_button.dart';
 import '../helper_widgets/onboarding_popups.dart';
 import '../handlebar_warning.dart';
-import '../control_screen.dart';
 import '../domain/icomoon.dart';
 import '../domain/theme_helper.dart';
 import '../onboarding_screen.dart';
@@ -28,6 +27,7 @@ import '../battery_screen.dart';
 import '../scooter_screen.dart';
 import '../settings_screen.dart';
 import '../support_screen.dart';
+import '../control_sheet.dart';
 import '../helper_widgets/snowfall.dart';
 import '../helper_widgets/clouds.dart';
 import '../helper_widgets/grassscape.dart';
@@ -214,7 +214,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 ),
                                 // Hidden for stable release, but useful for various debugging
-                                // onLongPress: () => context.read<ScooterService>().addDemoData(),
+                                // onLongPress: () {},
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   mainAxisSize: MainAxisSize.min,
@@ -446,11 +446,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                                   );
                                                 }
                                               } else {
-                                                Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder: (context) => const ControlScreen(),
-                                                  ),
+                                                showModalBottomSheet<void>(
+                                                  context: context,
+                                                  showDragHandle: true,
+                                                  builder: (BuildContext context) {
+                                                    return ControlSheet();
+                                                  },
                                                 );
                                               }
                                             }

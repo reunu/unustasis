@@ -8,8 +8,9 @@ import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
 import 'package:maps_launcher/maps_launcher.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../control_screen.dart';
+
 import '../domain/log_helper.dart';
+import '../helper_widgets/header.dart';
 
 class SupportSection extends StatefulWidget {
   const SupportSection({super.key});
