@@ -149,6 +149,7 @@ class _ControlSheetState extends State<ControlSheet> with TickerProviderStateMix
                   onPressed: () {
                     try {
                       context.read<ScooterService>().wakeUpAndUnlock();
+                      Navigator.of(context).pop();
                     } catch (e) {
                       Fluttertoast.showToast(msg: e.toString());
                     }
@@ -168,6 +169,7 @@ class _ControlSheetState extends State<ControlSheet> with TickerProviderStateMix
                   onPressed: () {
                     try {
                       context.read<ScooterService>().hibernate();
+                      Navigator.of(context).pop();
                     } catch (e) {
                       Fluttertoast.showToast(msg: e.toString());
                     }
