@@ -2,6 +2,7 @@ import '../scooter_service.dart';
 import '../domain/scooter_battery.dart';
 import '../domain/scooter_power_state.dart';
 import '../domain/scooter_state.dart';
+import '../domain/scooter_vehicle_state.dart';
 import '../infrastructure/battery_reader.dart';
 import '../infrastructure/characteristic_repository.dart';
 import '../infrastructure/string_reader.dart';
@@ -9,7 +10,7 @@ import '../infrastructure/version_reader.dart';
 
 class ScooterReader {
   final CharacteristicRepository _characteristicRepository;
-  ScooterState? _state;
+  ScooterVehicleState? _vehicleState;
   ScooterPowerState? _powerState;
 
   final ScooterService _service;
@@ -33,7 +34,7 @@ class ScooterReader {
 
   void _subscribeState() {
     StringReader("State", _characteristicRepository.stateCharacteristic!).readAndSubscribe((String value) {
-      _state = ScooterState.fromString(value);
+      _vehicleState = ScooterVehicleState.fromString(value);
       _updateScooterState();
     });
   }
@@ -49,7 +50,13 @@ class ScooterReader {
 
   Future<void> _updateScooterState() async {
     ScooterState? oldState = _service.state;
-    ScooterState? newState = ScooterState.fromStateAndPowerState(_state, _powerState);
+
+    // Update individual states
+    _service.vehicleState = _vehicleState;
+    _service.powerState = _powerState;
+
+    // Update aggregate state
+    ScooterState? newState = ScooterState.fromVehicleAndPowerState(_vehicleState, _powerState);
     _service.state = newState;
     _service.ping();
 

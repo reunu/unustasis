@@ -18,6 +18,8 @@ import '../domain/scooter_battery.dart';
 import '../domain/saved_scooter.dart';
 import '../domain/scooter_keyless_distance.dart';
 import '../domain/scooter_state.dart';
+import '../domain/scooter_vehicle_state.dart';
+import '../domain/scooter_power_state.dart';
 import '../flutter/blue_plus_mockable.dart';
 import '../infrastructure/characteristic_repository.dart';
 import '../infrastructure/scooter_reader.dart';
@@ -263,6 +265,20 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   ScooterState? get state => _state;
   set state(ScooterState? state) {
     _state = state;
+    notifyListeners();
+  }
+
+  ScooterVehicleState? _vehicleState;
+  ScooterVehicleState? get vehicleState => _vehicleState;
+  set vehicleState(ScooterVehicleState? vehicleState) {
+    _vehicleState = vehicleState;
+    notifyListeners();
+  }
+
+  ScooterPowerState? _powerState;
+  ScooterPowerState? get powerState => _powerState;
+  set powerState(ScooterPowerState? powerState) {
+    _powerState = powerState;
     notifyListeners();
   }
 
@@ -919,11 +935,12 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       characteristicToSend = characteristic;
     }
 
-    // commandCharcteristic should never be null, so we can assume it's not
-    // if the given characteristic is null, we'll "fail" quitely by sending garbage to the default command characteristic instead
+    if (characteristicToSend == null) {
+      throw "Could not send command, move closer or reconnect";
+    }
 
     try {
-      characteristicToSend!.write(ascii.encode(command));
+      characteristicToSend.write(ascii.encode(command));
     } catch (e) {
       rethrow;
     }
