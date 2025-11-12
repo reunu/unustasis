@@ -25,7 +25,7 @@ extension ScooterStateName on ScooterState? {
         case ScooterState.waitingHibernationAdvanced:
         case ScooterState.waitingHibernationSeatbox:
         case ScooterState.waitingHibernationConfirm:
-          return "Manuelle Ruhezustand startet";
+          return "Manueller Ruhezustand startet";
         case ScooterState.hibernating:
           return "Tiefschlaf";
         case ScooterState.hibernatingImminent:
