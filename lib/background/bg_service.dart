@@ -10,6 +10,7 @@ import 'package:pausable_timer/pausable_timer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../background/widget_handler.dart';
+import '../domain/scooter_type.dart';
 import '../flutter/blue_plus_mockable.dart';
 import '../scooter_service.dart';
 import '../background/notification_handler.dart';
@@ -74,6 +75,7 @@ Future<bool> onIosBackground(ServiceInstance service) async {
   passToWidget(
     connected: scooterService.connected,
     lastPing: scooterService.lastPing,
+    scooterType: scooterService.scooterType,
     scooterState: scooterService.state,
     primarySOC: scooterService.primarySOC,
     secondarySOC: scooterService.secondarySOC,
@@ -135,6 +137,7 @@ void onStart(ServiceInstance service) async {
     passToWidget(
         connected: scooterService.connected,
         lastPing: scooterService.lastPing,
+        scooterType: scooterService.scooterType,
         scooterState: scooterService.state,
         primarySOC: scooterService.primarySOC,
         secondarySOC: scooterService.secondarySOC,
@@ -166,6 +169,9 @@ void onStart(ServiceInstance service) async {
       if (data?["hazardLocking"] != null) {
         scooterService.setHazardLocking(data!["hazardLocking"]);
       }
+      if (data?["scooterType"] != null) {
+        scooterService.scooterType = ScooterType.values.byName(data!["scooterType"]);
+      }
       if (data?["scooterName"] != null) {
         scooterService.scooterName = data!["scooterName"];
       }
@@ -192,6 +198,7 @@ void onStart(ServiceInstance service) async {
       Future.delayed(const Duration(seconds: 3), () {
         passToWidget(
           connected: scooterService.connected,
+          scooterType: scooterService.scooterType,
           lastPing: scooterService.lastPing,
           scooterState: scooterService.state,
           primarySOC: scooterService.primarySOC,

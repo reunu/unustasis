@@ -14,6 +14,7 @@ import 'package:logging/logging.dart';
 import 'package:pausable_timer/pausable_timer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../domain/scooter_type.dart';
 import '../domain/scooter_battery.dart';
 import '../domain/saved_scooter.dart';
 import '../domain/scooter_keyless_distance.dart';
@@ -182,6 +183,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     SavedScooter? mostRecentScooter = await getMostRecentScooter();
     log.info("Most recent scooter: $mostRecentScooter");
     // assume this is the one we'll connect to, and seed the streams
+    _scooterType = mostRecentScooter?.type;
     _lastPing = mostRecentScooter?.lastPing;
     _primarySOC = mostRecentScooter?.lastPrimarySOC;
     _secondarySOC = mostRecentScooter?.lastSecondarySOC;
@@ -200,6 +202,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     flutterBluePlus.stopScan();
     savedScooters = {
       "12345": SavedScooter(
+        type: ScooterType.unuPro,
         name: "Demo Scooter",
         id: "12345",
         color: 0,
@@ -211,6 +214,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
         lastAuxSOC: 100,
       ),
       "678910": SavedScooter(
+        type: ScooterType.unuPro,
         name: "Demo Scooter 2",
         id: "678910",
         color: 2,
@@ -242,6 +246,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     _handlebarsLocked = false;
     _lastPing = DateTime.now();
     _scooterName = "Demo Scooter";
+    _scooterType = ScooterType.unuPro;
 
     //SharedPreferencesAsync().setString(
     //  "savedScooters",
@@ -258,6 +263,31 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   bool get connected => _connected;
   set connected(bool connected) {
     _connected = connected;
+    notifyListeners();
+  }
+
+  ScooterType? _scooterType;
+  ScooterType? get scooterType => _scooterType;
+  set scooterType(ScooterType? scooterType) {
+    _scooterType = scooterType;
+    // Keep SavedScooter cache & persistence in sync when we know which scooter this is
+    if (myScooter != null && savedScooters.containsKey(myScooter!.remoteId.toString()) && scooterType != null) {
+      try {
+        savedScooters[myScooter!.remoteId.toString()]!.type = scooterType;
+        // Persist updated map (fire-and-forget; failures logged by SharedPreferencesAsync internally)
+        prefs.setString("savedScooters", jsonEncode(savedScooters));
+        updateBackgroundService({
+          "scooterType": scooterType.name,
+          "updateSavedScooters": true,
+        });
+      } catch (e, stack) {
+        log.warning("Failed to persist scooterType change", e, stack);
+        updateBackgroundService({"scooterType": scooterType.name});
+      }
+    } else {
+      // Just propagate; persistence will occur once a scooter is connected / saved
+      updateBackgroundService({"scooterType": scooterType?.name});
+    }
     notifyListeners();
   }
 
@@ -391,18 +421,12 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     notifyListeners();
   }
 
-  bool? _isLibrescoot;
-  bool? get isLibrescoot => _isLibrescoot;
-  set isLibrescoot(bool? isLibrescoot) {
-    _isLibrescoot = isLibrescoot;
-    notifyListeners();
-  }
-
   String? _scooterName;
   String? get scooterName => _scooterName;
   set scooterName(String? scooterName) {
     _scooterName = scooterName;
     notifyListeners();
+    updateBackgroundService({"scooterName": scooterName});
   }
 
   DateTime? _lastPing;
@@ -568,7 +592,11 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       log.info("Connected to ${attemptedScooter.remoteId}");
       // Set up this scooter as ours
       myScooter = attemptedScooter;
-      addSavedScooter(myScooter!.remoteId.toString());
+      // TODO: Identify scooter type properly!
+      addSavedScooter(
+        id: myScooter!.remoteId.toString(),
+        type: scooterType ?? ScooterType.unuPro,
+      );
       try {
         await setUpCharacteristics(myScooter!);
       } on UnavailableCharacteristicsException {
@@ -587,6 +615,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       scooterColor = savedScooters[myScooter!.remoteId.toString()]?.color;
       updateBackgroundService({
         "scooterName": scooterName,
+        "scooterType": scooterType?.name,
         "scooterColor": scooterColor,
         "lastPingInt": DateTime.now().millisecondsSinceEpoch,
       });
@@ -1044,6 +1073,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       // update the most recent scooter and streams
       SavedScooter? mostRecentScooter = await getMostRecentScooter();
       if (mostRecentScooter != null) {
+        _scooterType = mostRecentScooter.type;
         _lastPing = mostRecentScooter.lastPing;
         _primarySOC = mostRecentScooter.lastPrimarySOC;
         _secondarySOC = mostRecentScooter.lastSecondarySOC;
@@ -1055,6 +1085,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
         _handlebarsLocked = mostRecentScooter.handlebarsLocked;
       } else {
         // no saved scooters, reset streams
+        _scooterType = null;
         _lastPing = null;
         _primarySOC = null;
         _secondarySOC = null;
@@ -1184,12 +1215,13 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     }
   }
 
-  void addSavedScooter(String id) async {
+  void addSavedScooter({required String id, required ScooterType type}) async {
     if (savedScooters.containsKey(id)) {
       // we already know this scooter!
       return;
     }
     savedScooters[id] = SavedScooter(
+      type: type,
       name: "Scooter Pro",
       id: id,
       color: 1,

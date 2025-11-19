@@ -5,7 +5,10 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../domain/scooter_type.dart';
+
 class SavedScooter {
+  ScooterType _type;
   String _name;
   String _id;
   int _color;
@@ -20,6 +23,7 @@ class SavedScooter {
 
   SavedScooter({
     required String id,
+    ScooterType? type,
     String? name,
     int? color,
     DateTime? lastPing,
@@ -30,7 +34,8 @@ class SavedScooter {
     int? lastAuxSOC,
     LatLng? lastLocation,
     bool? handlebarsLocked,
-  })  : _name = name ?? "Scooter Pro",
+  })  : _type = type ?? ScooterType.unuPro,
+        _name = name ?? "Scooter Pro",
         _id = id,
         _color = color ?? 1,
         _lastPing = lastPing ?? DateTime.now(),
@@ -41,6 +46,11 @@ class SavedScooter {
         _lastAuxSOC = lastAuxSOC,
         _lastLocation = lastLocation,
         _handlebarsLocked = handlebarsLocked;
+
+  set type(ScooterType type) {
+    _type = type;
+    updateSharedPreferences();
+  }
 
   set name(String name) {
     _name = name;
@@ -93,8 +103,9 @@ class SavedScooter {
     updateSharedPreferences();
   }
 
-  String get name => _name;
   String get id => _id;
+  ScooterType get type => _type;
+  String get name => _name;
   int get color => _color;
   DateTime get lastPing => _lastPing;
   bool get autoConnect => _autoConnect;
@@ -109,6 +120,7 @@ class SavedScooter {
 
   Map<String, dynamic> toJson() => {
         'id': _id,
+        'type': _type.name,
         'name': _name,
         'color': _color,
         'lastPing': _lastPing.microsecondsSinceEpoch,
@@ -127,6 +139,7 @@ class SavedScooter {
   ) {
     return SavedScooter(
       id: id,
+      type: ScooterType.values.byName(map['type']),
       name: map['name'],
       color: map['color'],
       lastPing: map.containsKey('lastPing') ? DateTime.fromMicrosecondsSinceEpoch(map['lastPing']) : DateTime.now(),

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:logging/logging.dart';
 
+import '../domain/scooter_type.dart';
 import '../scooter_service.dart';
 
 class VersionReader {
@@ -23,16 +24,23 @@ class VersionReader {
       // Store the full version string
       _service.nrfVersion = version;
 
-      // Check if this is a librescoot version (contains "-ls" suffix)
+      // Determine scooter type based on version suffix ("-ls" => librescoot)
       bool isLibrescoot = version.contains("-ls");
-      _service.isLibrescoot = isLibrescoot;
+      final inferredType = isLibrescoot ? ScooterType.unuProLS : ScooterType.unuPro;
+
+      // Only update & persist if changed to avoid unnecessary writes / background chatter
+      if (_service.scooterType != inferredType) {
+        _service.scooterType = inferredType; // setter handles persistence & propagation
+        log.info("Scooter type inferred from version: ${inferredType.name}");
+      } else {
+        log.fine("Scooter type already set to ${inferredType.name}, skipping update");
+      }
 
       log.info("Librescoot detected: $isLibrescoot");
     } catch (e, stack) {
       log.warning("Failed to read nRF version characteristic", e, stack);
-      // Set both to null on failure
+      // Set to null on failure
       _service.nrfVersion = null;
-      _service.isLibrescoot = null;
     }
   }
 

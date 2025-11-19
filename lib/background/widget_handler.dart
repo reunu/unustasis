@@ -14,9 +14,11 @@ import 'package:workmanager/workmanager.dart';
 import '../background/translate_static.dart';
 import '../background/bg_service.dart';
 import '../domain/scooter_state.dart';
+import '../domain/scooter_type.dart';
 
 // value cache
 bool _connected = false;
+ScooterType? _scooterType;
 DateTime? _lastPing;
 String? _lastPingDifference;
 String? _iOSlastPingText;
@@ -85,6 +87,7 @@ Future<void> updateWidgetPing() async {
 
 void passToWidget({
   bool connected = false,
+  ScooterType? scooterType,
   DateTime? lastPing,
   ScooterState? scooterState,
   int? primarySOC,
@@ -97,6 +100,7 @@ void passToWidget({
 }) async {
   bool updateiOS = primarySOC != _primarySOC ||
       secondarySOC != _secondarySOC ||
+      scooterType != scooterService.scooterType ||
       lastPing != _lastPing ||
       scooterName != _scooterName;
 
@@ -105,6 +109,7 @@ void passToWidget({
       (scooterState?.isReadyForSeatOpen) != (_scooterState?.isReadyForSeatOpen) ||
       lastPing?.calculateTimeDifferenceInShort() != _lastPingDifference ||
       getStateNameForWidget(scooterState) != _stateName || //_scooterState || // th is state is ignored in the widget
+      scooterType != _scooterType ||
       primarySOC != _primarySOC ||
       secondarySOC != _secondarySOC ||
       scooterName != _scooterName ||
