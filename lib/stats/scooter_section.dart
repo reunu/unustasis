@@ -193,7 +193,7 @@ class SavedScooterCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 GestureDetector(
                   child: Image.asset(
-                    "images/scooter/side_${forceHover ? 9 : savedScooter.color}.webp",
+                    "images/scooter/unu_pro/side_${forceHover ? 9 : savedScooter.color}.webp",
                     height: 160,
                   ),
                   onTap: () async {
@@ -632,7 +632,7 @@ class SavedScooterListItem extends StatelessWidget {
                           child: Stack(
                             children: [
                               Image.asset(
-                                "images/scooter/side_${savedScooter.color}.webp",
+                                "images/scooter/unu_pro/side_${savedScooter.color}.webp",
                                 height: 80,
                               ),
                               // Green circle indicator for connected scooter

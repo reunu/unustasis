@@ -208,14 +208,14 @@ class _ScooterVisualState extends State<ScooterVisual> {
                     direction: ShimmerDirection.ltr,
                     period: const Duration(seconds: 2),
                     child: const Image(
-                      image: AssetImage("images/scooter/disconnected.webp"),
+                      image: AssetImage("images/scooter/unu_pro/disconnected.webp"),
                     ),
                   ),
                   secondChild: Opacity(
                     opacity: 1,
                     child: Image(
                       image: AssetImage(
-                        "images/scooter/base_${widget.aprilFools ? 9 : widget.color ?? 1}.webp",
+                        "images/scooter/unu_pro/base_${widget.aprilFools ? 9 : widget.color ?? 1}.webp",
                       ),
                     ),
                   ),
@@ -227,12 +227,12 @@ class _ScooterVisualState extends State<ScooterVisual> {
                     duration: const Duration(milliseconds: 500),
                     firstChild: const Image(
                       image: AssetImage(
-                        "images/scooter/seasonal/winter_on.webp",
+                        "images/scooter/unu_pro/seasonal/winter_on.webp",
                       ),
                     ),
                     secondChild: const Image(
                       image: AssetImage(
-                        "images/scooter/seasonal/winter_off.webp",
+                        "images/scooter/unu_pro/seasonal/winter_off.webp",
                       ),
                     ),
                     crossFadeState: widget.state != null && widget.state!.isOn
@@ -243,14 +243,14 @@ class _ScooterVisualState extends State<ScooterVisual> {
                   opacity: (widget.state != null && widget.state!.isOn) ? (_ringFlickering ? 0.5 : 1.0) : 0.0,
                   duration: _ringOpacityDuration,
                   child: const Image(
-                    image: AssetImage("images/scooter/light_ring.webp"),
+                    image: AssetImage("images/scooter/unu_pro/light_ring.webp"),
                   ),
                 ),
                 AnimatedOpacity(
                   opacity: widget.state == ScooterState.ready ? 1.0 : 0.0,
                   duration: const Duration(milliseconds: 1000),
                   child: const Image(
-                    image: AssetImage("images/scooter/light_beam.webp"),
+                    image: AssetImage("images/scooter/unu_pro/light_beam.webp"),
                   ),
                 ),
               ],
@@ -339,14 +339,14 @@ class _BlinkerWidgetState extends State<BlinkerWidget> {
           opacity: showBlinkerLeft ? 1.0 : 0.0,
           duration: blinkerDuration,
           child: const Image(
-            image: AssetImage("images/scooter/blinker_l.webp"),
+            image: AssetImage("images/scooter/unu_pro/blinker_l.webp"),
           ),
         ),
         AnimatedOpacity(
           opacity: showBlinkerRight ? 1.0 : 0.0,
           duration: blinkerDuration,
           child: const Image(
-            image: AssetImage("images/scooter/blinker_r.webp"),
+            image: AssetImage("images/scooter/unu_pro/blinker_r.webp"),
           ),
         ),
       ],
