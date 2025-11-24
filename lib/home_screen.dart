@@ -33,6 +33,7 @@ import '../control_sheet.dart';
 import '../helper_widgets/snowfall.dart';
 import '../helper_widgets/clouds.dart';
 import '../helper_widgets/grassscape.dart';
+import '../domain/scooter_type.dart';
 
 class HomeScreen extends StatefulWidget {
   final bool? forceOpen;
@@ -326,6 +327,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           Expanded(
                             child: ScooterVisual(
+                              type: context.select<ScooterService, ScooterType?>(
+                                    (service) => service.scooterType,
+                                  ) ??
+                                  ScooterType.unuPro,
                               color: context.select<ScooterService, int?>(
                                     (service) => service.scooterColor,
                                   ) ??
@@ -694,7 +699,15 @@ class StatusText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Selector<ScooterService, ({bool connected, bool scanning, ScooterState? state, ScooterVehicleState? vehicleState, ScooterPowerState? powerState})>(
+    return Selector<
+        ScooterService,
+        ({
+          bool connected,
+          bool scanning,
+          ScooterState? state,
+          ScooterVehicleState? vehicleState,
+          ScooterPowerState? powerState
+        })>(
       selector: (context, service) => (
         state: service.state,
         scanning: service.scanning,
@@ -716,9 +729,8 @@ class StatusText extends StatelessWidget {
             stateText += " · ${data.powerState!.name(context)}";
           }
         } else {
-          stateText = data.state != null
-              ? data.state!.name(context)
-              : FlutterI18n.translate(context, "home_loading_state");
+          stateText =
+              data.state != null ? data.state!.name(context) : FlutterI18n.translate(context, "home_loading_state");
         }
 
         // Add handlebar unlocked indicator

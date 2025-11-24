@@ -37,6 +37,7 @@ import de.freal.unustasis.R.drawable.ic_location_disabled
 import de.freal.unustasis.R.drawable.ic_seatbox
 import de.freal.unustasis.R.drawable.ic_seatbox_open
 import de.freal.unustasis.R.drawable.ic_seatbox_disabled
+// TODO add nova images
 import de.freal.unustasis.R.drawable.base_0
 import de.freal.unustasis.R.drawable.base_1
 import de.freal.unustasis.R.drawable.base_2

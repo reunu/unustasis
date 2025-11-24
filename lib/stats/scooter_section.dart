@@ -6,6 +6,7 @@ import 'package:logging/logging.dart';
 import 'package:maps_launcher/maps_launcher.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unustasis/domain/scooter_type.dart';
 
 import '../home_screen.dart';
 import '../stats/stats_screen.dart';
@@ -193,7 +194,8 @@ class SavedScooterCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 GestureDetector(
                   child: Image.asset(
-                    "images/scooter/unu_pro/side_${forceHover ? 9 : savedScooter.color}.webp",
+                    // TODO: Remove debug nova support
+                    "images/scooter/${savedScooter.name.toLowerCase() == "nova" ? "nova" : savedScooter.type.assetPrefix}/side_${forceHover ? 9 : savedScooter.color}.webp",
                     height: 160,
                   ),
                   onTap: () async {

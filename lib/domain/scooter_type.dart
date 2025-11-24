@@ -17,6 +17,15 @@ enum ScooterCapability {
 }
 
 extension ScooterCapabilityExtension on ScooterType {
+  String get assetPrefix {
+    switch (this) {
+      case ScooterType.unuPro || ScooterType.unuProLS || ScooterType.unuProSunshine:
+        return "unu_pro";
+      case ScooterType.nova:
+        return "nova";
+    }
+  }
+
   List<ScooterCapability> capabilities() {
     switch (this) {
       case ScooterType.unuPro:

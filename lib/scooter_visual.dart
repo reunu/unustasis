@@ -6,8 +6,10 @@ import 'package:shimmer/shimmer.dart';
 
 import '../domain/scooter_state.dart';
 import '../domain/theme_helper.dart';
+import '../domain/scooter_type.dart';
 
 class ScooterVisual extends StatefulWidget {
+  final ScooterType type;
   final ScooterState? state;
   final bool scanning;
   final bool blinkerLeft;
@@ -18,6 +20,7 @@ class ScooterVisual extends StatefulWidget {
   final bool halloween;
 
   const ScooterVisual({
+    required this.type,
     required this.state,
     required this.scanning,
     required this.blinkerLeft,
@@ -100,6 +103,8 @@ class _ScooterVisualState extends State<ScooterVisual> {
     _cancelAllFlickers();
     super.dispose();
   }
+
+  // HALLOWEEN STUFF
 
   void _cancelAllFlickers() {
     for (var t in _scheduledTimers) {
@@ -207,15 +212,15 @@ class _ScooterVisualState extends State<ScooterVisual> {
                     enabled: widget.scanning,
                     direction: ShimmerDirection.ltr,
                     period: const Duration(seconds: 2),
-                    child: const Image(
-                      image: AssetImage("images/scooter/unu_pro/disconnected.webp"),
+                    child: Image(
+                      image: AssetImage("images/scooter/${widget.type.assetPrefix}/disconnected.webp"),
                     ),
                   ),
                   secondChild: Opacity(
                     opacity: 1,
                     child: Image(
                       image: AssetImage(
-                        "images/scooter/unu_pro/base_${widget.aprilFools ? 9 : widget.color ?? 1}.webp",
+                        "images/scooter/${widget.type.assetPrefix}/base_${widget.aprilFools ? 9 : widget.color ?? 1}.webp",
                       ),
                     ),
                   ),
@@ -225,14 +230,14 @@ class _ScooterVisualState extends State<ScooterVisual> {
                 if (widget.winter && widget.state != ScooterState.disconnected)
                   AnimatedCrossFade(
                     duration: const Duration(milliseconds: 500),
-                    firstChild: const Image(
+                    firstChild: Image(
                       image: AssetImage(
-                        "images/scooter/unu_pro/seasonal/winter_on.webp",
+                        "images/scooter/${widget.type.assetPrefix}/seasonal/winter_on.webp",
                       ),
                     ),
-                    secondChild: const Image(
+                    secondChild: Image(
                       image: AssetImage(
-                        "images/scooter/unu_pro/seasonal/winter_off.webp",
+                        "images/scooter/${widget.type.assetPrefix}/seasonal/winter_off.webp",
                       ),
                     ),
                     crossFadeState: widget.state != null && widget.state!.isOn
@@ -242,15 +247,15 @@ class _ScooterVisualState extends State<ScooterVisual> {
                 AnimatedOpacity(
                   opacity: (widget.state != null && widget.state!.isOn) ? (_ringFlickering ? 0.5 : 1.0) : 0.0,
                   duration: _ringOpacityDuration,
-                  child: const Image(
-                    image: AssetImage("images/scooter/unu_pro/light_ring.webp"),
+                  child: Image(
+                    image: AssetImage("images/scooter/${widget.type.assetPrefix}/light_ring.webp"),
                   ),
                 ),
                 AnimatedOpacity(
                   opacity: widget.state == ScooterState.ready ? 1.0 : 0.0,
                   duration: const Duration(milliseconds: 1000),
-                  child: const Image(
-                    image: AssetImage("images/scooter/unu_pro/light_beam.webp"),
+                  child: Image(
+                    image: AssetImage("images/scooter/${widget.type.assetPrefix}/light_beam.webp"),
                   ),
                 ),
               ],
@@ -286,10 +291,12 @@ class _ScooterVisualState extends State<ScooterVisual> {
 }
 
 class BlinkerWidget extends StatefulWidget {
+  final ScooterType type;
   final bool blinkerLeft;
   final bool blinkerRight;
 
   const BlinkerWidget({
+    required this.type,
     required this.blinkerLeft,
     required this.blinkerRight,
     super.key,
@@ -338,15 +345,15 @@ class _BlinkerWidgetState extends State<BlinkerWidget> {
         AnimatedOpacity(
           opacity: showBlinkerLeft ? 1.0 : 0.0,
           duration: blinkerDuration,
-          child: const Image(
-            image: AssetImage("images/scooter/unu_pro/blinker_l.webp"),
+          child: Image(
+            image: AssetImage("images/scooter/${widget.type.assetPrefix}/blinker_l.webp"),
           ),
         ),
         AnimatedOpacity(
           opacity: showBlinkerRight ? 1.0 : 0.0,
           duration: blinkerDuration,
-          child: const Image(
-            image: AssetImage("images/scooter/unu_pro/blinker_r.webp"),
+          child: Image(
+            image: AssetImage("images/scooter/${widget.type.assetPrefix}/blinker_r.webp"),
           ),
         ),
       ],
