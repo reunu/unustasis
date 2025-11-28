@@ -694,7 +694,15 @@ class StatusText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Selector<ScooterService, ({bool connected, bool scanning, ScooterState? state, ScooterVehicleState? vehicleState, ScooterPowerState? powerState})>(
+    return Selector<
+        ScooterService,
+        ({
+          bool connected,
+          bool scanning,
+          ScooterState? state,
+          ScooterVehicleState? vehicleState,
+          ScooterPowerState? powerState
+        })>(
       selector: (context, service) => (
         state: service.state,
         scanning: service.scanning,
@@ -712,13 +720,13 @@ class StatusText extends StatelessWidget {
         } else if (data.connected && data.vehicleState != null && data.powerState != null) {
           // Show vehicle state and power state separately (if power state is not running)
           stateText = data.vehicleState!.name(context);
-          if (data.powerState != ScooterPowerState.running) {
+          if (data.powerState != ScooterPowerState.running && data.powerState != ScooterPowerState.unknown) {
+            // don't show unknown power states
             stateText += " · ${data.powerState!.name(context)}";
           }
         } else {
-          stateText = data.state != null
-              ? data.state!.name(context)
-              : FlutterI18n.translate(context, "home_loading_state");
+          stateText =
+              data.state != null ? data.state!.name(context) : FlutterI18n.translate(context, "home_loading_state");
         }
 
         // Add handlebar unlocked indicator
