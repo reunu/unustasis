@@ -17,6 +17,7 @@ import '../scooter_service.dart';
 import '../domain/scooter_state.dart';
 import '../scooter_visual.dart';
 import '../support_screen.dart';
+import '../domain/scooter_type.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({
@@ -310,6 +311,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
         return GestureDetector(
           onTapDown: tapGestureRecognizer.onTapDown,
           child: const ScooterVisual(
+            type: ScooterType.unuPro,
             state: ScooterState.disconnected,
             scanning: false,
             blinkerLeft: false,
@@ -328,6 +330,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
         );
       case 5:
         return const ScooterVisual(
+          type: ScooterType.unuPro,
           state: ScooterState.ready,
           scanning: false,
           blinkerLeft: false,
@@ -335,6 +338,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
         );
       default:
         return const ScooterVisual(
+          type: ScooterType.unuPro,
           state: ScooterState.disconnected,
           scanning: false,
           blinkerLeft: false,
