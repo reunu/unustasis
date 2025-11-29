@@ -26,8 +26,6 @@ class _ColorPickerDialogState extends State<ColorPickerDialog> {
 
   @override
   Widget build(BuildContext context) {
-    print("Building ColorPickerDialog with initialValue: ${widget.initialValue}");
-    print("Selected value is: $selectedValue");
     return AlertDialog(
       title: Text(FlutterI18n.translate(context, "settings_color")),
       scrollable: true,
