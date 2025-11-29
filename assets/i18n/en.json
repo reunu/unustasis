@@ -247,5 +247,9 @@
     "bgscan_warning_lostpairing": "Loss of pairing. If you spend a lot of time with your scooter just barely in range, the pairing to your scooter may be lost and you will need your keycard to unlock and re-pair it.",
     "bgscan_warning_accidentalturnon": "If you have keyless unlock enabled, your phone may accidentally unlock or open your scooter if you walk past it. Always be careful that your scooter is locked before leaving it in a public place.",
     "stats_auto_connect_on": "Scooter will connect if in range",
-    "stats_auto_connect_off": "Scooter will only connect manually"
+    "stats_auto_connect_off": "Scooter will only connect manually",
+    "location_services_disabled": "Location services are disabled. Please enable them in your device settings.",
+    "location_permission_denied": "Location permission is required to scan for nearby scooters.",
+    "location_permission_denied_forever": "Location permission was permanently denied. Please enable it in your device settings.",
+    "notification_permission_denied": "Notification permission is required for background scanning."
 }
