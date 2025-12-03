@@ -30,8 +30,6 @@ class GeoHelper {
     }
 
     log.info("Fetching address from Nominatim for position: $position");
-    // TODO: Set custom HTTP headers including User-Agent as per Nominatim usage policy
-    // then, contact nominatim@openstreetmap.org to have ban lifted
     Response response = await get(
         Uri.parse(
             'https://nominatim.openstreetmap.org/reverse?lat=${position.latitude}&lon=${position.longitude}&format=json'),
