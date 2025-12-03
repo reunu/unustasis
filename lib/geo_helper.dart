@@ -5,10 +5,18 @@ import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart';
 import 'package:logging/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unustasis/domain/saved_scooter.dart';
 
 class GeoHelper {
-  static Future<String?> getAddress(LatLng? position, BuildContext context) async {
+  static Future<String?> getAddress(SavedScooter scooter, BuildContext context) async {
     final log = Logger('HomeScreen');
+
+    if (scooter.lastAddress != null) {
+      log.info("Using cached address: ${scooter.lastAddress}");
+      return scooter.lastAddress;
+    }
+
+    LatLng? position = scooter.lastLocation;
     if (position == null) {
       log.info("getAddress called with null position");
       return null;
@@ -24,8 +32,12 @@ class GeoHelper {
     log.info("Fetching address from Nominatim for position: $position");
     // TODO: Set custom HTTP headers including User-Agent as per Nominatim usage policy
     // then, contact nominatim@openstreetmap.org to have ban lifted
-    Response response = await get(Uri.parse(
-        'https://nominatim.openstreetmap.org/reverse?lat=${position.latitude}&lon=${position.longitude}&format=json'));
+    Response response = await get(
+        Uri.parse(
+            'https://nominatim.openstreetmap.org/reverse?lat=${position.latitude}&lon=${position.longitude}&format=json'),
+        headers: {
+          'User-Agent': 'UnustasisApp (unu@freal.de)',
+        });
     if (response.statusCode != 200 || response.body.isEmpty) {
       log.info("Failed to fetch address from Nominatim: ${response.statusCode}");
       log.info("Message: ${response.body}");
@@ -37,18 +49,23 @@ class GeoHelper {
     String? streetNumber = json['address']['house_number'];
     String? city = json['address']['city'];
 
+    String? formattedAddress;
+
     if (street != null && streetNumber != null && city != null) {
-      return '$street $streetNumber, $city';
+      formattedAddress = '$street $streetNumber, $city';
     } else if (street != null && city != null) {
-      return '$street, $city';
+      formattedAddress = '$street, $city';
     } else if (street != null && streetNumber != null) {
-      return '$street $streetNumber';
+      formattedAddress = '$street $streetNumber';
     } else if (street != null) {
-      return street;
+      formattedAddress = street;
     } else if (city != null) {
-      return city;
+      formattedAddress = city;
     } else {
-      return null;
+      formattedAddress = null;
     }
+
+    scooter.lastAddress = formattedAddress;
+    return formattedAddress;
   }
 }
