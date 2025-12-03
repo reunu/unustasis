@@ -16,6 +16,7 @@ class SavedScooter {
   int? _lastCbbSOC;
   int? _lastAuxSOC;
   LatLng? _lastLocation;
+  String? _lastAddress;
   bool? _handlebarsLocked;
 
   SavedScooter({
@@ -29,6 +30,7 @@ class SavedScooter {
     int? lastCbbSOC,
     int? lastAuxSOC,
     LatLng? lastLocation,
+    String? lastAddress,
     bool? handlebarsLocked,
   })  : _name = name ?? "Scooter Pro",
         _id = id,
@@ -40,6 +42,7 @@ class SavedScooter {
         _lastCbbSOC = lastCbbSOC,
         _lastAuxSOC = lastAuxSOC,
         _lastLocation = lastLocation,
+        _lastAddress = lastAddress,
         _handlebarsLocked = handlebarsLocked;
 
   set name(String name) {
@@ -85,6 +88,12 @@ class SavedScooter {
 
   set lastLocation(LatLng? lastLocation) {
     _lastLocation = lastLocation;
+    _lastAddress = null;
+    updateSharedPreferences();
+  }
+
+  set lastAddress(String? lastAddress) {
+    _lastAddress = lastAddress;
     updateSharedPreferences();
   }
 
@@ -103,6 +112,7 @@ class SavedScooter {
   int? get lastCbbSOC => _lastCbbSOC;
   int? get lastAuxSOC => _lastAuxSOC;
   LatLng? get lastLocation => _lastLocation;
+  String? get lastAddress => _lastAddress;
   bool? get handlebarsLocked => _handlebarsLocked;
 
   BluetoothDevice get bluetoothDevice => BluetoothDevice.fromId(_id);
@@ -118,6 +128,7 @@ class SavedScooter {
         'lastCbbSOC': _lastCbbSOC,
         'lastAuxSOC': _lastAuxSOC,
         'lastLocation': _lastLocation?.toJson(),
+        'lastAddress': _lastAddress,
         'handlebarsLocked': _handlebarsLocked,
       };
 
@@ -132,6 +143,7 @@ class SavedScooter {
       lastPing: map.containsKey('lastPing') ? DateTime.fromMicrosecondsSinceEpoch(map['lastPing']) : DateTime.now(),
       autoConnect: map['autoConnect'],
       lastLocation: map['lastLocation'] != null ? LatLng.fromJson(map['lastLocation']) : null,
+      lastAddress: map['lastAddress'],
       lastPrimarySOC: map['lastPrimarySOC'],
       lastSecondarySOC: map['lastSecondarySOC'],
       lastCbbSOC: map['lastCbbSOC'],
