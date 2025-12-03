@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -15,21 +16,23 @@ class LogEntry {
   final EventType eventType;
   final EventSource source;
   final String scooterId;
+  final LatLng? location;
 
   LogEntry({
     required this.timestamp,
     required this.eventType,
     required this.source,
     required this.scooterId,
+    this.location,
   });
 
   @override
   String toString() {
-    return 'LogEntry at $timestamp: ${eventType.toString()} from ${source.toString()} for scooter $scooterId';
+    return 'LogEntry at $timestamp: ${eventType.toString()} from ${source.toString()} for scooter $scooterId at location $location';
   }
 
   String toJsonString() {
-    return '{"timestamp": "$timestamp", "eventType": "${eventType.toString()}", "source": "${source.toString()}", "scooterId": "$scooterId"}';
+    return '{"timestamp": "$timestamp", "eventType": "${eventType.toString()}", "source": "${source.toString()}", "scooterId": "$scooterId", "location": "${location.toString()}"}';
   }
 
   factory LogEntry.fromJsonString(String jsonString) {
@@ -39,6 +42,7 @@ class LogEntry {
       eventType: EventType.values.firstWhere((e) => e.toString() == json['eventType'], orElse: () => EventType.unknown),
       source: EventSource.values.firstWhere((e) => e.toString() == json['source'], orElse: () => EventSource.unknown),
       scooterId: json['scooterId'],
+      location: json['location'] != null ? LatLng.fromJson(json['location']) : null,
     );
   }
 }
@@ -62,6 +66,7 @@ class StatisticsHelper {
     String scooterId = "unknown",
     EventSource? source,
     DateTime? timestamp,
+    LatLng? location,
   }) async {
     // inferring optional parameters
     timestamp ??= DateTime.now();
@@ -72,6 +77,7 @@ class StatisticsHelper {
       eventType: eventType,
       source: source,
       scooterId: scooterId,
+      location: location,
     );
     logs.add(entry.toJsonString());
     prefs.setStringList("eventLogs", logs);

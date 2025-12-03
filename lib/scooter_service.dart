@@ -767,7 +767,11 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   Future<void> unlock({bool checkHandlebars = true}) async {
     _sendCommand("scooter:state unlock");
     HapticFeedback.heavyImpact();
-    StatisticsHelper().logEvent(eventType: EventType.unlock, scooterId: myScooter!.remoteId.toString());
+    StatisticsHelper().logEvent(
+      eventType: EventType.unlock,
+      scooterId: myScooter!.remoteId.toString(),
+      location: lastLocation,
+    );
 
     if (_openSeatOnUnlock) {
       await Future.delayed(const Duration(seconds: 1), () {
@@ -776,6 +780,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
           eventType: EventType.openSeat,
           scooterId: myScooter!.remoteId.toString(),
           source: EventSource.auto,
+          location: lastLocation,
         );
       });
     }
@@ -826,7 +831,11 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     // send the command
     _sendCommand("scooter:state lock");
     HapticFeedback.heavyImpact();
-    StatisticsHelper().logEvent(eventType: EventType.lock, scooterId: myScooter!.remoteId.toString());
+    StatisticsHelper().logEvent(
+      eventType: EventType.lock,
+      scooterId: myScooter!.remoteId.toString(),
+      location: lastLocation,
+    );
 
     if (_hazardLocking) {
       Future.delayed(const Duration(seconds: 1), () {
@@ -861,7 +870,11 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
 
   void openSeat() {
     _sendCommand("scooter:seatbox open");
-    StatisticsHelper().logEvent(eventType: EventType.openSeat, scooterId: myScooter!.remoteId.toString());
+    StatisticsHelper().logEvent(
+      eventType: EventType.openSeat,
+      scooterId: myScooter!.remoteId.toString(),
+      location: lastLocation,
+    );
   }
 
   void blink({required bool left, required bool right}) {
