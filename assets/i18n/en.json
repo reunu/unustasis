@@ -251,5 +251,8 @@
     "location_services_disabled": "Location services are disabled. Please enable them in your device settings.",
     "location_permission_denied": "Location permission is required to scan for nearby scooters.",
     "location_permission_denied_forever": "Location permission was permanently denied. Please enable it in your device settings.",
-    "notification_permission_denied": "Notification permission is required for background scanning."
+    "notification_permission_denied": "Notification permission is required for background scanning.",
+    "activity_log_title": "Activity log",
+    "activity_log_error": "Your activity log could not be read, and may include corrupted data. If this problem persists, you may want to clear your log and start over.",
+    "activity_log_empty": "No activities logged. Maybe it's time for a ride?"
 }

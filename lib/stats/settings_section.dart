@@ -18,6 +18,7 @@ import '../domain/theme_helper.dart';
 import '../domain/scooter_keyless_distance.dart';
 import '../scooter_service.dart';
 import '../helper_widgets/header.dart';
+import 'log_screen.dart';
 
 class SettingsSection extends StatefulWidget {
   const SettingsSection({super.key});
@@ -191,6 +192,19 @@ class _SettingsSectionState extends State<SettingsSection> {
               hazardLocking = value;
             });
           },
+        ),
+        ListTile(
+          title: Text(FlutterI18n.translate(context, "activity_log_title")),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const LogScreen(),
+              ),
+            );
+          },
+          leading: const Icon(Icons.history_outlined),
+          trailing: const Icon(Icons.chevron_right),
         ),
         Header(FlutterI18n.translate(context, "stats_settings_section_app")),
         if (Platform.isAndroid)

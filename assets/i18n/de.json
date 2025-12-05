@@ -250,5 +250,8 @@
     "location_services_disabled": "Standortdienste sind deaktiviert. Bitte aktiviere sie in den Geräteeinstellungen.",
     "location_permission_denied": "Standortberechtigung ist erforderlich, um nach Rollern in der Nähe zu suchen.",
     "location_permission_denied_forever": "Standortberechtigung wurde dauerhaft verweigert. Bitte aktiviere sie in den Geräteeinstellungen.",
-    "notification_permission_denied": "Benachrichtigungsberechtigung ist für die Hintergrundsuche erforderlich."
+    "notification_permission_denied": "Benachrichtigungsberechtigung ist für die Hintergrundsuche erforderlich.",
+    "activity_log_title": "Aktivitäten",
+    "activity_log_error": "Deine Aktivitäten konnten nicht geladen werden. Eventuell befinden sich korrupte Daten im Log. Wenn das Problem besteht, lösche deine Aktivitäten um neu zu beginnen.",
+    "activity_log_empty": "Keine Aktivitäten geloggt. Zeit für eine Spritztour?"
 }

@@ -229,5 +229,8 @@
     "location_services_disabled": "Yer navigation be disabled, matey! Enable it in yer ship's settings to chart the course.",
     "location_permission_denied": "We need permission to use yer navigation to find nearby ships, captain!",
     "location_permission_denied_forever": "Navigation permission be locked in Davy Jones' locker! Ye must free it from yer device settings.",
-    "notification_permission_denied": "We need permission to send ye messages for background scannin', arr!"
+    "notification_permission_denied": "We need permission to send ye messages for background scannin', arr!",
+    "activity_log_title": "Logbook",
+    "activity_log_error": "Your activity log could not be read, and may include corrupted data. If this problem persists, you may want to clear your log and start over.",
+    "activity_log_empty": "Here be dragons. Time to set sail!"
 }

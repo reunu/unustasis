@@ -13,6 +13,7 @@ import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../domain/statistics_helper.dart';
 import '../helper_widgets/leaves.dart';
 import '../helper_widgets/scooter_action_button.dart';
 import '../helper_widgets/onboarding_popups.dart';
@@ -216,7 +217,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 ),
                                 // Hidden for stable release, but useful for various debugging
-                                // onLongPress: () {},
+                                onLongPress: () {
+                                  StatisticsHelper().clearEventLogs();
+                                },
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   mainAxisSize: MainAxisSize.min,

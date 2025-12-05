@@ -770,7 +770,6 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     StatisticsHelper().logEvent(
       eventType: EventType.unlock,
       scooterId: myScooter!.remoteId.toString(),
-      location: lastLocation,
     );
 
     if (_openSeatOnUnlock) {
@@ -780,7 +779,6 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
           eventType: EventType.openSeat,
           scooterId: myScooter!.remoteId.toString(),
           source: EventSource.auto,
-          location: lastLocation,
         );
       });
     }
@@ -873,7 +871,6 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     StatisticsHelper().logEvent(
       eventType: EventType.openSeat,
       scooterId: myScooter!.remoteId.toString(),
-      location: lastLocation,
     );
   }
 
