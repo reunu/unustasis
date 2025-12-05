@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:maps_launcher/maps_launcher.dart';
 import 'package:provider/provider.dart';
 import 'package:unustasis/domain/saved_scooter.dart';
 import 'package:unustasis/domain/statistics_helper.dart';
@@ -28,37 +29,25 @@ class LogScreen extends StatelessWidget {
       ),
       body: Column(
         children: [
-          Row(
-            children: [
-              TextButton(
-                onPressed: () {
+          ListTile(
+            leading: Icon(Icons.privacy_tip_outlined),
+            title: Text(FlutterI18n.translate(context, "activity_log_disclaimer")),
+            trailing: TextButton(
+              child: Text(FlutterI18n.translate(context, "activity_log_clear"),
+                  style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              onPressed: () async {
+                bool confirm = await _confirmClearLogs(context);
+                if (confirm && context.mounted) {
                   StatisticsHelper().clearEventLogs();
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text(FlutterI18n.translate(context, "activity_log_cleared"))),
                   );
-                },
-                child: Text("CLEAR LOGS"),
-              ),
-              TextButton(
-                onPressed: () {
-                  StatisticsHelper().printEventLogs();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(FlutterI18n.translate(context, "activity_log_printed"))),
-                  );
-                },
-                child: Text("PRINT LOGS"),
-              ),
-              TextButton(
-                onPressed: () {
-                  StatisticsHelper().addDemoLogs();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(FlutterI18n.translate(context, "activity_log_demo_data_added"))),
-                  );
-                },
-                child: Text("ADD DEMO LOGS"),
-              ),
-            ],
+                  Navigator.of(context).pop();
+                }
+              },
+            ),
           ),
+          Divider(),
           Expanded(
             child: FutureBuilder(
                 future: StatisticsHelper().getEventLogs(),
@@ -83,6 +72,17 @@ class LogScreen extends StatelessWidget {
                               '${getScooterName(context, multipleScootersInLog, log.scooterId)}${log.source == EventSource.auto ? "auto " : ""}${log.eventType.toString().split('.').last}'),
                           subtitle:
                               Text('${log.timestamp.toIso8601String()}, from ${log.source.toString().split('.').last}'),
+                          trailing: log.location != null
+                              ? IconButton(
+                                  icon: const Icon(Icons.map_outlined),
+                                  onPressed: () {
+                                    MapsLauncher.launchCoordinates(
+                                      log.location!.latitude,
+                                      log.location!.longitude,
+                                    );
+                                  },
+                                )
+                              : null,
                         );
                       },
                     );
@@ -92,5 +92,26 @@ class LogScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<bool> _confirmClearLogs(BuildContext context) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(FlutterI18n.translate(context, "activity_log_clear_confirm_title")),
+            content: Text(FlutterI18n.translate(context, "activity_log_clear_confirm_message")),
+            actions: [
+              TextButton(
+                child: Text(FlutterI18n.translate(context, "cancel")),
+                onPressed: () => Navigator.of(context).pop(false),
+              ),
+              TextButton(
+                child: Text(FlutterI18n.translate(context, "activity_log_clear_confirm_button")),
+                onPressed: () => Navigator.of(context).pop(true),
+              ),
+            ],
+          ),
+        ) ??
+        false;
   }
 }

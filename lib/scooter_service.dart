@@ -764,12 +764,15 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
 
   // SCOOTER ACTIONS
 
-  Future<void> unlock({bool checkHandlebars = true}) async {
+  Future<void> unlock({bool checkHandlebars = true, bool? isAuto}) async {
     _sendCommand("scooter:state unlock");
     HapticFeedback.heavyImpact();
     StatisticsHelper().logEvent(
       eventType: EventType.unlock,
       scooterId: myScooter!.remoteId.toString(),
+      soc1: _primarySOC,
+      soc2: _secondarySOC,
+      source: isAuto == true ? EventSource.auto : null,
     );
 
     if (_openSeatOnUnlock) {
@@ -779,6 +782,8 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
           eventType: EventType.openSeat,
           scooterId: myScooter!.remoteId.toString(),
           source: EventSource.auto,
+          soc1: _primarySOC,
+          soc2: _secondarySOC,
         );
       });
     }
@@ -833,6 +838,8 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       eventType: EventType.lock,
       scooterId: myScooter!.remoteId.toString(),
       location: lastLocation,
+      soc1: _primarySOC,
+      soc2: _secondarySOC,
     );
 
     if (_hazardLocking) {
@@ -871,6 +878,8 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     StatisticsHelper().logEvent(
       eventType: EventType.openSeat,
       scooterId: myScooter!.remoteId.toString(),
+      soc1: _primarySOC,
+      soc2: _secondarySOC,
     );
   }
 
@@ -897,12 +906,20 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       "wakeup",
       characteristic: characteristicRepository.hibernationCommandCharacteristic,
     );
+    StatisticsHelper().logEvent(
+      eventType: EventType.wakeUp,
+      scooterId: myScooter!.remoteId.toString(),
+    );
   }
 
   Future<void> hibernate() async {
     _sendCommand(
       "hibernate",
       characteristic: characteristicRepository.hibernationCommandCharacteristic,
+    );
+    StatisticsHelper().logEvent(
+      eventType: EventType.hibernate,
+      scooterId: myScooter!.remoteId.toString(),
     );
   }
 

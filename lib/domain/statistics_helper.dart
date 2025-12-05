@@ -3,9 +3,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:logging/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-enum EventType { lock, unlock, openSeat, unknown }
+enum EventType { lock, unlock, openSeat, hibernate, wakeUp, unknown }
 
 enum EventSource { app, background, auto, unknown }
 
@@ -15,12 +16,16 @@ class LogEntry {
   final EventSource source;
   final String scooterId;
   final LatLng? location;
+  final int? soc1;
+  final int? soc2;
 
   LogEntry({
     required this.timestamp,
     required this.eventType,
     required this.source,
     required this.scooterId,
+    this.soc1,
+    this.soc2,
     this.location,
   });
 
@@ -35,6 +40,8 @@ class LogEntry {
       'eventType': eventType.toString(),
       'source': source.toString(),
       'scooterId': scooterId,
+      'soc1': soc1,
+      'soc2': soc2,
       'location': location?.toJson()
     });
   }
@@ -47,6 +54,8 @@ class LogEntry {
       eventType: EventType.values.firstWhere((e) => e.toString() == json['eventType'], orElse: () => EventType.unknown),
       source: EventSource.values.firstWhere((e) => e.toString() == json['source'], orElse: () => EventSource.unknown),
       scooterId: json['scooterId'],
+      soc1: json['soc1'],
+      soc2: json['soc2'],
       location: locJson != null ? LatLng.fromJson(locJson) : null,
     );
   }
@@ -76,6 +85,8 @@ class StatisticsHelper {
     String scooterId = "unknown",
     EventSource? source,
     DateTime? timestamp,
+    int? soc1,
+    int? soc2,
     LatLng? location,
   }) async {
     _writeQueue = _writeQueue.then((_) async {
@@ -94,6 +105,8 @@ class StatisticsHelper {
         eventType: eventType,
         source: source!,
         scooterId: scooterId,
+        soc1: soc1,
+        soc2: soc2,
         location: location,
       );
       logs.add(entry.toJsonString());
@@ -126,6 +139,8 @@ class StatisticsHelper {
       scooterId: "CA:6F:46:FD:EF:DC",
       source: EventSource.app,
       timestamp: DateTime.now().subtract(const Duration(hours: 5)),
+      soc1: 80,
+      soc2: 78,
       location: LatLng(40.7128, -74.0060),
     );
     logEvent(
@@ -133,6 +148,8 @@ class StatisticsHelper {
       scooterId: "CA:6F:46:FD:EF:DC",
       source: EventSource.auto,
       timestamp: DateTime.now().subtract(const Duration(hours: 3, minutes: 30)),
+      soc1: 79,
+      soc2: 77,
       location: LatLng(40.7138, -74.0050),
     );
     logEvent(
@@ -140,6 +157,8 @@ class StatisticsHelper {
       scooterId: "CA:6F:46:FD:EF:DC",
       source: EventSource.background,
       timestamp: DateTime.now().subtract(const Duration(hours: 2)),
+      soc1: 78,
+      soc2: 76,
       location: LatLng(40.7148, -74.0040),
     );
     logEvent(
@@ -147,12 +166,17 @@ class StatisticsHelper {
       scooterId: "F1:99:B2:59:94:21",
       source: EventSource.app,
       timestamp: DateTime.now().subtract(const Duration(minutes: 45)),
+      soc1: 85,
+      soc2: 100,
       location: LatLng(40.7158, -74.0030),
     );
     await _writeQueue; // wait until all demo logs are written
   }
 
+  // TODO improve recognition logic
   EventSource identifyEventSource(EventType type) {
+    Logger("StatisticsHelper").info("Identifying event source for event type: $type");
+    Logger("StatisticsHelper").info("Stack trace: ${StackTrace.current.toString()}");
     StackTrace stackTrace = StackTrace.current;
     String stackTraceString = stackTrace.toString();
     if (stackTraceString.contains('rssiTimer') || type == EventType.openSeat && stackTraceString.contains('unlock')) {

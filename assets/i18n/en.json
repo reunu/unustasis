@@ -254,5 +254,12 @@
     "notification_permission_denied": "Notification permission is required for background scanning.",
     "activity_log_title": "Activity log",
     "activity_log_error": "Your activity log could not be read, and may include corrupted data. If this problem persists, you may want to clear your log and start over.",
-    "activity_log_empty": "No activities logged. Maybe it's time for a ride?"
+    "activity_log_empty": "No activities logged. Maybe it's time for a ride?",
+    "activity_log_disclaimer": "These activities are stored securely on your device and never shared with emco or anyone else.",
+    "activity_log_clear": "DELETE ALL",
+    "activity_log_cleared": "Your activity log has been cleared",
+    "cancel": "Cancel",
+    "activity_log_clear_confirm_button": "Delete",
+    "activity_log_clear_confirm_title": "Delete activity log?",
+    "activity_log_clear_confirm_message": "All recorded activity up until now will be permanently deleted!"
 }
