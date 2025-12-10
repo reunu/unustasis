@@ -261,5 +261,10 @@
     "cancel": "Cancel",
     "activity_log_clear_confirm_button": "Delete",
     "activity_log_clear_confirm_title": "Delete activity log?",
-    "activity_log_clear_confirm_message": "All recorded activity up until now will be permanently deleted!"
+    "activity_log_clear_confirm_message": "All recorded activity up until now will be permanently deleted!",
+    "activity_log_generic_scooter": "Scooter",
+    "event_type_lock": "Locked {scooterName}",
+    "event_type_unlock": "Unlocked {scooterName}",
+    "event_type_wakeup": "Woke up {scooterName}",
+    "event_type_hibernate": "Hibernated {scooterName}"
 }

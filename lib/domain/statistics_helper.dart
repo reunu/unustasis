@@ -62,6 +62,8 @@ class LogEntry {
 }
 
 class StatisticsHelper {
+  Logger log = Logger("StatisticsHelper");
+
   // Private constructor
   StatisticsHelper._internal();
 
@@ -97,13 +99,11 @@ class StatisticsHelper {
         location = LatLng(position.latitude, position.longitude);
       }
       // inferring optional parameters
-      timestamp ??= DateTime.now();
-      source ??= identifyEventSource(eventType);
       List<String> logs = await prefs.getStringList("eventLogs") ?? [];
       LogEntry entry = LogEntry(
-        timestamp: timestamp!,
+        timestamp: timestamp ?? DateTime.now(),
         eventType: eventType,
-        source: source!,
+        source: source ?? EventSource.unknown,
         scooterId: scooterId,
         soc1: soc1,
         soc2: soc2,
@@ -171,20 +171,5 @@ class StatisticsHelper {
       location: LatLng(40.7158, -74.0030),
     );
     await _writeQueue; // wait until all demo logs are written
-  }
-
-  // TODO improve recognition logic
-  EventSource identifyEventSource(EventType type) {
-    Logger("StatisticsHelper").info("Identifying event source for event type: $type");
-    Logger("StatisticsHelper").info("Stack trace: ${StackTrace.current.toString()}");
-    StackTrace stackTrace = StackTrace.current;
-    String stackTraceString = stackTrace.toString();
-    if (stackTraceString.contains('rssiTimer') || type == EventType.openSeat && stackTraceString.contains('unlock')) {
-      return EventSource.auto;
-    } else if (stackTraceString.contains('bg_service')) {
-      return EventSource.background;
-    } else {
-      return EventSource.app;
-    }
   }
 }

@@ -110,7 +110,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
             _state == ScooterState.standby &&
             !_autoUnlockCooldown &&
             optionalAuth) {
-          unlock();
+          unlock(source: EventSource.auto);
           autoUnlockCooldown();
         }
       }
@@ -764,7 +764,10 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
 
   // SCOOTER ACTIONS
 
-  Future<void> unlock({bool checkHandlebars = true, bool? isAuto}) async {
+  Future<void> unlock({
+    bool checkHandlebars = true,
+    EventSource source = EventSource.app,
+  }) async {
     _sendCommand("scooter:state unlock");
     HapticFeedback.heavyImpact();
     StatisticsHelper().logEvent(
@@ -772,19 +775,12 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       scooterId: myScooter!.remoteId.toString(),
       soc1: _primarySOC,
       soc2: _secondarySOC,
-      source: isAuto == true ? EventSource.auto : null,
+      source: source,
     );
 
     if (_openSeatOnUnlock) {
       await Future.delayed(const Duration(seconds: 1), () {
-        openSeat();
-        StatisticsHelper().logEvent(
-          eventType: EventType.openSeat,
-          scooterId: myScooter!.remoteId.toString(),
-          source: EventSource.auto,
-          soc1: _primarySOC,
-          soc2: _secondarySOC,
-        );
+        openSeat(source: EventSource.auto);
       });
     }
 
@@ -804,7 +800,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     }
   }
 
-  Future<void> wakeUpAndUnlock() async {
+  Future<void> wakeUpAndUnlock({EventSource? source}) async {
     wakeUp();
 
     await _waitForScooterState(
@@ -817,7 +813,10 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     }
   }
 
-  Future<void> lock({bool checkHandlebars = true}) async {
+  Future<void> lock({
+    bool checkHandlebars = true,
+    EventSource source = EventSource.app,
+  }) async {
     if (_seatClosed == false) {
       log.warning("Seat seems to be open, checking again...");
       // make really sure nothing has changed
@@ -840,6 +839,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       location: lastLocation,
       soc1: _primarySOC,
       soc2: _secondarySOC,
+      source: source,
     );
 
     if (_hazardLocking) {
@@ -873,13 +873,14 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     });
   }
 
-  void openSeat() {
+  void openSeat({EventSource source = EventSource.app}) {
     _sendCommand("scooter:seatbox open");
     StatisticsHelper().logEvent(
       eventType: EventType.openSeat,
       scooterId: myScooter!.remoteId.toString(),
       soc1: _primarySOC,
       soc2: _secondarySOC,
+      source: source,
     );
   }
 
@@ -909,6 +910,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     StatisticsHelper().logEvent(
       eventType: EventType.wakeUp,
       scooterId: myScooter!.remoteId.toString(),
+      source: EventSource.app, // is only triggered from the app
     );
   }
 
@@ -920,6 +922,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     StatisticsHelper().logEvent(
       eventType: EventType.hibernate,
       scooterId: myScooter!.remoteId.toString(),
+      source: EventSource.app, // is only triggered from the app
     );
   }
 

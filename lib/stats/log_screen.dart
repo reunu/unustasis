@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:maps_launcher/maps_launcher.dart';
 import 'package:provider/provider.dart';
-import 'package:unustasis/domain/saved_scooter.dart';
-import 'package:unustasis/domain/statistics_helper.dart';
 
+import '../domain/saved_scooter.dart';
+import '../domain/statistics_helper.dart';
 import '../scooter_service.dart';
 
 class LogScreen extends StatelessWidget {
@@ -13,12 +13,12 @@ class LogScreen extends StatelessWidget {
   String getScooterName(BuildContext context, bool multipleScootersInLog, String scooterId) {
     Map<String, SavedScooter> scooters = context.read<ScooterService>().savedScooters;
     if (!multipleScootersInLog) {
-      return "";
+      return FlutterI18n.translate(context, "activity_log_generic_scooter");
     }
     if (!scooters.containsKey(scooterId)) {
-      return "Scooter $scooterId: ";
+      return FlutterI18n.translate(context, "activity_log_generic_scooter");
     }
-    return "${scooters[scooterId]?.name ?? "Scooter $scooterId"}: ";
+    return scooters[scooterId]?.name ?? FlutterI18n.translate(context, "activity_log_generic_scooter");
   }
 
   @override
@@ -63,26 +63,45 @@ class LogScreen extends StatelessWidget {
                     if (logs.isEmpty) {
                       return Center(child: Text(FlutterI18n.translate(context, "activity_log_empty")));
                     }
+                    logs.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+                    // logs.removeWhere((log) =>
+                    //     log.eventType != EventType.lock &&
+                    //     log.eventType != EventType.unlock &&
+                    //     log.eventType != EventType.wakeUp &&
+                    //     log.eventType != EventType.hibernate);
                     return ListView.builder(
                       itemCount: logs.length,
                       itemBuilder: (context, index) {
                         LogEntry log = logs[index];
                         return ListTile(
-                          title: Text(
-                              '${getScooterName(context, multipleScootersInLog, log.scooterId)}${log.source == EventSource.auto ? "auto " : ""}${log.eventType.toString().split('.').last}'),
-                          subtitle:
-                              Text('${log.timestamp.toIso8601String()}, from ${log.source.toString().split('.').last}'),
-                          trailing: log.location != null
-                              ? IconButton(
-                                  icon: const Icon(Icons.map_outlined),
-                                  onPressed: () {
-                                    MapsLauncher.launchCoordinates(
-                                      log.location!.latitude,
-                                      log.location!.longitude,
-                                    );
-                                  },
-                                )
-                              : null,
+                          title: Text(FlutterI18n.translate(
+                              context, "event_type_${log.eventType.toString().toLowerCase().split('.').last}",
+                              translationParams: {
+                                "scooterName": getScooterName(context, multipleScootersInLog, log.scooterId)
+                              })),
+                          subtitle: Text('Source: ${log.source.toString().split('.').last}\n'
+                              'Time: ${log.timestamp.toLocal().toString()}\n'
+                              '${log.soc1 != null ? "SoC1: ${log.soc1}%" : ""} '
+                              '${log.soc2 != null ? "SoC2: ${log.soc2}%" : ""}'),
+                          leading: Icon(
+                            log.eventType == EventType.lock
+                                ? Icons.lock_rounded
+                                : log.eventType == EventType.unlock
+                                    ? Icons.lock_open_rounded
+                                    : null,
+                          ),
+                          trailing:
+                              log.location != null && (log.location!.latitude != 0.0 && log.location!.longitude != 0.0)
+                                  ? IconButton(
+                                      icon: const Icon(Icons.map_outlined),
+                                      onPressed: () {
+                                        MapsLauncher.launchCoordinates(
+                                          log.location!.latitude,
+                                          log.location!.longitude,
+                                        );
+                                      },
+                                    )
+                                  : null,
                         );
                       },
                     );

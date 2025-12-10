@@ -10,6 +10,7 @@ import 'package:pausable_timer/pausable_timer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../background/widget_handler.dart';
+import '../domain/statistics_helper.dart';
 import '../flutter/blue_plus_mockable.dart';
 import '../scooter_service.dart';
 import '../background/notification_handler.dart';
@@ -211,7 +212,10 @@ void onStart(ServiceInstance service) async {
     Logger("bgservice").info("Received lock command");
     if (scooterService.connected) {
       setWidgetUnlocking(true);
-      await scooterService.lock(checkHandlebars: false);
+      await scooterService.lock(
+        checkHandlebars: false,
+        source: EventSource.background,
+      );
       Future.delayed(const Duration(seconds: 3), () {
         setWidgetUnlocking(false);
       });
@@ -220,9 +224,13 @@ void onStart(ServiceInstance service) async {
       setWidgetScanning(true);
       await attemptConnectionCycle();
       setWidgetScanning(false);
+      // try again after connection attempt was made
       if (scooterService.connected) {
         setWidgetUnlocking(true);
-        await scooterService.lock(checkHandlebars: false);
+        await scooterService.lock(
+          checkHandlebars: false,
+          source: EventSource.background,
+        );
         Future.delayed(const Duration(seconds: 3), () {
           setWidgetUnlocking(false);
         });
@@ -234,7 +242,10 @@ void onStart(ServiceInstance service) async {
     Logger("bgservice").info("Received unlock command");
     if (scooterService.connected) {
       setWidgetUnlocking(true);
-      await scooterService.unlock(checkHandlebars: false);
+      await scooterService.unlock(
+        checkHandlebars: false,
+        source: EventSource.background,
+      );
       Future.delayed(const Duration(seconds: 3), () {
         setWidgetUnlocking(false);
       });
@@ -243,9 +254,13 @@ void onStart(ServiceInstance service) async {
       setWidgetScanning(true);
       await attemptConnectionCycle();
       setWidgetScanning(false);
+      // try again after connection attempt was made
       if (scooterService.connected) {
         setWidgetUnlocking(true);
-        await scooterService.unlock(checkHandlebars: false);
+        await scooterService.unlock(
+          checkHandlebars: false,
+          source: EventSource.background,
+        );
         Future.delayed(const Duration(seconds: 3), () {
           setWidgetUnlocking(false);
         });
@@ -272,7 +287,6 @@ void onStart(ServiceInstance service) async {
 
   // listen to changes
   scooterService.addListener(() async {
-    Logger("bgservice").info("ScooterService updated");
     passToWidget(
       connected: scooterService.connected,
       lastPing: scooterService.lastPing,

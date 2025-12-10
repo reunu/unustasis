@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:easy_dynamic_theme/easy_dynamic_theme.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
@@ -193,19 +194,20 @@ class _SettingsSectionState extends State<SettingsSection> {
             });
           },
         ),
-        ListTile(
-          title: Text(FlutterI18n.translate(context, "activity_log_title")),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const LogScreen(),
-              ),
-            );
-          },
-          leading: const Icon(Icons.history_outlined),
-          trailing: const Icon(Icons.chevron_right),
-        ),
+        if (kDebugMode)
+          ListTile(
+            title: Text(FlutterI18n.translate(context, "activity_log_title")),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const LogScreen(),
+                ),
+              );
+            },
+            leading: const Icon(Icons.history_outlined),
+            trailing: const Icon(Icons.chevron_right),
+          ),
         Header(FlutterI18n.translate(context, "stats_settings_section_app")),
         if (Platform.isAndroid)
           SwitchListTile(
