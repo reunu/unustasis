@@ -1,14 +1,14 @@
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart';
 import 'package:logging/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:unustasis/domain/saved_scooter.dart';
+
+import '../domain/saved_scooter.dart';
 
 class GeoHelper {
-  static Future<String?> getAddress(SavedScooter scooter, BuildContext context) async {
+  static Future<String?> getAddress(SavedScooter scooter) async {
     final log = Logger('HomeScreen');
 
     if (scooter.lastAddress != null) {
