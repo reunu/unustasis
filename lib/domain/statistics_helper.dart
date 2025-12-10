@@ -82,7 +82,7 @@ class StatisticsHelper {
   // Queue to serialize writes to SharedPreferences and avoid race conditions
   Future<void> _writeQueue = Future.value();
 
-  void logEvent({
+  Future<void> logEvent({
     required EventType eventType,
     String scooterId = "unknown",
     EventSource? source,
@@ -92,11 +92,17 @@ class StatisticsHelper {
     LatLng? location,
   }) async {
     _writeQueue = _writeQueue.then((_) async {
-      locationPermission ??= await Geolocator.checkPermission() == LocationPermission.always ||
-          await Geolocator.checkPermission() == LocationPermission.whileInUse;
+      if (locationPermission == null) {
+        final permission = await Geolocator.checkPermission();
+        locationPermission = permission == LocationPermission.always || permission == LocationPermission.whileInUse;
+      }
       if (locationPermission == true && location == null) {
-        Position position = await Geolocator.getCurrentPosition();
-        location = LatLng(position.latitude, position.longitude);
+        try {
+          Position position = await Geolocator.getCurrentPosition();
+          location = LatLng(position.latitude, position.longitude);
+        } catch (e) {
+          log.warning("Couldn't add location to logged event: $e");
+        }
       }
       // inferring optional parameters
       List<String> logs = await prefs.getStringList("eventLogs") ?? [];
@@ -120,7 +126,7 @@ class StatisticsHelper {
   }
 
   // for debugging only
-  void printEventLogs() async {
+  Future<void> printEventLogs() async {
     List<String> logs = await prefs.getStringList("eventLogs") ?? [];
     for (var log in logs) {
       LogEntry entry = LogEntry.fromJsonString(log);
@@ -128,8 +134,8 @@ class StatisticsHelper {
     }
   }
 
-  void clearEventLogs() async {
-    prefs.remove("eventLogs");
+  Future<void> clearEventLogs() async {
+    await prefs.remove("eventLogs");
   }
 
   Future<void> addDemoLogs() async {

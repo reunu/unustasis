@@ -263,8 +263,8 @@
     "activity_log_clear_confirm_message": "Alle bis jetzt gespeicherten Aktivitäten werden unwiederruflich gelöscht!",
     "cancel": "Abbrechen",
     "activity_log_generic_scooter": "Scooter",
-    "event_type_hibernate": "{{scooterName}} in Ruhezustand versetzt",
-    "event_type_wakeup": "{{scooterName}} aufgeweckt",
-    "event_type_lock": "{{scooterName}} verriegelt",
-    "event_type_unlock": "{{scooterName}} entsperrt"
+    "event_type_hibernate": "{scooterName} in Ruhezustand versetzt",
+    "event_type_wakeup": "{scooterName} aufgeweckt",
+    "event_type_lock": "{scooterName} verriegelt",
+    "event_type_unlock": "{scooterName} entsperrt"
 }

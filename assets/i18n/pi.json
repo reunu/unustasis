@@ -241,8 +241,8 @@
     "activity_log_clear_confirm_message": "Once deleted, your logbook with all of your adventures in it will be lost forever and become only the stuff of legends.",
     "cancel": "Abort",
     "activity_log_generic_scooter": "Ship",
-    "event_type_hibernate": "Left {{scooterName}} to slumber",
-    "event_type_lock": "Docked {{scooterName}}",
-    "event_type_unlock": "Set sail on {{scooterName}}",
-    "event_type_wakeup": "Awoke {{scooterName}} from slumber"
+    "event_type_hibernate": "Left {scooterName} to slumber",
+    "event_type_lock": "Docked {scooterName}",
+    "event_type_unlock": "Set sail on {scooterName}",
+    "event_type_wakeup": "Awoke {scooterName} from slumber"
 }

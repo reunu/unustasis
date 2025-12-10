@@ -30,7 +30,7 @@ class LogScreen extends StatelessWidget {
       body: Column(
         children: [
           ListTile(
-            leading: Icon(Icons.privacy_tip_outlined),
+            leading: const Icon(Icons.privacy_tip_outlined),
             title: Text(FlutterI18n.translate(context, "activity_log_disclaimer")),
             trailing: TextButton(
               child: Text(FlutterI18n.translate(context, "activity_log_clear"),
@@ -47,7 +47,7 @@ class LogScreen extends StatelessWidget {
               },
             ),
           ),
-          Divider(),
+          const Divider(),
           Expanded(
             child: FutureBuilder(
                 future: StatisticsHelper().getEventLogs(),
