@@ -9,7 +9,7 @@ import '../domain/saved_scooter.dart';
 
 class GeoHelper {
   static Future<String?> getAddress(SavedScooter scooter) async {
-    final log = Logger('HomeScreen');
+    final log = Logger('GeoHelper');
 
     if (scooter.lastAddress != null) {
       log.info("Using cached address: ${scooter.lastAddress}");
