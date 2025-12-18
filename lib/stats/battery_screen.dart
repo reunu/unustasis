@@ -14,17 +14,26 @@ import 'package:provider/provider.dart';
 import '../domain/scooter_battery.dart';
 import '../scooter_service.dart';
 
-class BatterySection extends StatefulWidget {
-  const BatterySection({required this.dataIsOld, super.key});
+typedef _BatteryScreenViewData = ({
+  int? primarySOC,
+  int? primaryCycles,
+  int? secondarySOC,
+  int? secondaryCycles,
+  int? cbbSOC,
+  bool? cbbCharging,
+  int? auxSOC,
+  DateTime? lastPing,
+});
 
-  final bool dataIsOld;
+class BatteryScreen extends StatefulWidget {
+  const BatteryScreen({super.key});
 
   @override
-  State<BatterySection> createState() => _BatterySectionState();
+  State<BatteryScreen> createState() => _BatteryScreenState();
 }
 
-class _BatterySectionState extends State<BatterySection> {
-  final log = Logger("BatterySection");
+class _BatteryScreenState extends State<BatteryScreen> {
+  final log = Logger("BatteryScreen");
   bool nfcScanning = false;
   int? nfcBattery;
   int? nfcCycles;
@@ -32,238 +41,260 @@ class _BatterySectionState extends State<BatterySection> {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      shrinkWrap: true,
-      children: [
-        Selector<ScooterService, ({int? primarySOC, int? secondarySOC})>(
-            selector: (context, service) => (primarySOC: service.primarySOC, secondarySOC: service.secondarySOC),
-            builder: (context, data, _) {
-              int primaryRange = data.primarySOC != null ? (45 * (data.primarySOC! / 100)).round() : 0;
-              int secondaryRange = data.secondarySOC != null ? (45 * (data.secondarySOC! / 100)).round() : 0;
-              return Column(children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 32.0),
-                  child: Column(
-                    children: [
-                      Text(
-                        "${primaryRange + secondaryRange} km ${FlutterI18n.translate(context, "stats_total_range")}",
-                        style: Theme.of(context).textTheme.headlineLarge,
+    return Selector<ScooterService, _BatteryScreenViewData>(
+      selector: (context, service) => (
+        primarySOC: service.primarySOC,
+        primaryCycles: service.primaryCycles,
+        secondarySOC: service.secondarySOC,
+        secondaryCycles: service.secondaryCycles,
+        cbbSOC: service.cbbSOC,
+        cbbCharging: service.cbbCharging,
+        auxSOC: service.auxSOC,
+        lastPing: service.lastPing,
+      ),
+      builder: (context, data, _) {
+        final int primarySoc = data.primarySOC ?? 0;
+        final int secondarySoc = data.secondarySOC ?? 0;
+        final bool hasPrimaryBattery = primarySoc > 0;
+        final bool hasSecondaryBattery = secondarySoc > 0;
+        final int primaryRange = hasPrimaryBattery ? (45 * (primarySoc / 100)).round() : 0;
+        final int secondaryRange = hasSecondaryBattery ? (45 * (secondarySoc / 100)).round() : 0;
+        final bool dataIsOld = data.lastPing == null || data.lastPing!.difference(DateTime.now()).inMinutes.abs() > 5;
+
+        return Scaffold(
+            appBar: AppBar(
+              title: Text(FlutterI18n.translate(context, 'stats_title_battery')),
+              backgroundColor: Theme.of(context).colorScheme.surface,
+            ),
+            body: ListView(
+              padding: const EdgeInsets.all(16),
+              shrinkWrap: true,
+              children: [
+                Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 32.0),
+                      child: Column(
+                        children: [
+                          Text(
+                            "${primaryRange + secondaryRange} km ${FlutterI18n.translate(context, "stats_total_range")}",
+                            style: Theme.of(context).textTheme.headlineLarge,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            (primaryRange == 0 && secondaryRange == 0)
+                                ? FlutterI18n.translate(context, "stats_no_batteries")
+                                : FlutterI18n.translate(context, "stats_range_until_throttled", translationParams: {
+                                    "range": "${math.max(0, primaryRange - 9) + math.max(0, secondaryRange - 9)}"
+                                  }),
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        (primaryRange == 0 && secondaryRange == 0)
-                            ? FlutterI18n.translate(context, "stats_no_batteries")
-                            : FlutterI18n.translate(context, "stats_range_until_throttled", translationParams: {
-                                "range": "${math.max(0, primaryRange - 9) + math.max(0, secondaryRange - 9)}"
-                              }),
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ],
-                  ),
+                    ),
+                    Row(
+                      children: [
+                        if (hasSecondaryBattery)
+                          Expanded(
+                            child: LinearProgressIndicator(
+                              value: secondarySoc / 100,
+                              borderRadius: BorderRadius.circular(16.0),
+                              minHeight: 24,
+                              backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+                              color: dataIsOld
+                                  ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4)
+                                  : secondarySoc <= 15
+                                      ? Colors.red
+                                      : Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        if (hasSecondaryBattery) const SizedBox(width: 8),
+                        Expanded(
+                          child: LinearProgressIndicator(
+                            value: primarySoc / 100,
+                            borderRadius: BorderRadius.circular(16.0),
+                            minHeight: 24,
+                            backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+                            color: dataIsOld
+                                ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4)
+                                : primarySoc <= 15
+                                    ? Colors.red
+                                    : Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 32),
+                if (hasPrimaryBattery)
+                  _batteryCard(
+                    type: ScooterBatteryType.primary,
+                    soc: primarySoc,
+                    cycles: data.primaryCycles,
+                    old: dataIsOld,
+                  ),
+                if (hasSecondaryBattery)
+                  _batteryCard(
+                    type: ScooterBatteryType.secondary,
+                    soc: secondarySoc,
+                    cycles: data.secondaryCycles,
+                    old: dataIsOld,
+                  ),
                 Row(
                   children: [
-                    if (data.secondarySOC != null && data.secondarySOC! > 0)
-                      Expanded(
-                        child: LinearProgressIndicator(
-                          value: data.secondarySOC! / 100,
-                          borderRadius: BorderRadius.circular(16.0),
-                          minHeight: 24,
-                          backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
-                          color: widget.dataIsOld
-                              ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4)
-                              : data.secondarySOC! <= 15
-                                  ? Colors.red
-                                  : Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                    if (data.secondarySOC != null && data.secondarySOC! > 0) const SizedBox(width: 8),
                     Expanded(
-                      child: LinearProgressIndicator(
-                        value: (data.primarySOC ?? 0) / 100,
-                        borderRadius: BorderRadius.circular(16.0),
-                        minHeight: 24,
-                        backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
-                        color: widget.dataIsOld
-                            ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4)
-                            : (data.primarySOC ?? 0) <= 15
-                                ? Colors.red
-                                : Theme.of(context).colorScheme.primary,
+                      child: _internalBatteryCard(
+                        type: ScooterBatteryType.cbb,
+                        soc: data.cbbSOC ?? 100,
+                        charging: data.cbbCharging,
+                        old: dataIsOld,
+                        context: context,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _internalBatteryCard(
+                        type: ScooterBatteryType.aux,
+                        soc: data.auxSOC ?? 100,
+                        old: dataIsOld,
+                        context: context,
                       ),
                     ),
                   ],
                 ),
-              ]);
-            }),
-        const SizedBox(height: 32),
-        if ((context.select<ScooterService, int?>((service) => service.primarySOC) ?? 0) > 0)
-          _batteryCard(
-            type: ScooterBatteryType.primary,
-            soc: context.select<ScooterService, int?>((service) => service.primarySOC)!,
-            cycles: context.select<ScooterService, int?>((service) => service.primaryCycles),
-            old: widget.dataIsOld,
-          ),
 
-        if ((context.select<ScooterService, int?>((service) => service.secondarySOC) ?? 0) > 0)
-          _batteryCard(
-            type: ScooterBatteryType.secondary,
-            soc: context.select<ScooterService, int?>((service) => service.secondarySOC)!,
-            cycles: context.select<ScooterService, int?>((service) => service.secondaryCycles),
-            old: widget.dataIsOld,
-          ),
-        Row(
-          children: [
-            Expanded(
-              child: _internalBatteryCard(
-                type: ScooterBatteryType.cbb,
-                soc: context.select<ScooterService, int?>((service) => service.cbbSOC) ?? 100,
-                charging: context.select<ScooterService, bool?>((service) => service.cbbCharging),
-                old: widget.dataIsOld,
-                context: context,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _internalBatteryCard(
-                type: ScooterBatteryType.aux,
-                soc: context.select<ScooterService, int?>((service) => service.auxSOC) ?? 100,
-                old: widget.dataIsOld,
-                context: context,
-              ),
-            ),
-          ],
-        ),
-
-        // only available on Android, hidden right now though
-        if (Platform.isWindows)
-          Divider(
-            height: 40,
-            indent: 0,
-            endIndent: 0,
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
-          ),
-        if (nfcBattery != 0 && nfcBattery != null && !nfcScanning)
-          _batteryCard(
-            type: ScooterBatteryType.nfc,
-            soc: nfcBattery ?? 0,
-            cycles: nfcCycles,
-            old: false,
-          ),
-        nfcScanning
-            ? Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const CircularProgressIndicator(),
-                    const SizedBox(height: 16),
-                    Text(
-                      FlutterI18n.translate(context, "stats_nfc_instructions"),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    if (showNfcNotice)
-                      Text(
-                        FlutterI18n.translate(context, "stats_nfc_notice"),
-                        textAlign: TextAlign.center,
-                      ),
-                  ],
-                ))
-            : (Platform.isWindows)
-                // hiding until it works
-                ? Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(60),
-                        side: BorderSide(
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                      ),
-                      onPressed: () async {
-                        // Check availability
-                        if (await NfcManager.instance.isAvailable() == false && context.mounted) {
-                          Fluttertoast.showToast(
-                            msg: FlutterI18n.translate(context, "stats_nfc_not_available"),
-                          );
-                          setState(() {
-                            nfcScanning = false;
-                          });
-                          return;
-                        }
-                        setState(() {
-                          nfcScanning = true;
-                          showNfcNotice = false;
-                        });
-                        Timer noticeTimer = Timer(const Duration(seconds: 8), () {
-                          setState(() {
-                            showNfcNotice = true;
-                          });
-                        });
-                        // Start Session
-                        NfcManager.instance.startSession(
-                          pollingOptions: {NfcPollingOption.iso14443},
-                          onDiscovered: (NfcTag tag) async {
-                            noticeTimer.cancel();
-                            setState(() {
-                              nfcScanning = false;
-                              nfcBattery = null;
-                              nfcCycles = null;
-                              showNfcNotice = false;
-                            });
-                            try {
-                              Uint8List socData;
-                              Uint8List cycleData;
-                              // Read from battery
-                              if (Platform.isAndroid) {
-                                var mifare = MifareUltralightAndroid.from(tag);
-                                if (mifare == null) {
+                // only available on Android, hidden right now though
+                if (Platform.isWindows)
+                  Divider(
+                    height: 40,
+                    indent: 0,
+                    endIndent: 0,
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+                  ),
+                if (nfcBattery != 0 && nfcBattery != null && !nfcScanning)
+                  _batteryCard(
+                    type: ScooterBatteryType.nfc,
+                    soc: nfcBattery ?? 0,
+                    cycles: nfcCycles,
+                    old: false,
+                  ),
+                nfcScanning
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const CircularProgressIndicator(),
+                            const SizedBox(height: 16),
+                            Text(
+                              FlutterI18n.translate(context, "stats_nfc_instructions"),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            if (showNfcNotice)
+                              Text(
+                                FlutterI18n.translate(context, "stats_nfc_notice"),
+                                textAlign: TextAlign.center,
+                              ),
+                          ],
+                        ))
+                    : (Platform.isWindows)
+                        // hiding until it works
+                        ? Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            child: OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                minimumSize: const Size.fromHeight(60),
+                                side: BorderSide(
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                ),
+                              ),
+                              onPressed: () async {
+                                // Check availability
+                                if (await NfcManager.instance.isAvailable() == false && context.mounted) {
                                   Fluttertoast.showToast(
-                                    msg: FlutterI18n.translate(context, "stats_nfc_invalid"),
+                                    msg: FlutterI18n.translate(context, "stats_nfc_not_available"),
                                   );
+                                  setState(() {
+                                    nfcScanning = false;
+                                  });
                                   return;
                                 }
-                                socData = await mifare.readPages(pageOffset: 23);
-                                cycleData = await mifare.readPages(pageOffset: 20);
-                              } else {
-                                return;
-                              }
+                                setState(() {
+                                  nfcScanning = true;
+                                  showNfcNotice = false;
+                                });
+                                Timer noticeTimer = Timer(const Duration(seconds: 8), () {
+                                  setState(() {
+                                    showNfcNotice = true;
+                                  });
+                                });
+                                // Start Session
+                                NfcManager.instance.startSession(
+                                  pollingOptions: {NfcPollingOption.iso14443},
+                                  onDiscovered: (NfcTag tag) async {
+                                    noticeTimer.cancel();
+                                    setState(() {
+                                      nfcScanning = false;
+                                      nfcBattery = null;
+                                      nfcCycles = null;
+                                      showNfcNotice = false;
+                                    });
+                                    try {
+                                      Uint8List socData;
+                                      Uint8List cycleData;
+                                      // Read from battery
+                                      if (Platform.isAndroid) {
+                                        var mifare = MifareUltralightAndroid.from(tag);
+                                        if (mifare == null) {
+                                          Fluttertoast.showToast(
+                                            msg: FlutterI18n.translate(context, "stats_nfc_invalid"),
+                                          );
+                                          return;
+                                        }
+                                        socData = await mifare.readPages(pageOffset: 23);
+                                        cycleData = await mifare.readPages(pageOffset: 20);
+                                      } else {
+                                        return;
+                                      }
 
-                              // Parse data
-                              log.info("SOC Hex: ${socData.map((e) => e.toRadixString(16))}");
-                              int fullCap = 33000; //(socData[5] << 8) + socData[4];
-                              int remainingCap = (socData[3] << 8) + socData[1];
-                              int cycles = cycleData[0] - 1;
-                              log.info("Remaining: $remainingCap");
-                              log.info("Full: $fullCap");
-                              log.info("Cycles: $cycles");
-                              setState(() {
-                                nfcBattery = (remainingCap / fullCap * 100).round();
-                                nfcCycles = cycles;
-                              });
-                            } catch (e, stack) {
-                              log.severe("Error reading NFC", e, stack);
-                              Fluttertoast.showToast(
-                                msg: "Error reading NFC",
-                              );
-                            }
-                            // We have our data, stop session
-                            NfcManager.instance.stopSession();
-                          },
-                        );
-                      },
-                      child: Text(
-                        FlutterI18n.translate(context, "stats_nfc_button"),
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                      ),
-                    ),
-                  )
-                : Container(),
-      ],
+                                      // Parse data
+                                      log.info("SOC Hex: ${socData.map((e) => e.toRadixString(16))}");
+                                      int fullCap = 33000; //(socData[5] << 8) + socData[4];
+                                      int remainingCap = (socData[3] << 8) + socData[1];
+                                      int cycles = cycleData[0] - 1;
+                                      log.info("Remaining: $remainingCap");
+                                      log.info("Full: $fullCap");
+                                      log.info("Cycles: $cycles");
+                                      setState(() {
+                                        nfcBattery = (remainingCap / fullCap * 100).round();
+                                        nfcCycles = cycles;
+                                      });
+                                    } catch (e, stack) {
+                                      log.severe("Error reading NFC", e, stack);
+                                      Fluttertoast.showToast(
+                                        msg: "Error reading NFC",
+                                      );
+                                    }
+                                    // We have our data, stop session
+                                    NfcManager.instance.stopSession();
+                                  },
+                                );
+                              },
+                              child: Text(
+                                FlutterI18n.translate(context, "stats_nfc_button"),
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                ),
+                              ),
+                            ),
+                          )
+                        : Container(),
+              ],
+            ));
+      },
     );
   }
 

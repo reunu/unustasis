@@ -634,28 +634,16 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     }
 
     // SCAN
-    // TODO: replace with getEligibleScooters, why do we still have this duplicated?!
-
-    // First, see if the phone is already actively connected to a scooter
-    List<BluetoothDevice> systemScooters = await getSystemScooters();
-    if (systemScooters.isNotEmpty) {
-      // get the first one, hook into its connection, and remember the ID for future reference
-      connectToScooterId(systemScooters.first.remoteId.toString());
-    } else {
-      try {
-        log.fine("Looking for nearby scooters");
-        // If not, start scanning for nearby scooters
-        getNearbyScooters().listen((foundScooter) async {
-          // there's one! Attempt to connect to it
-          flutterBluePlus.stopScan();
-          connectToScooterId(foundScooter.remoteId.toString());
-        });
-      } catch (e, stack) {
-        // Guess this one is not happy with us
-        // TODO: Handle errors more elegantly
-        log.severe("Error during search or connect!", e, stack);
-        Fluttertoast.showToast(msg: "Error during search or connect!");
+    try {
+      BluetoothDevice? eligibleScooter = await findEligibleScooter();
+      if (eligibleScooter != null) {
+        await connectToScooterId(eligibleScooter.remoteId.toString());
+      } else {
+        log.info("No eligible scooters found during start()");
       }
+    } catch (e, stack) {
+      log.severe("Error during search or connect!", e, stack);
+      Fluttertoast.showToast(msg: "Couldn't search for or connect to the scooter");
     }
 
     if (restart) {
