@@ -194,7 +194,6 @@
     "settings_add_scooter": "Neuen Roller hinzufügen",
     "settings_connect": "Verbinden",
     "settings_connect_failed": "{name} ist nicht erreichbar",
-    "scooter_search_connect_error": "Fehler bei der Suche oder beim Verbinden mit dem Roller",
     "settings_disconnect": "Trennen",
     "settings_forget": "Löschen",
     "forget_alert_title": "Roller löschen?",
