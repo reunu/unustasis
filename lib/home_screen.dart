@@ -26,7 +26,7 @@ import '../domain/scooter_vehicle_state.dart';
 import '../domain/scooter_power_state.dart';
 import '../scooter_visual.dart';
 import '../stats/battery_screen.dart';
-import '../scooter_screen.dart';
+import '../stats/scooter_screen.dart';
 import '../stats/settings_screen.dart';
 import '../stats/support_screen.dart';
 import '../control_sheet.dart';
