@@ -7,7 +7,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
-import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
@@ -25,7 +24,6 @@ import '../domain/scooter_power_state.dart';
 import '../flutter/blue_plus_mockable.dart';
 import '../infrastructure/characteristic_repository.dart';
 import '../infrastructure/scooter_reader.dart';
-import 'navigation/global_navigator.dart';
 
 const bootingTimeSeconds = 25;
 const keylessCooldownSeconds = 60;
@@ -645,11 +643,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       }
     } catch (e, stack) {
       log.severe("Error during search or connect!", e, stack);
-
-      final context = GlobalNavigator.context;
-      if (context != null && context.mounted) {
-        Fluttertoast.showToast(msg: FlutterI18n.translate(context, "scooter_search_connect_error"));
-      }
+      Fluttertoast.showToast(msg: "Couldn't search for or connect to the scooter");
     }
 
     if (restart) {
