@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
@@ -24,6 +25,7 @@ import '../domain/scooter_power_state.dart';
 import '../flutter/blue_plus_mockable.dart';
 import '../infrastructure/characteristic_repository.dart';
 import '../infrastructure/scooter_reader.dart';
+import 'navigation/global_navigator.dart';
 
 const bootingTimeSeconds = 25;
 const keylessCooldownSeconds = 60;
@@ -634,27 +636,19 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     }
 
     // SCAN
-    // TODO: replace with getEligibleScooters, why do we still have this duplicated?!
+    try {
+      BluetoothDevice? eligibleScooter = await findEligibleScooter();
+      if (eligibleScooter != null) {
+        await connectToScooterId(eligibleScooter.remoteId.toString());
+      } else {
+        log.info("No eligible scooters found during start()");
+      }
+    } catch (e, stack) {
+      log.severe("Error during search or connect!", e, stack);
 
-    // First, see if the phone is already actively connected to a scooter
-    List<BluetoothDevice> systemScooters = await getSystemScooters();
-    if (systemScooters.isNotEmpty) {
-      // get the first one, hook into its connection, and remember the ID for future reference
-      connectToScooterId(systemScooters.first.remoteId.toString());
-    } else {
-      try {
-        log.fine("Looking for nearby scooters");
-        // If not, start scanning for nearby scooters
-        getNearbyScooters().listen((foundScooter) async {
-          // there's one! Attempt to connect to it
-          flutterBluePlus.stopScan();
-          connectToScooterId(foundScooter.remoteId.toString());
-        });
-      } catch (e, stack) {
-        // Guess this one is not happy with us
-        // TODO: Handle errors more elegantly
-        log.severe("Error during search or connect!", e, stack);
-        Fluttertoast.showToast(msg: "Error during search or connect!");
+      final context = GlobalNavigator.context;
+      if (context != null && context.mounted) {
+        Fluttertoast.showToast(msg: FlutterI18n.translate(context, "scooter_search_connect_error"));
       }
     }
 

@@ -19,6 +19,7 @@ import '../flutter/blue_plus_mockable.dart';
 import '../home_screen.dart';
 import '../scooter_service.dart';
 import '../background/widget_handler.dart';
+import 'navigation/global_navigator.dart';
 
 void main() async {
   LogHelper().initialize();
@@ -99,6 +100,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: GlobalNavigator.navigatorKey,
       title: 'unustasis',
       theme: ThemeData(
         appBarTheme: const AppBarTheme(

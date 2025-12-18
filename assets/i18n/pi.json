@@ -173,6 +173,7 @@
     "settings_add_scooter": "Onboard new ship",
     "settings_connect": "Embark",
     "settings_connect_failed": "{name} is not in range",
+    "scooter_search_connect_error": "Arrr, couldn't look for or board yer ship",
     "settings_disconnect": "Disembark",
     "settings_forget": "Abandon forever",
     "forget_alert_title": "Really abandon yer trusty ship?",

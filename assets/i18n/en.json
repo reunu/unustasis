@@ -195,6 +195,7 @@
     "settings_add_scooter": "Add new scooter",
     "settings_connect": "Connect",
     "settings_connect_failed": "{name} is not in range",
+    "scooter_search_connect_error": "Couldn't search for or connect to the scooter",
     "settings_disconnect": "Disconnect",
     "settings_forget": "Forget",
     "forget_alert_title": "Forget scooter?",
