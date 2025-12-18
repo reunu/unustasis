@@ -17,7 +17,7 @@ import '../home_screen.dart';
 import '../scooter_service.dart';
 import '../domain/scooter_state.dart';
 import '../scooter_visual.dart';
-import '../support_screen.dart';
+import '../stats/support_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({
