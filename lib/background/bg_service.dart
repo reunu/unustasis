@@ -10,6 +10,7 @@ import 'package:pausable_timer/pausable_timer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../background/widget_handler.dart';
+import '../domain/statistics_helper.dart';
 import '../flutter/blue_plus_mockable.dart';
 import '../scooter_service.dart';
 import '../background/notification_handler.dart';
@@ -62,7 +63,7 @@ Future<void> setupBackgroundService() async {
 @pragma('vm:entry-point')
 Future<bool> onIosBackground(ServiceInstance service) async {
   // this will be updated occasionally by the system
-  print("Background service started on iOS!");
+  Logger("bgservice").info("Background service started on iOS!");
   // Ensure that the Flutter engine is initialized.
   WidgetsFlutterBinding.ensureInitialized();
   DartPluginRegistrant.ensureInitialized();
@@ -128,7 +129,7 @@ void onStart(ServiceInstance service) async {
     }
   }
 
-  print("Seeding widget with initial data");
+  Logger("bgservice").info("Seeding widget with initial data");
   // seed widget
   await HomeWidget.setAppGroupId("group.com.unumotors.ossapp");
   Future.delayed(const Duration(seconds: 5), () {
@@ -143,7 +144,7 @@ void onStart(ServiceInstance service) async {
         lastLocation: scooterService.lastLocation,
         seatClosed: scooterService.seatClosed);
   });
-  print("Widget seeded with initial data. ScooterName: ${scooterService.scooterName}");
+  Logger("bgservice").info("Widget seeded with initial data. ScooterName: ${scooterService.scooterName}");
 
   service.on("autoUnlockCooldown").listen((data) async {
     Logger("bgservice").info("Received autoUnlockCooldown command");
@@ -211,7 +212,10 @@ void onStart(ServiceInstance service) async {
     Logger("bgservice").info("Received lock command");
     if (scooterService.connected) {
       setWidgetUnlocking(true);
-      await scooterService.lock(checkHandlebars: false);
+      await scooterService.lock(
+        checkHandlebars: false,
+        source: EventSource.background,
+      );
       Future.delayed(const Duration(seconds: 3), () {
         setWidgetUnlocking(false);
       });
@@ -220,9 +224,13 @@ void onStart(ServiceInstance service) async {
       setWidgetScanning(true);
       await attemptConnectionCycle();
       setWidgetScanning(false);
+      // try again after connection attempt was made
       if (scooterService.connected) {
         setWidgetUnlocking(true);
-        await scooterService.lock(checkHandlebars: false);
+        await scooterService.lock(
+          checkHandlebars: false,
+          source: EventSource.background,
+        );
         Future.delayed(const Duration(seconds: 3), () {
           setWidgetUnlocking(false);
         });
@@ -234,7 +242,10 @@ void onStart(ServiceInstance service) async {
     Logger("bgservice").info("Received unlock command");
     if (scooterService.connected) {
       setWidgetUnlocking(true);
-      await scooterService.unlock(checkHandlebars: false);
+      await scooterService.unlock(
+        checkHandlebars: false,
+        source: EventSource.background,
+      );
       Future.delayed(const Duration(seconds: 3), () {
         setWidgetUnlocking(false);
       });
@@ -243,9 +254,13 @@ void onStart(ServiceInstance service) async {
       setWidgetScanning(true);
       await attemptConnectionCycle();
       setWidgetScanning(false);
+      // try again after connection attempt was made
       if (scooterService.connected) {
         setWidgetUnlocking(true);
-        await scooterService.unlock(checkHandlebars: false);
+        await scooterService.unlock(
+          checkHandlebars: false,
+          source: EventSource.background,
+        );
         Future.delayed(const Duration(seconds: 3), () {
           setWidgetUnlocking(false);
         });
@@ -267,12 +282,11 @@ void onStart(ServiceInstance service) async {
   });
 
   service.on("test").listen((data) async {
-    print("Test command received by background service! Data: $data");
+    Logger("bgservice").info("Test command received by background service! Data: $data");
   });
 
   // listen to changes
   scooterService.addListener(() async {
-    Logger("bgservice").info("ScooterService updated");
     passToWidget(
       connected: scooterService.connected,
       lastPing: scooterService.lastPing,

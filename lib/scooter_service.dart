@@ -14,10 +14,13 @@ import 'package:logging/logging.dart';
 import 'package:pausable_timer/pausable_timer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../domain/statistics_helper.dart';
 import '../domain/scooter_battery.dart';
 import '../domain/saved_scooter.dart';
 import '../domain/scooter_keyless_distance.dart';
 import '../domain/scooter_state.dart';
+import '../domain/scooter_vehicle_state.dart';
+import '../domain/scooter_power_state.dart';
 import '../flutter/blue_plus_mockable.dart';
 import '../infrastructure/characteristic_repository.dart';
 import '../infrastructure/scooter_reader.dart';
@@ -32,6 +35,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   BluetoothDevice? myScooter; // reserved for a connected scooter!
   bool _foundSth = false; // whether we've found a scooter yet
   bool _autoRestarting = false;
+  String? _targetScooterId; // specific scooter ID to connect to during auto-restart
   bool _autoUnlock = false;
   int _autoUnlockThreshold = ScooterKeylessDistance.regular.threshold;
   bool _openSeatOnUnlock = false;
@@ -106,7 +110,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
             _state == ScooterState.standby &&
             !_autoUnlockCooldown &&
             optionalAuth) {
-          unlock();
+          unlock(source: EventSource.auto);
           autoUnlockCooldown();
         }
       }
@@ -118,7 +122,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
           log.info("Auto-refresh...");
           characteristicRepository.stateCharacteristic!.read();
           characteristicRepository.seatCharacteristic!.read();
-        } on StateError catch (e) {
+        } on StateError catch (_) {
           log.fine(
             "Characteristics not yet initialized, skipping auto-refresh",
           );
@@ -169,8 +173,10 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   }
 
   void updateScooterPing(String id) async {
-    savedScooters[id]!.lastPing = DateTime.now();
-    updateBackgroundService({"updateSavedScooters": true});
+    if (savedScooters.containsKey(id)) {
+      savedScooters[id]!.lastPing = DateTime.now();
+      updateBackgroundService({"updateSavedScooters": true});
+    }
   }
 
   Future<void> seedStreamsWithCache() async {
@@ -260,6 +266,20 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   ScooterState? get state => _state;
   set state(ScooterState? state) {
     _state = state;
+    notifyListeners();
+  }
+
+  ScooterVehicleState? _vehicleState;
+  ScooterVehicleState? get vehicleState => _vehicleState;
+  set vehicleState(ScooterVehicleState? vehicleState) {
+    _vehicleState = vehicleState;
+    notifyListeners();
+  }
+
+  ScooterPowerState? _powerState;
+  ScooterPowerState? get powerState => _powerState;
+  set powerState(ScooterPowerState? powerState) {
+    _powerState = powerState;
     notifyListeners();
   }
 
@@ -362,6 +382,20 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   int? get secondarySOC => _secondarySOC;
   set secondarySOC(int? secondarySOC) {
     _secondarySOC = secondarySOC;
+    notifyListeners();
+  }
+
+  String? _nrfVersion;
+  String? get nrfVersion => _nrfVersion;
+  set nrfVersion(String? nrfVersion) {
+    _nrfVersion = nrfVersion;
+    notifyListeners();
+  }
+
+  bool? _isLibrescoot;
+  bool? get isLibrescoot => _isLibrescoot;
+  set isLibrescoot(bool? isLibrescoot) {
+    _isLibrescoot = isLibrescoot;
     notifyListeners();
   }
 
@@ -630,9 +664,11 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   }
 
   late StreamSubscription<bool> _autoRestartSubscription;
-  void startAutoRestart() async {
+  void startAutoRestart({String? targetScooterId}) async {
     if (!_autoRestarting) {
       _autoRestarting = true;
+      _targetScooterId = targetScooterId;
+      log.info("Starting auto-restart${targetScooterId != null ? " for scooter $targetScooterId" : ""}");
       _autoRestartSubscription = flutterBluePlus.isScanning.listen((
         scanState,
       ) async {
@@ -641,8 +677,18 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
           await Future.delayed(const Duration(seconds: 3));
           if (!_foundSth && !scanning && _autoRestarting) {
             // make sure nothing happened in these few seconds
-            log.info("Auto-restarting...");
-            start();
+            log.info("Auto-restarting...${_targetScooterId != null ? " targeting $_targetScooterId" : ""}");
+            if (_targetScooterId != null) {
+              // Try to connect to the specific scooter the user selected
+              try {
+                await connectToScooterId(_targetScooterId!);
+              } catch (e) {
+                log.warning("Failed to connect to target scooter $_targetScooterId during auto-restart: $e");
+              }
+            } else {
+              // Fall back to generic start() for auto-connect behavior
+              start();
+            }
           }
         }
       });
@@ -653,6 +699,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
 
   void stopAutoRestart() {
     _autoRestarting = false;
+    _targetScooterId = null;
     _autoRestartSubscription.cancel();
     log.fine("Auto-restart stopped.");
   }
@@ -717,13 +764,23 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
 
   // SCOOTER ACTIONS
 
-  Future<void> unlock({bool checkHandlebars = true}) async {
+  Future<void> unlock({
+    bool checkHandlebars = true,
+    EventSource source = EventSource.app,
+  }) async {
     _sendCommand("scooter:state unlock");
     HapticFeedback.heavyImpact();
+    StatisticsHelper().logEvent(
+      eventType: EventType.unlock,
+      scooterId: myScooter!.remoteId.toString(),
+      soc1: _primarySOC,
+      soc2: _secondarySOC,
+      source: source,
+    );
 
     if (_openSeatOnUnlock) {
       await Future.delayed(const Duration(seconds: 1), () {
-        openSeat();
+        openSeat(source: EventSource.auto);
       });
     }
 
@@ -743,7 +800,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     }
   }
 
-  Future<void> wakeUpAndUnlock() async {
+  Future<void> wakeUpAndUnlock({EventSource? source}) async {
     wakeUp();
 
     await _waitForScooterState(
@@ -756,7 +813,10 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     }
   }
 
-  Future<void> lock({bool checkHandlebars = true}) async {
+  Future<void> lock({
+    bool checkHandlebars = true,
+    EventSource source = EventSource.app,
+  }) async {
     if (_seatClosed == false) {
       log.warning("Seat seems to be open, checking again...");
       // make really sure nothing has changed
@@ -773,6 +833,14 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     // send the command
     _sendCommand("scooter:state lock");
     HapticFeedback.heavyImpact();
+    StatisticsHelper().logEvent(
+      eventType: EventType.lock,
+      scooterId: myScooter!.remoteId.toString(),
+      location: lastLocation,
+      soc1: _primarySOC,
+      soc2: _secondarySOC,
+      source: source,
+    );
 
     if (_hazardLocking) {
       Future.delayed(const Duration(seconds: 1), () {
@@ -805,8 +873,15 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     });
   }
 
-  void openSeat() {
+  void openSeat({EventSource source = EventSource.app}) {
     _sendCommand("scooter:seatbox open");
+    StatisticsHelper().logEvent(
+      eventType: EventType.openSeat,
+      scooterId: myScooter!.remoteId.toString(),
+      soc1: _primarySOC,
+      soc2: _secondarySOC,
+      source: source,
+    );
   }
 
   void blink({required bool left, required bool right}) {
@@ -832,12 +907,22 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       "wakeup",
       characteristic: characteristicRepository.hibernationCommandCharacteristic,
     );
+    StatisticsHelper().logEvent(
+      eventType: EventType.wakeUp,
+      scooterId: myScooter!.remoteId.toString(),
+      source: EventSource.app, // is only triggered from the app
+    );
   }
 
   Future<void> hibernate() async {
     _sendCommand(
       "hibernate",
       characteristic: characteristicRepository.hibernationCommandCharacteristic,
+    );
+    StatisticsHelper().logEvent(
+      eventType: EventType.hibernate,
+      scooterId: myScooter!.remoteId.toString(),
+      source: EventSource.app, // is only triggered from the app
     );
   }
 
@@ -889,11 +974,12 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       characteristicToSend = characteristic;
     }
 
-    // commandCharcteristic should never be null, so we can assume it's not
-    // if the given characteristic is null, we'll "fail" quitely by sending garbage to the default command characteristic instead
+    if (characteristicToSend == null) {
+      throw "Could not send command, move closer or reconnect";
+    }
 
     try {
-      characteristicToSend!.write(ascii.encode(command));
+      characteristicToSend.write(ascii.encode(command));
     } catch (e) {
       rethrow;
     }

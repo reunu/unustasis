@@ -3,6 +3,7 @@ import 'package:flutter_i18n/flutter_i18n.dart';
 
 import 'package:logging/logging.dart';
 import '../domain/scooter_power_state.dart';
+import '../domain/scooter_vehicle_state.dart';
 
 enum ScooterState {
   standby,
@@ -10,6 +11,12 @@ enum ScooterState {
   parked,
   shuttingDown,
   ready,
+  waitingSeatbox,
+  updating,
+  waitingHibernation,
+  waitingHibernationAdvanced,
+  waitingHibernationSeatbox,
+  waitingHibernationConfirm,
   hibernating,
   hibernatingImminent,
   booting,
@@ -47,7 +54,43 @@ enum ScooterState {
     }
   }
 
-  static ScooterState? fromStateAndPowerState(ScooterState? state, ScooterPowerState? powerState) {
+  static ScooterState? fromVehicleAndPowerState(ScooterVehicleState? vehicleState, ScooterPowerState? powerState) {
+    // When PM state is running, suspending, or suspending-imminent, use vehicle state (iMX6 is usable)
+    // Otherwise, use PM state (iMX6 is not usable - booting or hibernating)
+    if (powerState == ScooterPowerState.running ||
+        powerState == ScooterPowerState.suspending ||
+        powerState == ScooterPowerState.suspendingImminent) {
+      // Map vehicle state to aggregate ScooterState
+      if (vehicleState == null) return null;
+      switch (vehicleState) {
+        case ScooterVehicleState.standby:
+          return ScooterState.standby;
+        case ScooterVehicleState.off:
+          return ScooterState.off;
+        case ScooterVehicleState.parked:
+          return ScooterState.parked;
+        case ScooterVehicleState.shuttingDown:
+          return ScooterState.shuttingDown;
+        case ScooterVehicleState.ready:
+          return ScooterState.ready;
+        case ScooterVehicleState.waitingSeatbox:
+          return ScooterState.waitingSeatbox;
+        case ScooterVehicleState.updating:
+          return ScooterState.updating;
+        case ScooterVehicleState.waitingHibernation:
+          return ScooterState.waitingHibernation;
+        case ScooterVehicleState.waitingHibernationAdvanced:
+          return ScooterState.waitingHibernationAdvanced;
+        case ScooterVehicleState.waitingHibernationSeatbox:
+          return ScooterState.waitingHibernationSeatbox;
+        case ScooterVehicleState.waitingHibernationConfirm:
+          return ScooterState.waitingHibernationConfirm;
+        case ScooterVehicleState.unknown:
+          return ScooterState.unknown;
+      }
+    }
+
+    // iMX6 is not usable - reflect PM state
     switch (powerState) {
       case ScooterPowerState.booting:
         return ScooterState.booting;
@@ -55,16 +98,9 @@ enum ScooterState {
         return ScooterState.hibernating;
       case ScooterPowerState.hibernatingImminent:
         return ScooterState.hibernatingImminent;
-      case ScooterPowerState.suspendingImminent:
-        return ScooterState.shuttingDown;
-      case ScooterPowerState.suspending:
-        if (state != ScooterState.standby) {
-          return ScooterState.off;
-        } else {
-          return state;
-        }
       default:
-        return state;
+        // Fallback to vehicle state if PM state is unknown
+        return vehicleState != null ? fromVehicleAndPowerState(vehicleState, ScooterPowerState.running) : null;
     }
   }
 }
@@ -79,8 +115,17 @@ extension StateExtension on ScooterState {
       case ScooterState.shuttingDown:
         // scooter is connected and actionable, but asleep
         return Colors.grey.shade200;
+      case ScooterState.standby:
+      case ScooterState.updating:
+        // scooter is in standby/updating - treat like standby
+        return Colors.grey.shade200;
       case ScooterState.ready:
       case ScooterState.parked:
+      case ScooterState.waitingSeatbox:
+      case ScooterState.waitingHibernation:
+      case ScooterState.waitingHibernationAdvanced:
+      case ScooterState.waitingHibernationSeatbox:
+      case ScooterState.waitingHibernationConfirm:
         // scooter is awake and ready to party!
         return Theme.of(context).colorScheme.primary;
       case ScooterState.unknown:
@@ -103,6 +148,15 @@ extension StateExtension on ScooterState {
         return FlutterI18n.translate(context, "state_name_shutting_down");
       case ScooterState.ready:
         return FlutterI18n.translate(context, "state_name_ready");
+      case ScooterState.updating:
+        return FlutterI18n.translate(context, "state_name_updating");
+      case ScooterState.waitingSeatbox:
+        return FlutterI18n.translate(context, "state_name_waiting_seatbox");
+      case ScooterState.waitingHibernation:
+      case ScooterState.waitingHibernationAdvanced:
+      case ScooterState.waitingHibernationSeatbox:
+      case ScooterState.waitingHibernationConfirm:
+        return FlutterI18n.translate(context, "state_name_waiting_hibernation");
       case ScooterState.hibernating:
         return FlutterI18n.translate(context, "state_name_hibernating");
       case ScooterState.hibernatingImminent:
@@ -130,6 +184,15 @@ extension StateExtension on ScooterState {
         return FlutterI18n.translate(context, "state_desc_shutting_down");
       case ScooterState.ready:
         return FlutterI18n.translate(context, "state_desc_ready");
+      case ScooterState.updating:
+        return FlutterI18n.translate(context, "state_desc_updating");
+      case ScooterState.waitingSeatbox:
+        return FlutterI18n.translate(context, "state_desc_waiting_seatbox");
+      case ScooterState.waitingHibernation:
+      case ScooterState.waitingHibernationAdvanced:
+      case ScooterState.waitingHibernationSeatbox:
+      case ScooterState.waitingHibernationConfirm:
+        return FlutterI18n.translate(context, "state_desc_waiting_hibernation");
       case ScooterState.hibernating:
         return FlutterI18n.translate(context, "state_desc_hibernating");
       case ScooterState.hibernatingImminent:
@@ -149,6 +212,11 @@ extension StateExtension on ScooterState {
     switch (this) {
       case ScooterState.parked:
       case ScooterState.ready:
+      case ScooterState.waitingSeatbox:
+      case ScooterState.waitingHibernation:
+      case ScooterState.waitingHibernationAdvanced:
+      case ScooterState.waitingHibernationSeatbox:
+      case ScooterState.waitingHibernationConfirm:
         return true;
       default:
         return false;
@@ -157,12 +225,18 @@ extension StateExtension on ScooterState {
 
   bool get isReadyForLockChange {
     switch (this) {
-      case ScooterState.off: // hibernating states can be missing
+      case ScooterState.off:
       case ScooterState.standby:
+      case ScooterState.updating:
       case ScooterState.hibernating:
       case ScooterState.hibernatingImminent:
       case ScooterState.parked:
       case ScooterState.ready:
+      case ScooterState.waitingSeatbox:
+      case ScooterState.waitingHibernation:
+      case ScooterState.waitingHibernationAdvanced:
+      case ScooterState.waitingHibernationSeatbox:
+      case ScooterState.waitingHibernationConfirm:
         return true;
       default:
         return false;

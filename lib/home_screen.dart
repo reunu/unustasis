@@ -17,17 +17,19 @@ import '../helper_widgets/leaves.dart';
 import '../helper_widgets/scooter_action_button.dart';
 import '../helper_widgets/onboarding_popups.dart';
 import '../handlebar_warning.dart';
-import '../control_screen.dart';
 import '../domain/icomoon.dart';
 import '../domain/theme_helper.dart';
 import '../onboarding_screen.dart';
 import '../scooter_service.dart';
 import '../domain/scooter_state.dart';
+import '../domain/scooter_vehicle_state.dart';
+import '../domain/scooter_power_state.dart';
 import '../scooter_visual.dart';
 import '../battery_screen.dart';
 import '../scooter_screen.dart';
 import '../settings_screen.dart';
 import '../support_screen.dart';
+import '../control_sheet.dart';
 import '../helper_widgets/snowfall.dart';
 import '../helper_widgets/clouds.dart';
 import '../helper_widgets/grassscape.dart';
@@ -214,7 +216,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 ),
                                 // Hidden for stable release, but useful for various debugging
-                                // onLongPress: () => context.read<ScooterService>().addDemoData(),
+                                // onLongPress: () {
+                                //  StatisticsHelper().clearEventLogs();
+                                // },
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   mainAxisSize: MainAxisSize.min,
@@ -446,11 +450,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                                   );
                                                 }
                                               } else {
-                                                Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder: (context) => const ControlScreen(),
-                                                  ),
+                                                showModalBottomSheet<void>(
+                                                  context: context,
+                                                  showDragHandle: true,
+                                                  builder: (BuildContext context) {
+                                                    return ControlSheet();
+                                                  },
                                                 );
                                               }
                                             }
@@ -691,31 +696,52 @@ class StatusText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Selector<ScooterService, ({bool connected, bool scanning, ScooterState? state})>(
+    return Selector<
+        ScooterService,
+        ({
+          bool connected,
+          bool scanning,
+          ScooterState? state,
+          ScooterVehicleState? vehicleState,
+          ScooterPowerState? powerState
+        })>(
       selector: (context, service) => (
         state: service.state,
         scanning: service.scanning,
         connected: service.connected,
+        vehicleState: service.vehicleState,
+        powerState: service.powerState,
       ),
       builder: (context, data, _) {
+        String stateText;
+
+        if (data.scanning && (data.state == null || data.state == ScooterState.disconnected)) {
+          stateText = context.read<ScooterService>().savedScooters.isNotEmpty
+              ? FlutterI18n.translate(context, "home_scanning_known")
+              : FlutterI18n.translate(context, "home_scanning");
+        } else if (data.connected && data.vehicleState != null && data.powerState != null) {
+          // Show vehicle state and power state separately (if power state is not running)
+          stateText = data.vehicleState!.name(context);
+          if (data.powerState != ScooterPowerState.running && data.powerState != ScooterPowerState.unknown) {
+            // don't show unknown power states
+            stateText += " · ${data.powerState!.name(context)}";
+          }
+        } else {
+          stateText =
+              data.state != null ? data.state!.name(context) : FlutterI18n.translate(context, "home_loading_state");
+        }
+
+        // Add handlebar unlocked indicator
+        if (data.connected &&
+            context.select<ScooterService, bool?>(
+                  (service) => service.handlebarsLocked,
+                ) ==
+                false) {
+          stateText += FlutterI18n.translate(context, "home_unlocked");
+        }
+
         return Text(
-          data.scanning && (data.state == null || data.state == ScooterState.disconnected)
-              ? (context.read<ScooterService>().savedScooters.isNotEmpty
-                  ? FlutterI18n.translate(context, "home_scanning_known")
-                  : FlutterI18n.translate(context, "home_scanning"))
-              : ((data.state != null
-                      ? data.state!.name(context)
-                      : FlutterI18n.translate(
-                          context,
-                          "home_loading_state",
-                        )) +
-                  (data.connected &&
-                          context.select<ScooterService, bool?>(
-                                (service) => service.handlebarsLocked,
-                              ) ==
-                              false
-                      ? FlutterI18n.translate(context, "home_unlocked")
-                      : "")),
+          stateText,
           style: Theme.of(context).textTheme.titleMedium,
         );
       },

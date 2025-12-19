@@ -112,7 +112,9 @@ class _ScooterVisualState extends State<ScooterVisual> {
 
   void _doFlickerSequence() {
     // cancel any pending timers for an ongoing sequence
-    for (var t in _scheduledTimers) t.cancel();
+    for (var t in _scheduledTimers) {
+      t.cancel();
+    }
     _scheduledTimers.clear();
 
     // If scooter not on, don't flicker

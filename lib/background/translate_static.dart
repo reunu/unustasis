@@ -17,6 +17,15 @@ extension ScooterStateName on ScooterState? {
           return "Geparkt";
         case ScooterState.ready:
           return "Bereit";
+        case ScooterState.updating:
+          return "Wird aktualisiert";
+        case ScooterState.waitingSeatbox:
+          return "Warte auf Sitzbox";
+        case ScooterState.waitingHibernation:
+        case ScooterState.waitingHibernationAdvanced:
+        case ScooterState.waitingHibernationSeatbox:
+        case ScooterState.waitingHibernationConfirm:
+          return "Manueller Ruhezustand startet";
         case ScooterState.hibernating:
           return "Tiefschlaf";
         case ScooterState.hibernatingImminent:
@@ -43,6 +52,15 @@ extension ScooterStateName on ScooterState? {
           return "Parked";
         case ScooterState.ready:
           return "Ready";
+        case ScooterState.updating:
+          return "Updating";
+        case ScooterState.waitingSeatbox:
+          return "Waiting on Seatbox";
+        case ScooterState.waitingHibernation:
+        case ScooterState.waitingHibernationAdvanced:
+        case ScooterState.waitingHibernationSeatbox:
+        case ScooterState.waitingHibernationConfirm:
+          return "Manual hibernation starting";
         case ScooterState.hibernating:
           return "Hibernating";
         case ScooterState.hibernatingImminent:

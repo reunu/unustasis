@@ -119,12 +119,6 @@ class _MyAppState extends State<MyApp> {
           onError: Colors.white,
           surfaceContainer: Colors.grey.shade200,
         ),
-        pageTransitionsTheme: const PageTransitionsTheme(
-          builders: <TargetPlatform, PageTransitionsBuilder>{
-            // Set the predictive back transitions for Android.
-            TargetPlatform.android: PredictiveBackPageTransitionsBuilder(),
-          },
-        ),
         /* dark theme settings */
       ),
       darkTheme: ThemeData(
@@ -145,12 +139,6 @@ class _MyAppState extends State<MyApp> {
           error: createMaterialColor(const Color(0xFFFF554C)),
           surfaceContainer: Colors.grey.shade900,
           onError: Colors.white,
-        ),
-        pageTransitionsTheme: const PageTransitionsTheme(
-          builders: <TargetPlatform, PageTransitionsBuilder>{
-            // Set the predictive back transitions for Android.
-            TargetPlatform.android: PredictiveBackPageTransitionsBuilder(),
-          },
         ),
       ),
       themeMode: EasyDynamicTheme.of(context).themeMode,

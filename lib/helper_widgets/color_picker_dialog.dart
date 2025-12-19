@@ -29,137 +29,81 @@ class _ColorPickerDialogState extends State<ColorPickerDialog> {
     return AlertDialog(
       title: Text(FlutterI18n.translate(context, "settings_color")),
       scrollable: true,
-      content: Builder(builder: (context) {
-        return StatefulBuilder(builder: (context, setState) {
-          return Column(
-            children: [
+      content: RadioGroup<int?>(
+        groupValue: selectedValue,
+        onChanged: (value) {
+          setState(() {
+            selectedValue = value!;
+          });
+        },
+        child: Column(
+          children: [
+            _colorRadioTile(
+              colorName: "black",
+              colorValue: 0,
+              color: Colors.black,
+              context: context,
+            ),
+            _colorRadioTile(
+              colorName: "white",
+              colorValue: 1,
+              color: Colors.white,
+              context: context,
+            ),
+            _colorRadioTile(
+              colorName: "green",
+              colorValue: 2,
+              color: Colors.green.shade900,
+              context: context,
+            ),
+            _colorRadioTile(
+              colorName: "gray",
+              colorValue: 3,
+              color: Colors.grey,
+              context: context,
+            ),
+            _colorRadioTile(
+              colorName: "orange",
+              colorValue: 4,
+              color: Colors.deepOrange.shade400,
+              context: context,
+            ),
+            _colorRadioTile(
+              colorName: "red",
+              colorValue: 5,
+              color: Colors.red,
+              context: context,
+            ),
+            _colorRadioTile(
+              colorName: "blue",
+              colorValue: 6,
+              color: Colors.blue,
+              context: context,
+            ),
+            if (widget.scooterName == magic("Rpyvcfr"))
               _colorRadioTile(
-                colorName: "black",
-                colorValue: 0,
-                color: Colors.black,
-                selectedValue: selectedValue,
-                onChanged: (value) {
-                  setState(() {
-                    selectedValue = value!;
-                  });
-                },
+                colorName: "eclipse",
+                colorValue: 7,
+                color: Colors.grey.shade800,
                 context: context,
               ),
+            if (widget.scooterName == magic("Xbev"))
               _colorRadioTile(
-                colorName: "white",
-                colorValue: 1,
-                color: Colors.white,
-                selectedValue: selectedValue,
-                onChanged: (value) {
-                  setState(() {
-                    selectedValue = value!;
-                  });
-                },
+                colorName: "idioteque",
+                colorValue: 8,
+                color: Colors.teal.shade200,
                 context: context,
               ),
+            if (widget.scooterName == magic("Ubire"))
               _colorRadioTile(
-                colorName: "green",
-                colorValue: 2,
-                color: Colors.green.shade900,
-                selectedValue: selectedValue,
-                onChanged: (value) {
-                  setState(() {
-                    selectedValue = value!;
-                  });
-                },
+                colorName: "hover",
+                colorValue: 9,
+                color: Colors.lightBlue,
                 context: context,
-              ),
-              _colorRadioTile(
-                colorName: "gray",
-                colorValue: 3,
-                color: Colors.grey,
-                selectedValue: selectedValue,
-                onChanged: (value) {
-                  setState(() {
-                    selectedValue = value!;
-                  });
-                },
-                context: context,
-              ),
-              _colorRadioTile(
-                colorName: "orange",
-                colorValue: 4,
-                color: Colors.deepOrange.shade400,
-                selectedValue: selectedValue,
-                onChanged: (value) {
-                  setState(() {
-                    selectedValue = value!;
-                  });
-                },
-                context: context,
-              ),
-              _colorRadioTile(
-                colorName: "red",
-                colorValue: 5,
-                color: Colors.red,
-                selectedValue: selectedValue,
-                onChanged: (value) {
-                  setState(() {
-                    selectedValue = value!;
-                  });
-                },
-                context: context,
-              ),
-              _colorRadioTile(
-                colorName: "blue",
-                colorValue: 6,
-                color: Colors.blue,
-                selectedValue: selectedValue,
-                onChanged: (value) {
-                  setState(() {
-                    selectedValue = value!;
-                  });
-                },
-                context: context,
-              ),
-              if (widget.scooterName == magic("Rpyvcfr"))
-                _colorRadioTile(
-                  colorName: "eclipse",
-                  colorValue: 7,
-                  color: Colors.grey.shade800,
-                  selectedValue: selectedValue,
-                  onChanged: (value) {
-                    setState(() {
-                      selectedValue = value!;
-                    });
-                  },
-                  context: context,
-                ),
-              if (widget.scooterName == magic("Xbev"))
-                _colorRadioTile(
-                  colorName: "idioteque",
-                  colorValue: 8,
-                  color: Colors.teal.shade200,
-                  selectedValue: selectedValue,
-                  onChanged: (value) {
-                    setState(() {
-                      selectedValue = value!;
-                    });
-                  },
-                  context: context,
-                ),
-              if (widget.scooterName == magic("Ubire"))
-                _colorRadioTile(
-                  colorName: "hover",
-                  colorValue: 9,
-                  color: Colors.lightBlue,
-                  selectedValue: selectedValue,
-                  onChanged: (value) {
-                    setState(() {
-                      selectedValue = value!;
-                    });
-                  },
-                  context: context,
-                )
-            ],
-          );
-        });
-      }),
+              )
+          ],
+        ),
+      ),
       actions: [
         TextButton(
           child: Text(FlutterI18n.translate(context, "stats_rename_cancel")),
@@ -181,15 +125,11 @@ class _ColorPickerDialogState extends State<ColorPickerDialog> {
     required String colorName,
     required Color color,
     required int colorValue,
-    required int selectedValue,
-    required void Function(int?) onChanged,
     required BuildContext context,
   }) =>
-      RadioListTile(
+      RadioListTile<int?>(
         contentPadding: EdgeInsets.zero,
         value: colorValue,
-        groupValue: selectedValue,
-        onChanged: onChanged,
         title: Text(FlutterI18n.translate(context, "color_$colorName")),
         secondary: Container(
           width: 16,
