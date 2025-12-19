@@ -245,7 +245,6 @@ extension StateExtension on ScooterState {
   bool get isReadyForSeatOpen {
     switch (this) {
       case ScooterState.hibernating:
-      case ScooterState.hibernatingImminent:
       case ScooterState.booting:
         return false;
       default:
