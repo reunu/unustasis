@@ -1,6 +1,5 @@
 ### Changes:
-- Updated, faster control screen
-- Fixing errors with the scooter reporting incorrect booting states
-- Fixing visual bugs
-- Adding nRF version detection
-- More user-friendly error handling
+- Saving christmas! (Some seasonal graphics weren't loading properly)
+- Managing location permissions properly
+- Better handling different power states, resolving some bugs related to that
+- Adding event statistics under the hood, to be surfaced later (already visible in debug mode)

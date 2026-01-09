@@ -15,6 +15,7 @@ import 'package:pausable_timer/pausable_timer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../domain/scooter_type.dart';
+import '../domain/statistics_helper.dart';
 import '../domain/scooter_battery.dart';
 import '../domain/saved_scooter.dart';
 import '../domain/scooter_keyless_distance.dart';
@@ -110,7 +111,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
             _state == ScooterState.standby &&
             !_autoUnlockCooldown &&
             optionalAuth) {
-          unlock();
+          unlock(source: EventSource.auto);
           autoUnlockCooldown();
         }
       }
@@ -792,13 +793,23 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
 
   // SCOOTER ACTIONS
 
-  Future<void> unlock({bool checkHandlebars = true}) async {
+  Future<void> unlock({
+    bool checkHandlebars = true,
+    EventSource source = EventSource.app,
+  }) async {
     _sendCommand("scooter:state unlock");
     HapticFeedback.heavyImpact();
+    StatisticsHelper().logEvent(
+      eventType: EventType.unlock,
+      scooterId: myScooter!.remoteId.toString(),
+      soc1: _primarySOC,
+      soc2: _secondarySOC,
+      source: source,
+    );
 
     if (_openSeatOnUnlock) {
       await Future.delayed(const Duration(seconds: 1), () {
-        openSeat();
+        openSeat(source: EventSource.auto);
       });
     }
 
@@ -818,7 +829,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     }
   }
 
-  Future<void> wakeUpAndUnlock() async {
+  Future<void> wakeUpAndUnlock({EventSource? source}) async {
     wakeUp();
 
     await _waitForScooterState(
@@ -831,7 +842,10 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     }
   }
 
-  Future<void> lock({bool checkHandlebars = true}) async {
+  Future<void> lock({
+    bool checkHandlebars = true,
+    EventSource source = EventSource.app,
+  }) async {
     if (_seatClosed == false) {
       log.warning("Seat seems to be open, checking again...");
       // make really sure nothing has changed
@@ -848,6 +862,14 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     // send the command
     _sendCommand("scooter:state lock");
     HapticFeedback.heavyImpact();
+    StatisticsHelper().logEvent(
+      eventType: EventType.lock,
+      scooterId: myScooter!.remoteId.toString(),
+      location: lastLocation,
+      soc1: _primarySOC,
+      soc2: _secondarySOC,
+      source: source,
+    );
 
     if (_hazardLocking) {
       Future.delayed(const Duration(seconds: 1), () {
@@ -880,8 +902,15 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     });
   }
 
-  void openSeat() {
+  void openSeat({EventSource source = EventSource.app}) {
     _sendCommand("scooter:seatbox open");
+    StatisticsHelper().logEvent(
+      eventType: EventType.openSeat,
+      scooterId: myScooter!.remoteId.toString(),
+      soc1: _primarySOC,
+      soc2: _secondarySOC,
+      source: source,
+    );
   }
 
   void blink({required bool left, required bool right}) {
@@ -907,12 +936,22 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       "wakeup",
       characteristic: characteristicRepository.hibernationCommandCharacteristic,
     );
+    StatisticsHelper().logEvent(
+      eventType: EventType.wakeUp,
+      scooterId: myScooter!.remoteId.toString(),
+      source: EventSource.app, // is only triggered from the app
+    );
   }
 
   Future<void> hibernate() async {
     _sendCommand(
       "hibernate",
       characteristic: characteristicRepository.hibernationCommandCharacteristic,
+    );
+    StatisticsHelper().logEvent(
+      eventType: EventType.hibernate,
+      scooterId: myScooter!.remoteId.toString(),
+      source: EventSource.app, // is only triggered from the app
     );
   }
 

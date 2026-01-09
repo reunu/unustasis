@@ -12,14 +12,14 @@ import 'package:url_launcher/url_launcher.dart';
 import '../domain/log_helper.dart';
 import '../helper_widgets/header.dart';
 
-class SupportSection extends StatefulWidget {
-  const SupportSection({super.key});
+class SupportScreen extends StatefulWidget {
+  const SupportScreen({super.key});
 
   @override
-  State<SupportSection> createState() => _SupportSectionState();
+  State<SupportScreen> createState() => _SupportScreenState();
 }
 
-class _SupportSectionState extends State<SupportSection> {
+class _SupportScreenState extends State<SupportScreen> {
   List<Widget> supportItems() => [
         Header(FlutterI18n.translate(context, "support_faqs")),
         Divider(
@@ -126,11 +126,17 @@ class _SupportSectionState extends State<SupportSection> {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      shrinkWrap: true,
-      itemCount: supportItems().length,
-      itemBuilder: (context, index) => supportItems()[index],
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(FlutterI18n.translate(context, 'stats_title_support')),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+      ),
+      body: ListView.builder(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shrinkWrap: true,
+        itemCount: supportItems().length,
+        itemBuilder: (context, index) => supportItems()[index],
+      ),
     );
   }
 }

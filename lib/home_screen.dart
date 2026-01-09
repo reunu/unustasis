@@ -25,10 +25,10 @@ import '../domain/scooter_state.dart';
 import '../domain/scooter_vehicle_state.dart';
 import '../domain/scooter_power_state.dart';
 import '../scooter_visual.dart';
-import '../battery_screen.dart';
-import '../scooter_screen.dart';
-import '../settings_screen.dart';
-import '../support_screen.dart';
+import '../stats/battery_screen.dart';
+import '../stats/scooter_screen.dart';
+import '../stats/settings_screen.dart';
+import '../stats/support_screen.dart';
 import '../control_sheet.dart';
 import '../helper_widgets/snowfall.dart';
 import '../helper_widgets/clouds.dart';
@@ -217,7 +217,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 ),
                                 // Hidden for stable release, but useful for various debugging
-                                // onLongPress: () {},
+                                // onLongPress: () {
+                                //  StatisticsHelper().clearEventLogs();
+                                // },
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   mainAxisSize: MainAxisSize.min,
@@ -725,7 +727,8 @@ class StatusText extends StatelessWidget {
         } else if (data.connected && data.vehicleState != null && data.powerState != null) {
           // Show vehicle state and power state separately (if power state is not running)
           stateText = data.vehicleState!.name(context);
-          if (data.powerState != ScooterPowerState.running) {
+          if (data.powerState != ScooterPowerState.running && data.powerState != ScooterPowerState.unknown) {
+            // don't show unknown power states
             stateText += " · ${data.powerState!.name(context)}";
           }
         } else {

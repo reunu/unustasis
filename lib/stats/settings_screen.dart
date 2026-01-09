@@ -1,10 +1,13 @@
 import 'dart:io';
 
 import 'package:easy_dynamic_theme/easy_dynamic_theme.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:logging/logging.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -16,16 +19,17 @@ import '../domain/theme_helper.dart';
 import '../domain/scooter_keyless_distance.dart';
 import '../scooter_service.dart';
 import '../helper_widgets/header.dart';
+import 'log_screen.dart';
 
-class SettingsSection extends StatefulWidget {
-  const SettingsSection({super.key});
+class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({super.key});
 
   @override
-  State<SettingsSection> createState() => _SettingsSectionState();
+  State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsSectionState extends State<SettingsSection> {
-  final log = Logger('SettingsSection');
+class _SettingsScreenState extends State<SettingsScreen> {
+  final log = Logger('SettingsScreen');
   bool backgroundScan = false;
   bool biometrics = false;
   bool autoUnlock = false;
@@ -76,6 +80,40 @@ class _SettingsSectionState extends State<SettingsSection> {
           ),
           value: autoUnlock,
           onChanged: (value) async {
+            if (value == true) {
+              // Check location permission (required for Bluetooth proximity detection)
+              bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+              if (!serviceEnabled && mounted) {
+                Fluttertoast.showToast(
+                  msg: FlutterI18n.translate(context, "location_services_disabled"),
+                  toastLength: Toast.LENGTH_LONG,
+                );
+                return;
+              }
+
+              LocationPermission permission = await Geolocator.checkPermission();
+              if (permission == LocationPermission.denied) {
+                permission = await Geolocator.requestPermission();
+                if (permission == LocationPermission.denied && mounted) {
+                  Fluttertoast.showToast(
+                    msg: FlutterI18n.translate(context, "location_permission_denied"),
+                    toastLength: Toast.LENGTH_LONG,
+                  );
+                  return;
+                }
+              }
+
+              if (permission == LocationPermission.deniedForever && mounted) {
+                Fluttertoast.showToast(
+                  msg: FlutterI18n.translate(context, "location_permission_denied_forever"),
+                  toastLength: Toast.LENGTH_LONG,
+                );
+                return;
+              }
+            }
+
+            if (!mounted) return;
+
             context.read<ScooterService>().setAutoUnlock(value);
             setState(() {
               autoUnlock = value;
@@ -156,6 +194,20 @@ class _SettingsSectionState extends State<SettingsSection> {
             });
           },
         ),
+        if (kDebugMode)
+          ListTile(
+            title: Text(FlutterI18n.translate(context, "activity_log_title")),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const LogScreen(),
+                ),
+              );
+            },
+            leading: const Icon(Icons.history_outlined),
+            trailing: const Icon(Icons.chevron_right),
+          ),
         Header(FlutterI18n.translate(context, "stats_settings_section_app")),
         if (Platform.isAndroid)
           SwitchListTile(
@@ -171,8 +223,24 @@ class _SettingsSectionState extends State<SettingsSection> {
             onChanged: (value) async {
               bool? confirmed;
               if (value == true) {
+                // Request notification permission first
+                final notificationPlugin = FlutterLocalNotificationsPlugin();
+                final granted = await notificationPlugin
+                    .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+                    ?.requestNotificationsPermission();
+
+                if (granted != true && mounted) {
+                  Fluttertoast.showToast(
+                    msg: FlutterI18n.translate(context, "notification_permission_denied"),
+                    toastLength: Toast.LENGTH_LONG,
+                  );
+                  return;
+                }
+
                 // warn before turning on
-                confirmed = await showBackgroundScanWarning(context);
+                if (mounted) {
+                  confirmed = await showBackgroundScanWarning(context);
+                }
               } else {
                 // no warning for turning off
                 confirmed = true;
@@ -384,21 +452,28 @@ class _SettingsSectionState extends State<SettingsSection> {
             );
           },
         ),
+        Container(), // to force another divder at the end
       ];
 
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      shrinkWrap: true,
-      itemCount: settingsItems().length,
-      separatorBuilder: (context, index) => Divider(
-        indent: 16,
-        endIndent: 16,
-        height: 24,
-        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(FlutterI18n.translate(context, 'stats_title_settings')),
+        backgroundColor: Theme.of(context).colorScheme.surface,
       ),
-      itemBuilder: (context, index) => settingsItems()[index],
+      body: ListView.separated(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shrinkWrap: true,
+        itemCount: settingsItems().length,
+        separatorBuilder: (context, index) => Divider(
+          indent: 16,
+          endIndent: 16,
+          height: 24,
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+        ),
+        itemBuilder: (context, index) => settingsItems()[index],
+      ),
     );
   }
 
