@@ -802,16 +802,27 @@ class SavedScooterListItem extends StatelessWidget {
               ],
             ),
             // Auto-connect indicator in top right corner
-            if (savedScooter.autoConnect)
-              Positioned(
-                top: 8,
-                right: 8,
+
+            Positioned(
+              top: 8,
+              right: 8,
+              child: GestureDetector(
+                onTap: () {
+                  Fluttertoast.showToast(
+                    msg:
+                        " ${FlutterI18n.translate(context, "stats_auto_connect_${savedScooter.autoConnect ? "on" : "off"}")}. ${FlutterI18n.translate(context, "stats_auto_connect_how_to_toggle")}",
+                    toastLength: Toast.LENGTH_SHORT,
+                  );
+                },
                 child: Icon(
-                  Icons.sync,
+                  savedScooter.autoConnect ? Icons.sync : Icons.sync_disabled,
                   size: 20,
-                  color: Theme.of(context).colorScheme.primary,
+                  color: savedScooter.autoConnect
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                 ),
               ),
+            ),
           ],
         ),
       ),

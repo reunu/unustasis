@@ -266,5 +266,6 @@
     "event_type_hibernate": "{scooterName} in Ruhezustand versetzt",
     "event_type_wakeup": "{scooterName} aufgeweckt",
     "event_type_lock": "{scooterName} verriegelt",
-    "event_type_unlock": "{scooterName} entsperrt"
+    "event_type_unlock": "{scooterName} entsperrt",
+    "stats_auto_connect_how_to_toggle": "Gedrückt halten zum Ändern."
 }
