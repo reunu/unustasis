@@ -21,15 +21,15 @@ import '../scooter_service.dart';
 import '../helper_widgets/header.dart';
 import 'log_screen.dart';
 
-class SettingsSection extends StatefulWidget {
-  const SettingsSection({super.key});
+class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({super.key});
 
   @override
-  State<SettingsSection> createState() => _SettingsSectionState();
+  State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsSectionState extends State<SettingsSection> {
-  final log = Logger('SettingsSection');
+class _SettingsScreenState extends State<SettingsScreen> {
+  final log = Logger('SettingsScreen');
   bool backgroundScan = false;
   bool biometrics = false;
   bool autoUnlock = false;
@@ -452,21 +452,28 @@ class _SettingsSectionState extends State<SettingsSection> {
             );
           },
         ),
+        Container(), // to force another divder at the end
       ];
 
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      shrinkWrap: true,
-      itemCount: settingsItems().length,
-      separatorBuilder: (context, index) => Divider(
-        indent: 16,
-        endIndent: 16,
-        height: 24,
-        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(FlutterI18n.translate(context, 'stats_title_settings')),
+        backgroundColor: Theme.of(context).colorScheme.surface,
       ),
-      itemBuilder: (context, index) => settingsItems()[index],
+      body: ListView.separated(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shrinkWrap: true,
+        itemCount: settingsItems().length,
+        separatorBuilder: (context, index) => Divider(
+          indent: 16,
+          endIndent: 16,
+          height: 24,
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+        ),
+        itemBuilder: (context, index) => settingsItems()[index],
+      ),
     );
   }
 

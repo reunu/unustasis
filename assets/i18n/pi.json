@@ -244,5 +244,6 @@
     "event_type_hibernate": "Left {scooterName} to slumber",
     "event_type_lock": "Docked {scooterName}",
     "event_type_unlock": "Set sail on {scooterName}",
-    "event_type_wakeup": "Awoke {scooterName} from slumber"
+    "event_type_wakeup": "Awoke {scooterName} from slumber",
+    "stats_auto_connect_how_to_toggle": "Hold steady to change."
 }

@@ -8,7 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../home_screen.dart';
-import '../stats/stats_screen.dart';
+import '../infrastructure/utils.dart';
 import '../onboarding_screen.dart';
 import '../domain/saved_scooter.dart';
 import '../domain/scooter_state.dart';
@@ -16,21 +16,20 @@ import '../geo_helper.dart';
 import '../scooter_service.dart';
 import '../helper_widgets/color_picker_dialog.dart';
 
-class ScooterSection extends StatefulWidget {
-  const ScooterSection({
+class ScooterScreen extends StatefulWidget {
+  const ScooterScreen({
     super.key,
-    this.isListView = false,
     this.onNavigateBack,
   });
 
-  final bool isListView;
   final VoidCallback? onNavigateBack;
 
   @override
-  State<ScooterSection> createState() => _ScooterSectionState();
+  State<ScooterScreen> createState() => _ScooterScreenState();
 }
 
-class _ScooterSectionState extends State<ScooterSection> {
+class _ScooterScreenState extends State<ScooterScreen> {
+  bool _isListView = false;
   int color = 1;
   String? nameCache;
   TextEditingController nameController = TextEditingController();
@@ -47,16 +46,52 @@ class _ScooterSectionState extends State<ScooterSection> {
   void initState() {
     super.initState();
     setupInitialColor();
+    _loadViewMode();
   }
 
-  List<SavedScooter> sortedScooters(BuildContext context) {
-    List<SavedScooter> scooters = context.read<ScooterService>().savedScooters.values.toList();
+  Future<void> _loadViewMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _isListView = prefs.getBool('scooter_list_view_mode') ?? false;
+    });
+  }
+
+  Future<void> _toggleViewMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _isListView = !_isListView;
+    });
+    await prefs.setBool('scooter_list_view_mode', _isListView);
+  }
+
+  Future<void> _handleAddScooter(BuildContext context) async {
+    final service = context.read<ScooterService>();
+    service.myScooter?.disconnect();
+    service.myScooter = null;
+
+    List<String> savedIds = await service.getSavedScooterIds();
+    if (context.mounted) {
+      Navigator.push(context, MaterialPageRoute(
+        builder: (context) {
+          return OnboardingScreen(
+            excludedScooterIds: savedIds,
+            skipWelcome: true,
+          );
+        },
+      ));
+    }
+  }
+
+  List<SavedScooter> sortedScooters(ScooterService service) {
+    List<SavedScooter> scooters = service.savedScooters.values.toList();
     scooters.sort((a, b) {
       // Check if either scooter is the connected one
-      if (a.id == context.read<ScooterService>().myScooter?.remoteId.toString()) {
+      if (a.id == service.myScooter?.remoteId.toString()) {
         return -1;
       }
-      if (b.id == context.read<ScooterService>().myScooter?.remoteId.toString()) {
+      if (b.id == service.myScooter?.remoteId.toString()) {
         return 1;
       }
 
@@ -68,77 +103,92 @@ class _ScooterSectionState extends State<ScooterSection> {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      shrinkWrap: true,
-      children: [
-        ...sortedScooters(context).map((scooter) {
-          final bool connected = (scooter.id == context.read<ScooterService>().myScooter?.remoteId.toString() &&
-              context.select<ScooterService, ScooterState?>((service) => service.state) != ScooterState.disconnected);
+    final scooterService = context.watch<ScooterService>();
+    final scooters = sortedScooters(scooterService);
+    final bool single = scooters.length == 1;
 
-          if (widget.isListView) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
-              child: SavedScooterListItem(
-                savedScooter: scooter,
-                single: sortedScooters(context).length == 1,
-                connected: connected,
-                rebuild: () => setState(() {}),
-                onNavigateBack: widget.onNavigateBack,
-              ),
-            );
-          } else {
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-              child: SavedScooterCard(
-                savedScooter: scooter,
-                single: sortedScooters(context).length == 1,
-                connected: connected,
-                rebuild: () => setState(() {}),
-                onNavigateBack: widget.onNavigateBack,
-              ),
-            );
-          }
-        }),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-          child: TextButton.icon(
-            style: TextButton.styleFrom(
-              minimumSize: const Size.fromHeight(60),
-              backgroundColor: Theme.of(context).colorScheme.onSurface,
-            ),
-            onPressed: () async {
-              ScooterService service = context.read<ScooterService>();
-              service.myScooter?.disconnect();
-              service.myScooter = null;
-
-              List<String> savedIds = await service.getSavedScooterIds();
-              if (context.mounted) {
-                Navigator.push(context, MaterialPageRoute(
-                  builder: (context) {
-                    return OnboardingScreen(
-                      excludedScooterIds: savedIds,
-                      skipWelcome: true,
-                    );
-                  },
-                ));
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(FlutterI18n.translate(context, 'stats_title_scooter')),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        actions: [
+          Consumer<ScooterService>(
+            builder: (context, scooterService, child) {
+              final scooterCount = scooterService.savedScooters.length;
+              if (scooterCount > 1) {
+                return IconButton(
+                  icon: Icon(_isListView ? Icons.grid_view : Icons.list),
+                  onPressed: _toggleViewMode,
+                );
               }
+              return const SizedBox.shrink();
             },
-            icon: Icon(
-              Icons.add,
-              color: Theme.of(context).colorScheme.surface,
-              size: 16,
-            ),
-            label: Text(
-              FlutterI18n.translate(context, "settings_add_scooter").toUpperCase(),
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                color: Theme.of(context).colorScheme.surface,
+          ),
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () => _handleAddScooter(context),
+          ),
+        ],
+      ),
+      body: Container(
+        color: Theme.of(context).colorScheme.surface,
+        child: ListView(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shrinkWrap: true,
+          children: [
+            ...scooters.map((scooter) {
+              final bool connected = (scooter.id == scooterService.myScooter?.remoteId.toString() &&
+                  scooterService.state != ScooterState.disconnected);
+
+              if (_isListView) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
+                  child: SavedScooterListItem(
+                    savedScooter: scooter,
+                    single: single,
+                    connected: connected,
+                    rebuild: () => setState(() {}),
+                    onNavigateBack: widget.onNavigateBack,
+                  ),
+                );
+              } else {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                  child: SavedScooterCard(
+                    savedScooter: scooter,
+                    single: single,
+                    connected: connected,
+                    rebuild: () => setState(() {}),
+                    onNavigateBack: widget.onNavigateBack,
+                  ),
+                );
+              }
+            }),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+              child: TextButton.icon(
+                style: TextButton.styleFrom(
+                  minimumSize: const Size.fromHeight(60),
+                  backgroundColor: Theme.of(context).colorScheme.onSurface,
+                ),
+                onPressed: () => _handleAddScooter(context),
+                icon: Icon(
+                  Icons.add,
+                  color: Theme.of(context).colorScheme.surface,
+                  size: 16,
+                ),
+                label: Text(
+                  FlutterI18n.translate(context, "settings_add_scooter").toUpperCase(),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: Theme.of(context).colorScheme.surface,
+                  ),
+                ),
               ),
             ),
-          ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -752,16 +802,27 @@ class SavedScooterListItem extends StatelessWidget {
               ],
             ),
             // Auto-connect indicator in top right corner
-            if (savedScooter.autoConnect)
-              Positioned(
-                top: 8,
-                right: 8,
+
+            Positioned(
+              top: 8,
+              right: 8,
+              child: GestureDetector(
+                onTap: () {
+                  Fluttertoast.showToast(
+                    msg:
+                        " ${FlutterI18n.translate(context, "stats_auto_connect_${savedScooter.autoConnect ? "on" : "off"}")}. ${FlutterI18n.translate(context, "stats_auto_connect_how_to_toggle")}",
+                    toastLength: Toast.LENGTH_SHORT,
+                  );
+                },
                 child: Icon(
-                  Icons.sync,
+                  savedScooter.autoConnect ? Icons.sync : Icons.sync_disabled,
                   size: 20,
-                  color: Theme.of(context).colorScheme.primary,
+                  color: savedScooter.autoConnect
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                 ),
               ),
+            ),
           ],
         ),
       ),

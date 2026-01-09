@@ -266,5 +266,6 @@
     "event_type_lock": "Locked {scooterName}",
     "event_type_unlock": "Unlocked {scooterName}",
     "event_type_wakeup": "Woke up {scooterName}",
-    "event_type_hibernate": "Hibernated {scooterName}"
+    "event_type_hibernate": "Hibernated {scooterName}",
+    "stats_auto_connect_how_to_toggle": "Long-press to change."
 }
