@@ -810,7 +810,7 @@ class SavedScooterListItem extends StatelessWidget {
                 onTap: () {
                   Fluttertoast.showToast(
                     msg:
-                        " ${FlutterI18n.translate(context, "stats_auto_connect_${savedScooter.autoConnect ? "on" : "off"}")}. ${FlutterI18n.translate(context, "stats_auto_connect_how_to_toggle")}",
+                        "${FlutterI18n.translate(context, "stats_auto_connect_${savedScooter.autoConnect ? "on" : "off"}")}. ${FlutterI18n.translate(context, "stats_auto_connect_how_to_toggle")}",
                     toastLength: Toast.LENGTH_SHORT,
                   );
                 },
