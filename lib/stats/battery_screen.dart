@@ -213,7 +213,8 @@ class _BatteryScreenState extends State<BatteryScreen> {
                               ),
                               onPressed: () async {
                                 // Check availability
-                                if (await NfcManager.instance.isAvailable() == false && context.mounted) {
+                                NfcAvailability availability = await NfcManager.instance.checkAvailability();
+                                if (availability == NfcAvailability.unsupported && context.mounted) {
                                   Fluttertoast.showToast(
                                     msg: FlutterI18n.translate(context, "stats_nfc_not_available"),
                                   );
@@ -221,6 +222,10 @@ class _BatteryScreenState extends State<BatteryScreen> {
                                     nfcScanning = false;
                                   });
                                   return;
+                                } else if (availability == NfcAvailability.disabled && context.mounted) {
+                                  Fluttertoast.showToast(
+                                    msg: FlutterI18n.translate(context, "stats_nfc_not_enabled"),
+                                  );
                                 }
                                 setState(() {
                                   nfcScanning = true;
