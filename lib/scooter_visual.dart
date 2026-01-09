@@ -244,13 +244,14 @@ class _ScooterVisualState extends State<ScooterVisual> {
                         ? CrossFadeState.showFirst
                         : CrossFadeState.showSecond,
                   ),
-                AnimatedOpacity(
-                  opacity: (widget.state != null && widget.state!.isOn) ? (_ringFlickering ? 0.5 : 1.0) : 0.0,
-                  duration: _ringOpacityDuration,
-                  child: Image(
-                    image: AssetImage("images/scooter/${widget.type.assetPrefix}/light_ring.webp"),
+                if (widget.type != ScooterType.nova)
+                  AnimatedOpacity(
+                    opacity: (widget.state != null && widget.state!.isOn) ? (_ringFlickering ? 0.5 : 1.0) : 0.0,
+                    duration: _ringOpacityDuration,
+                    child: Image(
+                      image: AssetImage("images/scooter/${widget.type.assetPrefix}/light_ring.webp"),
+                    ),
                   ),
-                ),
                 AnimatedOpacity(
                   opacity: widget.state == ScooterState.ready ? 1.0 : 0.0,
                   duration: const Duration(milliseconds: 1000),

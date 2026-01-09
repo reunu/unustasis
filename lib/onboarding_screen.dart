@@ -344,6 +344,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
   }
 
   Widget _onboardingVisual({required int step}) {
+    // Get scooter type from service, default to unuPro during onboarding
+    final scooterType = context.watch<ScooterService>().scooterType ?? ScooterType.unuPro;
+
     switch (step) {
       case 0:
         int tapCount = 0;
@@ -361,8 +364,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
           };
         return GestureDetector(
           onTapDown: tapGestureRecognizer.onTapDown,
-          child: const ScooterVisual(
-            type: ScooterType.unuPro,
+          child: ScooterVisual(
+            type: scooterType,
             state: ScooterState.disconnected,
             scanning: false,
             blinkerLeft: false,
@@ -380,16 +383,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
           controller: _pairingController,
         );
       case 5:
-        return const ScooterVisual(
-          type: ScooterType.unuPro,
+        return ScooterVisual(
+          type: scooterType,
           state: ScooterState.ready,
           scanning: false,
           blinkerLeft: false,
           blinkerRight: false,
         );
       default:
-        return const ScooterVisual(
-          type: ScooterType.unuPro,
+        return ScooterVisual(
+          type: scooterType,
           state: ScooterState.disconnected,
           scanning: false,
           blinkerLeft: false,

@@ -37,7 +37,7 @@ class SavedScooter {
     String? lastAddress,
     bool? handlebarsLocked,
   })  : _type = type ?? ScooterType.unuPro,
-        _name = name ?? "Scooter Pro",
+        _name = name ?? (type ?? ScooterType.unuPro).defaultName,
         _id = id,
         _color = color ?? 1,
         _lastPing = lastPing ?? DateTime.now(),
@@ -148,9 +148,23 @@ class SavedScooter {
     String id,
     Map<String, dynamic> map,
   ) {
-    return SavedScooter(
+    // Handle legacy data that doesn't have a type field - default to unuPro
+    ScooterType type = ScooterType.unuPro;
+    bool needsTypePersist = false;
+    if (map['type'] != null) {
+      try {
+        type = ScooterType.values.byName(map['type']);
+      } catch (_) {
+        type = ScooterType.unuPro;
+        needsTypePersist = true;
+      }
+    } else {
+      needsTypePersist = true;
+    }
+
+    final scooter = SavedScooter(
       id: id,
-      type: ScooterType.values.byName(map['type']),
+      type: type,
       name: map['name'],
       color: map['color'],
       lastPing: map.containsKey('lastPing') ? DateTime.fromMicrosecondsSinceEpoch(map['lastPing']) : DateTime.now(),
@@ -163,6 +177,13 @@ class SavedScooter {
       lastAuxSOC: map['lastAuxSOC'],
       handlebarsLocked: map['handlebarsLocked'],
     );
+
+    // Persist the type for legacy scooters so it's saved for future use
+    if (needsTypePersist) {
+      scooter.updateSharedPreferences();
+    }
+
+    return scooter;
   }
 
   bool get dataIsOld {

@@ -1,9 +1,13 @@
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:logging/logging.dart';
 
+import '../domain/characteristic_profile.dart';
+import '../domain/scooter_type.dart';
+
 class CharacteristicRepository {
   final log = Logger("CharacteristicRepository");
   BluetoothDevice scooter;
+  ScooterType type;
   late BluetoothCharacteristic? commandCharacteristic;
   late BluetoothCharacteristic? hibernationCommandCharacteristic;
   late BluetoothCharacteristic? stateCharacteristic;
@@ -23,48 +27,42 @@ class CharacteristicRepository {
   late BluetoothCharacteristic? secondarySOCCharacteristic;
   late BluetoothCharacteristic? nrfVersionCharacteristic;
 
-  CharacteristicRepository(this.scooter);
+  CharacteristicRepository(this.scooter, this.type);
 
   Future<void> findAll() async {
-    log.info("findAll running");
+    log.info("findAll running for scooter type: ${type.name}");
+    final profile = type.characteristicProfile;
+
     await scooter.discoverServices();
-    commandCharacteristic =
-        findCharacteristic(scooter, "9a590000-6e67-5d0d-aab9-ad9126b66f91", "9a590001-6e67-5d0d-aab9-ad9126b66f91");
+    commandCharacteristic = findCharacteristic(scooter, profile.commandService, profile.commandCharacteristic);
     hibernationCommandCharacteristic =
-        findCharacteristic(scooter, "9a590000-6e67-5d0d-aab9-ad9126b66f91", "9a590002-6e67-5d0d-aab9-ad9126b66f91");
-    stateCharacteristic =
-        findCharacteristic(scooter, "9a590020-6e67-5d0d-aab9-ad9126b66f91", "9a590021-6e67-5d0d-aab9-ad9126b66f91");
+        findCharacteristic(scooter, profile.commandService, profile.hibernationCommandCharacteristic);
+    stateCharacteristic = findCharacteristic(scooter, profile.stateService, profile.stateCharacteristic);
     log.info("State characteristic initialized! It's $stateCharacteristic");
-    powerStateCharacteristic =
-        findCharacteristic(scooter, "9a5900a0-6e67-5d0d-aab9-ad9126b66f91", "9a5900a1-6e67-5d0d-aab9-ad9126b66f91");
-    seatCharacteristic =
-        findCharacteristic(scooter, "9a590020-6e67-5d0d-aab9-ad9126b66f91", "9a590022-6e67-5d0d-aab9-ad9126b66f91");
-    handlebarCharacteristic =
-        findCharacteristic(scooter, "9a590020-6e67-5d0d-aab9-ad9126b66f91", "9a590023-6e67-5d0d-aab9-ad9126b66f91");
-    auxSOCCharacteristic =
-        findCharacteristic(scooter, "9a590040-6e67-5d0d-aab9-ad9126b66f91", "9a590044-6e67-5d0d-aab9-ad9126b66f91");
-    auxVoltageCharacteristic =
-        findCharacteristic(scooter, "9a590040-6e67-5d0d-aab9-ad9126b66f91", "9a590041-6e67-5d0d-aab9-ad9126b66f91");
+    powerStateCharacteristic = findCharacteristic(scooter, profile.powerStateService, profile.powerStateCharacteristic);
+    seatCharacteristic = findCharacteristic(scooter, profile.stateService, profile.seatCharacteristic);
+    handlebarCharacteristic = findCharacteristic(scooter, profile.stateService, profile.handlebarCharacteristic);
+    auxSOCCharacteristic = findCharacteristic(scooter, profile.auxBatteryService, profile.auxSOCCharacteristic);
+    auxVoltageCharacteristic = findCharacteristic(scooter, profile.auxBatteryService, profile.auxVoltageCharacteristic);
     auxChargingCharacteristic =
-        findCharacteristic(scooter, "9a590040-6e67-5d0d-aab9-ad9126b66f91", "9a590043-6e67-5d0d-aab9-ad9126b66f91");
-    cbbSOCCharacteristic =
-        findCharacteristic(scooter, "9a590060-6e67-5d0d-aab9-ad9126b66f91", "9a590061-6e67-5d0d-aab9-ad9126b66f91");
-    cbbVoltageCharacteristic =
-        findCharacteristic(scooter, "9a590060-6e67-5d0d-aab9-ad9126b66f91", "9a590065-6e67-5d0d-aab9-ad9126b66f91");
+        findCharacteristic(scooter, profile.auxBatteryService, profile.auxChargingCharacteristic);
+    cbbSOCCharacteristic = findCharacteristic(scooter, profile.cbbBatteryService, profile.cbbSOCCharacteristic);
+    cbbVoltageCharacteristic = findCharacteristic(scooter, profile.cbbBatteryService, profile.cbbVoltageCharacteristic);
     cbbCapacityCharacteristic =
-        findCharacteristic(scooter, "9a590060-6e67-5d0d-aab9-ad9126b66f91", "9a590063-6e67-5d0d-aab9-ad9126b66f91");
+        findCharacteristic(scooter, profile.cbbBatteryService, profile.cbbCapacityCharacteristic);
     cbbChargingCharacteristic =
-        findCharacteristic(scooter, "9a590060-6e67-5d0d-aab9-ad9126b66f91", "9a590072-6e67-5d0d-aab9-ad9126b66f91");
-    primaryCyclesCharacteristic =
-        findCharacteristic(scooter, "9a5900e0-6e67-5d0d-aab9-ad9126b66f91", "9a5900e6-6e67-5d0d-aab9-ad9126b66f91");
-    primarySOCCharacteristic =
-        findCharacteristic(scooter, "9a5900e0-6e67-5d0d-aab9-ad9126b66f91", "9a5900e9-6e67-5d0d-aab9-ad9126b66f91");
-    secondaryCyclesCharacteristic =
-        findCharacteristic(scooter, "9a5900e0-6e67-5d0d-aab9-ad9126b66f91", "9a5900f2-6e67-5d0d-aab9-ad9126b66f91");
-    secondarySOCCharacteristic =
-        findCharacteristic(scooter, "9a5900e0-6e67-5d0d-aab9-ad9126b66f91", "9a5900f5-6e67-5d0d-aab9-ad9126b66f91");
-    nrfVersionCharacteristic =
-        findCharacteristic(scooter, "9a59a000-6e67-5d0d-aab9-ad9126b66f91", "9a59a001-6e67-5d0d-aab9-ad9126b66f91");
+        findCharacteristic(scooter, profile.cbbBatteryService, profile.cbbChargingCharacteristic);
+    if (profile.removableBatteryService != null) {
+      primaryCyclesCharacteristic =
+          findCharacteristic(scooter, profile.removableBatteryService!, profile.primaryCyclesCharacteristic!);
+      primarySOCCharacteristic =
+          findCharacteristic(scooter, profile.removableBatteryService!, profile.primarySOCCharacteristic!);
+      secondaryCyclesCharacteristic =
+          findCharacteristic(scooter, profile.removableBatteryService!, profile.secondaryCyclesCharacteristic!);
+      secondarySOCCharacteristic =
+          findCharacteristic(scooter, profile.removableBatteryService!, profile.secondarySOCCharacteristic!);
+    }
+    nrfVersionCharacteristic = findCharacteristic(scooter, profile.nrfVersionService, profile.nrfVersionCharacteristic);
     return;
   }
 

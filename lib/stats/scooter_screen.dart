@@ -244,13 +244,13 @@ class SavedScooterCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 GestureDetector(
                   child: Image.asset(
-                    // TODO: Remove debug nova support
-                    "images/scooter/${savedScooter.name.toLowerCase() == "nova" ? "nova" : savedScooter.type.assetPrefix}/side_${forceHover ? 9 : savedScooter.color}.webp",
+                    "images/scooter/${savedScooter.type.assetPrefix}/side_${forceHover ? 9 : savedScooter.color}.webp",
                     height: 160,
                   ),
                   onTap: () async {
                     HapticFeedback.mediumImpact();
-                    int? newColor = await showColorDialog(savedScooter.color, savedScooter.name, context);
+                    int? newColor =
+                        await showColorDialog(savedScooter.color, savedScooter.name, context, savedScooter.type);
                     if (newColor != null && context.mounted) {
                       setColor(newColor, context);
                       rebuild();
@@ -673,7 +673,8 @@ class SavedScooterListItem extends StatelessWidget {
                       child: GestureDetector(
                         onLongPress: () async {
                           HapticFeedback.mediumImpact();
-                          int? newColor = await showColorDialog(savedScooter.color, savedScooter.name, context);
+                          int? newColor =
+                              await showColorDialog(savedScooter.color, savedScooter.name, context, savedScooter.type);
                           if (newColor != null && context.mounted) {
                             setColor(newColor, context);
                             rebuild();
@@ -684,7 +685,7 @@ class SavedScooterListItem extends StatelessWidget {
                           child: Stack(
                             children: [
                               Image.asset(
-                                "images/scooter/unu_pro/side_${savedScooter.color}.webp",
+                                "images/scooter/${savedScooter.type.assetPrefix}/side_${savedScooter.color}.webp",
                                 height: 80,
                               ),
                               // Green circle indicator for connected scooter

@@ -105,8 +105,10 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - images/scooter/
-    - images/scooter/seasonal/
+    - images/scooter/unu_pro/
+    - images/scooter/unu_pro/seasonal/
+    - images/scooter/nova/
+  # - images/scooter/nova/seasonal/
     - images/battery/
     - images/decoration/
     - assets/i18n/

@@ -767,7 +767,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       throw "Scooter disconnected, can't set up characteristics!";
     }
     try {
-      characteristicRepository = CharacteristicRepository(myScooter!);
+      characteristicRepository = CharacteristicRepository(myScooter!, _scooterType ?? ScooterType.unuPro);
       await characteristicRepository.findAll();
 
       log.info(
@@ -1076,8 +1076,12 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     log.info("Fetching saved scooters from SharedPreferences");
     Map<String, SavedScooter> scooters = {};
     try {
-      Map<String, dynamic> savedScooterData =
-          jsonDecode((await prefs.getString("savedScooters"))!) as Map<String, dynamic>;
+      String? savedScooterString = await prefs.getString("savedScooters");
+      if (savedScooterString == null || savedScooterString.isEmpty) {
+        log.info("No saved scooters found in SharedPreferences");
+        return scooters;
+      }
+      Map<String, dynamic> savedScooterData = jsonDecode(savedScooterString) as Map<String, dynamic>;
       log.info("Found ${savedScooterData.length} saved scooters");
       // convert the saved scooter data to SavedScooter objects
       for (String id in savedScooterData.keys) {
@@ -1261,14 +1265,14 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     }
     savedScooters[id] = SavedScooter(
       type: type,
-      name: "Scooter Pro",
+      name: type.defaultName,
       id: id,
       color: 1,
       lastPing: DateTime.now(),
     );
     await prefs.setString("savedScooters", jsonEncode(savedScooters));
     updateBackgroundService({"updateSavedScooters": true});
-    scooterName = "Scooter Pro";
+    scooterName = type.defaultName;
     notifyListeners();
   }
 

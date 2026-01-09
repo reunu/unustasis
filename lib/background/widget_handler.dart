@@ -120,6 +120,7 @@ void passToWidget({
 
   // update cached values
   _connected = connected;
+  _scooterType = scooterType ?? _scooterType;
   _lastPing = lastPing ?? _lastPing;
   _lastPingDifference = lastPing?.calculateTimeDifferenceInShort() ?? _lastPingDifference;
   _iOSlastPingText = getLocalizedTimeDiff(lastPing) ?? _iOSlastPingText;
@@ -136,6 +137,7 @@ void passToWidget({
 
   // update widget data storage
   await HomeWidget.saveWidgetData<bool>("connected", _connected);
+  await HomeWidget.saveWidgetData<String?>("scooterType", _scooterType?.name);
   if (_scooterState != null) {
     await HomeWidget.saveWidgetData<bool>("locked", _scooterState!.isOn);
     await HomeWidget.saveWidgetData<bool>("seatOpenable", _scooterState!.isReadyForSeatOpen);

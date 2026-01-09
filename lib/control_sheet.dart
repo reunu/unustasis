@@ -3,6 +3,7 @@ import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 
+import '../domain/scooter_type.dart';
 import '../helper_widgets/header.dart';
 import '../scooter_service.dart';
 
@@ -21,6 +22,12 @@ class _ControlSheetState extends State<ControlSheet> with TickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
+    final scooterType = context.select<ScooterService, ScooterType?>(
+      (service) => service.scooterType,
+    );
+    final hasHazards = scooterType?.has(ScooterCapability.hazards) ?? true;
+    final hasHibernate = scooterType?.has(ScooterCapability.hibernate) ?? true;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(
@@ -45,55 +52,57 @@ class _ControlSheetState extends State<ControlSheet> with TickerProviderStateMix
               return const SizedBox.shrink();
             },
           ),
-          Center(child: Header(FlutterI18n.translate(context, "controls_blinkers_title"))),
-          SegmentedButton<BlinkerMode?>(
-            emptySelectionAllowed: true,
-            showSelectedIcon: false,
-            style: ButtonStyle(
-              padding: WidgetStatePropertyAll<EdgeInsetsGeometry>(
-                const EdgeInsets.symmetric(vertical: 16),
+          if (hasHazards) ...[
+            Center(child: Header(FlutterI18n.translate(context, "controls_blinkers_title"))),
+            SegmentedButton<BlinkerMode?>(
+              emptySelectionAllowed: true,
+              showSelectedIcon: false,
+              style: ButtonStyle(
+                padding: WidgetStatePropertyAll<EdgeInsetsGeometry>(
+                  const EdgeInsets.symmetric(vertical: 16),
+                ),
               ),
+              segments: const [
+                ButtonSegment<BlinkerMode?>(
+                  value: BlinkerMode.left,
+                  icon: Icon(Icons.chevron_left_rounded, size: 24),
+                ),
+                ButtonSegment<BlinkerMode?>(
+                  value: BlinkerMode.hazard,
+                  icon: Icon(Icons.warning_amber_rounded, size: 24),
+                ),
+                ButtonSegment<BlinkerMode?>(
+                  value: BlinkerMode.right,
+                  icon: Icon(Icons.chevron_right_rounded, size: 24),
+                ),
+              ],
+              selected: {_blinkerMode},
+              onSelectionChanged: (value) {
+                if (value.isNotEmpty) {
+                  try {
+                    context.read<ScooterService>().blink(
+                          left: value.first == BlinkerMode.left || value.first == BlinkerMode.hazard,
+                          right: value.first == BlinkerMode.right || value.first == BlinkerMode.hazard,
+                        );
+                    setState(() {
+                      _blinkerMode = value.first!;
+                    });
+                  } catch (e) {
+                    Fluttertoast.showToast(msg: e.toString());
+                  }
+                } else {
+                  try {
+                    context.read<ScooterService>().blink(left: false, right: false);
+                    setState(() {
+                      _blinkerMode = BlinkerMode.off;
+                    });
+                  } catch (e) {
+                    Fluttertoast.showToast(msg: e.toString());
+                  }
+                }
+              },
             ),
-            segments: const [
-              ButtonSegment<BlinkerMode?>(
-                value: BlinkerMode.left,
-                icon: Icon(Icons.chevron_left_rounded, size: 24),
-              ),
-              ButtonSegment<BlinkerMode?>(
-                value: BlinkerMode.hazard,
-                icon: Icon(Icons.warning_amber_rounded, size: 24),
-              ),
-              ButtonSegment<BlinkerMode?>(
-                value: BlinkerMode.right,
-                icon: Icon(Icons.chevron_right_rounded, size: 24),
-              ),
-            ],
-            selected: {_blinkerMode},
-            onSelectionChanged: (value) {
-              if (value.isNotEmpty) {
-                try {
-                  context.read<ScooterService>().blink(
-                        left: value.first == BlinkerMode.left || value.first == BlinkerMode.hazard,
-                        right: value.first == BlinkerMode.right || value.first == BlinkerMode.hazard,
-                      );
-                  setState(() {
-                    _blinkerMode = value.first!;
-                  });
-                } catch (e) {
-                  Fluttertoast.showToast(msg: e.toString());
-                }
-              } else {
-                try {
-                  context.read<ScooterService>().blink(left: false, right: false);
-                  setState(() {
-                    _blinkerMode = BlinkerMode.off;
-                  });
-                } catch (e) {
-                  Fluttertoast.showToast(msg: e.toString());
-                }
-              }
-            },
-          ),
+          ],
           Center(child: Header(FlutterI18n.translate(context, "controls_state_title"))),
           Row(
             children: [
@@ -136,50 +145,52 @@ class _ControlSheetState extends State<ControlSheet> with TickerProviderStateMix
               ),
             ],
           ),
-          SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: TextButton.icon(
-                  style: TextButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.onSurface,
-                    foregroundColor: Theme.of(context).colorScheme.surface,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+          if (hasHibernate) ...[
+            SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton.icon(
+                    style: TextButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.onSurface,
+                      foregroundColor: Theme.of(context).colorScheme.surface,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    onPressed: () {
+                      try {
+                        context.read<ScooterService>().wakeUp();
+                        Navigator.of(context).pop();
+                      } catch (e) {
+                        Fluttertoast.showToast(msg: e.toString());
+                      }
+                    },
+                    label: Text(FlutterI18n.translate(context, "controls_wake_up")),
+                    icon: const Icon(Icons.power_settings_new_rounded),
                   ),
-                  onPressed: () {
-                    try {
-                      context.read<ScooterService>().wakeUp();
-                      Navigator.of(context).pop();
-                    } catch (e) {
-                      Fluttertoast.showToast(msg: e.toString());
-                    }
-                  },
-                  label: Text(FlutterI18n.translate(context, "controls_wake_up")),
-                  icon: const Icon(Icons.power_settings_new_rounded),
                 ),
-              ),
-              SizedBox(width: 16),
-              Expanded(
-                child: TextButton.icon(
-                  style: TextButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.onSurface,
-                    foregroundColor: Theme.of(context).colorScheme.surface,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                SizedBox(width: 16),
+                Expanded(
+                  child: TextButton.icon(
+                    style: TextButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.onSurface,
+                      foregroundColor: Theme.of(context).colorScheme.surface,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    onPressed: () {
+                      try {
+                        context.read<ScooterService>().hibernate();
+                        Navigator.of(context).pop();
+                      } catch (e) {
+                        Fluttertoast.showToast(msg: e.toString());
+                      }
+                    },
+                    label: Text(FlutterI18n.translate(context, "controls_hibernate")),
+                    icon: const Icon(Icons.nightlight_outlined),
                   ),
-                  onPressed: () {
-                    try {
-                      context.read<ScooterService>().hibernate();
-                      Navigator.of(context).pop();
-                    } catch (e) {
-                      Fluttertoast.showToast(msg: e.toString());
-                    }
-                  },
-                  label: Text(FlutterI18n.translate(context, "controls_hibernate")),
-                  icon: const Icon(Icons.nightlight_outlined),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
           SizedBox(height: 64),
         ],
       ),

@@ -16,11 +16,12 @@ struct Provider: TimelineProvider {
             secondarySOC: 100,
             scooterName: "Scooter Pro",
             scooterColor: 1,
+            scooterType: "unuPro",
             lastLat: "37.7749",
             lastLon: "-122.4194",
             seatClosed: true,
             scanning: false,
-            lockStateName: "Unknown",
+            lockStateName: "Unknown"
         )
     }
 
@@ -36,6 +37,7 @@ struct Provider: TimelineProvider {
         let secondarySOC = prefs?.integer(forKey: "soc2")
         let scooterName = prefs?.string(forKey: "scooterName")
         let scooterColor = prefs?.integer(forKey: "scooterColor")
+        let scooterType = prefs?.string(forKey: "scooterType")
         let lastLat = prefs?.string(forKey: "lastLat")
         let lastLon = prefs?.string(forKey: "lastLon")
         let seatClosed = prefs?.bool(forKey: "seatClosed")
@@ -53,6 +55,7 @@ struct Provider: TimelineProvider {
             secondarySOC: secondarySOC,
             scooterName: scooterName,
             scooterColor: scooterColor,
+            scooterType: scooterType,
             lastLat: lastLat,
             lastLon: lastLon,
             seatClosed: seatClosed,
@@ -84,6 +87,7 @@ struct ScooterStatusEntry: TimelineEntry {
     let secondarySOC: Int?  // from "soc2"
     let scooterName: String?
     let scooterColor: Int?
+    let scooterType: String?  // e.g., "unuPro", "unuProLS", "nova"
     let lastLat: String?
     let lastLon: String?
     let seatClosed: Bool?
@@ -375,6 +379,7 @@ struct BatteryBar: View {
         secondarySOC: 100,
         scooterName: "Scooter Pro",
         scooterColor: 1,
+        scooterType: "unuPro",
         lastLat: "37.7749",
         lastLon: "-122.4194",
         seatClosed: true,
@@ -398,6 +403,7 @@ struct BatteryBar: View {
         secondarySOC: 100,
         scooterName: "Scooter Pro",
         scooterColor: 1,
+        scooterType: "unuPro",
         lastLat: "37.7749",
         lastLon: "-122.4194",
         seatClosed: true,

@@ -15,6 +15,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../domain/scooter_type.dart';
 import '../domain/theme_helper.dart';
 import '../domain/scooter_keyless_distance.dart';
 import '../scooter_service.dart';
@@ -70,116 +71,121 @@ class _SettingsScreenState extends State<SettingsScreen> {
     getInitialSettings();
   }
 
-  List<Widget> settingsItems() => [
-        Header(FlutterI18n.translate(context, "stats_settings_section_scooter")),
-        SwitchListTile(
-          secondary: const Icon(Icons.key_outlined),
-          title: Text(FlutterI18n.translate(context, "settings_auto_unlock")),
-          subtitle: Text(
-            FlutterI18n.translate(context, "settings_auto_unlock_description"),
-          ),
-          value: autoUnlock,
-          onChanged: (value) async {
-            if (value == true) {
-              // Check location permission (required for Bluetooth proximity detection)
-              bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-              if (!serviceEnabled && mounted) {
-                Fluttertoast.showToast(
-                  msg: FlutterI18n.translate(context, "location_services_disabled"),
-                  toastLength: Toast.LENGTH_LONG,
-                );
-                return;
-              }
+  List<Widget> settingsItems() {
+    final scooterType = context.watch<ScooterService>().scooterType;
+    final hasHazards = scooterType?.has(ScooterCapability.hazards) ?? true;
 
-              LocationPermission permission = await Geolocator.checkPermission();
-              if (permission == LocationPermission.denied) {
-                permission = await Geolocator.requestPermission();
-                if (permission == LocationPermission.denied && mounted) {
-                  Fluttertoast.showToast(
-                    msg: FlutterI18n.translate(context, "location_permission_denied"),
-                    toastLength: Toast.LENGTH_LONG,
-                  );
-                  return;
-                }
-              }
+    return [
+      Header(FlutterI18n.translate(context, "stats_settings_section_scooter")),
+      SwitchListTile(
+        secondary: const Icon(Icons.key_outlined),
+        title: Text(FlutterI18n.translate(context, "settings_auto_unlock")),
+        subtitle: Text(
+          FlutterI18n.translate(context, "settings_auto_unlock_description"),
+        ),
+        value: autoUnlock,
+        onChanged: (value) async {
+          if (value == true) {
+            // Check location permission (required for Bluetooth proximity detection)
+            bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+            if (!serviceEnabled && mounted) {
+              Fluttertoast.showToast(
+                msg: FlutterI18n.translate(context, "location_services_disabled"),
+                toastLength: Toast.LENGTH_LONG,
+              );
+              return;
+            }
 
-              if (permission == LocationPermission.deniedForever && mounted) {
+            LocationPermission permission = await Geolocator.checkPermission();
+            if (permission == LocationPermission.denied) {
+              permission = await Geolocator.requestPermission();
+              if (permission == LocationPermission.denied && mounted) {
                 Fluttertoast.showToast(
-                  msg: FlutterI18n.translate(context, "location_permission_denied_forever"),
+                  msg: FlutterI18n.translate(context, "location_permission_denied"),
                   toastLength: Toast.LENGTH_LONG,
                 );
                 return;
               }
             }
 
-            if (!mounted) return;
+            if (permission == LocationPermission.deniedForever && mounted) {
+              Fluttertoast.showToast(
+                msg: FlutterI18n.translate(context, "location_permission_denied_forever"),
+                toastLength: Toast.LENGTH_LONG,
+              );
+              return;
+            }
+          }
 
-            context.read<ScooterService>().setAutoUnlock(value);
-            setState(() {
-              autoUnlock = value;
-            });
-          },
-        ),
-        if (autoUnlock)
-          ListTile(
-            title: Text(
-              "${FlutterI18n.translate(context, "settings_auto_unlock_threshold")}: ${autoUnlockDistance.name(context)}",
-            ),
-            subtitle: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Slider(
-                  value: autoUnlockDistance.threshold.toDouble(),
-                  min: ScooterKeylessDistance.getMinThresholdDistance().threshold.toDouble(),
-                  max: ScooterKeylessDistance.getMaxThresholdDistance().threshold.toDouble(),
-                  secondaryTrackValue: context.read<ScooterService>().rssi?.toDouble(),
-                  divisions: ScooterKeylessDistance.values.length - 1,
-                  label: autoUnlockDistance.getFormattedThreshold(),
-                  onChanged: (value) async {
-                    var distance = ScooterKeylessDistance.fromThreshold(
-                      value.toInt(),
-                    );
-                    context.read<ScooterService>().setAutoUnlockThreshold(
-                          value.toInt(),
-                        );
-                    setState(() {
-                      autoUnlockDistance = distance;
-                    });
-                  },
-                ),
-                if (context.read<ScooterService>().rssi != null)
-                  Text(
-                    FlutterI18n.translate(
-                      context,
-                      "settings_auto_unlock_threshold_explainer",
-                      translationParams: {
-                        "rssi": context.read<ScooterService>().rssi.toString(),
-                      },
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        SwitchListTile(
-          secondary: const Icon(Icons.work_outline),
+          if (!mounted) return;
+
+          context.read<ScooterService>().setAutoUnlock(value);
+          setState(() {
+            autoUnlock = value;
+          });
+        },
+      ),
+      if (autoUnlock)
+        ListTile(
           title: Text(
-            FlutterI18n.translate(context, "settings_open_seat_on_unlock"),
+            "${FlutterI18n.translate(context, "settings_auto_unlock_threshold")}: ${autoUnlockDistance.name(context)}",
           ),
-          subtitle: Text(
-            FlutterI18n.translate(
-              context,
-              "settings_open_seat_on_unlock_description",
-            ),
+          subtitle: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Slider(
+                value: autoUnlockDistance.threshold.toDouble(),
+                min: ScooterKeylessDistance.getMinThresholdDistance().threshold.toDouble(),
+                max: ScooterKeylessDistance.getMaxThresholdDistance().threshold.toDouble(),
+                secondaryTrackValue: context.read<ScooterService>().rssi?.toDouble(),
+                divisions: ScooterKeylessDistance.values.length - 1,
+                label: autoUnlockDistance.getFormattedThreshold(),
+                onChanged: (value) async {
+                  var distance = ScooterKeylessDistance.fromThreshold(
+                    value.toInt(),
+                  );
+                  context.read<ScooterService>().setAutoUnlockThreshold(
+                        value.toInt(),
+                      );
+                  setState(() {
+                    autoUnlockDistance = distance;
+                  });
+                },
+              ),
+              if (context.read<ScooterService>().rssi != null)
+                Text(
+                  FlutterI18n.translate(
+                    context,
+                    "settings_auto_unlock_threshold_explainer",
+                    translationParams: {
+                      "rssi": context.read<ScooterService>().rssi.toString(),
+                    },
+                  ),
+                ),
+            ],
           ),
-          value: openSeatOnUnlock,
-          onChanged: (value) async {
-            context.read<ScooterService>().setOpenSeatOnUnlock(value);
-            setState(() {
-              openSeatOnUnlock = value;
-            });
-          },
         ),
+      SwitchListTile(
+        secondary: const Icon(Icons.work_outline),
+        title: Text(
+          FlutterI18n.translate(context, "settings_open_seat_on_unlock"),
+        ),
+        subtitle: Text(
+          FlutterI18n.translate(
+            context,
+            "settings_open_seat_on_unlock_description",
+          ),
+        ),
+        value: openSeatOnUnlock,
+        onChanged: (value) async {
+          context.read<ScooterService>().setOpenSeatOnUnlock(value);
+          setState(() {
+            openSeatOnUnlock = value;
+          });
+        },
+      ),
+      if (hasHazards)
         SwitchListTile(
           secondary: const Icon(Icons.code_rounded),
           title: Text(FlutterI18n.translate(context, "settings_hazard_locking")),
@@ -194,266 +200,265 @@ class _SettingsScreenState extends State<SettingsScreen> {
             });
           },
         ),
-        if (kDebugMode)
-          ListTile(
-            title: Text(FlutterI18n.translate(context, "activity_log_title")),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const LogScreen(),
-                ),
-              );
-            },
-            leading: const Icon(Icons.history_outlined),
-            trailing: const Icon(Icons.chevron_right),
-          ),
-        Header(FlutterI18n.translate(context, "stats_settings_section_app")),
-        if (Platform.isAndroid)
-          SwitchListTile(
-            secondary: const Icon(Icons.find_replace_outlined),
-            title: Text(FlutterI18n.translate(context, "settings_background_scan")),
-            subtitle: Text(
-              FlutterI18n.translate(
-                context,
-                "settings_background_scan_description",
+      if (kDebugMode)
+        ListTile(
+          title: Text(FlutterI18n.translate(context, "activity_log_title")),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const LogScreen(),
               ),
+            );
+          },
+          leading: const Icon(Icons.history_outlined),
+          trailing: const Icon(Icons.chevron_right),
+        ),
+      Header(FlutterI18n.translate(context, "stats_settings_section_app")),
+      if (Platform.isAndroid)
+        SwitchListTile(
+          secondary: const Icon(Icons.find_replace_outlined),
+          title: Text(FlutterI18n.translate(context, "settings_background_scan")),
+          subtitle: Text(
+            FlutterI18n.translate(
+              context,
+              "settings_background_scan_description",
             ),
-            value: backgroundScan,
-            onChanged: (value) async {
-              bool? confirmed;
-              if (value == true) {
-                // Request notification permission first
-                final notificationPlugin = FlutterLocalNotificationsPlugin();
-                final granted = await notificationPlugin
-                    .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-                    ?.requestNotificationsPermission();
-
-                if (granted != true && mounted) {
-                  Fluttertoast.showToast(
-                    msg: FlutterI18n.translate(context, "notification_permission_denied"),
-                    toastLength: Toast.LENGTH_LONG,
-                  );
-                  return;
-                }
-
-                // warn before turning on
-                if (mounted) {
-                  confirmed = await showBackgroundScanWarning(context);
-                }
-              } else {
-                // no warning for turning off
-                confirmed = true;
-              }
-              if (confirmed == true) {
-                await prefs.setBool("backgroundScan", value);
-                // inform the service!
-                FlutterBackgroundService().invoke("update", {
-                  "backgroundScan": value,
-                });
-                setState(() {
-                  backgroundScan = value;
-                });
-              }
-            },
           ),
-        FutureBuilder<List<BiometricType>>(
-          future: LocalAuthentication().getAvailableBiometrics(),
-          builder: (context, biometricsOptionsSnap) {
-            if (biometricsOptionsSnap.hasData && biometricsOptionsSnap.data!.isNotEmpty) {
-              return SwitchListTile(
-                secondary: const Icon(Icons.lock_outlined),
-                title: Text(FlutterI18n.translate(context, "settings_biometrics")),
-                subtitle: Text(
-                  FlutterI18n.translate(context, "settings_biometrics_description"),
-                ),
-                value: biometrics,
-                onChanged: (value) async {
-                  final LocalAuthentication auth = LocalAuthentication();
-                  try {
-                    final bool didAuthenticate = await auth.authenticate(
-                      localizedReason: FlutterI18n.translate(
-                        context,
-                        "biometrics_message",
-                      ),
-                    );
-                    if (didAuthenticate) {
-                      await prefs.setBool("biometrics", value);
-                      setState(() {
-                        biometrics = value;
-                      });
-                    } else {
-                      if (context.mounted) {
-                        Fluttertoast.showToast(
-                          msg: FlutterI18n.translate(context, "biometrics_failed"),
-                        );
-                      }
-                    }
-                  } catch (e, stack) {
+          value: backgroundScan,
+          onChanged: (value) async {
+            bool? confirmed;
+            if (value == true) {
+              // Request notification permission first
+              final notificationPlugin = FlutterLocalNotificationsPlugin();
+              final granted = await notificationPlugin
+                  .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+                  ?.requestNotificationsPermission();
+
+              if (granted != true && mounted) {
+                Fluttertoast.showToast(
+                  msg: FlutterI18n.translate(context, "notification_permission_denied"),
+                  toastLength: Toast.LENGTH_LONG,
+                );
+                return;
+              }
+
+              // warn before turning on
+              if (mounted) {
+                confirmed = await showBackgroundScanWarning(context);
+              }
+            } else {
+              // no warning for turning off
+              confirmed = true;
+            }
+            if (confirmed == true) {
+              await prefs.setBool("backgroundScan", value);
+              // inform the service!
+              FlutterBackgroundService().invoke("update", {
+                "backgroundScan": value,
+              });
+              setState(() {
+                backgroundScan = value;
+              });
+            }
+          },
+        ),
+      FutureBuilder<List<BiometricType>>(
+        future: LocalAuthentication().getAvailableBiometrics(),
+        builder: (context, biometricsOptionsSnap) {
+          if (biometricsOptionsSnap.hasData && biometricsOptionsSnap.data!.isNotEmpty) {
+            return SwitchListTile(
+              secondary: const Icon(Icons.lock_outlined),
+              title: Text(FlutterI18n.translate(context, "settings_biometrics")),
+              subtitle: Text(
+                FlutterI18n.translate(context, "settings_biometrics_description"),
+              ),
+              value: biometrics,
+              onChanged: (value) async {
+                final LocalAuthentication auth = LocalAuthentication();
+                try {
+                  final bool didAuthenticate = await auth.authenticate(
+                    localizedReason: FlutterI18n.translate(
+                      context,
+                      "biometrics_message",
+                    ),
+                  );
+                  if (didAuthenticate) {
+                    await prefs.setBool("biometrics", value);
+                    setState(() {
+                      biometrics = value;
+                    });
+                  } else {
                     if (context.mounted) {
-                      log.warning("Biometrics error", e, stack);
                       Fluttertoast.showToast(
                         msg: FlutterI18n.translate(context, "biometrics_failed"),
                       );
                     }
                   }
-                },
-              );
-            } else {
-              return Container();
-            }
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.wb_sunny_outlined),
-          title: Text(FlutterI18n.translate(context, "settings_theme")),
-          subtitle: Padding(
-            padding: const EdgeInsets.only(top: 12.0),
-            child: SegmentedButton<ThemeMode>(
-              onSelectionChanged: (newTheme) {
-                context.setThemeMode(newTheme.first);
+                } catch (e, stack) {
+                  if (context.mounted) {
+                    log.warning("Biometrics error", e, stack);
+                    Fluttertoast.showToast(
+                      msg: FlutterI18n.translate(context, "biometrics_failed"),
+                    );
+                  }
+                }
               },
-              selected: {EasyDynamicTheme.of(context).themeMode!},
-              style: ButtonStyle(
-                iconColor: WidgetStateProperty.resolveWith<Color>((states) {
+            );
+          } else {
+            return Container();
+          }
+        },
+      ),
+      ListTile(
+        leading: const Icon(Icons.wb_sunny_outlined),
+        title: Text(FlutterI18n.translate(context, "settings_theme")),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 12.0),
+          child: SegmentedButton<ThemeMode>(
+            onSelectionChanged: (newTheme) {
+              context.setThemeMode(newTheme.first);
+            },
+            selected: {EasyDynamicTheme.of(context).themeMode!},
+            style: ButtonStyle(
+              iconColor: WidgetStateProperty.resolveWith<Color>((states) {
+                return Theme.of(context).colorScheme.onTertiary;
+              }),
+              foregroundColor: WidgetStateProperty.resolveWith<Color>((states) {
+                if (states.contains(WidgetState.selected)) {
                   return Theme.of(context).colorScheme.onTertiary;
-                }),
-                foregroundColor: WidgetStateProperty.resolveWith<Color>((states) {
-                  if (states.contains(WidgetState.selected)) {
-                    return Theme.of(context).colorScheme.onTertiary;
-                  }
-                  return Theme.of(context).colorScheme.onSurface;
-                }),
-                backgroundColor: WidgetStateProperty.resolveWith<Color>((states) {
-                  if (states.contains(WidgetState.selected)) {
-                    return Theme.of(context).colorScheme.primary;
-                  }
-                  return Colors.transparent;
-                }),
-              ),
-              segments: [
-                ButtonSegment(
-                  value: ThemeMode.light,
-                  label: Text(FlutterI18n.translate(context, "theme_light")),
-                ),
-                ButtonSegment(
-                  value: ThemeMode.dark,
-                  label: Text(FlutterI18n.translate(context, "theme_dark")),
-                ),
-                ButtonSegment(
-                  value: ThemeMode.system,
-                  label: Text(FlutterI18n.translate(context, "theme_system")),
-                ),
-              ],
+                }
+                return Theme.of(context).colorScheme.onSurface;
+              }),
+              backgroundColor: WidgetStateProperty.resolveWith<Color>((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return Theme.of(context).colorScheme.primary;
+                }
+                return Colors.transparent;
+              }),
             ),
+            segments: [
+              ButtonSegment(
+                value: ThemeMode.light,
+                label: Text(FlutterI18n.translate(context, "theme_light")),
+              ),
+              ButtonSegment(
+                value: ThemeMode.dark,
+                label: Text(FlutterI18n.translate(context, "theme_dark")),
+              ),
+              ButtonSegment(
+                value: ThemeMode.system,
+                label: Text(FlutterI18n.translate(context, "theme_system")),
+              ),
+            ],
           ),
         ),
-        ListTile(
-          leading: const Icon(Icons.language_outlined),
-          title: Text(FlutterI18n.translate(context, "settings_language")),
-          subtitle: Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: DropdownButtonFormField(
-              initialValue: Locale(FlutterI18n.currentLocale(context)!.languageCode),
-              isExpanded: true,
-              decoration: const InputDecoration(
-                contentPadding: EdgeInsets.all(16),
-                border: OutlineInputBorder(),
-              ),
-              dropdownColor: Theme.of(context).colorScheme.surfaceContainer,
-              items: [
-                DropdownMenuItem<Locale>(
-                  value: const Locale("en"),
-                  child: Text(FlutterI18n.translate(context, "language_english")),
-                ),
-                DropdownMenuItem<Locale>(
-                  value: const Locale("de"),
-                  child: Text(FlutterI18n.translate(context, "language_german")),
-                ),
-                DropdownMenuItem<Locale>(
-                  value: const Locale("pi"),
-                  child: Text(FlutterI18n.translate(context, "language_pirate")),
-                ),
-              ],
-              onChanged: (newLanguage) async {
-                await FlutterI18n.refresh(context, newLanguage);
-                await prefs.setString("savedLocale", newLanguage!.languageCode);
-                setState(() {});
-              },
+      ),
+      ListTile(
+        leading: const Icon(Icons.language_outlined),
+        title: Text(FlutterI18n.translate(context, "settings_language")),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: DropdownButtonFormField(
+            initialValue: Locale(FlutterI18n.currentLocale(context)!.languageCode),
+            isExpanded: true,
+            decoration: const InputDecoration(
+              contentPadding: EdgeInsets.all(16),
+              border: OutlineInputBorder(),
             ),
+            dropdownColor: Theme.of(context).colorScheme.surfaceContainer,
+            items: [
+              DropdownMenuItem<Locale>(
+                value: const Locale("en"),
+                child: Text(FlutterI18n.translate(context, "language_english")),
+              ),
+              DropdownMenuItem<Locale>(
+                value: const Locale("de"),
+                child: Text(FlutterI18n.translate(context, "language_german")),
+              ),
+              DropdownMenuItem<Locale>(
+                value: const Locale("pi"),
+                child: Text(FlutterI18n.translate(context, "language_pirate")),
+              ),
+            ],
+            onChanged: (newLanguage) async {
+              await FlutterI18n.refresh(context, newLanguage);
+              await prefs.setString("savedLocale", newLanguage!.languageCode);
+              setState(() {});
+            },
           ),
         ),
+      ),
+      SwitchListTile(
+        secondary: const Icon(Icons.pin_drop_outlined),
+        title: Text(FlutterI18n.translate(context, "settings_osm_consent")),
+        subtitle: Text(
+          FlutterI18n.translate(context, "settings_osm_consent_description"),
+        ),
+        value: osmConsent,
+        onChanged: (value) async {
+          await prefs.setBool("osmConsent", value);
+          setState(() {
+            osmConsent = value;
+          });
+        },
+      ),
+      if (DateTime.now().month == 12 || DateTime.now().month == 4 || DateTime.now().month == 10) // All seasonal months
         SwitchListTile(
-          secondary: const Icon(Icons.pin_drop_outlined),
-          title: Text(FlutterI18n.translate(context, "settings_osm_consent")),
-          subtitle: Text(
-            FlutterI18n.translate(context, "settings_osm_consent_description"),
-          ),
-          value: osmConsent,
+          secondary: const Icon(Icons.star),
+          title: Text(FlutterI18n.translate(context, "settings_seasonal")),
+          subtitle: Text(FlutterI18n.translate(context, "settings_color_info")),
+          value: seasonal,
           onChanged: (value) async {
-            await prefs.setBool("osmConsent", value);
+            await prefs.setBool("seasonal", value);
             setState(() {
-              osmConsent = value;
+              seasonal = value;
             });
           },
         ),
-        if (DateTime.now().month == 12 ||
-            DateTime.now().month == 4 ||
-            DateTime.now().month == 10) // All seasonal months
-          SwitchListTile(
-            secondary: const Icon(Icons.star),
-            title: Text(FlutterI18n.translate(context, "settings_seasonal")),
-            subtitle: Text(FlutterI18n.translate(context, "settings_color_info")),
-            value: seasonal,
-            onChanged: (value) async {
-              await prefs.setBool("seasonal", value);
-              setState(() {
-                seasonal = value;
-              });
+      Header(FlutterI18n.translate(context, "stats_settings_section_about")),
+      ListTile(
+        leading: const Icon(Icons.privacy_tip_outlined),
+        title: Text(FlutterI18n.translate(context, "settings_privacy_policy")),
+        onTap: () {
+          launchUrl(
+            Uri.parse("https://unumotors.com/de-de/privacy-policy-of-unu-app/"),
+          );
+        },
+        trailing: const Icon(Icons.chevron_right),
+      ),
+      FutureBuilder(
+        future: PackageInfo.fromPlatform(),
+        builder: (context, packageInfo) {
+          return ListTile(
+            leading: const Icon(Icons.info_outline),
+            title: Text(FlutterI18n.translate(context, "settings_app_version")),
+            subtitle: Text(
+              packageInfo.hasData ? "${packageInfo.data!.version} (${packageInfo.data!.buildNumber})" : "...",
+            ),
+          );
+        },
+      ),
+      FutureBuilder(
+        future: PackageInfo.fromPlatform(),
+        builder: (context, packageInfo) {
+          return ListTile(
+            leading: const Icon(Icons.code_rounded),
+            title: Text(FlutterI18n.translate(context, "settings_licenses")),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              showLicensePage(
+                context: context,
+                applicationName: packageInfo.hasData ? packageInfo.data!.appName : "unustasis",
+                applicationVersion: packageInfo.hasData ? packageInfo.data!.version : "?.?.?",
+              );
             },
-          ),
-        Header(FlutterI18n.translate(context, "stats_settings_section_about")),
-        ListTile(
-          leading: const Icon(Icons.privacy_tip_outlined),
-          title: Text(FlutterI18n.translate(context, "settings_privacy_policy")),
-          onTap: () {
-            launchUrl(
-              Uri.parse("https://unumotors.com/de-de/privacy-policy-of-unu-app/"),
-            );
-          },
-          trailing: const Icon(Icons.chevron_right),
-        ),
-        FutureBuilder(
-          future: PackageInfo.fromPlatform(),
-          builder: (context, packageInfo) {
-            return ListTile(
-              leading: const Icon(Icons.info_outline),
-              title: Text(FlutterI18n.translate(context, "settings_app_version")),
-              subtitle: Text(
-                packageInfo.hasData ? "${packageInfo.data!.version} (${packageInfo.data!.buildNumber})" : "...",
-              ),
-            );
-          },
-        ),
-        FutureBuilder(
-          future: PackageInfo.fromPlatform(),
-          builder: (context, packageInfo) {
-            return ListTile(
-              leading: const Icon(Icons.code_rounded),
-              title: Text(FlutterI18n.translate(context, "settings_licenses")),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                showLicensePage(
-                  context: context,
-                  applicationName: packageInfo.hasData ? packageInfo.data!.appName : "unustasis",
-                  applicationVersion: packageInfo.hasData ? packageInfo.data!.version : "?.?.?",
-                );
-              },
-            );
-          },
-        ),
-        Container(), // to force another divder at the end
-      ];
+          );
+        },
+      ),
+      Container(), // to force another divder at the end
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {

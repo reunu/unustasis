@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 
+import '../domain/scooter_type.dart';
+
 class ColorPickerDialog extends StatefulWidget {
   final int initialValue;
   final String scooterName;
+  final ScooterType scooterType;
 
   const ColorPickerDialog({
     super.key,
     required this.initialValue,
     required this.scooterName,
+    required this.scooterType,
   });
 
   @override
@@ -158,13 +162,14 @@ class _ColorPickerDialogState extends State<ColorPickerDialog> {
 }
 
 /// Helper function to show the color picker dialog
-Future<int?> showColorDialog(int initialValue, String scooterName, BuildContext context) {
+Future<int?> showColorDialog(int initialValue, String scooterName, BuildContext context, [ScooterType? scooterType]) {
   return showDialog<int>(
     context: context,
     builder: (BuildContext context) {
       return ColorPickerDialog(
         initialValue: initialValue,
         scooterName: scooterName,
+        scooterType: scooterType ?? ScooterType.unuPro,
       );
     },
   );
