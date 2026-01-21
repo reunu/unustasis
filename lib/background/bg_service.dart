@@ -48,7 +48,7 @@ Future<void> setupBackgroundService() async {
       foregroundServiceTypes: [AndroidForegroundType.connectedDevice],
       notificationChannelId: notificationChannelId, // this must match with notification channel you created above.
       initialNotificationTitle: 'Unu Scooter',
-      initialNotificationContent: 'You can dismiss this notification.',
+      initialNotificationContent: 'Starting background service...',
       foregroundServiceNotificationId: notificationId,
     ),
   );
@@ -92,7 +92,18 @@ Future<void> attemptConnectionCycle() async {
   return;
 }
 
+Future<bool> _hasActiveWidgets() async {
+  try {
+    final widgets = await HomeWidget.getInstalledWidgets();
+    return widgets.isNotEmpty;
+  } catch (e) {
+    Logger("bgservice").warning("Error checking for active widgets: $e");
+    return false;
+  }
+}
+
 void _enableScanning() {
+  Logger("bgservice").info("Enabling background scanning");
   backgroundScanEnabled = true;
   _rescanTimer?.start();
   scooterService.rssiTimer.start();
@@ -101,11 +112,21 @@ void _enableScanning() {
 }
 
 void _disableScanning() async {
+  Logger("bgservice").info("Disabling background scanning");
   backgroundScanEnabled = false;
   _rescanTimer
     ?..pause()
     ..reset();
   scooterService.rssiTimer.pause();
+
+  final hasWidgets = await _hasActiveWidgets();
+  if (hasWidgets) {
+    Logger("bgservice").info("Widgets are active, keeping notification visible");
+    updateNotification();
+  } else {
+    Logger("bgservice").info("No active widgets, dismissing notification");
+    dismissNotification();
+  }
 }
 
 @pragma('vm:entry-point')
@@ -177,17 +198,25 @@ void onStart(ServiceInstance service) async {
         scooterService.lastPing = DateTime.fromMillisecondsSinceEpoch(data!["lastPingInt"]);
       }
       if (data?["backgroundScan"] != null) {
-        if (data!["backgroundScan"] == false && backgroundScanEnabled) {
+        Logger("bgservice").info("Received backgroundScan update: ${data!["backgroundScan"]}, current state: $backgroundScanEnabled");
+        if (data["backgroundScan"] == false && backgroundScanEnabled) {
           // was true, now is false. Shut it down!
+          Logger("bgservice").info("Toggling background scan from ON to OFF");
           _disableScanning();
         } else if (data["backgroundScan"] == true && !backgroundScanEnabled) {
           // was false, now is true. Start it up!
-          Logger("bgservice").info("Enabling BG scanning");
+          Logger("bgservice").info("Toggling background scan from OFF to ON");
           _enableScanning();
+        } else {
+          Logger("bgservice").info("Background scan state unchanged: ${data["backgroundScan"]}");
         }
       }
       if (data?["updateSavedScooters"] == true) {
         await scooterService.refetchSavedScooters();
+        if (backgroundScanEnabled) {
+          Logger("bgservice").info("Scooters updated, re-evaluating scanning state.");
+          _enableScanning();
+        }
       }
 
       Future.delayed(const Duration(seconds: 3), () {
