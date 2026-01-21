@@ -110,6 +110,7 @@ flutter:
     - images/scooter/nova/
   # - images/scooter/nova/seasonal/
     - images/battery/
+    - images/battery/nova/
     - images/decoration/
     - assets/i18n/
     - assets/

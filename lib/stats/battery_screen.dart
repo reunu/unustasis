@@ -12,6 +12,7 @@ import 'package:nfc_manager/nfc_manager_android.dart';
 import 'package:provider/provider.dart';
 
 import '../domain/scooter_battery.dart';
+import '../domain/scooter_type.dart';
 import '../scooter_service.dart';
 
 typedef _BatteryScreenViewData = ({
@@ -23,6 +24,7 @@ typedef _BatteryScreenViewData = ({
   bool? cbbCharging,
   int? auxSOC,
   DateTime? lastPing,
+  ScooterType? scooterType,
 });
 
 class BatteryScreen extends StatefulWidget {
@@ -51,6 +53,7 @@ class _BatteryScreenState extends State<BatteryScreen> {
         cbbCharging: service.cbbCharging,
         auxSOC: service.auxSOC,
         lastPing: service.lastPing,
+        scooterType: service.scooterType,
       ),
       builder: (context, data, _) {
         final int primarySoc = data.primarySOC ?? 0;
@@ -133,6 +136,7 @@ class _BatteryScreenState extends State<BatteryScreen> {
                     soc: primarySoc,
                     cycles: data.primaryCycles,
                     old: dataIsOld,
+                    scooterType: data.scooterType,
                   ),
                 if (hasSecondaryBattery)
                   _batteryCard(
@@ -140,6 +144,7 @@ class _BatteryScreenState extends State<BatteryScreen> {
                     soc: secondarySoc,
                     cycles: data.secondaryCycles,
                     old: dataIsOld,
+                    scooterType: data.scooterType,
                   ),
                 Row(
                   children: [
@@ -178,6 +183,7 @@ class _BatteryScreenState extends State<BatteryScreen> {
                     soc: nfcBattery ?? 0,
                     cycles: nfcCycles,
                     old: false,
+                    scooterType: data.scooterType,
                   ),
                 nfcScanning
                     ? Padding(
@@ -469,6 +475,7 @@ class _BatteryScreenState extends State<BatteryScreen> {
     required int soc,
     int? cycles,
     bool old = false,
+    ScooterType? scooterType,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -522,7 +529,7 @@ class _BatteryScreenState extends State<BatteryScreen> {
                     const SizedBox(height: 32),
                     Expanded(
                       child: Image.asset(
-                        type.imagePath(soc),
+                        type.imagePath(soc, scooterType: scooterType),
                         fit: BoxFit.contain,
                         alignment: Alignment.bottomCenter,
                       ),

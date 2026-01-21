@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 
+import 'scooter_type.dart';
+
 enum ScooterBatteryType {
   primary,
   secondary,
@@ -58,21 +60,24 @@ extension BatteryExtension on ScooterBatteryType {
     return "$soc%";
   }
 
-  String imagePath(int soc) {
+  String imagePath(int soc, {ScooterType? scooterType}) {
+    // Use unu_pro as default, nova for nova scooters
+    final prefix = scooterType == ScooterType.nova ? 'nova/' : '';
+    
     switch (this) {
       case ScooterBatteryType.primary:
       case ScooterBatteryType.secondary:
       case ScooterBatteryType.nfc:
         if (soc > 85) {
-          return "images/battery/batt_full.webp";
+          return "images/battery/${prefix}batt_full.webp";
         } else if (soc > 60) {
-          return "images/battery/batt_75.webp";
+          return "images/battery/${prefix}batt_75.webp";
         } else if (soc > 35) {
-          return "images/battery/batt_50.webp";
+          return "images/battery/${prefix}batt_50.webp";
         } else if (soc > 10) {
-          return "images/battery/batt_25.webp";
+          return "images/battery/${prefix}batt_25.webp";
         } else {
-          return "images/battery/batt_empty.webp";
+          return "images/battery/${prefix}batt_empty.webp";
         }
       case ScooterBatteryType.cbb:
         return "images/battery/batt_internal.webp";
