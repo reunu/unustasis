@@ -227,6 +227,10 @@ class _BatteryScreenState extends State<BatteryScreen> {
                                   Fluttertoast.showToast(
                                     msg: FlutterI18n.translate(context, "stats_nfc_not_enabled"),
                                   );
+                                  setState(() {
+                                    nfcScanning = false;
+                                  });
+                                  return;
                                 }
                                 setState(() {
                                   nfcScanning = true;
