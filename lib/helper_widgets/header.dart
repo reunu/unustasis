@@ -10,7 +10,7 @@ class Header extends StatelessWidget {
 
   final String title;
   final String? subtitle;
-  final EdgeInsetsGeometry padding;
+  final EdgeInsets padding;
   @override
   Widget build(BuildContext context) {
     return Padding(
