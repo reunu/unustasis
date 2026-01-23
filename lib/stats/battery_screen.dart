@@ -67,7 +67,7 @@ class _BatteryScreenState extends State<BatteryScreen> {
               backgroundColor: Theme.of(context).colorScheme.surface,
             ),
             body: ListView(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.fromLTRB(16, 0, 16, MediaQuery.of(context).viewPadding.bottom),
               shrinkWrap: true,
               children: [
                 Column(
@@ -79,6 +79,7 @@ class _BatteryScreenState extends State<BatteryScreen> {
                           Text(
                             "${primaryRange + secondaryRange} km ${FlutterI18n.translate(context, "stats_total_range")}",
                             style: Theme.of(context).textTheme.headlineLarge,
+                            textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 4),
                           Text(
@@ -226,6 +227,10 @@ class _BatteryScreenState extends State<BatteryScreen> {
                                   Fluttertoast.showToast(
                                     msg: FlutterI18n.translate(context, "stats_nfc_not_enabled"),
                                   );
+                                  setState(() {
+                                    nfcScanning = false;
+                                  });
+                                  return;
                                 }
                                 setState(() {
                                   nfcScanning = true;
@@ -339,7 +344,7 @@ class _BatteryScreenState extends State<BatteryScreen> {
               ),
               Text(
                 type.description(context),
-                textAlign: TextAlign.end,
+                textAlign: TextAlign.start,
                 style: TextStyle(
                     fontWeight: FontWeight.w900,
                     fontSize: 12,
@@ -350,8 +355,7 @@ class _BatteryScreenState extends State<BatteryScreen> {
                 padding: const EdgeInsets.only(top: 8.0, bottom: 24),
                 child: Text(
                   type.socText(soc, context),
-                  style: Theme.of(context).textTheme.displaySmall,
-                  textScaler: TextScaler.noScaling,
+                  style: Theme.of(context).textTheme.headlineLarge,
                 ),
               ),
               const SizedBox(height: 4),
@@ -548,27 +552,38 @@ class _BatteryScreenState extends State<BatteryScreen> {
                     const SizedBox(height: 8),
                     Text(
                       type.socText(soc, context),
-                      style: Theme.of(context).textTheme.displaySmall,
-                      textScaler: TextScaler.noScaling,
+                      style: Theme.of(context).textTheme.headlineLarge,
                     ),
                     const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
+                    Wrap(
+                      alignment: WrapAlignment.end,
+                      spacing: 8,
                       children: [
                         if (cycles != null)
-                          const Icon(
-                            Icons.refresh,
-                            size: 16,
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.refresh,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(cycles.toString()),
+                            ],
                           ),
-                        const SizedBox(width: 4),
-                        if (cycles != null) Text(cycles.toString()),
-                        const SizedBox(width: 8),
-                        const Icon(
-                          Icons.navigation_outlined,
-                          size: 16,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.navigation_outlined,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            Text("${(45 * (soc / 100)).round()} km")
+                          ],
                         ),
-                        const SizedBox(width: 4),
-                        Text("${(45 * (soc / 100)).round()} km")
                       ],
                     ),
                     const SizedBox(height: 8),

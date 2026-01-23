@@ -132,7 +132,7 @@ class _SupportScreenState extends State<SupportScreen> {
         backgroundColor: Theme.of(context).colorScheme.surface,
       ),
       body: ListView.builder(
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewPadding.bottom),
         shrinkWrap: true,
         itemCount: supportItems().length,
         itemBuilder: (context, index) => supportItems()[index],

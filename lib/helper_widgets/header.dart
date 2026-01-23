@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
 
 class Header extends StatelessWidget {
-  const Header(this.title, {this.subtitle, super.key});
+  const Header(
+    this.title, {
+    this.subtitle,
+    this.padding = const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+    super.key,
+  });
 
   final String title;
   final String? subtitle;
-
+  final EdgeInsets padding;
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+      padding: padding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
