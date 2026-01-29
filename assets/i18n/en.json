@@ -115,7 +115,7 @@
     "stats_battery_read_method": "Read method",
     "stats_nfc_button": "Read NFC data",
     "stats_nfc_invalid": "Tag not readable",
-    "stats_nfc_not_available": "NFC not available",
+    "stats_nfc_not_available": "NFC is not supported on your phone",
     "stats_nfc_name": "Scanned battery",
     "stats_nfc_desc": "Read via NFC",
     "stats_nfc_instructions": "Hold your phone flat against the label on the underside of a battery to see its stats.",
@@ -266,5 +266,7 @@
     "event_type_lock": "Locked {scooterName}",
     "event_type_unlock": "Unlocked {scooterName}",
     "event_type_wakeup": "Woke up {scooterName}",
-    "event_type_hibernate": "Hibernated {scooterName}"
+    "event_type_hibernate": "Hibernated {scooterName}",
+    "stats_auto_connect_how_to_toggle": "Long-press to change.",
+    "stats_nfc_not_enabled": "Please turn on NFC in your phone's settings"
 }

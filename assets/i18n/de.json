@@ -114,7 +114,7 @@
     "stats_battery_read_method": "Lesemethode",
     "stats_nfc_button": "Per NFC auslesen",
     "stats_nfc_invalid": "Tag nicht lesbar",
-    "stats_nfc_not_available": "NFC nicht verfügbar",
+    "stats_nfc_not_available": "NFC ist auf diesem Gerät nicht unterstützt",
     "stats_nfc_name": "Gescannter Akku",
     "stats_nfc_desc": "Per NFC gelesen",
     "stats_nfc_instructions": "Halte dein Handy flach an das Etikett auf der Unterseite des Akkus, um Daten auszulesen.",
@@ -266,5 +266,7 @@
     "event_type_hibernate": "{scooterName} in Ruhezustand versetzt",
     "event_type_wakeup": "{scooterName} aufgeweckt",
     "event_type_lock": "{scooterName} verriegelt",
-    "event_type_unlock": "{scooterName} entsperrt"
+    "event_type_unlock": "{scooterName} entsperrt",
+    "stats_auto_connect_how_to_toggle": "Gedrückt halten zum Ändern.",
+    "stats_nfc_not_enabled": "Bitte aktiviere NFC in den Handyeinstellungen."
 }
