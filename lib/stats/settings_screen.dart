@@ -461,7 +461,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onTap: () {
                 showLicensePage(
                   context: context,
-                  applicationName: packageInfo.hasData ? packageInfo.data!.appName : "unustasis",
+                  applicationName: packageInfo.hasData ? packageInfo.data!.appName : "unu App",
                   applicationVersion: packageInfo.hasData ? packageInfo.data!.version : "?.?.?",
                 );
               },

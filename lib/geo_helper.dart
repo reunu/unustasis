@@ -34,7 +34,7 @@ class GeoHelper {
         Uri.parse(
             'https://nominatim.openstreetmap.org/reverse?lat=${position.latitude}&lon=${position.longitude}&format=json'),
         headers: {
-          'User-Agent': 'UnustasisApp (unu@freal.de)',
+          'User-Agent': 'UnuApp (unu@freal.de)',
         });
     if (response.statusCode != 200 || response.body.isEmpty) {
       log.info("Failed to fetch address from Nominatim: ${response.statusCode}");
