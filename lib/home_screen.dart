@@ -217,7 +217,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                                 // Hidden for stable release, but useful for various debugging
                                 // onLongPress: () {
-                                //  StatisticsHelper().clearEventLogs();
+                                //  context.read<ScooterService>().addDemoData();
                                 // },
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -453,6 +453,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 showModalBottomSheet<void>(
                                                   context: context,
                                                   showDragHandle: true,
+                                                  isScrollControlled: true,
                                                   builder: (BuildContext context) {
                                                     return ControlSheet();
                                                   },
@@ -623,7 +624,7 @@ class BatteryBars extends StatelessWidget {
     required this.secondarySOC,
     required this.dataIsOld,
     this.compact = false,
-    this.alignment = MainAxisAlignment.center,
+    this.alignment = WrapAlignment.center,
     super.key,
   });
 
@@ -631,13 +632,13 @@ class BatteryBars extends StatelessWidget {
   final int? secondarySOC;
   final bool? dataIsOld;
   final bool compact;
-  final MainAxisAlignment alignment;
+  final WrapAlignment alignment;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: alignment,
-      mainAxisSize: MainAxisSize.min,
+    return Wrap(
+      alignment: alignment,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         if (primarySOC != null) ...[
           SizedBox(

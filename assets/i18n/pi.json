@@ -93,7 +93,7 @@
     "stats_diagnostics_close": "Close",
     "stats_nfc_button": "Read NFC data",
     "stats_nfc_invalid": "Tag not readable",
-    "stats_nfc_not_available": "NFC not available",
+    "stats_nfc_not_available": "Arr! Your device doesn't support NFC!",
     "stats_nfc_name": "Scanned battery",
     "stats_nfc_desc": "Read via NFC",
     "stats_nfc_instructions": "Hold yer phone under the NFC tag on the bottom of the battery, arrr!",
@@ -244,5 +244,7 @@
     "event_type_hibernate": "Left {scooterName} to slumber",
     "event_type_lock": "Docked {scooterName}",
     "event_type_unlock": "Set sail on {scooterName}",
-    "event_type_wakeup": "Awoke {scooterName} from slumber"
+    "event_type_wakeup": "Awoke {scooterName} from slumber",
+    "stats_auto_connect_how_to_toggle": "Hold steady to change.",
+    "stats_nfc_not_enabled": "You gotta turn on your phone's NFC first, matey!"
 }

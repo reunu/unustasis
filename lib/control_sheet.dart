@@ -45,12 +45,16 @@ class _ControlSheetState extends State<ControlSheet> with TickerProviderStateMix
               return const SizedBox.shrink();
             },
           ),
-          Center(child: Header(FlutterI18n.translate(context, "controls_blinkers_title"))),
+          Center(
+              child: Header(
+            FlutterI18n.translate(context, "controls_blinkers_title"),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          )),
           SegmentedButton<BlinkerMode?>(
             emptySelectionAllowed: true,
             showSelectedIcon: false,
             style: ButtonStyle(
-              padding: WidgetStatePropertyAll<EdgeInsetsGeometry>(
+              padding: WidgetStatePropertyAll<EdgeInsets>(
                 const EdgeInsets.symmetric(vertical: 16),
               ),
             ),

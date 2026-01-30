@@ -108,6 +108,7 @@ class _ScooterScreenState extends State<ScooterScreen> {
     final bool single = scooters.length == 1;
 
     return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         title: Text(FlutterI18n.translate(context, 'stats_title_scooter')),
         backgroundColor: Theme.of(context).colorScheme.surface,
@@ -130,64 +131,61 @@ class _ScooterScreenState extends State<ScooterScreen> {
           ),
         ],
       ),
-      body: Container(
-        color: Theme.of(context).colorScheme.surface,
-        child: ListView(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shrinkWrap: true,
-          children: [
-            ...scooters.map((scooter) {
-              final bool connected = (scooter.id == scooterService.myScooter?.remoteId.toString() &&
-                  scooterService.state != ScooterState.disconnected);
+      body: ListView(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewPadding.bottom),
+        shrinkWrap: true,
+        children: [
+          ...scooters.map((scooter) {
+            final bool connected = (scooter.id == scooterService.myScooter?.remoteId.toString() &&
+                scooterService.state != ScooterState.disconnected);
 
-              if (_isListView) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
-                  child: SavedScooterListItem(
-                    savedScooter: scooter,
-                    single: single,
-                    connected: connected,
-                    rebuild: () => setState(() {}),
-                    onNavigateBack: widget.onNavigateBack,
-                  ),
-                );
-              } else {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                  child: SavedScooterCard(
-                    savedScooter: scooter,
-                    single: single,
-                    connected: connected,
-                    rebuild: () => setState(() {}),
-                    onNavigateBack: widget.onNavigateBack,
-                  ),
-                );
-              }
-            }),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-              child: TextButton.icon(
-                style: TextButton.styleFrom(
-                  minimumSize: const Size.fromHeight(60),
-                  backgroundColor: Theme.of(context).colorScheme.onSurface,
+            if (_isListView) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
+                child: SavedScooterListItem(
+                  savedScooter: scooter,
+                  single: single,
+                  connected: connected,
+                  rebuild: () => setState(() {}),
+                  onNavigateBack: widget.onNavigateBack,
                 ),
-                onPressed: () => _handleAddScooter(context),
-                icon: Icon(
-                  Icons.add,
+              );
+            } else {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                child: SavedScooterCard(
+                  savedScooter: scooter,
+                  single: single,
+                  connected: connected,
+                  rebuild: () => setState(() {}),
+                  onNavigateBack: widget.onNavigateBack,
+                ),
+              );
+            }
+          }),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+            child: TextButton.icon(
+              style: TextButton.styleFrom(
+                minimumSize: const Size.fromHeight(60),
+                backgroundColor: Theme.of(context).colorScheme.onSurface,
+              ),
+              onPressed: () => _handleAddScooter(context),
+              icon: Icon(
+                Icons.add,
+                color: Theme.of(context).colorScheme.surface,
+                size: 16,
+              ),
+              label: Text(
+                FlutterI18n.translate(context, "settings_add_scooter").toUpperCase(),
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
                   color: Theme.of(context).colorScheme.surface,
-                  size: 16,
-                ),
-                label: Text(
-                  FlutterI18n.translate(context, "settings_add_scooter").toUpperCase(),
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: Theme.of(context).colorScheme.surface,
-                  ),
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -410,111 +408,114 @@ class SavedScooterCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.max,
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      if (connected)
-                        TextButton.icon(
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 8,
-                              horizontal: 16,
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: Wrap(
+                      spacing: 16,
+                      alignment: WrapAlignment.spaceAround,
+                      children: [
+                        if (connected)
+                          TextButton.icon(
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 8,
+                                horizontal: 16,
+                              ),
+                            ),
+                            onPressed: () async {
+                              ScooterService service = context.read<ScooterService>();
+                              service.stopAutoRestart();
+                              service.myScooter?.disconnect();
+                              service.myScooter = null;
+                              rebuild();
+                            },
+                            icon: const Icon(
+                              Icons.close_outlined,
+                              size: 16,
+                            ),
+                            label: Text(
+                              FlutterI18n.translate(context, "settings_disconnect").toUpperCase(),
+                              style: const TextStyle(fontWeight: FontWeight.w700),
                             ),
                           ),
-                          onPressed: () async {
-                            ScooterService service = context.read<ScooterService>();
-                            service.stopAutoRestart();
-                            service.myScooter?.disconnect();
-                            service.myScooter = null;
-                            rebuild();
-                          },
-                          icon: const Icon(
-                            Icons.close_outlined,
-                            size: 16,
-                          ),
-                          label: Text(
-                            FlutterI18n.translate(context, "settings_disconnect").toUpperCase(),
-                            style: const TextStyle(fontWeight: FontWeight.w700),
-                          ),
-                        ),
-                      if (!connected)
-                        TextButton.icon(
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 8,
-                              horizontal: 16,
+                        if (!connected)
+                          TextButton.icon(
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 8,
+                                horizontal: 16,
+                              ),
                             ),
-                          ),
-                          onPressed: () async {
-                            try {
-                              log.info("Trying to connect to ${savedScooter.id}");
-                              // Start the connection but don't wait for it to fully complete
-                              // Just initiate it and navigate back immediately
-                              context.read<ScooterService>().connectToScooterId(savedScooter.id);
+                            onPressed: () async {
+                              try {
+                                log.info("Trying to connect to ${savedScooter.id}");
+                                // Start the connection but don't wait for it to fully complete
+                                // Just initiate it and navigate back immediately
+                                context.read<ScooterService>().connectToScooterId(savedScooter.id);
 
-                              if (context.mounted) {
-                                // Start auto-restart targeting this specific scooter
-                                context.read<ScooterService>().startAutoRestart(targetScooterId: savedScooter.id);
-                                rebuild();
-                                // Navigate back to main screen after initiating connection
-                                WidgetsBinding.instance.addPostFrameCallback((_) {
-                                  onNavigateBack?.call();
-                                });
+                                if (context.mounted) {
+                                  // Start auto-restart targeting this specific scooter
+                                  context.read<ScooterService>().startAutoRestart(targetScooterId: savedScooter.id);
+                                  rebuild();
+                                  // Navigate back to main screen after initiating connection
+                                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                                    onNavigateBack?.call();
+                                  });
+                                }
+                              } catch (e, stack) {
+                                log.severe("Couldn't connect to ${savedScooter.id}", e, stack);
+                                if (context.mounted) {
+                                  Fluttertoast.showToast(
+                                      msg: FlutterI18n.translate((context), "settings_connect_failed",
+                                          translationParams: {"name": savedScooter.name}));
+                                }
                               }
-                            } catch (e, stack) {
-                              log.severe("Couldn't connect to ${savedScooter.id}", e, stack);
-                              if (context.mounted) {
-                                Fluttertoast.showToast(
-                                    msg: FlutterI18n.translate((context), "settings_connect_failed",
-                                        translationParams: {"name": savedScooter.name}));
-                              }
+                            },
+                            icon: const Icon(
+                              Icons.bluetooth,
+                              size: 16,
+                            ),
+                            label: Text(
+                              FlutterI18n.translate(context, "settings_connect").toUpperCase(),
+                              style: const TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        TextButton.icon(
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 8,
+                              horizontal: 16,
+                            ),
+                          ),
+                          onPressed: () async {
+                            bool? forget = await showForgetDialog(context);
+                            if (forget == true && context.mounted) {
+                              String name = savedScooter.name;
+                              context.read<ScooterService>().forgetSavedScooter(savedScooter.id);
+                              rebuild();
+                              Fluttertoast.showToast(
+                                  msg: FlutterI18n.translate(
+                                context,
+                                "forget_alert_success",
+                                translationParams: {"name": name},
+                              ));
                             }
                           },
-                          icon: const Icon(
-                            Icons.bluetooth,
+                          icon: Icon(
+                            Icons.delete_outline,
+                            color: Theme.of(context).colorScheme.error,
                             size: 16,
                           ),
                           label: Text(
-                            FlutterI18n.translate(context, "settings_connect").toUpperCase(),
-                            style: const TextStyle(fontWeight: FontWeight.w700),
+                            FlutterI18n.translate(context, "settings_forget").toUpperCase(),
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
-                      TextButton.icon(
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 8,
-                            horizontal: 16,
-                          ),
-                        ),
-                        onPressed: () async {
-                          bool? forget = await showForgetDialog(context);
-                          if (forget == true && context.mounted) {
-                            String name = savedScooter.name;
-                            context.read<ScooterService>().forgetSavedScooter(savedScooter.id);
-                            rebuild();
-                            Fluttertoast.showToast(
-                                msg: FlutterI18n.translate(
-                              context,
-                              "forget_alert_success",
-                              translationParams: {"name": name},
-                            ));
-                          }
-                        },
-                        icon: Icon(
-                          Icons.delete_outline,
-                          color: Theme.of(context).colorScheme.error,
-                          size: 16,
-                        ),
-                        label: Text(
-                          FlutterI18n.translate(context, "settings_forget").toUpperCase(),
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.error,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -678,12 +679,11 @@ class SavedScooterListItem extends StatelessWidget {
                           }
                         },
                         child: SizedBox(
-                          height: 80,
+                          width: MediaQuery.of(context).size.width * 0.25,
                           child: Stack(
                             children: [
                               Image.asset(
                                 "images/scooter/side_${savedScooter.color}.webp",
-                                height: 80,
                               ),
                               // Green circle indicator for connected scooter
                               if (connected)
@@ -739,12 +739,15 @@ class SavedScooterListItem extends StatelessWidget {
                           const SizedBox(height: 4),
                           // Connection status for connected scooters only
                           if (connected)
-                            Text(
-                              context
-                                      .select<ScooterService, ScooterState?>((service) => service.state)
-                                      ?.description(context) ??
-                                  FlutterI18n.translate(context, "stats_unknown"),
-                              style: Theme.of(context).textTheme.bodyMedium,
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 4),
+                              child: Text(
+                                context
+                                        .select<ScooterService, ScooterState?>((service) => service.state)
+                                        ?.description(context) ??
+                                    FlutterI18n.translate(context, "stats_unknown"),
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
                             ),
                           // Battery SOC data
                           if (savedScooter.lastPrimarySOC != null || savedScooter.lastSecondarySOC != null) ...[
@@ -753,7 +756,7 @@ class SavedScooterListItem extends StatelessWidget {
                               secondarySOC: savedScooter.lastSecondarySOC,
                               dataIsOld: savedScooter.dataIsOld,
                               compact: true,
-                              alignment: MainAxisAlignment.start,
+                              alignment: WrapAlignment.start,
                             ),
                           ],
                           // Location on separate line (for disconnected scooters)
@@ -778,7 +781,6 @@ class SavedScooterListItem extends StatelessWidget {
                                           color: Theme.of(context).colorScheme.primary,
                                           decoration: TextDecoration.underline,
                                         ),
-                                    overflow: TextOverflow.ellipsis,
                                   );
                                 },
                               ),
@@ -802,16 +804,27 @@ class SavedScooterListItem extends StatelessWidget {
               ],
             ),
             // Auto-connect indicator in top right corner
-            if (savedScooter.autoConnect)
-              Positioned(
-                top: 8,
-                right: 8,
+
+            Positioned(
+              top: 8,
+              right: 8,
+              child: GestureDetector(
+                onTap: () {
+                  Fluttertoast.showToast(
+                    msg:
+                        "${FlutterI18n.translate(context, "stats_auto_connect_${savedScooter.autoConnect ? "on" : "off"}")}. ${FlutterI18n.translate(context, "stats_auto_connect_how_to_toggle")}",
+                    toastLength: Toast.LENGTH_SHORT,
+                  );
+                },
                 child: Icon(
-                  Icons.sync,
+                  savedScooter.autoConnect ? Icons.sync : Icons.sync_disabled,
                   size: 20,
-                  color: Theme.of(context).colorScheme.primary,
+                  color: savedScooter.autoConnect
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
                 ),
               ),
+            ),
           ],
         ),
       ),

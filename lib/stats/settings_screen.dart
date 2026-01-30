@@ -71,7 +71,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   List<Widget> settingsItems() => [
-        Header(FlutterI18n.translate(context, "stats_settings_section_scooter")),
+        Header(
+          FlutterI18n.translate(context, "stats_settings_section_scooter"),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+        ),
         SwitchListTile(
           secondary: const Icon(Icons.key_outlined),
           title: Text(FlutterI18n.translate(context, "settings_auto_unlock")),
@@ -313,12 +316,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onSelectionChanged: (newTheme) {
                 context.setThemeMode(newTheme.first);
               },
+              showSelectedIcon: false,
               selected: {EasyDynamicTheme.of(context).themeMode!},
               style: ButtonStyle(
                 iconColor: WidgetStateProperty.resolveWith<Color>((states) {
-                  return Theme.of(context).colorScheme.onTertiary;
-                }),
-                foregroundColor: WidgetStateProperty.resolveWith<Color>((states) {
                   if (states.contains(WidgetState.selected)) {
                     return Theme.of(context).colorScheme.onTertiary;
                   }
@@ -334,15 +335,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
               segments: [
                 ButtonSegment(
                   value: ThemeMode.light,
-                  label: Text(FlutterI18n.translate(context, "theme_light")),
+                  icon: Icon(
+                    EasyDynamicTheme.of(context).themeMode! == ThemeMode.light
+                        ? Icons.light_mode
+                        : Icons.light_mode_outlined,
+                  ),
+                  tooltip: FlutterI18n.translate(context, "theme_light"),
                 ),
                 ButtonSegment(
                   value: ThemeMode.dark,
-                  label: Text(FlutterI18n.translate(context, "theme_dark")),
+                  icon: Icon(
+                    EasyDynamicTheme.of(context).themeMode! == ThemeMode.dark
+                        ? Icons.nights_stay
+                        : Icons.nights_stay_outlined,
+                  ),
+                  tooltip: FlutterI18n.translate(context, "theme_dark"),
                 ),
                 ButtonSegment(
                   value: ThemeMode.system,
-                  label: Text(FlutterI18n.translate(context, "theme_system")),
+                  icon: Icon(
+                    EasyDynamicTheme.of(context).themeMode! == ThemeMode.system
+                        ? Icons.brightness_auto
+                        : Icons.brightness_auto_outlined,
+                  ),
+                  tooltip: FlutterI18n.translate(context, "theme_system"),
                 ),
               ],
             ),
@@ -353,7 +369,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           title: Text(FlutterI18n.translate(context, "settings_language")),
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 8),
-            child: DropdownButtonFormField(
+            child: DropdownButtonFormField<Locale>(
               initialValue: Locale(FlutterI18n.currentLocale(context)!.languageCode),
               isExpanded: true,
               decoration: const InputDecoration(
@@ -375,7 +391,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: Text(FlutterI18n.translate(context, "language_pirate")),
                 ),
               ],
-              onChanged: (newLanguage) async {
+              onChanged: (Locale? newLanguage) async {
                 await FlutterI18n.refresh(context, newLanguage);
                 await prefs.setString("savedLocale", newLanguage!.languageCode);
                 setState(() {});
@@ -462,17 +478,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: Text(FlutterI18n.translate(context, 'stats_title_settings')),
         backgroundColor: Theme.of(context).colorScheme.surface,
       ),
-      body: ListView.separated(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shrinkWrap: true,
-        itemCount: settingsItems().length,
-        separatorBuilder: (context, index) => Divider(
-          indent: 16,
-          endIndent: 16,
-          height: 24,
-          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+      body: SafeArea(
+        child: ListView.separated(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shrinkWrap: true,
+          itemCount: settingsItems().length,
+          separatorBuilder: (context, index) => Divider(
+            indent: 16,
+            endIndent: 16,
+            height: 24,
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+          ),
+          itemBuilder: (context, index) => settingsItems()[index],
         ),
-        itemBuilder: (context, index) => settingsItems()[index],
       ),
     );
   }
