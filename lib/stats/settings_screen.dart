@@ -10,10 +10,8 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:logging/logging.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../domain/theme_helper.dart';
 import '../domain/scooter_keyless_distance.dart';
@@ -428,47 +426,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               });
             },
           ),
-        Header(FlutterI18n.translate(context, "stats_settings_section_about")),
-        ListTile(
-          leading: const Icon(Icons.privacy_tip_outlined),
-          title: Text(FlutterI18n.translate(context, "settings_privacy_policy")),
-          onTap: () {
-            launchUrl(
-              Uri.parse("https://unumotors.com/de-de/privacy-policy-of-unu-app/"),
-            );
-          },
-          trailing: const Icon(Icons.chevron_right),
-        ),
-        FutureBuilder(
-          future: PackageInfo.fromPlatform(),
-          builder: (context, packageInfo) {
-            return ListTile(
-              leading: const Icon(Icons.info_outline),
-              title: Text(FlutterI18n.translate(context, "settings_app_version")),
-              subtitle: Text(
-                packageInfo.hasData ? "${packageInfo.data!.version} (${packageInfo.data!.buildNumber})" : "...",
-              ),
-            );
-          },
-        ),
-        FutureBuilder(
-          future: PackageInfo.fromPlatform(),
-          builder: (context, packageInfo) {
-            return ListTile(
-              leading: const Icon(Icons.code_rounded),
-              title: Text(FlutterI18n.translate(context, "settings_licenses")),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                showLicensePage(
-                  context: context,
-                  applicationName: packageInfo.hasData ? packageInfo.data!.appName : "unustasis",
-                  applicationVersion: packageInfo.hasData ? packageInfo.data!.version : "?.?.?",
-                );
-              },
-            );
-          },
-        ),
-        Container(), // to force another divder at the end
+        Container(), // to force another divider at the end
       ];
 
   @override
