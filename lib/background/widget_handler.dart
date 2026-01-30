@@ -132,7 +132,7 @@ void passToWidget({
   // update widget data storage
   await HomeWidget.saveWidgetData<bool>("connected", _connected);
   if (_scooterState != null) {
-    await HomeWidget.saveWidgetData<bool>("locked", _scooterState!.isOn);
+    await HomeWidget.saveWidgetData<bool>("locked", !_scooterState!.isOn);
     await HomeWidget.saveWidgetData<bool>("seatOpenable", _scooterState!.isReadyForSeatOpen);
   }
   await HomeWidget.saveWidgetData<String>("stateName", _stateName);
