@@ -21,6 +21,8 @@ class SupportScreen extends StatefulWidget {
 }
 
 class _SupportScreenState extends State<SupportScreen> {
+  late final Future<PackageInfo> _packageInfoFuture = PackageInfo.fromPlatform();
+
   List<Widget> supportItems() => [
         Header(FlutterI18n.translate(context, "support_faqs")),
         Divider(
@@ -146,8 +148,8 @@ class _SupportScreenState extends State<SupportScreen> {
           height: 24,
           color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
         ),
-        FutureBuilder(
-          future: PackageInfo.fromPlatform(),
+        FutureBuilder<PackageInfo>(
+          future: _packageInfoFuture,
           builder: (context, packageInfo) {
             return ListTile(
               leading: const Icon(Icons.info_outline),
@@ -164,8 +166,8 @@ class _SupportScreenState extends State<SupportScreen> {
           height: 24,
           color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
         ),
-        FutureBuilder(
-          future: PackageInfo.fromPlatform(),
+        FutureBuilder<PackageInfo>(
+          future: _packageInfoFuture,
           builder: (context, packageInfo) {
             return ListTile(
               leading: const Icon(Icons.code_rounded),
