@@ -21,6 +21,7 @@ struct Provider: TimelineProvider {
             seatClosed: true,
             scanning: false,
             lockStateName: "Unknown",
+            hasScooterId: true
         )
     }
 
@@ -39,8 +40,26 @@ struct Provider: TimelineProvider {
         let lastLat = prefs?.string(forKey: "lastLat")
         let lastLon = prefs?.string(forKey: "lastLon")
         let seatClosed = prefs?.bool(forKey: "seatClosed")
-        let scanning = prefs?.bool(forKey: "scanning")
         let lockStateName = prefs?.string(forKey: "lockStateName") ?? "Unknown"
+        let hasScooterId = prefs?.string(forKey: "lastConnectedScooterId") != nil
+
+        // Check if scanning state is stale (older than 20 seconds)
+        var scanning = prefs?.bool(forKey: "scanning") ?? false
+        if scanning, let scanStartTime = prefs?.object(forKey: "scanningStartTime") as? Date {
+            if Date().timeIntervalSince(scanStartTime) > 20 {
+                // Scanning state is stale, reset it
+                scanning = false
+                prefs?.set(false, forKey: "scanning")
+                prefs?.removeObject(forKey: "scanningStartTime")
+                prefs?.synchronize()
+            }
+        } else if scanning {
+            // No timestamp means stale state, reset it
+            scanning = false
+            prefs?.set(false, forKey: "scanning")
+            prefs?.synchronize()
+        }
+
         let entry = ScooterStatusEntry(
             date: Date(),
             connected: connected ?? false,
@@ -57,7 +76,8 @@ struct Provider: TimelineProvider {
             lastLon: lastLon,
             seatClosed: seatClosed,
             scanning: scanning,
-            lockStateName: lockStateName
+            lockStateName: lockStateName,
+            hasScooterId: hasScooterId
         )
         completion(entry)
     }
@@ -89,6 +109,7 @@ struct ScooterStatusEntry: TimelineEntry {
     let seatClosed: Bool?
     let scanning: Bool?
     let lockStateName: String
+    let hasScooterId: Bool  // Whether scooter ID is saved for widget lock/unlock
 
 }
 
@@ -164,44 +185,67 @@ struct ScooterWidgetSmallView: View {
                     }
                 }
             }
-            if #available(iOSApplicationExtension 17, *) {
+            // Only show lock/unlock button if scooter ID is saved
+            if #available(iOSApplicationExtension 17, *), entry.hasScooterId {
                 VStack {
                     Spacer()
                     HStack {
                         Spacer()
-                        if false {  // Placeholder for future use
-                            let loading = entry.scanning ?? false
-                            if !loading {
-                                Button(
-                                    intent: BackgroundIntent(
-                                        url: URL(
-                                            string: "unustasis://ping"
-                                        ),
-                                        appGroup: "group.de.freal.unustasis"
-                                    )
-                                ) {
-                                    Image(systemName: "lock")
-                                        .font(.system(size: 16))
-                                        .foregroundColor(Color.primary)
-                                }
-                            } else {
-                                ZStack {
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .fill(.quaternary.opacity(0.5))
-                                        .frame(width: 36, height: 36)
-                                    ProgressView()
-                                        .progressViewStyle(
-                                            CircularProgressViewStyle(tint: Color.primary))
-                                }
-                                .allowsHitTesting(false)  // disables interaction
-                            }
-                        }
+                        let loading = entry.scanning ?? false
+                        let isLocked = entry.locked ?? true
+                        ScooterWidgetLockButton(loading: loading, isLocked: isLocked)
                     }
-
                 }
             }
         }
         .padding(16)
+    }
+}
+
+@available(iOSApplicationExtension 17.0, *)
+private struct ScooterWidgetLockButton: View {
+    let loading: Bool
+    let isLocked: Bool
+
+    @Environment(\.widgetRenderingMode) private var widgetRenderingMode
+
+    private var isFullColor: Bool {
+        widgetRenderingMode == .fullColor
+    }
+
+    var body: some View {
+        let button = Button(
+            intent: WidgetBackgroundIntent(
+                action: isLocked ? "unlock" : "lock"
+            )
+        ) {
+            if loading {
+                ProgressView()
+                    .progressViewStyle(.circular)
+                    .padding(.vertical, 4)
+            } else {
+                Label(
+                    isLocked ? "Unlock" : "Lock",
+                    systemImage: isLocked ? "lock.fill" : "lock.open.fill"
+                )
+                .labelStyle(.iconOnly)
+                .padding(.vertical, 4)
+            }
+        }
+        .controlSize(.regular)
+        .buttonBorderShape(.roundedRectangle(radius: 12))
+        .disabled(loading)
+        .invalidatableContent()  // Shows system loading state during intent execution
+
+        if isFullColor {
+            button
+                .buttonStyle(.borderedProminent)
+                .tint(Color(uiColor: .systemBlue))
+        } else {
+            button
+                .buttonStyle(.bordered)
+                .tint(.primary)
+        }
     }
 }
 
@@ -379,7 +423,8 @@ struct BatteryBar: View {
         lastLon: "-122.4194",
         seatClosed: true,
         scanning: false,
-        lockStateName: "Locked"
+        lockStateName: "Locked",
+        hasScooterId: true
     )
 }
 
@@ -402,6 +447,7 @@ struct BatteryBar: View {
         lastLon: "-122.4194",
         seatClosed: true,
         scanning: false,
-        lockStateName: "Locked"
+        lockStateName: "Locked",
+        hasScooterId: true
     )
 }

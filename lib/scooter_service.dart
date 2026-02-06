@@ -9,11 +9,13 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:home_widget/home_widget.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:logging/logging.dart';
 import 'package:pausable_timer/pausable_timer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../background/widget_handler.dart';
 import '../domain/statistics_helper.dart';
 import '../domain/scooter_battery.dart';
 import '../domain/saved_scooter.dart';
@@ -244,13 +246,14 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     _lastPing = DateTime.now();
     _scooterName = "Demo Scooter";
 
-    //SharedPreferencesAsync().setString(
-    //  "savedScooters",
-    //  jsonEncode(
-    //      savedScooters.map((key, value) => MapEntry(key, value.toJson()))),
-    //);
-    //updateBackgroundService({"updateSavedScooters": true});
-
+    SharedPreferencesAsync().setString(
+      "savedScooters",
+      jsonEncode(savedScooters.map((key, value) => MapEntry(key, value.toJson()))),
+    );
+    updateBackgroundService({"updateSavedScooters": true});
+    passToWidget(
+      scooterId: "12345",
+    );
     notifyListeners();
   }
 
@@ -570,6 +573,16 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       // Set up this scooter as ours
       myScooter = attemptedScooter;
       addSavedScooter(myScooter!.remoteId.toString());
+
+      // Save scooter ID directly for iOS widget native Bluetooth access
+      if (Platform.isIOS) {
+        await HomeWidget.setAppGroupId('group.de.freal.unustasis');
+        passToWidget(
+          scooterId: myScooter!.remoteId.toString(),
+        );
+        log.info("Saved scooter ID to widget: ${myScooter!.remoteId.toString()}");
+      }
+
       try {
         await setUpCharacteristics(myScooter!);
       } on UnavailableCharacteristicsException {

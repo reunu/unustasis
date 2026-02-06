@@ -83,6 +83,9 @@ Future<void> updateWidgetPing() async {
   return;
 }
 
+// Cache for scooter ID
+String? _lastConnectedScooterId;
+
 void passToWidget({
   bool connected = false,
   DateTime? lastPing,
@@ -94,7 +97,13 @@ void passToWidget({
   LatLng? lastLocation,
   bool? seatClosed,
   bool? scooterLocked,
+  String? scooterId,
 }) async {
+  // Set app group ID first on iOS (required before any saveWidgetData calls)
+  if (Platform.isIOS) {
+    await HomeWidget.setAppGroupId('group.de.freal.unustasis');
+  }
+
   bool updateiOS = primarySOC != _primarySOC ||
       secondarySOC != _secondarySOC ||
       lastPing != _lastPing ||
@@ -148,6 +157,14 @@ void passToWidget({
   await HomeWidget.saveWidgetData<String>("lockStateName", _lockStateName);
   await HomeWidget.saveWidgetData<String>("lastLat", _lastLocation?.latitude.toString() ?? "0.0");
   await HomeWidget.saveWidgetData<String>("lastLon", _lastLocation?.longitude.toString() ?? "0.0");
+
+  // Save scooter ID for iOS native Bluetooth access (widget lock/unlock)
+  if (scooterId != null) {
+    _lastConnectedScooterId = scooterId;
+  }
+  if (_lastConnectedScooterId != null) {
+    await HomeWidget.saveWidgetData<String>("lastConnectedScooterId", _lastConnectedScooterId);
+  }
 
   // finally, update if necessary
   if (Platform.isAndroid && updateAndroid) {
