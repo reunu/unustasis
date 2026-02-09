@@ -238,12 +238,9 @@ class GarageWidget extends StatelessWidget {
   const GarageWidget({super.key});
 
   Future<List<Garage>> getGarages() async {
-    final response = await http.get(Uri.parse('https://unumotors.com/page-data/sq/d/2596243890.json'));
+    final response = await http.get(Uri.parse('https://reunu.github.io/unustasis-data/garages.json'));
     if (response.statusCode == 200) {
-      Map<String, dynamic> json = jsonDecode(utf8.decode(response.bodyBytes));
-      Map<String, dynamic> data = json['data'];
-      Map<String, dynamic> content = data['contentfulGaragesJson'];
-      List<dynamic> garages = content['garages'];
+      List<dynamic> garages = jsonDecode(utf8.decode(response.bodyBytes));
       return garages.map((garage) => Garage.fromJson(garage)).toList();
     } else {
       Logger("GarageWidget").severe('Failed to load garages', response.toString());
