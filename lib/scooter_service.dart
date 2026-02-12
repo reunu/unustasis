@@ -7,7 +7,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:logging/logging.dart';
@@ -643,7 +642,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       }
     } catch (e, stack) {
       log.severe("Error during search or connect!", e, stack);
-      Fluttertoast.showToast(msg: "Couldn't search for or connect to the scooter");
+      // fail quietly, there can be benign reasons like race conditions for this
     }
 
     if (restart) {
