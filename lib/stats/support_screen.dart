@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
 import 'package:maps_launcher/maps_launcher.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../domain/log_helper.dart';
@@ -20,6 +21,8 @@ class SupportScreen extends StatefulWidget {
 }
 
 class _SupportScreenState extends State<SupportScreen> {
+  late final Future<PackageInfo> _packageInfoFuture = PackageInfo.fromPlatform();
+
   List<Widget> supportItems() => [
         Header(FlutterI18n.translate(context, "support_faqs")),
         Divider(
@@ -114,6 +117,70 @@ class _SupportScreenState extends State<SupportScreen> {
           trailing: const Icon(Icons.chevron_right),
           onTap: () {
             launchUrl(Uri.parse("https://discord.gg/UEPGY8AG9V"));
+          },
+        ),
+        Divider(
+          indent: 16,
+          endIndent: 16,
+          height: 24,
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+        ),
+        Header(FlutterI18n.translate(context, "stats_settings_section_about")),
+        Divider(
+          indent: 16,
+          endIndent: 16,
+          height: 24,
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+        ),
+        ListTile(
+          leading: const Icon(Icons.privacy_tip_outlined),
+          title: Text(FlutterI18n.translate(context, "settings_privacy_policy")),
+          onTap: () {
+            launchUrl(
+              Uri.parse("https://unumotors.com/de-de/privacy-policy-of-unu-app/"),
+            );
+          },
+          trailing: const Icon(Icons.chevron_right),
+        ),
+        Divider(
+          indent: 16,
+          endIndent: 16,
+          height: 24,
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+        ),
+        FutureBuilder<PackageInfo>(
+          future: _packageInfoFuture,
+          builder: (context, packageInfo) {
+            return ListTile(
+              leading: const Icon(Icons.info_outline),
+              title: Text(FlutterI18n.translate(context, "settings_app_version")),
+              subtitle: Text(
+                packageInfo.hasData ? "${packageInfo.data!.version} (${packageInfo.data!.buildNumber})" : "...",
+              ),
+            );
+          },
+        ),
+        Divider(
+          indent: 16,
+          endIndent: 16,
+          height: 24,
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+        ),
+        FutureBuilder<PackageInfo>(
+          future: _packageInfoFuture,
+          builder: (context, packageInfo) {
+            return ListTile(
+              leading: const Icon(Icons.code_rounded),
+              title: Text(FlutterI18n.translate(context, "settings_licenses")),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                showLicensePage(
+                  context: context,
+                  applicationName: packageInfo.hasData ? packageInfo.data!.appName : "unustasis",
+                  applicationVersion: packageInfo.hasData ? packageInfo.data!.version : "?.?.?",
+                );
+              },
+            );
           },
         ),
         Divider(
