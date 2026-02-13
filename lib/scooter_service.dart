@@ -641,7 +641,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
         log.info("No eligible scooters found during start()");
       }
     } catch (e, stack) {
-      log.severe("Error during search or connect!", e, stack);
+      log.warning("Error during search or connect!", e, stack);
       // fail quietly, there can be benign reasons like race conditions for this
     }
 
