@@ -10,7 +10,8 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// Shows the Android home widget onboarding dialog if not shown before
+// Shows the Android home widget onboarding dialog if not shown before
+// Currently not used, but can be used for future onboarding related to the widget or other features
 Future<void> showWidgetOnboarding(BuildContext context) async {
   await showDialog<void>(
     context: context,
