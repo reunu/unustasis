@@ -195,7 +195,7 @@ class _SupportScreenState extends State<SupportScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(FlutterI18n.translate(context, 'stats_title_support')),
+        title: Text(FlutterI18n.translate(context, "stats_title_support")),
         backgroundColor: Theme.of(context).colorScheme.surface,
       ),
       body: ListView.builder(
