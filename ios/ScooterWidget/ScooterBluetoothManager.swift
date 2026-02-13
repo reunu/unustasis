@@ -128,6 +128,11 @@ class ScooterBluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralD
             centralManager?.cancelPeripheralConnection(peripheral)
         }
 
+        // Release the central manager to free system resources.
+        // Widget extensions are short-lived, so there's no benefit to keeping
+        // the manager alive between operations.
+        centralManager = nil
+
         targetPeripheral = nil
         commandCharacteristic = nil
         handlebarCharacteristic = nil
