@@ -127,12 +127,16 @@ struct ScooterWidget: Widget {
                     .background()
             }
         }
-        .supportedFamilies([
-            .systemSmall,
-            .accessoryCircular,
-            .accessoryRectangular,
-            .accessoryInline,
-        ])
+        #if os(iOS)
+            .supportedFamilies([
+                .systemSmall,
+                .accessoryCircular,
+                .accessoryRectangular,
+                .accessoryInline,
+            ])
+        #else
+            .supportedFamilies([.systemSmall])
+        #endif
         .contentMarginsDisabled()
         .configurationDisplayName("Scooter Status")
         .description("Shows your unu Scooter's last known status")
@@ -186,68 +190,72 @@ struct ScooterWidgetSmallView: View {
                 }
             }
             // Only show lock/unlock button if scooter ID is saved
-            if #available(iOSApplicationExtension 17, *), entry.hasScooterId {
-                VStack {
-                    Spacer()
-                    HStack {
+            #if os(iOS)
+                if #available(iOSApplicationExtension 17, *), entry.hasScooterId {
+                    VStack {
                         Spacer()
-                        let loading = entry.scanning ?? false
-                        let isLocked = entry.locked ?? true
-                        ScooterWidgetLockButton(loading: loading, isLocked: isLocked)
+                        HStack {
+                            Spacer()
+                            let loading = entry.scanning ?? false
+                            let isLocked = entry.locked ?? true
+                            ScooterWidgetLockButton(loading: loading, isLocked: isLocked)
+                        }
                     }
                 }
-            }
+            #endif
         }
         .padding(16)
     }
 }
 
-@available(iOSApplicationExtension 17.0, *)
-private struct ScooterWidgetLockButton: View {
-    let loading: Bool
-    let isLocked: Bool
+#if os(iOS)
+    @available(iOSApplicationExtension 17.0, *)
+    private struct ScooterWidgetLockButton: View {
+        let loading: Bool
+        let isLocked: Bool
 
-    @Environment(\.widgetRenderingMode) private var widgetRenderingMode
+        @Environment(\.widgetRenderingMode) private var widgetRenderingMode
 
-    private var isFullColor: Bool {
-        widgetRenderingMode == .fullColor
-    }
+        private var isFullColor: Bool {
+            widgetRenderingMode == .fullColor
+        }
 
-    var body: some View {
-        let button = Button(
-            intent: WidgetBackgroundIntent(
-                action: isLocked ? "unlock" : "lock"
-            )
-        ) {
-            if loading {
-                ProgressView()
-                    .progressViewStyle(.circular)
-                    .padding(.vertical, 4)
-            } else {
-                Label(
-                    isLocked ? "Unlock" : "Lock",
-                    systemImage: isLocked ? "lock.fill" : "lock.open.fill"
+        var body: some View {
+            let button = Button(
+                intent: WidgetBackgroundIntent(
+                    action: isLocked ? "unlock" : "lock"
                 )
-                .labelStyle(.iconOnly)
-                .padding(.vertical, 4)
+            ) {
+                if loading {
+                    ProgressView()
+                        .progressViewStyle(.circular)
+                        .padding(.vertical, 4)
+                } else {
+                    Label(
+                        isLocked ? "Unlock" : "Lock",
+                        systemImage: isLocked ? "lock.fill" : "lock.open.fill"
+                    )
+                    .labelStyle(.iconOnly)
+                    .padding(.vertical, 4)
+                }
+            }
+            .controlSize(.regular)
+            .buttonBorderShape(.roundedRectangle(radius: 12))
+            .disabled(loading)
+            .invalidatableContent()  // Shows system loading state during intent execution
+
+            if isFullColor {
+                button
+                    .buttonStyle(.borderedProminent)
+                    .tint(Color(uiColor: .systemBlue))
+            } else {
+                button
+                    .buttonStyle(.bordered)
+                    .tint(.primary)
             }
         }
-        .controlSize(.regular)
-        .buttonBorderShape(.roundedRectangle(radius: 12))
-        .disabled(loading)
-        .invalidatableContent()  // Shows system loading state during intent execution
-
-        if isFullColor {
-            button
-                .buttonStyle(.borderedProminent)
-                .tint(Color(uiColor: .systemBlue))
-        } else {
-            button
-                .buttonStyle(.bordered)
-                .tint(.primary)
-        }
     }
-}
+#endif
 
 // CIRCULAR WIDGET
 struct ScooterWidgetCircularView: View {
