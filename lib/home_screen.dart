@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:math' show Random;
 
 import 'package:flutter/foundation.dart';
@@ -85,11 +84,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _showNotifications() async {
-    SharedPreferencesAsync prefs = SharedPreferencesAsync();
-    if (Platform.isAndroid && await prefs.getBool("widgetOnboarded") != true && mounted) {
-      await showWidgetOnboarding(context);
-      await prefs.setBool("widgetOnboarded", true);
-    }
+    // for future reference, this is how to do non-server notifications:
+    // SharedPreferencesAsync prefs = SharedPreferencesAsync();
+    // if (Platform.isAndroid && await prefs.getBool("widgetOnboarded") != true && mounted) {
+    //   await showWidgetOnboarding(context);
+    //   await prefs.setBool("widgetOnboarded", true);
+    // }
     if (mounted) await showServerNotifications(context);
   }
 
