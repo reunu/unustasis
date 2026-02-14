@@ -1,5 +1,7 @@
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:home_widget/home_widget.dart';
+import 'package:logging/logging.dart';
 
 import '../background/bg_service.dart';
 import '../background/translate_static.dart';
@@ -28,17 +30,27 @@ Future<void> setupNotifications() async {
       .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
       ?.createNotificationChannel(
         const AndroidNotificationChannel(
-          notificationChannelId, // id
-          notificationChannelName, // title
-          description: 'This channel is used for periodically checking your scooter.', // description
-          importance: Importance.low, // importance must be at low or higher levelongoing: true,
+          notificationChannelId,
+          notificationChannelName,
+          description: 'This channel is used for periodically checking your scooter.',
+          importance: Importance.low,
         ),
       );
   return;
 }
 
 void updateNotification({String? debugText}) async {
-  if (backgroundScanEnabled) {
+  // Check if widgets are active
+  bool hasWidgets = false;
+  try {
+    final widgets = await HomeWidget.getInstalledWidgets();
+    hasWidgets = widgets.isNotEmpty;
+  } catch (e) {
+    Logger("notification").warning("Error checking for active widgets: $e");
+  }
+
+  // Show notification if background scan is enabled OR widgets are active
+  if (backgroundScanEnabled || hasWidgets) {
     flutterLocalNotificationsPlugin.show(
       notificationId,
       "Unu Scooter",
@@ -53,6 +65,8 @@ void updateNotification({String? debugText}) async {
             actions: getAndroidNotificationActions(scooterService.state)),
       ),
     );
+  } else {
+    dismissNotification();
   }
 }
 
