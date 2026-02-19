@@ -1,15 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-<dict>
-	<key>NSExtension</key>
 	<dict>
-		<key>NSExtensionPointIdentifier</key>
-		<string>com.apple.widgetkit-extension</string>
+		<key>NSExtension</key>
+		<dict>
+			<key>NSExtensionPointIdentifier</key>
+			<string>com.apple.widgetkit-extension</string>
+		</dict>
+		<key>com.apple.security.application-groups</key>
+		<array>
+			<string>group.de.freal.unustasis</string>
+		</array>
+		<key>NSBluetoothAlwaysUsageDescription</key>
+		<string>Bluetooth is required to communicate with your unu scooter for lock/unlock commands.</string>
+		<key>NSBluetoothPeripheralUsageDescription</key>
+		<string>Bluetooth is required to communicate with your unu scooter for lock/unlock commands.</string>
 	</dict>
-	<key>com.apple.security.application-groups</key>
-	<array>
-		<string>group.de.freal.unustasis</string>
-	</array>
-</dict>
 </plist>

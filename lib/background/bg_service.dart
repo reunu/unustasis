@@ -82,6 +82,7 @@ Future<bool> onIosBackground(ServiceInstance service) async {
     scooterColor: scooterService.scooterColor,
     lastLocation: scooterService.lastLocation,
     seatClosed: scooterService.seatClosed,
+    scooterId: scooterService.myScooter?.remoteId.toString(),
   );
   return true;
 }
@@ -142,7 +143,8 @@ void onStart(ServiceInstance service) async {
         scooterName: scooterService.scooterName,
         scooterColor: scooterService.scooterColor,
         lastLocation: scooterService.lastLocation,
-        seatClosed: scooterService.seatClosed);
+        seatClosed: scooterService.seatClosed,
+        scooterId: scooterService.myScooter?.remoteId.toString());
   });
   Logger("bgservice").info("Widget seeded with initial data. ScooterName: ${scooterService.scooterName}");
 
@@ -201,6 +203,7 @@ void onStart(ServiceInstance service) async {
           scooterColor: scooterService.scooterColor,
           lastLocation: scooterService.lastLocation,
           seatClosed: scooterService.seatClosed,
+          scooterId: scooterService.myScooter?.remoteId.toString(),
         );
       });
     } catch (e, stack) {
@@ -298,6 +301,7 @@ void onStart(ServiceInstance service) async {
       lastLocation: scooterService.lastLocation,
       seatClosed: scooterService.seatClosed,
       scooterLocked: scooterService.handlebarsLocked,
+      scooterId: scooterService.myScooter?.remoteId.toString(),
     );
     if (backgroundScanEnabled) {
       updateNotification();

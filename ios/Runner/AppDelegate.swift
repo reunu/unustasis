@@ -22,6 +22,13 @@ import workmanager_apple
     )
     // WorkmanagerDebug.setCurrent(NotificationDebugHandler())
 
+    // Register HomeWidget background callback (iOS 17+)
+    if #available(iOS 17.0, *) {
+      HomeWidgetBackgroundWorker.setPluginRegistrantCallback { registry in
+        GeneratedPluginRegistrant.register(with: registry)
+      }
+    }
+
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
