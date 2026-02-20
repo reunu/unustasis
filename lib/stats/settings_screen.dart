@@ -389,6 +389,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: Text(FlutterI18n.translate(context, "language_french")),
                 ),
                 DropdownMenuItem<Locale>(
+                  value: const Locale("nl"),
+                  child: Text(FlutterI18n.translate(context, "language_dutch")),
+                ),
+                DropdownMenuItem<Locale>(
                   value: const Locale("pi"),
                   child: Text(FlutterI18n.translate(context, "language_pirate")),
                 ),

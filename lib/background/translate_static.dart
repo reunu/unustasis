@@ -77,6 +77,41 @@ extension ScooterStateName on ScooterState? {
         default:
           return "Inconnu";
       }
+    } else if (lang == "nl") {
+      switch (this) {
+        case ScooterState.off:
+          return "Uit";
+        case ScooterState.standby:
+          return "Stand-by";
+        case ScooterState.parked:
+          return "Geparkeerd";
+        case ScooterState.ready:
+          return "Klaar";
+        case ScooterState.updating:
+          return "Bijwerken";
+        case ScooterState.waitingSeatbox:
+          return "Wachten op buddy";
+        case ScooterState.waitingHibernation:
+        case ScooterState.waitingHibernationAdvanced:
+        case ScooterState.waitingHibernationSeatbox:
+        case ScooterState.waitingHibernationConfirm:
+          return "Handmatige slaapstand starten";
+        case ScooterState.hibernating:
+          return "In slaapstand";
+        case ScooterState.hibernatingImminent:
+          return "Gaat in slaapstand...";
+        case ScooterState.booting:
+          return "Opstarten...";
+        case ScooterState.linking:
+          return "Zoeken...";
+        case ScooterState.disconnected:
+          return "Niet verbonden";
+        case ScooterState.shuttingDown:
+          return "Afsluiten...";
+        case ScooterState.unknown:
+        default:
+          return "Onbekend";
+      }
     } else {
       switch (this) {
         case ScooterState.off:
@@ -141,6 +176,17 @@ String getLocalizedNotificationAction(String actionId) {
       default:
         return "ERREUR";
     }
+  } else if (lang == "nl") {
+    switch (actionId) {
+      case "lock":
+        return "Vergrendelen";
+      case "unlock":
+        return "Ontgrendelen";
+      case "openseat":
+        return "Buddy openen";
+      default:
+        return "FOUT";
+    }
   } else {
     switch (actionId) {
       case "lock":
@@ -182,6 +228,15 @@ String? getLocalizedTimeDiff(DateTime? lastPing) {
       return "Avant-hier";
     }
     return "Il y a $timeDiff";
+  } else if (lang == "nl") {
+    if (timeDiff == null) {
+      return "Zojuist";
+    } else if (timeDiff == "1d") {
+      return "Gisteren";
+    } else if (timeDiff == "2d") {
+      return "Eergisteren";
+    }
+    return "$timeDiff geleden";
   } else {
     if (timeDiff == null) {
       return "Just now";
@@ -212,6 +267,15 @@ String getLocalizedLockStateName(bool? locked) {
         return "Déverrouillé";
       default:
         return "Inconnu";
+    }
+  } else if (lang == "nl") {
+    switch (locked) {
+      case true:
+        return "Vergrendeld";
+      case false:
+        return "Ontgrendeld";
+      default:
+        return "Onbekend";
     }
   } else {
     switch (locked) {
