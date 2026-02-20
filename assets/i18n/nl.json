@@ -269,5 +269,13 @@
     "event_type_wakeup": "{scooterName} gewekt",
     "event_type_hibernate": "{scooterName} in slaapstand gezet",
     "stats_auto_connect_how_to_toggle": "Lang indrukken om te wijzigen.",
-    "stats_nfc_not_enabled": "Schakel NFC in via de instellingen van je telefoon"
+    "stats_nfc_not_enabled": "Schakel NFC in via de instellingen van je telefoon",
+    "time_just_now": "Zojuist",
+    "time_yesterday": "Gisteren",
+    "time_day_before_yesterday": "Eergisteren",
+    "time_ago": "{time} geleden",
+    "lock_state_locked": "Vergrendeld",
+    "lock_state_unlocked": "Ontgrendeld",
+    "lock_state_unknown": "Onbekend",
+    "error_generic": "FOUT"
 }
