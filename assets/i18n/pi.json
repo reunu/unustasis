@@ -248,5 +248,13 @@
     "event_type_unlock": "Set sail on {scooterName}",
     "event_type_wakeup": "Awoke {scooterName} from slumber",
     "stats_auto_connect_how_to_toggle": "Hold steady to change.",
-    "stats_nfc_not_enabled": "You gotta turn on your phone's NFC first, matey!"
+    "stats_nfc_not_enabled": "You gotta turn on your phone's NFC first, matey!",
+    "time_just_now": "Just now",
+    "time_yesterday": "Yesterday",
+    "time_day_before_yesterday": "Two sunsets ago",
+    "time_ago": "{time} ago",
+    "lock_state_locked": "Battened down",
+    "lock_state_unlocked": "Open seas",
+    "lock_state_unknown": "Lost at sea",
+    "error_generic": "BLIMEY!"
 }

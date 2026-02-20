@@ -270,5 +270,13 @@
     "event_type_wakeup": "Woke up {scooterName}",
     "event_type_hibernate": "Hibernated {scooterName}",
     "stats_auto_connect_how_to_toggle": "Long-press to change.",
-    "stats_nfc_not_enabled": "Please turn on NFC in your phone's settings"
+    "stats_nfc_not_enabled": "Please turn on NFC in your phone's settings",
+    "time_just_now": "Just now",
+    "time_yesterday": "Yesterday",
+    "time_day_before_yesterday": "Day before yesterday",
+    "time_ago": "{time} ago",
+    "lock_state_locked": "Locked",
+    "lock_state_unlocked": "Unlocked",
+    "lock_state_unknown": "Unknown",
+    "error_generic": "ERROR"
 }
