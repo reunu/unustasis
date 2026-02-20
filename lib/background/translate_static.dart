@@ -42,6 +42,41 @@ extension ScooterStateName on ScooterState? {
         default:
           return "Unbekannt";
       }
+    } else if (lang == "fr") {
+      switch (this) {
+        case ScooterState.off:
+          return "Éteint";
+        case ScooterState.standby:
+          return "Veille";
+        case ScooterState.parked:
+          return "Stationné";
+        case ScooterState.ready:
+          return "Prêt";
+        case ScooterState.updating:
+          return "Mise à jour";
+        case ScooterState.waitingSeatbox:
+          return "En attente du coffre";
+        case ScooterState.waitingHibernation:
+        case ScooterState.waitingHibernationAdvanced:
+        case ScooterState.waitingHibernationSeatbox:
+        case ScooterState.waitingHibernationConfirm:
+          return "Hibernation manuelle en cours";
+        case ScooterState.hibernating:
+          return "En hibernation";
+        case ScooterState.hibernatingImminent:
+          return "Hibernation imminente...";
+        case ScooterState.booting:
+          return "Démarrage...";
+        case ScooterState.linking:
+          return "Recherche...";
+        case ScooterState.disconnected:
+          return "Déconnecté";
+        case ScooterState.shuttingDown:
+          return "Arrêt en cours...";
+        case ScooterState.unknown:
+        default:
+          return "Inconnu";
+      }
     } else {
       switch (this) {
         case ScooterState.off:
@@ -95,6 +130,17 @@ String getLocalizedNotificationAction(String actionId) {
       default:
         return "FEHLER";
     }
+  } else if (lang == "fr") {
+    switch (actionId) {
+      case "lock":
+        return "Verrouiller";
+      case "unlock":
+        return "Déverrouiller";
+      case "openseat":
+        return "Ouvrir la selle";
+      default:
+        return "ERREUR";
+    }
   } else {
     switch (actionId) {
       case "lock":
@@ -127,6 +173,15 @@ String? getLocalizedTimeDiff(DateTime? lastPing) {
       return "Vorgestern";
     }
     return "Vor $timeDiff";
+  } else if (lang == "fr") {
+    if (timeDiff == null) {
+      return "À l'instant";
+    } else if (timeDiff == "1d") {
+      return "Hier";
+    } else if (timeDiff == "2d") {
+      return "Avant-hier";
+    }
+    return "Il y a $timeDiff";
   } else {
     if (timeDiff == null) {
       return "Just now";
@@ -148,6 +203,15 @@ String getLocalizedLockStateName(bool? locked) {
         return "Offen";
       default:
         return "Unbekannt";
+    }
+  } else if (lang == "fr") {
+    switch (locked) {
+      case true:
+        return "Verrouillé";
+      case false:
+        return "Déverrouillé";
+      default:
+        return "Inconnu";
     }
   } else {
     switch (locked) {
