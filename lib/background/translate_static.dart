@@ -137,7 +137,7 @@ String getLocalizedNotificationAction(String actionId) {
       case "unlock":
         return "Déverrouiller";
       case "openseat":
-        return "Ouvrir la selle";
+        return "Ouvrir le coffre";
       default:
         return "ERREUR";
     }
