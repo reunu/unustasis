@@ -53,6 +53,9 @@
 		<string>This app needs access to network service discovery to debug the app</string>
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>Location is required to remember where your scooter was last seen</string>
+		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+		<string>Location is required to remember where your scooter was last seen and to provide
+			location-based features in the background</string>
 		<key>UIApplicationSupportsIndirectInputEvents</key>
 		<true />
 		<key>UIBackgroundModes</key>
