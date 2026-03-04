@@ -359,17 +359,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                       action: state != null && state.isReadyForLockChange
                                           ? (state.isOn
                                               ? () async {
+                                                  final seatWasOpen =
+                                                      context.read<ScooterService>().seatClosed == false;
                                                   try {
                                                     await context.read<ScooterService>().lock();
-                                                    if (context.mounted &&
-                                                        context.read<ScooterService>().hazardLocking) {
+                                                    if (!context.mounted) return;
+                                                    if (seatWasOpen) {
+                                                      showSeatWarning();
+                                                    }
+                                                    if (context.read<ScooterService>().hazardLocking) {
                                                       _flashHazards(1);
                                                     }
-                                                  } on SeatOpenException catch (_) {
-                                                    log.warning(
-                                                      "Seat is open, showing alert",
-                                                    );
-                                                    showSeatWarning();
                                                   } on HandlebarLockException catch (_) {
                                                     log.warning(
                                                       "Handlebars are still unlocked, showing alert",
