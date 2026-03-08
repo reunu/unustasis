@@ -13,6 +13,7 @@ import 'package:provider/provider.dart';
 import 'package:appcheck/appcheck.dart';
 
 import '../domain/theme_helper.dart';
+import '../helper_widgets/color_picker_dialog.dart';
 import '../home_screen.dart';
 import '../scooter_service.dart';
 import '../domain/scooter_state.dart';
@@ -39,15 +40,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
   BluetoothDevice? _foundScooter;
   late AnimationController _scanningController;
   late AnimationController _pairingController;
+  int _pendingColor = 0;
+  late TextEditingController _nameController;
   // Step 0: Welcome
-  // Step 1: Explan visibility
+  // Step 1: Explain visibility
   // Step 2: Scanning (or nothing found, retry)
   // Step 3: Found scooter, explain pairing
   // Step 4: Waiting for pairing
   // Step 5: Connected, all done!
+  // Step 6: Personalize (name + color)
 
   @override
   void initState() {
+    _nameController = TextEditingController(text: "Scooter Pro");
     // for adding second or third scooters
     if (widget.skipWelcome) {
       // show an alert if we discover the old unu app still installed
@@ -207,10 +212,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
             text: FlutterI18n.translate(context, "onboarding_step5_body"),
             btnText: FlutterI18n.translate(context, "onboarding_step5_button"),
             onPressed: () {
-              Navigator.of(context).pushReplacement(MaterialPageRoute(
-                builder: (context) => const HomeScreen(),
-              ));
+              setState(() {
+                _step = 6;
+              });
             });
+      case 6:
+        return _personalizationStep();
       default:
         return [];
     }
@@ -244,7 +251,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
             center: const Alignment(0.0, -0.15),
             radius: 1,
             colors: [
-              _step == 5
+              _step >= 5
                   ? HSLColor.fromColor(Theme.of(context).colorScheme.primary)
                       .withLightness(0.3)
                       .withSaturation(1)
@@ -384,6 +391,34 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
           blinkerLeft: false,
           blinkerRight: false,
         );
+      case 6:
+        return GestureDetector(
+          onTap: () async {
+            HapticFeedback.mediumImpact();
+            int? newColor = await showColorDialog(_pendingColor, _nameController.text, context);
+            if (newColor != null && mounted) {
+              setState(() {
+                _pendingColor = newColor;
+              });
+            }
+          },
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset(
+                "images/scooter/side_$_pendingColor.webp",
+                height: 180,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                FlutterI18n.translate(context, "settings_color_onboarding"),
+                style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                    ),
+              ),
+            ],
+          ),
+        );
       default:
         return const ScooterVisual(
           state: ScooterState.disconnected,
@@ -392,6 +427,53 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
           blinkerRight: false,
         );
     }
+  }
+
+  List<Widget> _personalizationStep() {
+    return [
+      Text(
+        FlutterI18n.translate(context, "onboarding_step6_heading"),
+        style: Theme.of(context).textTheme.headlineLarge,
+        textAlign: TextAlign.center,
+      ),
+      const SizedBox(height: 16),
+      TextField(
+        controller: _nameController,
+        textAlign: TextAlign.center,
+        style: Theme.of(context).textTheme.titleMedium,
+        decoration: InputDecoration(
+          border: const OutlineInputBorder(),
+          labelText: FlutterI18n.translate(context, "stats_name"),
+        ),
+        onChanged: (_) => setState(() {}),
+      ),
+      const SizedBox(height: 40),
+      ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          minimumSize: const Size.fromHeight(60),
+          backgroundColor: Theme.of(context).colorScheme.onSurface,
+        ),
+        onPressed: () {
+          final service = context.read<ScooterService>();
+          final scooterId = _foundScooter!.remoteId.toString();
+          final name = _nameController.text.trim().isEmpty ? "Scooter Pro" : _nameController.text.trim();
+          service.renameSavedScooter(id: scooterId, name: name);
+          service.recolorSavedScooter(id: scooterId, color: _pendingColor);
+          Navigator.of(context).pushReplacement(MaterialPageRoute(
+            builder: (context) => const HomeScreen(),
+          ));
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Text(
+            FlutterI18n.translate(context, "onboarding_step6_button"),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onTertiary,
+            ),
+          ),
+        ),
+      ),
+    ];
   }
 
   List<Widget> _onboardingStep({
@@ -439,6 +521,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
   void dispose() {
     _scanningController.dispose();
     _pairingController.dispose();
+    _nameController.dispose();
     super.dispose();
   }
 }
