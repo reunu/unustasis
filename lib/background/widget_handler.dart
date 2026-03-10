@@ -9,10 +9,10 @@ import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:latlong2/latlong.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 
 import '../background/translate_static.dart';
-import '../background/bg_service.dart';
 import '../domain/scooter_state.dart';
 
 // value cache
@@ -217,18 +217,30 @@ FutureOr<void> backgroundCallback(Uri? data) async {
   await HomeWidget.setAppGroupId('group.de.freal.unustasis');
 
   try {
-    if (await FlutterBackgroundService().isRunning() == false) {
+    final running = await FlutterBackgroundService().isRunning();
+    if (!running) {
+      // Signal to onStart() that this restart is from a widget action,
+      // so it should stay foreground temporarily instead of stopping.
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool("pendingWidgetAction", true);
+
       final service = FlutterBackgroundService();
       await service.startService();
+      // Wait for onStart() to finish initializing and registering listeners
+      await Future.delayed(const Duration(seconds: 2));
     }
   } catch (e) {
     print("Error starting background service: $e");
   }
 
+  // Read from SharedPreferences since this callback runs in a separate isolate
+  // where the module-level backgroundScanEnabled variable is not shared.
+  final bgScanEnabled = (await SharedPreferences.getInstance()).getBool("backgroundScan") ?? false;
+
   switch (data?.host) {
     case "scan":
       setWidgetScanning(true);
-      if (!backgroundScanEnabled) {
+      if (!bgScanEnabled) {
         FlutterBackgroundService().invoke("unlock");
       }
     case "lock":

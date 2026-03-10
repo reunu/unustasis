@@ -17,6 +17,9 @@ import '../background/notification_handler.dart';
 
 bool backgroundScanEnabled = true;
 PausableTimer? _rescanTimer;
+AndroidServiceInstance? _androidServiceInstance;
+Timer? _foregroundDemoteTimer;
+const Duration _foregroundTimeout = Duration(minutes: 30);
 
 FlutterBluePlusMockable fbp = FlutterBluePlusMockable();
 ScooterService scooterService = ScooterService(fbp, isInBackgroundService: true);
@@ -43,7 +46,7 @@ Future<void> setupBackgroundService() async {
     androidConfiguration: AndroidConfiguration(
       autoStart: true,
       onStart: onStart,
-      isForegroundMode: true,
+      isForegroundMode: true, // Must start as foreground so Android allows restarts from widget callbacks
       autoStartOnBoot: true,
       foregroundServiceTypes: [AndroidForegroundType.connectedDevice],
       notificationChannelId: notificationChannelId, // this must match with notification channel you created above.
@@ -54,10 +57,6 @@ Future<void> setupBackgroundService() async {
   );
 
   service.startService();
-
-  if (!backgroundScanEnabled) {
-    dismissNotification();
-  }
 }
 
 @pragma('vm:entry-point')
@@ -95,18 +94,47 @@ Future<void> attemptConnectionCycle() async {
 
 void _enableScanning() {
   backgroundScanEnabled = true;
+  _foregroundDemoteTimer?.cancel();
+  _androidServiceInstance?.setAsForegroundService();
   _rescanTimer?.start();
   scooterService.rssiTimer.start();
   updateNotification();
   attemptConnectionCycle();
 }
 
-void _disableScanning() async {
+void _disableScanning() {
   backgroundScanEnabled = false;
   _rescanTimer
     ?..pause()
     ..reset();
   scooterService.rssiTimer.pause();
+  demoteToBackground();
+}
+
+/// Temporarily promotes the Android service to foreground mode.
+/// If [temporary] is true and background scanning is disabled,
+/// the service will automatically demote back to background after [_foregroundTimeout].
+void promoteToForeground({bool temporary = true}) {
+  if (_androidServiceInstance == null) return;
+
+  _foregroundDemoteTimer?.cancel();
+  _androidServiceInstance!.setAsForegroundService();
+
+  if (temporary && !backgroundScanEnabled) {
+    _foregroundDemoteTimer = Timer(_foregroundTimeout, () {
+      demoteToBackground();
+    });
+  }
+}
+
+/// Stops the Android service entirely to save battery.
+/// Only stops if background scanning is disabled.
+void demoteToBackground() {
+  if (_androidServiceInstance == null || backgroundScanEnabled) return;
+
+  _foregroundDemoteTimer?.cancel();
+  dismissNotification();
+  _androidServiceInstance!.stopSelf();
 }
 
 @pragma('vm:entry-point')
@@ -120,12 +148,24 @@ void onStart(ServiceInstance service) async {
 
   backgroundScanEnabled = (await SharedPreferences.getInstance()).getBool("backgroundScan") ?? false;
 
-  if (service is AndroidServiceInstance && await service.isForegroundService()) {
+  // Check if we were started by a widget action
+  final prefs = await SharedPreferences.getInstance();
+  final pendingWidgetAction = prefs.getBool("pendingWidgetAction") ?? false;
+  if (pendingWidgetAction) {
+    await prefs.setBool("pendingWidgetAction", false);
+  }
+
+  if (service is AndroidServiceInstance) {
+    _androidServiceInstance = service;
     if (backgroundScanEnabled) {
       Logger("bgservice").info("Running first connection cycle");
       _enableScanning();
+    } else if (pendingWidgetAction) {
+      Logger("bgservice").info("Started by widget action, staying foreground temporarily");
+      // Don't disable scanning/stop — stay foreground temporarily for the widget command
+      promoteToForeground(temporary: true);
     } else {
-      Logger("bgservice").info("Dismissing initial notification");
+      Logger("bgservice").info("Background scanning disabled, stopping service");
       _disableScanning();
     }
   }
@@ -213,6 +253,7 @@ void onStart(ServiceInstance service) async {
 
   service.on("lock").listen((data) async {
     Logger("bgservice").info("Received lock command");
+    promoteToForeground();
     if (scooterService.connected) {
       setWidgetUnlocking(true);
       await scooterService.lock(
@@ -243,6 +284,7 @@ void onStart(ServiceInstance service) async {
 
   service.on("unlock").listen((data) async {
     Logger("bgservice").info("Received unlock command");
+    promoteToForeground();
     if (scooterService.connected) {
       setWidgetUnlocking(true);
       await scooterService.unlock(
@@ -273,6 +315,7 @@ void onStart(ServiceInstance service) async {
 
   service.on("openseat").listen((data) async {
     Logger("bgservice").info("Received openseat command");
+    promoteToForeground();
     if (scooterService.connected) {
       scooterService.openSeat();
     } else {
