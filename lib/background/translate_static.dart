@@ -1,290 +1,69 @@
-import 'dart:ui';
-
+import '../background/background_i18n.dart';
 import '../background/widget_handler.dart';
 import '../domain/scooter_state.dart';
 
-extension ScooterStateName on ScooterState? {
-  String getNameStatic({String? languageCode}) {
-    String lang = languageCode ?? PlatformDispatcher.instance.locale.languageCode;
+const _stateKeys = {
+  ScooterState.off: 'state_name_off',
+  ScooterState.standby: 'state_name_standby',
+  ScooterState.parked: 'state_name_parked',
+  ScooterState.ready: 'state_name_ready',
+  ScooterState.updating: 'state_name_updating',
+  ScooterState.waitingSeatbox: 'state_name_waiting_seatbox',
+  ScooterState.waitingHibernation: 'state_name_waiting_hibernation',
+  ScooterState.waitingHibernationAdvanced: 'state_name_waiting_hibernation',
+  ScooterState.waitingHibernationSeatbox: 'state_name_waiting_hibernation',
+  ScooterState.waitingHibernationConfirm: 'state_name_waiting_hibernation',
+  ScooterState.hibernating: 'state_name_hibernating',
+  ScooterState.hibernatingImminent: 'state_name_hibernating_imminent',
+  ScooterState.booting: 'state_name_booting',
+  ScooterState.linking: 'state_name_linking',
+  ScooterState.disconnected: 'state_name_disconnected',
+  ScooterState.shuttingDown: 'state_name_shutting_down',
+  ScooterState.unknown: 'state_name_unknown',
+};
 
-    if (lang == "de") {
-      switch (this) {
-        case ScooterState.off:
-          return "Aus";
-        case ScooterState.standby:
-          return "Standby";
-        case ScooterState.parked:
-          return "Geparkt";
-        case ScooterState.ready:
-          return "Bereit";
-        case ScooterState.updating:
-          return "Wird aktualisiert";
-        case ScooterState.waitingSeatbox:
-          return "Warte auf Sitzbox";
-        case ScooterState.waitingHibernation:
-        case ScooterState.waitingHibernationAdvanced:
-        case ScooterState.waitingHibernationSeatbox:
-        case ScooterState.waitingHibernationConfirm:
-          return "Manueller Ruhezustand startet";
-        case ScooterState.hibernating:
-          return "Tiefschlaf";
-        case ScooterState.hibernatingImminent:
-          return "Schläft bald...";
-        case ScooterState.booting:
-          return "Fährt hoch...";
-        case ScooterState.linking:
-          return "Suche...";
-        case ScooterState.disconnected:
-          return "Getrennt";
-        case ScooterState.shuttingDown:
-          return "Herunterfahren...";
-        case ScooterState.unknown:
-        default:
-          return "Unbekannt";
-      }
-    } else if (lang == "fr") {
-      switch (this) {
-        case ScooterState.off:
-          return "Éteint";
-        case ScooterState.standby:
-          return "Veille";
-        case ScooterState.parked:
-          return "Stationné";
-        case ScooterState.ready:
-          return "Prêt";
-        case ScooterState.updating:
-          return "Mise à jour";
-        case ScooterState.waitingSeatbox:
-          return "En attente du coffre";
-        case ScooterState.waitingHibernation:
-        case ScooterState.waitingHibernationAdvanced:
-        case ScooterState.waitingHibernationSeatbox:
-        case ScooterState.waitingHibernationConfirm:
-          return "Hibernation manuelle en cours";
-        case ScooterState.hibernating:
-          return "En hibernation";
-        case ScooterState.hibernatingImminent:
-          return "Hibernation imminente...";
-        case ScooterState.booting:
-          return "Démarrage...";
-        case ScooterState.linking:
-          return "Recherche...";
-        case ScooterState.disconnected:
-          return "Déconnecté";
-        case ScooterState.shuttingDown:
-          return "Arrêt en cours...";
-        case ScooterState.unknown:
-        default:
-          return "Inconnu";
-      }
-    } else if (lang == "nl") {
-      switch (this) {
-        case ScooterState.off:
-          return "Uit";
-        case ScooterState.standby:
-          return "Stand-by";
-        case ScooterState.parked:
-          return "Geparkeerd";
-        case ScooterState.ready:
-          return "Klaar";
-        case ScooterState.updating:
-          return "Bijwerken";
-        case ScooterState.waitingSeatbox:
-          return "Wachten op buddy";
-        case ScooterState.waitingHibernation:
-        case ScooterState.waitingHibernationAdvanced:
-        case ScooterState.waitingHibernationSeatbox:
-        case ScooterState.waitingHibernationConfirm:
-          return "Handmatige slaapstand starten";
-        case ScooterState.hibernating:
-          return "In slaapstand";
-        case ScooterState.hibernatingImminent:
-          return "Gaat in slaapstand...";
-        case ScooterState.booting:
-          return "Opstarten...";
-        case ScooterState.linking:
-          return "Zoeken...";
-        case ScooterState.disconnected:
-          return "Niet verbonden";
-        case ScooterState.shuttingDown:
-          return "Afsluiten...";
-        case ScooterState.unknown:
-        default:
-          return "Onbekend";
-      }
-    } else {
-      switch (this) {
-        case ScooterState.off:
-          return "Off";
-        case ScooterState.standby:
-          return "Stand-by";
-        case ScooterState.parked:
-          return "Parked";
-        case ScooterState.ready:
-          return "Ready";
-        case ScooterState.updating:
-          return "Updating";
-        case ScooterState.waitingSeatbox:
-          return "Waiting on Seatbox";
-        case ScooterState.waitingHibernation:
-        case ScooterState.waitingHibernationAdvanced:
-        case ScooterState.waitingHibernationSeatbox:
-        case ScooterState.waitingHibernationConfirm:
-          return "Manual hibernation starting";
-        case ScooterState.hibernating:
-          return "Hibernating";
-        case ScooterState.hibernatingImminent:
-          return "Hibernating soon...";
-        case ScooterState.booting:
-          return "Booting...";
-        case ScooterState.linking:
-          return "Searching...";
-        case ScooterState.disconnected:
-          return "Disconnected";
-        case ScooterState.shuttingDown:
-          return "Shutting down...";
-        case ScooterState.unknown:
-        default:
-          return "Unknown";
-      }
-    }
+const _actionKeys = {
+  'lock': 'controls_lock',
+  'unlock': 'controls_unlock',
+  'openseat': 'home_seat_button_closed',
+};
+
+final _i18n = BackgroundI18n.instance;
+
+extension ScooterStateName on ScooterState? {
+  String getNameStatic() {
+    final key = _stateKeys[this] ?? 'state_name_unknown';
+    return _i18n.translate(key);
   }
 }
 
 String getLocalizedNotificationAction(String actionId) {
-  String lang = PlatformDispatcher.instance.locale.languageCode;
-
-  if (lang == "de") {
-    switch (actionId) {
-      case "lock":
-        return "Schließen";
-      case "unlock":
-        return "Öffnen";
-      case "openseat":
-        return "Sitz öffnen";
-      default:
-        return "FEHLER";
-    }
-  } else if (lang == "fr") {
-    switch (actionId) {
-      case "lock":
-        return "Verrouiller";
-      case "unlock":
-        return "Déverrouiller";
-      case "openseat":
-        return "Ouvrir le coffre";
-      default:
-        return "ERREUR";
-    }
-  } else if (lang == "nl") {
-    switch (actionId) {
-      case "lock":
-        return "Vergrendelen";
-      case "unlock":
-        return "Ontgrendelen";
-      case "openseat":
-        return "Buddy openen";
-      default:
-        return "FOUT";
-    }
-  } else {
-    switch (actionId) {
-      case "lock":
-        return "Lock";
-      case "unlock":
-        return "Unlock";
-      case "openseat":
-        return "Open seat";
-      default:
-        return "ERROR";
-    }
-  }
+  final key = _actionKeys[actionId];
+  return key != null ? _i18n.translate(key) : _i18n.translate('error_generic');
 }
 
 String? getLocalizedTimeDiff(DateTime? lastPing) {
-  String lang = PlatformDispatcher.instance.locale.languageCode;
-
-  if (lastPing == null) {
-    return null;
-  }
+  if (lastPing == null) return null;
 
   String? timeDiff = lastPing.calculateTimeDifferenceInShort();
 
-  if (lang == "de") {
-    if (timeDiff == null) {
-      return "Vor kurzem";
-    } else if (timeDiff == "1d") {
-      return "Gestern";
-    } else if (timeDiff == "2d") {
-      return "Vorgestern";
-    }
-    return "Vor $timeDiff";
-  } else if (lang == "fr") {
-    if (timeDiff == null) {
-      return "À l'instant";
-    } else if (timeDiff == "1d") {
-      return "Hier";
-    } else if (timeDiff == "2d") {
-      return "Avant-hier";
-    }
-    return "Il y a $timeDiff";
-  } else if (lang == "nl") {
-    if (timeDiff == null) {
-      return "Zojuist";
-    } else if (timeDiff == "1d") {
-      return "Gisteren";
-    } else if (timeDiff == "2d") {
-      return "Eergisteren";
-    }
-    return "$timeDiff geleden";
-  } else {
-    if (timeDiff == null) {
-      return "Just now";
-    } else if (timeDiff == "1d") {
-      return "Yesterday";
-    }
-    return "$timeDiff ago";
+  if (timeDiff == null) {
+    return _i18n.translate('time_just_now');
+  } else if (timeDiff == '1d') {
+    return _i18n.translate('time_yesterday');
+  } else if (timeDiff == '2d') {
+    return _i18n.translate('time_day_before_yesterday');
   }
+  return _i18n.translate('time_ago').replaceAll('{time}', timeDiff);
 }
 
 String getLocalizedLockStateName(bool? locked) {
-  String lang = PlatformDispatcher.instance.locale.languageCode;
-
-  if (lang == "de") {
-    switch (locked) {
-      case true:
-        return "Verriegelt";
-      case false:
-        return "Offen";
-      default:
-        return "Unbekannt";
-    }
-  } else if (lang == "fr") {
-    switch (locked) {
-      case true:
-        return "Verrouillé";
-      case false:
-        return "Déverrouillé";
-      default:
-        return "Inconnu";
-    }
-  } else if (lang == "nl") {
-    switch (locked) {
-      case true:
-        return "Vergrendeld";
-      case false:
-        return "Ontgrendeld";
-      default:
-        return "Onbekend";
-    }
-  } else {
-    switch (locked) {
-      case true:
-        return "Locked";
-      case false:
-        return "Unlocked";
-      default:
-        return "Unknown";
-    }
+  switch (locked) {
+    case true:
+      return _i18n.translate('lock_state_locked');
+    case false:
+      return _i18n.translate('lock_state_unlocked');
+    default:
+      return _i18n.translate('lock_state_unknown');
   }
 }

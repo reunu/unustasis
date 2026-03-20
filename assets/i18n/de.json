@@ -270,5 +270,13 @@
     "event_type_lock": "{scooterName} verriegelt",
     "event_type_unlock": "{scooterName} entsperrt",
     "stats_auto_connect_how_to_toggle": "Gedrückt halten zum Ändern.",
-    "stats_nfc_not_enabled": "Bitte aktiviere NFC in den Handyeinstellungen."
+    "stats_nfc_not_enabled": "Bitte aktiviere NFC in den Handyeinstellungen.",
+    "time_just_now": "Vor kurzem",
+    "time_yesterday": "Gestern",
+    "time_day_before_yesterday": "Vorgestern",
+    "time_ago": "Vor {time}",
+    "lock_state_locked": "Verriegelt",
+    "lock_state_unlocked": "Offen",
+    "lock_state_unknown": "Unbekannt",
+    "error_generic": "FEHLER"
 }

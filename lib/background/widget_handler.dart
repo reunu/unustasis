@@ -11,6 +11,7 @@ import 'package:latlong2/latlong.dart';
 
 import 'package:workmanager/workmanager.dart';
 
+import '../background/background_i18n.dart';
 import '../background/translate_static.dart';
 import '../background/bg_service.dart';
 import '../domain/scooter_state.dart';
@@ -214,6 +215,8 @@ Future<void> setWidgetScanning(bool scanning) async {
 
 @pragma("vm:entry-point")
 FutureOr<void> backgroundCallback(Uri? data) async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await BackgroundI18n.instance.init();
   await HomeWidget.setAppGroupId('group.de.freal.unustasis');
 
   try {
@@ -252,6 +255,7 @@ void workmanagerCallback() {
     print("Workmanager task executing: $task");
     WidgetsFlutterBinding.ensureInitialized();
     DartPluginRegistrant.ensureInitialized();
+    await BackgroundI18n.instance.init();
     if (task == widgetTaskID) {
       await updateWidgetPing();
     } else {
