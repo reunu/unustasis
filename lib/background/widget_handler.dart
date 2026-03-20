@@ -18,6 +18,7 @@ import '../domain/scooter_state.dart';
 
 // value cache
 bool _connected = false;
+bool _widgetIsScanning = false;
 DateTime? _lastPing;
 String? _lastPingDifference;
 String? _iOSlastPingText;
@@ -30,7 +31,30 @@ int? _scooterColor;
 LatLng? _lastLocation;
 bool? _seatClosed;
 bool? _scooterLocked = true;
-String _lockStateName = "Unknown";
+String _lockStateName = "";
+
+/// Pre-populates in-memory caches from existing HomeWidget data.
+/// Prevents passToWidget() from overwriting good widget data with
+/// null/default values from a freshly initialized ScooterService.
+Future<void> seedCachesFromWidget() async {
+  _connected = await HomeWidget.getWidgetData<bool>('connected') ?? false;
+  _primarySOC = await HomeWidget.getWidgetData<int?>('soc1');
+  _secondarySOC = await HomeWidget.getWidgetData<int?>('soc2');
+  _scooterName = await HomeWidget.getWidgetData<String?>('scooterName');
+  _scooterColor = await HomeWidget.getWidgetData<int?>('scooterColor');
+  _stateName = await HomeWidget.getWidgetData<String?>('stateName');
+  _lockStateName = await HomeWidget.getWidgetData<String?>('lockStateName') ?? '';
+  _seatClosed = await HomeWidget.getWidgetData<bool?>('seatClosed');
+  _scooterLocked = await HomeWidget.getWidgetData<bool?>('scooterLocked');
+  _widgetIsScanning = await HomeWidget.getWidgetData<bool>('scanning') ?? false;
+  _lastConnectedScooterId = await HomeWidget.getWidgetData<String?>('lastConnectedScooterId');
+  int? lastPingInt = await HomeWidget.getWidgetData<int?>('lastPing');
+  if (lastPingInt != null) {
+    _lastPing = DateTime.fromMillisecondsSinceEpoch(lastPingInt);
+    _lastPingDifference = _lastPing?.calculateTimeDifferenceInShort();
+    _iOSlastPingText = getLocalizedTimeDiff(_lastPing);
+  }
+}
 
 void setupWidget() {
   HomeWidget.setAppGroupId('group.de.freal.unustasis');
@@ -100,6 +124,12 @@ void passToWidget({
   bool? scooterLocked,
   String? scooterId,
 }) async {
+  // Don't overwrite widget state while it's showing the scanning/connecting spinner.
+  // backgroundCallback sets scanning=true in its own isolate; the service isolate
+  // picks this up via seedCachesFromWidget. Without this guard the scooterService
+  // listener would immediately overwrite stateName with "Disconnected".
+  if (_widgetIsScanning) return;
+
   // Set app group ID first on iOS (required before any saveWidgetData calls)
   if (Platform.isIOS) {
     await HomeWidget.setAppGroupId('group.de.freal.unustasis');
@@ -200,13 +230,11 @@ Future<void> setWidgetUnlocking(bool unlocking) async {
 }
 
 Future<void> setWidgetScanning(bool scanning) async {
+  _widgetIsScanning = scanning;
   await HomeWidget.saveWidgetData<bool>("scanning", scanning);
-  await HomeWidget.saveWidgetData<String>(
-    "stateName",
-    scanning ? ScooterState.linking.getNameStatic() : ScooterState.disconnected.getNameStatic(),
-  );
-
-  _stateName = scanning ? ScooterState.linking.getNameStatic() : ScooterState.disconnected.getNameStatic();
+  final stateName = scanning ? ScooterState.linking.getNameStatic() : ScooterState.disconnected.getNameStatic();
+  await HomeWidget.saveWidgetData<String>("stateName", stateName);
+  _stateName = stateName;
   await HomeWidget.updateWidget(
     qualifiedAndroidName: 'de.freal.unustasis.HomeWidgetReceiver',
     iOSName: "ScooterWidget",
@@ -216,44 +244,57 @@ Future<void> setWidgetScanning(bool scanning) async {
 @pragma("vm:entry-point")
 FutureOr<void> backgroundCallback(Uri? data) async {
   WidgetsFlutterBinding.ensureInitialized();
+  DartPluginRegistrant.ensureInitialized();
   await BackgroundI18n.instance.init();
   await HomeWidget.setAppGroupId('group.de.freal.unustasis');
 
-  try {
-    final running = await FlutterBackgroundService().isRunning();
-    if (!running) {
-      // Signal to onStart() that this restart is from a widget action,
-      // so it should stay foreground temporarily instead of stopping.
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool("pendingWidgetAction", true);
-
-      final service = FlutterBackgroundService();
-      await service.startService();
-      // Wait for onStart() to finish initializing and registering listeners
-      await Future.delayed(const Duration(seconds: 2));
-    }
-  } catch (e) {
-    print("Error starting background service: $e");
-  }
-
+  // Determine the action to perform
+  String? action;
   // Read from SharedPreferences since this callback runs in a separate isolate
   // where the module-level backgroundScanEnabled variable is not shared.
   final bgScanEnabled = (await SharedPreferences.getInstance()).getBool("backgroundScan") ?? false;
 
   switch (data?.host) {
     case "scan":
-      setWidgetScanning(true);
-      if (!bgScanEnabled) {
-        FlutterBackgroundService().invoke("unlock");
-      }
+      action = bgScanEnabled ? null : "unlock";
     case "lock":
-      FlutterBackgroundService().invoke("lock");
+      action = "lock";
     case "unlock":
-      FlutterBackgroundService().invoke("unlock");
+      action = "unlock";
     case "openseat":
-      FlutterBackgroundService().invoke("openseat");
+      action = "openseat";
     default:
       print("Unknown command: ${data?.host}");
+  }
+
+  // Show scanning feedback immediately so the user sees a spinner
+  // while the service spins up and connects.
+  if (action != null) {
+    setWidgetScanning(true);
+  }
+
+  try {
+    final running = await FlutterBackgroundService().isRunning();
+    if (!running) {
+      // Persist the action so onStart() can execute it once ready,
+      // avoiding the race condition of invoking before listeners exist.
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool("pendingWidgetAction", true);
+      if (action != null) {
+        await prefs.setString("pendingWidgetActionName", action);
+      }
+
+      final service = FlutterBackgroundService();
+      await service.startService();
+      // The action will be picked up and executed by onStart() itself.
+    } else {
+      // Service is already running, invoke the action directly.
+      if (action != null) {
+        FlutterBackgroundService().invoke(action);
+      }
+    }
+  } catch (e) {
+    print("Error starting background service: $e");
   }
   await HomeWidget.updateWidget(
     qualifiedAndroidName: 'de.freal.unustasis.HomeWidgetReceiver',

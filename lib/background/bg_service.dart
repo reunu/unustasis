@@ -20,7 +20,7 @@ bool backgroundScanEnabled = true;
 PausableTimer? _rescanTimer;
 AndroidServiceInstance? _androidServiceInstance;
 Timer? _foregroundDemoteTimer;
-const Duration _foregroundTimeout = Duration(minutes: 30);
+const Duration _foregroundTimeout = Duration(minutes: 15);
 
 FlutterBluePlusMockable fbp = FlutterBluePlusMockable();
 ScooterService scooterService = ScooterService(fbp, isInBackgroundService: true);
@@ -50,7 +50,7 @@ Future<void> setupBackgroundService() async {
       isForegroundMode: true, // Must start as foreground so Android allows restarts from widget callbacks
       autoStartOnBoot: true,
       foregroundServiceTypes: [AndroidForegroundType.connectedDevice],
-      notificationChannelId: notificationChannelId, // this must match with notification channel you created above.
+      notificationChannelId: serviceChannelId, // silent channel for the mandatory foreground service notification
       initialNotificationTitle: 'Unu Scooter',
       initialNotificationContent: 'You can dismiss this notification.',
       foregroundServiceNotificationId: notificationId,
@@ -113,6 +113,49 @@ void _disableScanning() {
   demoteToBackground();
 }
 
+/// Connects to the scooter if needed, then performs the given action.
+/// Handles foreground promotion, scanning UI, and post-action cleanup.
+Future<void> _executeAction(String actionName) async {
+  final log = Logger("bgservice");
+  log.info("Executing action: $actionName");
+  setWidgetScanning(true);
+  promoteToForeground();
+
+  try {
+    if (!scooterService.connected) {
+      setWidgetScanning(true);
+      await attemptConnectionCycle();
+    }
+    setWidgetScanning(false);
+
+    switch (actionName) {
+      case "lock":
+        setWidgetUnlocking(true);
+        await scooterService.lock(
+          checkHandlebars: false,
+          source: EventSource.background,
+        );
+        Future.delayed(const Duration(seconds: 3), () => setWidgetUnlocking(false));
+      case "unlock":
+        setWidgetUnlocking(true);
+        await scooterService.unlock(
+          checkHandlebars: false,
+          source: EventSource.background,
+        );
+        Future.delayed(const Duration(seconds: 3), () => setWidgetUnlocking(false));
+      case "openseat":
+        scooterService.openSeat();
+      default:
+        log.warning("Unknown action: $actionName");
+    }
+  } catch (e, stack) {
+    log.severe("Action '$actionName' failed", e, stack);
+  } finally {
+    setWidgetScanning(false);
+    setWidgetUnlocking(false);
+  }
+}
+
 /// Temporarily promotes the Android service to foreground mode.
 /// If [temporary] is true and background scanning is disabled,
 /// the service will automatically demote back to background after [_foregroundTimeout].
@@ -123,16 +166,32 @@ void promoteToForeground({bool temporary = true}) {
   _androidServiceInstance!.setAsForegroundService();
 
   if (temporary && !backgroundScanEnabled) {
-    _foregroundDemoteTimer = Timer(_foregroundTimeout, () {
-      demoteToBackground();
-    });
+    _scheduleDemoteTimer();
   }
 }
 
+/// Schedules the foreground demotion timer.
+/// If the scooter is still connected when it fires, restarts for another cycle.
+void _scheduleDemoteTimer() {
+  _foregroundDemoteTimer?.cancel();
+  _foregroundDemoteTimer = Timer(_foregroundTimeout, () {
+    if (scooterService.connected) {
+      Logger("bgservice").info("Scooter still connected, extending foreground timeout");
+      _scheduleDemoteTimer();
+    } else {
+      demoteToBackground();
+    }
+  });
+}
+
 /// Stops the Android service entirely to save battery.
-/// Only stops if background scanning is disabled.
+/// Only stops if background scanning is disabled and no scooter is connected.
 void demoteToBackground() {
   if (_androidServiceInstance == null || backgroundScanEnabled) return;
+  if (scooterService.connected) {
+    _scheduleDemoteTimer();
+    return;
+  }
 
   _foregroundDemoteTimer?.cancel();
   dismissNotification();
@@ -150,14 +209,35 @@ void onStart(ServiceInstance service) async {
   DartPluginRegistrant.ensureInitialized();
   await BackgroundI18n.instance.init();
 
+  // Localize notification channels and replace initial notification
+  if (Platform.isAndroid && service is AndroidServiceInstance) {
+    localizeNotificationChannels();
+    service.setForegroundNotificationInfo(
+      title: 'Unu Scooter',
+      content: BackgroundI18n.instance.translate('notification_service_content'),
+    );
+  }
+
   backgroundScanEnabled = (await SharedPreferences.getInstance()).getBool("backgroundScan") ?? false;
 
   // Check if we were started by a widget action
   final prefs = await SharedPreferences.getInstance();
   final pendingWidgetAction = prefs.getBool("pendingWidgetAction") ?? false;
+  final pendingActionName = prefs.getString("pendingWidgetActionName");
   if (pendingWidgetAction) {
     await prefs.setBool("pendingWidgetAction", false);
+    await prefs.remove("pendingWidgetActionName");
   }
+
+  // Seed widget caches and clear stale spinner BEFORE any code path
+  // that might stop the service (e.g. _disableScanning → stopSelf).
+  Logger("bgservice").info("Seeding widget with initial data");
+  await HomeWidget.setAppGroupId("group.de.freal.unustasis");
+  await seedCachesFromWidget();
+  if (!pendingWidgetAction) {
+    await setWidgetScanning(false);
+  }
+  Logger("bgservice").info("Widget seeded with initial data. ScooterName: ${scooterService.scooterName}");
 
   if (service is AndroidServiceInstance) {
     _androidServiceInstance = service;
@@ -165,32 +245,30 @@ void onStart(ServiceInstance service) async {
       Logger("bgservice").info("Running first connection cycle");
       _enableScanning();
     } else if (pendingWidgetAction) {
-      Logger("bgservice").info("Started by widget action, staying foreground temporarily");
-      // Don't disable scanning/stop — stay foreground temporarily for the widget command
-      promoteToForeground(temporary: true);
+      // _executeAction will promote to foreground itself
     } else {
       Logger("bgservice").info("Background scanning disabled, stopping service");
       _disableScanning();
     }
   }
 
-  Logger("bgservice").info("Seeding widget with initial data");
-  // seed widget
-  await HomeWidget.setAppGroupId("group.de.freal.unustasis");
-  Future.delayed(const Duration(seconds: 5), () {
-    passToWidget(
-        connected: scooterService.connected,
-        lastPing: scooterService.lastPing,
-        scooterState: scooterService.state,
-        primarySOC: scooterService.primarySOC,
-        secondarySOC: scooterService.secondarySOC,
-        scooterName: scooterService.scooterName,
-        scooterColor: scooterService.scooterColor,
-        lastLocation: scooterService.lastLocation,
-        seatClosed: scooterService.seatClosed,
-        scooterId: scooterService.myScooter?.remoteId.toString());
-  });
-  Logger("bgservice").info("Widget seeded with initial data. ScooterName: ${scooterService.scooterName}");
+  // Seed the widget with scooterService data once it's had time to load caches.
+  // Skip if we were restarted by a widget action — the widget already has valid data.
+  if (!pendingWidgetAction) {
+    Future.delayed(const Duration(seconds: 5), () {
+      passToWidget(
+          connected: scooterService.connected,
+          lastPing: scooterService.lastPing,
+          scooterState: scooterService.state,
+          primarySOC: scooterService.primarySOC,
+          secondarySOC: scooterService.secondarySOC,
+          scooterName: scooterService.scooterName,
+          scooterColor: scooterService.scooterColor,
+          lastLocation: scooterService.lastLocation,
+          seatClosed: scooterService.seatClosed,
+          scooterId: scooterService.myScooter?.remoteId.toString());
+    });
+  }
 
   service.on("autoUnlockCooldown").listen((data) async {
     Logger("bgservice").info("Received autoUnlockCooldown command");
@@ -255,81 +333,9 @@ void onStart(ServiceInstance service) async {
     }
   });
 
-  service.on("lock").listen((data) async {
-    Logger("bgservice").info("Received lock command");
-    promoteToForeground();
-    if (scooterService.connected) {
-      setWidgetUnlocking(true);
-      await scooterService.lock(
-        checkHandlebars: false,
-        source: EventSource.background,
-      );
-      Future.delayed(const Duration(seconds: 3), () {
-        setWidgetUnlocking(false);
-      });
-    } else {
-      // scan first, then lock
-      setWidgetScanning(true);
-      await attemptConnectionCycle();
-      setWidgetScanning(false);
-      // try again after connection attempt was made
-      if (scooterService.connected) {
-        setWidgetUnlocking(true);
-        await scooterService.lock(
-          checkHandlebars: false,
-          source: EventSource.background,
-        );
-        Future.delayed(const Duration(seconds: 3), () {
-          setWidgetUnlocking(false);
-        });
-      }
-    }
-  });
-
-  service.on("unlock").listen((data) async {
-    Logger("bgservice").info("Received unlock command");
-    promoteToForeground();
-    if (scooterService.connected) {
-      setWidgetUnlocking(true);
-      await scooterService.unlock(
-        checkHandlebars: false,
-        source: EventSource.background,
-      );
-      Future.delayed(const Duration(seconds: 3), () {
-        setWidgetUnlocking(false);
-      });
-    } else {
-      // scan first, then unlock
-      setWidgetScanning(true);
-      await attemptConnectionCycle();
-      setWidgetScanning(false);
-      // try again after connection attempt was made
-      if (scooterService.connected) {
-        setWidgetUnlocking(true);
-        await scooterService.unlock(
-          checkHandlebars: false,
-          source: EventSource.background,
-        );
-        Future.delayed(const Duration(seconds: 3), () {
-          setWidgetUnlocking(false);
-        });
-      }
-    }
-  });
-
-  service.on("openseat").listen((data) async {
-    Logger("bgservice").info("Received openseat command");
-    promoteToForeground();
-    if (scooterService.connected) {
-      scooterService.openSeat();
-    } else {
-      // scan first, then open seat
-      setWidgetScanning(true);
-      await attemptConnectionCycle();
-      setWidgetScanning(false);
-      if (scooterService.connected) scooterService.openSeat();
-    }
-  });
+  service.on("lock").listen((data) async => _executeAction("lock"));
+  service.on("unlock").listen((data) async => _executeAction("unlock"));
+  service.on("openseat").listen((data) async => _executeAction("openseat"));
 
   service.on("test").listen((data) async {
     Logger("bgservice").info("Test command received by background service! Data: $data");
@@ -354,6 +360,14 @@ void onStart(ServiceInstance service) async {
       updateNotification();
     }
   });
+
+  // If the service was started by a widget action, execute it now that
+  // everything is initialized and all listeners are registered.
+  // Wait for scooterService to load cached data (saved scooter IDs, etc.)
+  if (pendingWidgetAction && pendingActionName != null) {
+    await Future.delayed(const Duration(seconds: 3));
+    _executeAction(pendingActionName);
+  }
 
   _rescanTimer = PausableTimer.periodic(const Duration(seconds: 35), () async {
     if (!backgroundScanEnabled) {

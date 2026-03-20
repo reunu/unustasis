@@ -166,6 +166,11 @@
     "language_pirate": "🏴‍☠️   Piraat",
     "settings_background_scan": "Achtergrondverbinding (beta)",
     "settings_background_scan_description": "Verbind met de scooter, ook als de app gesloten is.",
+    "notification_channel_service": "Achtergronddienst",
+    "notification_channel_service_description": "Vereist voor achtergrondwerking. Je kunt dit kanaal verbergen.",
+    "notification_channel_connection": "Scooterverbinding",
+    "notification_channel_connection_description": "Toont scooterstatus en snelle acties.",
+    "notification_service_content": "Om deze melding te verbergen, houd deze ingedrukt en schakel dit meldingskanaal uit.",
     "settings_biometrics": "Biometrische verificatie",
     "settings_biometrics_description": "Vingerafdruk of gezichtsherkenning vereisen om de app te openen.",
     "biometrics_message": "Verifieer om de app te openen",
@@ -277,5 +282,6 @@
     "lock_state_locked": "Vergrendeld",
     "lock_state_unlocked": "Ontgrendeld",
     "lock_state_unknown": "Onbekend",
-    "error_generic": "FOUT"
+    "error_generic": "FOUT",
+    "language_french": "🇫🇷  Frans"
 }
