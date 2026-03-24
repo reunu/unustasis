@@ -368,7 +368,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 8),
             child: DropdownButtonFormField<Locale>(
-              initialValue: Locale(FlutterI18n.currentLocale(context)!.languageCode),
+              initialValue: FlutterI18n.currentLocale(context)!,
               isExpanded: true,
               decoration: const InputDecoration(
                 contentPadding: EdgeInsets.all(16),
@@ -378,28 +378,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
               items: [
                 DropdownMenuItem<Locale>(
                   value: const Locale("en"),
-                  child: Text(FlutterI18n.translate(context, "language_english")),
+                  child: Text(FlutterI18n.translate(context, "language_en")),
+                ),
+                DropdownMenuItem<Locale>(
+                  value: const Locale("en", "GB"),
+                  child: Text(FlutterI18n.translate(context, "language_en_gb")),
                 ),
                 DropdownMenuItem<Locale>(
                   value: const Locale("de"),
-                  child: Text(FlutterI18n.translate(context, "language_german")),
+                  child: Text(FlutterI18n.translate(context, "language_de")),
                 ),
                 DropdownMenuItem<Locale>(
                   value: const Locale("fr"),
-                  child: Text(FlutterI18n.translate(context, "language_french")),
+                  child: Text(FlutterI18n.translate(context, "language_fr")),
                 ),
                 DropdownMenuItem<Locale>(
                   value: const Locale("nl"),
-                  child: Text(FlutterI18n.translate(context, "language_dutch")),
+                  child: Text(FlutterI18n.translate(context, "language_nl")),
                 ),
                 DropdownMenuItem<Locale>(
                   value: const Locale("pi"),
-                  child: Text(FlutterI18n.translate(context, "language_pirate")),
+                  child: Text(FlutterI18n.translate(context, "language_pi")),
                 ),
               ],
               onChanged: (Locale? newLanguage) async {
                 await FlutterI18n.refresh(context, newLanguage);
-                await prefs.setString("savedLocale", newLanguage!.languageCode);
+                final tag = newLanguage!.countryCode != null
+                    ? '${newLanguage.languageCode}_${newLanguage.countryCode}'
+                    : newLanguage.languageCode;
+                await prefs.setString("savedLocale", tag);
                 setState(() {});
               },
             ),
