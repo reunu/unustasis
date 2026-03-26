@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
@@ -11,9 +10,9 @@ import 'package:logging/logging.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:appcheck/appcheck.dart';
+import 'package:unustasis/domain/scooter_colors.dart';
 
 import '../domain/theme_helper.dart';
-import '../helper_widgets/color_picker_dialog.dart';
 import '../home_screen.dart';
 import '../scooter_service.dart';
 import '../domain/scooter_state.dart';
@@ -251,7 +250,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
             center: const Alignment(0.0, -0.15),
             radius: 1,
             colors: [
-              _step >= 5
+              _step == 5
                   ? HSLColor.fromColor(Theme.of(context).colorScheme.primary)
                       .withLightness(0.3)
                       .withSaturation(1)
@@ -268,7 +267,28 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
             mainAxisSize: MainAxisSize.max,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Expanded(child: _onboardingVisual(step: _step)),
+              Expanded(
+                child: Builder(
+                  builder: (context) {
+                    int tapCount = 0;
+                    return GestureDetector(
+                      onTap: () {
+                        tapCount++;
+                        log.info('...visual tapped $tapCount times...');
+                        if (tapCount >= 27) {
+                          // Handle the 27 taps in short succession
+                          log.info('27 taps detected! Skipping onboarding...');
+                          tapCount = 0;
+                          setState(() {
+                            _step = 5;
+                          });
+                        }
+                      },
+                      child: _onboardingVisual(step: _step),
+                    );
+                  },
+                ),
+              ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -352,29 +372,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
   Widget _onboardingVisual({required int step}) {
     switch (step) {
       case 0:
-        int tapCount = 0;
-        final tapGestureRecognizer = TapGestureRecognizer()
-          ..onTapDown = (_) {
-            tapCount++;
-            if (tapCount >= 27) {
-              // Handle the 10 taps in short succession
-              log.info('27 taps detected! Skipping onboarding...');
-              tapCount = 0;
-              Navigator.of(context).pushReplacement(MaterialPageRoute(
-                builder: (context) => const HomeScreen(forceOpen: true),
-              ));
-            }
-          };
-        return GestureDetector(
-          onTapDown: tapGestureRecognizer.onTapDown,
-          child: const ScooterVisual(
-            state: ScooterState.disconnected,
-            scanning: false,
-            blinkerLeft: false,
-            blinkerRight: false,
-          ),
+        return const ScooterVisual(
+          state: ScooterState.disconnected,
+          scanning: false,
+          blinkerLeft: false,
+          blinkerRight: false,
         );
-
       case 1:
       case 2:
         return Lottie.asset("assets/anim/scanning.json", controller: _scanningController);
@@ -392,31 +395,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
           blinkerRight: false,
         );
       case 6:
-        return GestureDetector(
-          onTap: () async {
-            HapticFeedback.mediumImpact();
-            int? newColor = await showColorDialog(_pendingColor, _nameController.text, context);
-            if (newColor != null && mounted) {
-              setState(() {
-                _pendingColor = newColor;
-              });
-            }
-          },
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Image.asset(
-                "images/scooter/side_$_pendingColor.webp",
-                height: 180,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                FlutterI18n.translate(context, "settings_color_onboarding"),
-                style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-                    ),
-              ),
-            ],
+        return Padding(
+          padding: const EdgeInsets.only(top: 40),
+          child: ScooterVisual(
+            color: _pendingColor,
+            state: ScooterState.ready,
+            scanning: false,
+            blinkerLeft: false,
+            blinkerRight: false,
           ),
         );
       default:
@@ -429,6 +415,37 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
     }
   }
 
+  Widget _colorButton({
+    int color = 0,
+    Function()? onTap,
+    bool selected = false,
+  }) {
+    return Semantics(
+      label: scooterColors[color]!.simpleName,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 48,
+          height: 48,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? Theme.of(context).colorScheme.primary : Colors.transparent,
+            shape: BoxShape.circle,
+          ),
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: scooterColors[color]!.displayColor,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.grey.shade500, width: 1),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   List<Widget> _personalizationStep() {
     return [
       Text(
@@ -437,6 +454,32 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
         textAlign: TextAlign.center,
       ),
       const SizedBox(height: 16),
+      Text(
+        FlutterI18n.translate(context, "onboarding_step6_body"),
+        style: Theme.of(context).textTheme.titleMedium,
+        textAlign: TextAlign.center,
+      ),
+      const SizedBox(height: 24),
+      SizedBox(
+          height: 48,
+          child: ListView.separated(
+            shrinkWrap: true,
+            scrollDirection: Axis.horizontal,
+            itemCount: 7,
+            itemBuilder: (context, index) {
+              return _colorButton(
+                color: index,
+                selected: _pendingColor == index,
+                onTap: () {
+                  setState(() {
+                    _pendingColor = index;
+                  });
+                },
+              );
+            },
+            separatorBuilder: (context, index) => const SizedBox(width: 16),
+          )),
+      SizedBox(height: 32),
       TextField(
         controller: _nameController,
         textAlign: TextAlign.center,
