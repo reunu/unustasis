@@ -19,6 +19,7 @@ import '../background/notification_handler.dart';
 bool backgroundScanEnabled = true;
 PausableTimer? _rescanTimer;
 AndroidServiceInstance? _androidServiceInstance;
+bool _widgetActionInProgress = false;
 Timer? _foregroundDemoteTimer;
 const Duration _foregroundTimeout = Duration(minutes: 15);
 
@@ -113,20 +114,51 @@ void _disableScanning() {
   demoteToBackground();
 }
 
+/// Checks SharedPreferences for a pending widget action that was persisted
+/// but never executed (e.g. because invoke() was lost).  Called from the
+/// scooterService listener and the rescan timer as a fallback.
+Future<void> _checkPendingWidgetAction() async {
+  if (_widgetActionInProgress) return;
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.reload(); // re-read from disk (action was written in another isolate)
+    final pending = prefs.getBool("pendingWidgetAction") ?? false;
+    final actionName = prefs.getString("pendingWidgetActionName");
+    if (pending && actionName != null) {
+      Logger("bgservice").info("Found lost pending widget action: $actionName");
+      _executeAction(actionName);
+    }
+  } catch (e) {
+    Logger("bgservice").warning("Error checking pending widget action", e);
+  }
+}
+
 /// Connects to the scooter if needed, then performs the given action.
 /// Handles foreground promotion, scanning UI, and post-action cleanup.
 Future<void> _executeAction(String actionName) async {
+  if (_widgetActionInProgress) return;
+  _widgetActionInProgress = true;
+
   final log = Logger("bgservice");
   log.info("Executing action: $actionName");
-  setWidgetScanning(true);
-  promoteToForeground();
 
   try {
+    setWidgetScanning(true);
+    promoteToForeground();
+
+    // Clear the persisted pending action so the fallback check in the
+    // connection listener / rescan timer won't re-execute it.
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool("pendingWidgetAction", false);
+    await prefs.remove("pendingWidgetActionName");
+
     if (!scooterService.connected) {
       setWidgetScanning(true);
       await attemptConnectionCycle();
+      // attemptConnectionCycle already calls setWidgetScanning(false)
+    } else {
+      setWidgetScanning(false);
     }
-    setWidgetScanning(false);
 
     switch (actionName) {
       case "lock":
@@ -151,6 +183,7 @@ Future<void> _executeAction(String actionName) async {
   } catch (e, stack) {
     log.severe("Action '$actionName' failed", e, stack);
   } finally {
+    _widgetActionInProgress = false;
     setWidgetScanning(false);
     setWidgetUnlocking(false);
   }
@@ -359,6 +392,11 @@ void onStart(ServiceInstance service) async {
     if (backgroundScanEnabled) {
       updateNotification();
     }
+    // Fallback: pick up widget actions whose invoke() was lost
+    // (e.g. Dart isolate was suspended when the widget tap arrived).
+    if (scooterService.connected) {
+      _checkPendingWidgetAction();
+    }
   });
 
   // If the service was started by a widget action, execute it now that
@@ -370,6 +408,9 @@ void onStart(ServiceInstance service) async {
   }
 
   _rescanTimer = PausableTimer.periodic(const Duration(seconds: 35), () async {
+    // Fallback: pick up widget actions that were persisted but never executed.
+    _checkPendingWidgetAction();
+
     if (!backgroundScanEnabled) {
       Logger("bgservice").info("Oh boy, the timer must've killed itself/been killed. Resetting!");
       _rescanTimer

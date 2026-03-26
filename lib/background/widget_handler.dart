@@ -183,7 +183,7 @@ void passToWidget({
   await HomeWidget.saveWidgetData<int?>("soc2", _secondarySOC);
   await HomeWidget.saveWidgetData<String>("scooterName", _scooterName);
   await HomeWidget.saveWidgetData<int>("scooterColor", _scooterColor);
-  await HomeWidget.saveWidgetData("seatClosed", _seatClosed);
+  await HomeWidget.saveWidgetData<bool>("seatClosed", _seatClosed);
   await HomeWidget.saveWidgetData<bool>("scooterLocked", _scooterLocked ?? true);
   await HomeWidget.saveWidgetData<String>("lockStateName", _lockStateName);
   await HomeWidget.saveWidgetData<String>("lastLat", _lastLocation?.latitude.toString() ?? "0.0");
@@ -232,9 +232,16 @@ Future<void> setWidgetUnlocking(bool unlocking) async {
 Future<void> setWidgetScanning(bool scanning) async {
   _widgetIsScanning = scanning;
   await HomeWidget.saveWidgetData<bool>("scanning", scanning);
-  final stateName = scanning ? ScooterState.linking.getNameStatic() : ScooterState.disconnected.getNameStatic();
-  await HomeWidget.saveWidgetData<String>("stateName", stateName);
-  _stateName = stateName;
+  if (scanning) {
+    // Show "Connecting…" while scanning.
+    final stateName = ScooterState.linking.getNameStatic();
+    await HomeWidget.saveWidgetData<String>("stateName", stateName);
+    _stateName = stateName;
+  }
+  // When turning scanning OFF, don't touch stateName.
+  // The next passToWidget() call from the scooterService listener
+  // will write the correct state. This avoids a brief flash of
+  // "Disconnected" between the scan ending and the real state arriving.
   await HomeWidget.updateWidget(
     qualifiedAndroidName: 'de.freal.unustasis.HomeWidgetReceiver',
     iOSName: "ScooterWidget",
@@ -274,21 +281,24 @@ FutureOr<void> backgroundCallback(Uri? data) async {
   }
 
   try {
-    final running = await FlutterBackgroundService().isRunning();
-    if (!running) {
-      // Persist the action so onStart() can execute it once ready,
-      // avoiding the race condition of invoking before listeners exist.
+    // Always persist the action so the service can pick it up as a
+    // fallback.  When Android suspends the service's Dart isolate,
+    // invoke() may silently fail; SharedPreferences ensures the action
+    // is not lost.
+    if (action != null) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool("pendingWidgetAction", true);
-      if (action != null) {
-        await prefs.setString("pendingWidgetActionName", action);
-      }
+      await prefs.setString("pendingWidgetActionName", action);
+    }
 
+    final running = await FlutterBackgroundService().isRunning();
+    if (!running) {
       final service = FlutterBackgroundService();
       await service.startService();
       // The action will be picked up and executed by onStart() itself.
     } else {
-      // Service is already running, invoke the action directly.
+      // Fast path: invoke directly.  _executeAction() will clear the
+      // persisted pending action so it won't run twice.
       if (action != null) {
         FlutterBackgroundService().invoke(action);
       }
