@@ -37,7 +37,10 @@ dependencies:
   google_fonts: ^6.2.1
   rxdart: ^0.28.0
   fluttertoast: ^8.0.8
-  flutter_i18n: ^0.36.2
+  flutter_i18n:
+    git:
+      url: https://github.com/ilteoood/flutter_i18n
+      ref: ff529c36f0909b300fa49edef94eeb34759a9c99
   flutter_map: ^8.0.0
   geolocator: ^13.0.2
   latlong2: ^0.9.1
