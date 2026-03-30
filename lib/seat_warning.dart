@@ -20,7 +20,9 @@ class SeatWarning extends StatelessWidget {
           Text(FlutterI18n.translate(context, "seat_alert_title")),
         ],
       ),
-      content: Text(FlutterI18n.translate(context, "seat_alert_body")),
+      content: SingleChildScrollView(
+        child: Text(FlutterI18n.translate(context, "seat_alert_body")),
+      ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(true),
