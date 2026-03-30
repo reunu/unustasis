@@ -31,6 +31,5 @@ class SeatWarning extends StatelessWidget {
             child: Text(FlutterI18n.translate(context, "seat_alert_action_cancel"))),
       ],
     );
-    ;
   }
 }
