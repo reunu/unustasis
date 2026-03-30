@@ -498,7 +498,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return await showDialog<bool?>(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => SeatWarning(),
+      builder: (_) => const SeatWarning(),
     );
   }
 
