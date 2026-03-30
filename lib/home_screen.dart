@@ -12,6 +12,7 @@ import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../seat_warning.dart';
 import '../helper_widgets/leaves.dart';
 import '../helper_widgets/scooter_action_button.dart';
 import '../helper_widgets/onboarding_popups.dart';
@@ -216,9 +217,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 ),
                                 // Hidden for stable release, but useful for various debugging
-                                // onLongPress: () {
-                                //  context.read<ScooterService>().addDemoData();
-                                // },
+                                //onLongPress: () {
+                                //  showSeatWarning();
+                                //},
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   mainAxisSize: MainAxisSize.min,
@@ -359,14 +360,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                       action: state != null && state.isReadyForLockChange
                                           ? (state.isOn
                                               ? () async {
-                                                  final seatWasOpen =
-                                                      context.read<ScooterService>().seatClosed == false;
+                                                  if (context.read<ScooterService>().seatClosed == false) {
+                                                    bool overrideSeat = await showSeatWarning() == true;
+                                                    if (!overrideSeat) {
+                                                      return;
+                                                    }
+                                                  }
                                                   try {
+                                                    if (!context.mounted) return;
                                                     await context.read<ScooterService>().lock();
                                                     if (!context.mounted) return;
-                                                    if (seatWasOpen) {
-                                                      showSeatWarning();
-                                                    }
                                                     if (context.read<ScooterService>().hazardLocking) {
                                                       _flashHazards(1);
                                                     }
@@ -490,30 +493,12 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void showSeatWarning() {
-    showDialog<void>(
+  Future<bool?> showSeatWarning() async {
+    HapticFeedback.vibrate();
+    return await showDialog<bool?>(
       context: context,
-      barrierDismissible: false, // user must tap button!
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(FlutterI18n.translate(context, "seat_alert_title")),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: <Widget>[
-                Text(FlutterI18n.translate(context, "seat_alert_body")),
-              ],
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('OK'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
+      barrierDismissible: false,
+      builder: (dialogContext) => SeatWarning(),
     );
   }
 
