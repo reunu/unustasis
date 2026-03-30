@@ -1222,7 +1222,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     savedScooters[id] = SavedScooter(
       name: "Scooter Pro",
       id: id,
-      color: 1,
+      color: 0,
       lastPing: DateTime.now(),
     );
     await prefs.setString("savedScooters", jsonEncode(savedScooters));

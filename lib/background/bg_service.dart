@@ -9,6 +9,7 @@ import 'package:logging/logging.dart';
 import 'package:pausable_timer/pausable_timer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../background/background_i18n.dart';
 import '../background/widget_handler.dart';
 import '../domain/statistics_helper.dart';
 import '../flutter/blue_plus_mockable.dart';
@@ -67,6 +68,7 @@ Future<bool> onIosBackground(ServiceInstance service) async {
   // Ensure that the Flutter engine is initialized.
   WidgetsFlutterBinding.ensureInitialized();
   DartPluginRegistrant.ensureInitialized();
+  await BackgroundI18n.instance.init();
   // Set up a scooter service instance.
   scooterService = ScooterService(fbp, isInBackgroundService: true);
   // Make sure scooterService has time to initialize all values
@@ -116,7 +118,9 @@ void onStart(ServiceInstance service) async {
     print("[${record.level.name}] ${record.time}: ${record.message} ${record.error ?? ""} ${record.stackTrace ?? ""}");
   });
   Logger("bgservice").info("Background service started!");
+  WidgetsFlutterBinding.ensureInitialized();
   DartPluginRegistrant.ensureInitialized();
+  await BackgroundI18n.instance.init();
 
   backgroundScanEnabled = (await SharedPreferences.getInstance()).getBool("backgroundScan") ?? false;
 

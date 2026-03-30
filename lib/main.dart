@@ -40,10 +40,20 @@ void main() async {
   final String? localeString = await SharedPreferencesAsync().getString('savedLocale');
   if (localeString != null) {
     Logger("Main").fine("Saved locale: $localeString");
-    savedLocale = Locale(localeString);
+    final parts = localeString.split('_');
+    savedLocale = parts.length > 1 ? Locale(parts[0], parts[1]) : Locale(parts[0]);
   } else {
-    // we have no language saved, so we pass along the device language
-    savedLocale = Locale(Platform.localeName.split('_').first);
+    final parts = Platform.localeName.split('_');
+    final lang = parts[0];
+    final country = parts.length > 1 ? parts[1] : null;
+    // Map device locale to a supported variant (e.g. en_GB -> en_GB),
+    // otherwise fall back to just the language code.
+    const supportedVariants = {'en_GB'};
+    if (country != null && supportedVariants.contains('${lang}_$country')) {
+      savedLocale = Locale(lang, country);
+    } else {
+      savedLocale = Locale(lang);
+    }
   }
 
   // here goes nothing...
@@ -146,7 +156,6 @@ class _MyAppState extends State<MyApp> {
       localizationsDelegates: [
         FlutterI18nDelegate(
           translationLoader: FileTranslationLoader(
-            useCountryCode: false,
             fallbackFile: 'en',
             basePath: 'assets/i18n',
             forcedLocale: widget.savedLocale,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:unustasis/domain/scooter_colors.dart';
 
 class ColorPickerDialog extends StatefulWidget {
   final int initialValue;
@@ -39,66 +40,66 @@ class _ColorPickerDialogState extends State<ColorPickerDialog> {
         child: Column(
           children: [
             _colorRadioTile(
-              colorName: "black",
+              colorName: scooterColors[0]!.simpleName,
               colorValue: 0,
-              color: Colors.black,
+              color: scooterColors[0]!.displayColor,
               context: context,
             ),
             _colorRadioTile(
-              colorName: "white",
+              colorName: scooterColors[1]!.simpleName,
               colorValue: 1,
-              color: Colors.white,
+              color: scooterColors[1]!.displayColor,
               context: context,
             ),
             _colorRadioTile(
-              colorName: "green",
+              colorName: scooterColors[2]!.simpleName,
               colorValue: 2,
-              color: Colors.green.shade900,
+              color: scooterColors[2]!.displayColor,
               context: context,
             ),
             _colorRadioTile(
-              colorName: "gray",
+              colorName: scooterColors[3]!.simpleName,
               colorValue: 3,
-              color: Colors.grey,
+              color: scooterColors[3]!.displayColor,
               context: context,
             ),
             _colorRadioTile(
-              colorName: "orange",
+              colorName: scooterColors[4]!.simpleName,
               colorValue: 4,
-              color: Colors.deepOrange.shade400,
+              color: scooterColors[4]!.displayColor,
               context: context,
             ),
             _colorRadioTile(
-              colorName: "red",
+              colorName: scooterColors[5]!.simpleName,
               colorValue: 5,
-              color: Colors.red,
+              color: scooterColors[5]!.displayColor,
               context: context,
             ),
             _colorRadioTile(
-              colorName: "blue",
+              colorName: scooterColors[6]!.simpleName,
               colorValue: 6,
-              color: Colors.blue,
+              color: scooterColors[6]!.displayColor,
               context: context,
             ),
             if (widget.scooterName == magic("Rpyvcfr"))
               _colorRadioTile(
-                colorName: "eclipse",
+                colorName: scooterColors[7]!.simpleName,
                 colorValue: 7,
-                color: Colors.grey.shade800,
+                color: scooterColors[7]!.displayColor,
                 context: context,
               ),
             if (widget.scooterName == magic("Xbev"))
               _colorRadioTile(
-                colorName: "idioteque",
+                colorName: scooterColors[8]!.simpleName,
                 colorValue: 8,
-                color: Colors.teal.shade200,
+                color: scooterColors[8]!.displayColor,
                 context: context,
               ),
             if (widget.scooterName == magic("Ubire"))
               _colorRadioTile(
-                colorName: "hover",
+                colorName: scooterColors[9]!.simpleName,
                 colorValue: 9,
-                color: Colors.lightBlue,
+                color: scooterColors[9]!.displayColor,
                 context: context,
               )
           ],
