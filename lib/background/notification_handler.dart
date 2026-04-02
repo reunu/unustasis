@@ -2,12 +2,15 @@ import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../background/bg_service.dart';
+import '../background/background_i18n.dart';
 import '../background/translate_static.dart';
 import '../domain/scooter_state.dart';
 
 // Notification identifiers
 const notificationChannelId = 'unu_foreground';
 const notificationChannelName = 'Unu Background Connection';
+const serviceChannelId = 'unu_service';
+const serviceChannelName = 'Unu Background Service';
 const notificationId = 1612;
 
 FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
@@ -24,17 +27,58 @@ Future<void> setupNotifications() async {
       .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
       ?.requestNotificationsPermission();
 
-  await flutterLocalNotificationsPlugin
-      .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-      ?.createNotificationChannel(
-        const AndroidNotificationChannel(
-          notificationChannelId, // id
-          notificationChannelName, // title
-          description: 'This channel is used for periodically checking your scooter.', // description
-          importance: Importance.low, // importance must be at low or higher levelongoing: true,
-        ),
-      );
+  final androidPlugin =
+      flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+
+  // Silent channel for the mandatory foreground service notification
+  await androidPlugin?.createNotificationChannel(
+    const AndroidNotificationChannel(
+      serviceChannelId,
+      serviceChannelName,
+      description: 'Required for background operation. You can hide this channel.',
+      importance: Importance.min,
+    ),
+  );
+
+  // Functional channel for scooter state & action buttons
+  await androidPlugin?.createNotificationChannel(
+    const AndroidNotificationChannel(
+      notificationChannelId,
+      notificationChannelName,
+      description: 'Shows scooter status and quick actions.',
+      importance: Importance.low,
+    ),
+  );
   return;
+}
+
+/// Re-creates notification channels with localized names.
+/// Must be called after BackgroundI18n.instance.init().
+/// Android allows re-creating channels to update display names.
+Future<void> localizeNotificationChannels() async {
+  final i18n = BackgroundI18n.instance;
+  final androidPlugin =
+      flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+
+  if (androidPlugin != null) {
+    await androidPlugin.createNotificationChannel(
+      AndroidNotificationChannel(
+        serviceChannelId,
+        i18n.translate('notification_channel_service'),
+        description: i18n.translate('notification_channel_service_description'),
+        importance: Importance.min,
+      ),
+    );
+
+    await androidPlugin.createNotificationChannel(
+      AndroidNotificationChannel(
+        notificationChannelId,
+        i18n.translate('notification_channel_connection'),
+        description: i18n.translate('notification_channel_connection_description'),
+        importance: Importance.low,
+      ),
+    );
+  }
 }
 
 void updateNotification({String? debugText}) async {

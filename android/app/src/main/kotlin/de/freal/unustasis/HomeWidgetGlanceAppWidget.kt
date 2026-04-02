@@ -1,7 +1,7 @@
 package de.freal.unustasis
 
-import HomeWidgetGlanceState
-import HomeWidgetGlanceStateDefinition
+import es.antonborri.home_widget.HomeWidgetGlanceState
+import es.antonborri.home_widget.HomeWidgetGlanceStateDefinition
 import android.content.Context
 import android.content.Intent
 import android.icu.text.CaseMap.Title
