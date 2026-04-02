@@ -55,28 +55,30 @@ Future<void> setupNotifications() async {
 /// Re-creates notification channels with localized names.
 /// Must be called after BackgroundI18n.instance.init().
 /// Android allows re-creating channels to update display names.
-void localizeNotificationChannels() {
+Future<void> localizeNotificationChannels() async {
   final i18n = BackgroundI18n.instance;
   final androidPlugin =
       flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
 
-  androidPlugin?.createNotificationChannel(
-    AndroidNotificationChannel(
-      serviceChannelId,
-      i18n.translate('notification_channel_service'),
-      description: i18n.translate('notification_channel_service_description'),
-      importance: Importance.min,
-    ),
-  );
+  if (androidPlugin != null) {
+    await androidPlugin.createNotificationChannel(
+      AndroidNotificationChannel(
+        serviceChannelId,
+        i18n.translate('notification_channel_service'),
+        description: i18n.translate('notification_channel_service_description'),
+        importance: Importance.min,
+      ),
+    );
 
-  androidPlugin?.createNotificationChannel(
-    AndroidNotificationChannel(
-      notificationChannelId,
-      i18n.translate('notification_channel_connection'),
-      description: i18n.translate('notification_channel_connection_description'),
-      importance: Importance.low,
-    ),
-  );
+    await androidPlugin.createNotificationChannel(
+      AndroidNotificationChannel(
+        notificationChannelId,
+        i18n.translate('notification_channel_connection'),
+        description: i18n.translate('notification_channel_connection_description'),
+        importance: Importance.low,
+      ),
+    );
+  }
 }
 
 void updateNotification({String? debugText}) async {

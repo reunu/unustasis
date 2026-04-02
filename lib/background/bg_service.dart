@@ -126,7 +126,7 @@ Future<void> _checkPendingWidgetAction() async {
     final actionName = prefs.getString("pendingWidgetActionName");
     if (pending && actionName != null) {
       Logger("bgservice").info("Found lost pending widget action: $actionName");
-      _executeAction(actionName);
+      await _executeAction(actionName);
     }
   } catch (e) {
     Logger("bgservice").warning("Error checking pending widget action", e);
@@ -143,7 +143,6 @@ Future<void> _executeAction(String actionName) async {
   log.info("Executing action: $actionName");
 
   try {
-    setWidgetScanning(true);
     promoteToForeground();
 
     // Clear the persisted pending action so the fallback check in the
@@ -153,23 +152,42 @@ Future<void> _executeAction(String actionName) async {
     await prefs.remove("pendingWidgetActionName");
 
     if (!scooterService.connected) {
-      setWidgetScanning(true);
+      await setWidgetScanning(true);
       await attemptConnectionCycle();
-      // attemptConnectionCycle already calls setWidgetScanning(false)
-    } else {
-      setWidgetScanning(false);
+      // attemptConnectionCycle may return before scooterService.connected is true
+      // (BLE stack signals connection asynchronously). Wait for it.
+      if (!scooterService.connected) {
+        await setWidgetScanning(true); // keep indicator visible while waiting
+        final completer = Completer<void>();
+        void onConnect() {
+          if (scooterService.connected && !completer.isCompleted) {
+            completer.complete();
+          }
+        }
+
+        scooterService.addListener(onConnect);
+        try {
+          await completer.future.timeout(const Duration(seconds: 30));
+        } catch (_) {
+          scooterService.removeListener(onConnect);
+          log.warning("Timed out waiting for connection for action: $actionName");
+          return;
+        }
+        scooterService.removeListener(onConnect);
+      }
+      await setWidgetScanning(false);
     }
 
     switch (actionName) {
       case "lock":
-        setWidgetUnlocking(true);
+        await setWidgetUnlocking(true);
         await scooterService.lock(
           checkHandlebars: false,
           source: EventSource.background,
         );
         Future.delayed(const Duration(seconds: 3), () => setWidgetUnlocking(false));
       case "unlock":
-        setWidgetUnlocking(true);
+        await setWidgetUnlocking(true);
         await scooterService.unlock(
           checkHandlebars: false,
           source: EventSource.background,
@@ -184,8 +202,8 @@ Future<void> _executeAction(String actionName) async {
     log.severe("Action '$actionName' failed", e, stack);
   } finally {
     _widgetActionInProgress = false;
-    setWidgetScanning(false);
-    setWidgetUnlocking(false);
+    await setWidgetScanning(false);
+    await setWidgetUnlocking(false);
   }
 }
 
@@ -244,7 +262,7 @@ void onStart(ServiceInstance service) async {
 
   // Localize notification channels and replace initial notification
   if (Platform.isAndroid && service is AndroidServiceInstance) {
-    localizeNotificationChannels();
+    await localizeNotificationChannels();
     service.setForegroundNotificationInfo(
       title: 'Unu Scooter',
       content: BackgroundI18n.instance.translate('notification_service_content'),
