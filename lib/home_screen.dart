@@ -234,7 +234,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     Flexible(
                                       child: Text(
                                         context.select<ScooterService, String?>(
-                                              (service) => service.scooterName,
+                                              (service) => service.identity.name,
                                             ) ??
                                             FlutterI18n.translate(
                                               context,
@@ -258,22 +258,22 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           const StatusText(),
                           if (context.select<ScooterService, String?>(
-                                    (service) => service.scooterName,
+                                    (service) => service.identity.name,
                                   ) !=
                                   null &&
                               context.select<ScooterService, String?>(
-                                    (service) => service.scooterName,
+                                    (service) => service.identity.name,
                                   ) !=
                                   FlutterI18n.translate(
                                     context,
                                     "stats_no_name",
                                   ) &&
                               (context.select<ScooterService, int?>(
-                                        (service) => service.primarySOC,
+                                        (service) => service.battery.primarySOC,
                                       ) !=
                                       null ||
                                   context.select<ScooterService, int?>(
-                                        (service) => service.secondarySOC,
+                                        (service) => service.battery.secondarySOC,
                                       ) !=
                                       null))
                             Material(
@@ -296,19 +296,19 @@ class _HomeScreenState extends State<HomeScreen> {
                                       const SizedBox(width: 16),
                                       BatteryBars(
                                         primarySOC: context.select<ScooterService, int?>(
-                                          (service) => service.primarySOC,
+                                          (service) => service.battery.primarySOC,
                                         ),
                                         secondarySOC: context.select<ScooterService, int?>(
-                                          (service) => service.secondarySOC,
+                                          (service) => service.battery.secondarySOC,
                                         ),
                                         dataIsOld: context.select<ScooterService, DateTime?>(
-                                                  (service) => service.lastPing,
+                                                  (service) => service.identity.lastPing,
                                                 ) ==
                                                 null
                                             ? true
                                             : context
                                                     .select<ScooterService, DateTime?>(
-                                                      (service) => service.lastPing,
+                                                      (service) => service.identity.lastPing,
                                                     )!
                                                     .difference(
                                                       DateTime.now(),
@@ -330,7 +330,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           Expanded(
                             child: ScooterVisual(
                               color: context.select<ScooterService, int?>(
-                                    (service) => service.scooterColor,
+                                    (service) => service.identity.color,
                                   ) ??
                                   1,
                               state: context.select(
@@ -360,7 +360,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       action: state != null && state.isReadyForLockChange
                                           ? (state.isOn
                                               ? () async {
-                                                  if (context.read<ScooterService>().seatClosed == false) {
+                                                  if (context.read<ScooterService>().vehicle.seatClosed == false) {
                                                     bool overrideSeat = await showSeatWarning() == true;
                                                     if (!overrideSeat) {
                                                       return;
@@ -577,7 +577,7 @@ class SeatButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Selector<ScooterService, ({bool? seatClosed, ScooterState? state})>(
-      selector: (context, service) => (seatClosed: service.seatClosed, state: service.state),
+      selector: (context, service) => (seatClosed: service.vehicle.seatClosed, state: service.state),
       builder: (context, data, _) {
         return Expanded(
           child: ScooterActionButton(
@@ -720,7 +720,7 @@ class StatusText extends StatelessWidget {
         // Add handlebar unlocked indicator
         if (data.connected &&
             context.select<ScooterService, bool?>(
-                  (service) => service.handlebarsLocked,
+                  (service) => service.vehicle.handlebarsLocked,
                 ) ==
                 false) {
           stateText += FlutterI18n.translate(context, "home_unlocked");

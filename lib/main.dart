@@ -92,15 +92,15 @@ class _MyAppState extends State<MyApp> {
     scooterService.addListener(() async {
       passToWidget(
         connected: scooterService.connected,
-        lastPing: scooterService.lastPing,
+        lastPing: scooterService.identity.lastPing,
         scooterState: scooterService.state,
-        primarySOC: scooterService.primarySOC,
-        secondarySOC: scooterService.secondarySOC,
-        scooterName: scooterService.scooterName,
-        scooterColor: scooterService.scooterColor,
-        lastLocation: scooterService.lastLocation,
-        seatClosed: scooterService.seatClosed,
-        scooterLocked: scooterService.handlebarsLocked,
+        primarySOC: scooterService.battery.primarySOC,
+        secondarySOC: scooterService.battery.secondarySOC,
+        scooterName: scooterService.identity.name,
+        scooterColor: scooterService.identity.color,
+        lastLocation: scooterService.identity.lastLocation,
+        seatClosed: scooterService.vehicle.seatClosed,
+        scooterLocked: scooterService.vehicle.handlebarsLocked,
         scooterId: scooterService.myScooter?.remoteId.toString(),
       );
     });
