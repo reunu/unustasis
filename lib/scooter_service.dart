@@ -818,16 +818,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     EventSource source = EventSource.app,
   }) async {
     if (_seatClosed == false) {
-      log.warning("Seat seems to be open, checking again...");
-      // make really sure nothing has changed
-      await characteristicRepository.seatCharacteristic!.read();
-      if (_seatClosed == false) {
-        log.warning("Locking aborted, because seat is open!");
-
-        throw SeatOpenException();
-      } else {
-        log.info("Seat state was $_seatClosed this time, proceeding...");
-      }
+      log.warning("Locking with open seatbox!");
     }
 
     // send the command
@@ -1231,7 +1222,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     savedScooters[id] = SavedScooter(
       name: "Scooter Pro",
       id: id,
-      color: 1,
+      color: 0,
       lastPing: DateTime.now(),
     );
     await prefs.setString("savedScooters", jsonEncode(savedScooters));
@@ -1303,7 +1294,6 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   }
 }
 
-class SeatOpenException {}
 
 class UnavailableCharacteristicsException {}
 

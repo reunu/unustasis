@@ -15,10 +15,23 @@ class BackgroundI18n {
 
   Future<void> init() async {
     if (_initialized) return;
-    String lang = (await SharedPreferencesAsync().getString('savedLocale')) ??
-        PlatformDispatcher.instance.locale.languageCode;
+    final saved = await SharedPreferencesAsync().getString('savedLocale');
+    final lang = saved ?? PlatformDispatcher.instance.locale.languageCode;
     _fallback = await _load('en');
-    _translations = (lang == 'en') ? _fallback : await _load(lang);
+    if (lang == 'en') {
+      _translations = _fallback;
+    } else {
+      // Load the base language first, then overlay the specific variant.
+      // e.g. for en_GB: load en, then merge en_GB on top.
+      final parts = lang.split('_');
+      if (parts.length > 1) {
+        _translations = await _load(parts[0]);
+        final specific = await _load(lang);
+        _translations = {..._translations, ...specific};
+      } else {
+        _translations = await _load(lang);
+      }
+    }
     _initialized = true;
   }
 
