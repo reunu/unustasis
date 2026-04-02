@@ -390,7 +390,8 @@ class _BatteryScreenState extends State<BatteryScreen> {
 
   AlertDialog _auxDiagnosticDialog(BuildContext context) {
     int? auxSOC = context.select<ScooterService, int?>((service) => service.battery.auxSOC);
-    AUXChargingState? auxCharging = context.select<ScooterService, AUXChargingState?>((service) => service.battery.auxCharging);
+    AUXChargingState? auxCharging =
+        context.select<ScooterService, AUXChargingState?>((service) => service.battery.auxCharging);
     int? auxVoltage = context.select<ScooterService, int?>((service) => service.battery.auxVoltage);
     DateTime? lastPing = context.select<ScooterService, DateTime?>((service) => service.identity.lastPing);
 

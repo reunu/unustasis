@@ -16,9 +16,7 @@ class ScooterStorage {
     _log.info("Fetching saved scooters from SharedPreferences");
     Map<String, SavedScooter> loaded = {};
     try {
-      Map<String, dynamic> data =
-          jsonDecode((await _prefs.getString("savedScooters"))!)
-              as Map<String, dynamic>;
+      Map<String, dynamic> data = jsonDecode((await _prefs.getString("savedScooters"))!) as Map<String, dynamic>;
       _log.info("Found ${data.length} saved scooters");
       for (String id in data.keys) {
         if (data[id] is Map<String, dynamic>) {
@@ -64,12 +62,10 @@ class ScooterStorage {
       return scooters.values.first;
     }
 
-    List<SavedScooter> autoConnectScooters =
-        filterAutoConnect(scooters).values.toList();
+    List<SavedScooter> autoConnectScooters = filterAutoConnect(scooters).values.toList();
     SavedScooter? mostRecentScooter;
     for (var scooter in autoConnectScooters) {
-      if (mostRecentScooter == null ||
-          scooter.lastPing.isAfter(mostRecentScooter.lastPing)) {
+      if (mostRecentScooter == null || scooter.lastPing.isAfter(mostRecentScooter.lastPing)) {
         mostRecentScooter = scooter;
       }
     }

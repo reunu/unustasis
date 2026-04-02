@@ -40,8 +40,7 @@ Future<void> sendStaticPowerCommand(String id, String command) async {
     await scooter.connect();
   }
   await scooter.discoverServices();
-  BluetoothCharacteristic? commandCharacteristic =
-      CharacteristicRepository.findCharacteristic(
+  BluetoothCharacteristic? commandCharacteristic = CharacteristicRepository.findCharacteristic(
     scooter,
     "9a590000-6e67-5d0d-aab9-ad9126b66f91",
     "9a590001-6e67-5d0d-aab9-ad9126b66f91",

@@ -17,13 +17,11 @@ class UserSettings {
   bool hazardLocking = false;
   bool warnOfUnlockedHandlebars = true;
 
-  UserSettings({bool isInBackgroundService = false})
-      : _isInBackgroundService = isInBackgroundService;
+  UserSettings({bool isInBackgroundService = false}) : _isInBackgroundService = isInBackgroundService;
 
   Future<void> restore() async {
     autoUnlock = await _prefs.getBool("autoUnlock") ?? false;
-    autoUnlockThreshold =
-        await _prefs.getInt("autoUnlockThreshold") ?? ScooterKeylessDistance.regular.threshold;
+    autoUnlockThreshold = await _prefs.getInt("autoUnlockThreshold") ?? ScooterKeylessDistance.regular.threshold;
     optionalAuth = !(await _prefs.getBool("biometrics") ?? false);
     openSeatOnUnlock = await _prefs.getBool("openSeatOnUnlock") ?? false;
     hazardLocking = await _prefs.getBool("hazardLocking") ?? false;
