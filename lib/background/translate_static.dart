@@ -28,12 +28,36 @@ const _actionKeys = {
   'openseat': 'home_seat_button_closed',
 };
 
+/// Hardcoded English fallbacks so that raw i18n keys never leak to the widget
+/// even when rootBundle fails to load translations in a background isolate.
+const _englishFallbacks = {
+  'state_name_off': 'Off',
+  'state_name_standby': 'Standby',
+  'state_name_parked': 'Parked',
+  'state_name_ready': 'Ready',
+  'state_name_updating': 'Updating',
+  'state_name_waiting_seatbox': 'Close Seat',
+  'state_name_waiting_hibernation': 'Hibernating…',
+  'state_name_hibernating': 'Hibernating',
+  'state_name_hibernating_imminent': 'Hibernating',
+  'state_name_booting': 'Booting',
+  'state_name_linking': 'Connecting…',
+  'state_name_disconnected': 'Disconnected',
+  'state_name_shutting_down': 'Shutting Down',
+  'state_name_unknown': 'Unknown',
+  'lock_state_locked': 'Locked',
+  'lock_state_unlocked': 'Unlocked',
+  'lock_state_unknown': '',
+};
+
 final _i18n = BackgroundI18n.instance;
 
 extension ScooterStateName on ScooterState? {
   String getNameStatic() {
     final key = _stateKeys[this] ?? 'state_name_unknown';
-    return _i18n.translate(key);
+    final translated = _i18n.translate(key);
+    // If translate returned the raw key (i18n not loaded), use hardcoded fallback.
+    return translated == key ? (_englishFallbacks[key] ?? translated) : translated;
   }
 }
 
@@ -58,12 +82,17 @@ String? getLocalizedTimeDiff(DateTime? lastPing) {
 }
 
 String getLocalizedLockStateName(bool? locked) {
+  String safeTranslate(String key) {
+    final translated = _i18n.translate(key);
+    return translated == key ? (_englishFallbacks[key] ?? translated) : translated;
+  }
+
   switch (locked) {
     case true:
-      return _i18n.translate('lock_state_locked');
+      return safeTranslate('lock_state_locked');
     case false:
-      return _i18n.translate('lock_state_unlocked');
+      return safeTranslate('lock_state_unlocked');
     default:
-      return _i18n.translate('lock_state_unknown');
+      return safeTranslate('lock_state_unknown');
   }
 }
