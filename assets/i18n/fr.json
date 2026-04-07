@@ -288,6 +288,5 @@
     "lock_state_locked": "Verrouillé",
     "lock_state_unlocked": "Déverrouillé",
     "lock_state_unknown": "Inconnu",
-    "error_generic": "ERREUR",
-    "language_dutch": "🇳🇱  Néerlandais"
+    "error_generic": "ERREUR"
 }
