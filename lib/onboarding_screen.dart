@@ -82,7 +82,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
         } else if (!service.scanning) {
           _scanningController.stop();
         }
-        if (service.connected) {
+        if (service.connected && (_step == 4 || _step == 3)) {
           setState(() {
             _step = 5;
           });
@@ -359,6 +359,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
           excludedScooterIds: widget.excludedScooterIds ?? [],
           // exclude system scooters if we're adding an additional scooter
           includeSystemScooters: !widget.skipWelcome);
+
       if (_foundScooter != null && mounted) {
         setState(() {
           _step = 3;

@@ -154,27 +154,10 @@ Future<void> _executeAction(String actionName) async {
     if (!scooterService.connected) {
       await setWidgetScanning(true);
       await attemptConnectionCycle();
-      // attemptConnectionCycle may return before scooterService.connected is true
-      // (BLE stack signals connection asynchronously). Wait for it.
-      if (!scooterService.connected) {
-        await setWidgetScanning(true); // keep indicator visible while waiting
-        final completer = Completer<void>();
-        void onConnect() {
-          if (scooterService.connected && !completer.isCompleted) {
-            completer.complete();
-          }
-        }
-
-        scooterService.addListener(onConnect);
-        try {
-          await completer.future.timeout(const Duration(seconds: 30));
-        } catch (_) {
-          scooterService.removeListener(onConnect);
-          log.warning("Timed out waiting for connection for action: $actionName");
-          return;
-        }
-        scooterService.removeListener(onConnect);
-      }
+      await setWidgetScanning(false);
+    } else {
+      // Already connected — clear the "Connecting…" state that
+      // backgroundCallback wrote from its isolate.
       await setWidgetScanning(false);
     }
 
@@ -204,6 +187,23 @@ Future<void> _executeAction(String actionName) async {
     _widgetActionInProgress = false;
     await setWidgetScanning(false);
     await setWidgetUnlocking(false);
+    // Flush the real scooterService state to the widget. While scanning
+    // was active, passToWidget calls from the scooterService listener
+    // were blocked by _widgetIsScanning. Now that scanning is off, push
+    // the current state so the widget doesn't stay stuck on "Connecting…".
+    passToWidget(
+      connected: scooterService.connected,
+      lastPing: scooterService.lastPing,
+      scooterState: scooterService.state,
+      primarySOC: scooterService.primarySOC,
+      secondarySOC: scooterService.secondarySOC,
+      scooterName: scooterService.scooterName,
+      scooterColor: scooterService.scooterColor,
+      lastLocation: scooterService.lastLocation,
+      seatClosed: scooterService.seatClosed,
+      scooterLocked: scooterService.handlebarsLocked,
+      scooterId: scooterService.myScooter?.remoteId.toString(),
+    );
   }
 }
 
