@@ -10,8 +10,8 @@ import 'package:logging/logging.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:appcheck/appcheck.dart';
-import 'package:unustasis/domain/scooter_colors.dart';
 
+import '../domain/scooter_colors.dart';
 import '../domain/theme_helper.dart';
 import '../home_screen.dart';
 import '../scooter_service.dart';
