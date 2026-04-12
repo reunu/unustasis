@@ -69,6 +69,7 @@ dependencies:
       url: https://github.com/fluttercommunity/flutter_workmanager.git
       path: workmanager
       ref: main
+  flutter_photon: ^2.0.1
 
 dev_dependencies:
   flutter_test:

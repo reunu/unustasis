@@ -5,6 +5,8 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'nav_destination.dart';
+
 class SavedScooter {
   String _name;
   String _id;
@@ -18,6 +20,8 @@ class SavedScooter {
   LatLng? _lastLocation;
   String? _lastAddress;
   bool? _handlebarsLocked;
+  bool? _isLibrescoot;
+  List<NavDestination>? _cachedDestinations;
 
   SavedScooter({
     required String id,
@@ -32,6 +36,8 @@ class SavedScooter {
     LatLng? lastLocation,
     String? lastAddress,
     bool? handlebarsLocked,
+    bool? isLibrescoot,
+    List<NavDestination>? cachedDestinations,
   })  : _name = name ?? "Scooter Pro",
         _id = id,
         _color = color ?? 1,
@@ -43,7 +49,9 @@ class SavedScooter {
         _lastAuxSOC = lastAuxSOC,
         _lastLocation = lastLocation,
         _lastAddress = lastAddress,
-        _handlebarsLocked = handlebarsLocked;
+        _handlebarsLocked = handlebarsLocked,
+        _isLibrescoot = isLibrescoot,
+        _cachedDestinations = cachedDestinations;
 
   set name(String name) {
     _name = name;
@@ -102,6 +110,16 @@ class SavedScooter {
     updateSharedPreferences();
   }
 
+  set isLibrescoot(bool? isLibrescoot) {
+    _isLibrescoot = isLibrescoot;
+    updateSharedPreferences();
+  }
+
+  set cachedDestinations(List<NavDestination>? cachedDestinations) {
+    _cachedDestinations = cachedDestinations;
+    updateSharedPreferences();
+  }
+
   String get name => _name;
   String get id => _id;
   int get color => _color;
@@ -114,6 +132,8 @@ class SavedScooter {
   LatLng? get lastLocation => _lastLocation;
   String? get lastAddress => _lastAddress;
   bool? get handlebarsLocked => _handlebarsLocked;
+  bool? get isLibrescoot => _isLibrescoot;
+  List<NavDestination>? get cachedDestinations => _cachedDestinations;
 
   BluetoothDevice get bluetoothDevice => BluetoothDevice.fromId(_id);
 
@@ -130,6 +150,8 @@ class SavedScooter {
         'lastLocation': _lastLocation?.toJson(),
         'lastAddress': _lastAddress,
         'handlebarsLocked': _handlebarsLocked,
+        'isLibrescoot': _isLibrescoot,
+        'cachedDestinations': _cachedDestinations?.map((d) => d.toJson()).toList(),
       };
 
   factory SavedScooter.fromJson(
@@ -149,6 +171,10 @@ class SavedScooter {
       lastCbbSOC: map['lastCbbSOC'],
       lastAuxSOC: map['lastAuxSOC'],
       handlebarsLocked: map['handlebarsLocked'],
+      isLibrescoot: map['isLibrescoot'],
+      cachedDestinations: (map['cachedDestinations'] as List<dynamic>?)
+          ?.map((e) => NavDestination.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 

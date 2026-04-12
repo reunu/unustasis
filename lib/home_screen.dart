@@ -33,6 +33,8 @@ import '../control_sheet.dart';
 import '../helper_widgets/snowfall.dart';
 import '../helper_widgets/clouds.dart';
 import '../helper_widgets/grassscape.dart';
+import '../ls_settings_screen.dart';
+import '../navigation_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final bool? forceOpen;
@@ -347,6 +349,42 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                           const SizedBox(height: 16),
+                          Selector<ScooterService, ({bool connected, bool? isLibrescoot})>(
+                            selector: (context, service) =>
+                                (connected: service.connected, isLibrescoot: service.identity.isLibrescoot),
+                            builder: (context, value, child) => Visibility(
+                                visible: value.isLibrescoot == true,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    ScooterActionButton(
+                                        icon: Icons.navigation_outlined,
+                                        label: "Navigation",
+                                        onPressed: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => const NavigationScreen(),
+                                            ),
+                                          );
+                                        }),
+                                    ScooterActionButton(
+                                      icon: Icons.settings,
+                                      label: "Librescoot",
+                                      onPressed: !value.connected
+                                          ? null
+                                          : () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) => const LsSettingsScreen(),
+                                                ),
+                                              );
+                                            },
+                                    )
+                                  ],
+                                )),
+                          ),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             mainAxisSize: MainAxisSize.max,

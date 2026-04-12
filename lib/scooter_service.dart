@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -9,10 +10,12 @@ import 'package:home_widget/home_widget.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:logging/logging.dart';
 import 'package:pausable_timer/pausable_timer.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../background/widget_handler.dart';
 import '../domain/statistics_helper.dart';
 import '../domain/scooter_battery.dart';
+import '../domain/nav_destination.dart';
 import '../domain/saved_scooter.dart';
 import '../domain/scooter_state.dart';
 import '../domain/scooter_vehicle_state.dart';
@@ -49,6 +52,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   set savedScooters(Map<String, SavedScooter> value) => store.scooters = value;
 
   BluetoothDevice? myScooter; // reserved for a connected scooter!
+  NavDestination? _pendingNavigation;
   bool _foundSth = false; // whether we've found a scooter yet
   bool _autoRestarting = false;
   String? _targetScooterId; // specific scooter ID to connect to during auto-restart
@@ -168,7 +172,21 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     identity.name = mostRecentScooter?.name;
     identity.color = mostRecentScooter?.color;
     identity.lastLocation = mostRecentScooter?.lastLocation;
+    identity.isLibrescoot = mostRecentScooter?.isLibrescoot;
     vehicle.handlebarsLocked = mostRecentScooter?.handlebarsLocked;
+
+    // Load pending navigation from persistent storage
+    final prefs = SharedPreferencesAsync();
+    final pendingJson = await prefs.getString('pendingNavigation');
+    if (pendingJson != null) {
+      try {
+        _pendingNavigation = NavDestination.fromJson(
+          jsonDecode(pendingJson) as Map<String, dynamic>,
+        );
+      } catch (_) {
+        await prefs.remove('pendingNavigation');
+      }
+    }
     return;
   }
 
@@ -227,6 +245,39 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       scooterId: "12345",
     );
     notifyListeners();
+  }
+
+  // PENDING NAVIGATION
+  NavDestination? get pendingNavigation => _pendingNavigation;
+
+  Future<void> setPendingNavigation(NavDestination? dest) async {
+    _pendingNavigation = dest;
+    final prefs = SharedPreferencesAsync();
+    if (dest != null) {
+      await prefs.setString('pendingNavigation', jsonEncode(dest.toJson()));
+    } else {
+      await prefs.remove('pendingNavigation');
+    }
+    notifyListeners();
+  }
+
+  Future<void> _dispatchPendingNavigation() async {
+    if (_pendingNavigation == null || myScooter == null) return;
+    try {
+      final success = await commands.navigateCommand(
+        myScooter!,
+        characteristicRepository,
+        _pendingNavigation!,
+      );
+      if (success) {
+        log.info('Pending navigation dispatched to ${_pendingNavigation!.name}');
+        await setPendingNavigation(null);
+      } else {
+        log.warning('Pending navigation dispatch failed (nav:ok not received)');
+      }
+    } catch (e) {
+      log.warning('Error dispatching pending navigation', e);
+    }
   }
 
   // STATUS STREAMS
@@ -343,11 +394,15 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       }
 
       try {
-        await _setUpCharacteristics(myScooter!);
+        await _setUpCharacteristics(
+          myScooter!,
+          additionalLibrescootFeatures: true,
+        );
       } on UnavailableCharacteristicsException {
         log.warning(
           "Some characteristics are null, if this turns out to be a rare issue we might display a toast here in the future",
         );
+        // TODO: warn of old firmware that doesn't support all characteristics w/ a popup
       }
 
       // save this as the last known location
@@ -481,13 +536,13 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   bool get openSeatOnUnlock => settings.openSeatOnUnlock;
   bool get hazardLocking => settings.hazardLocking;
 
-  Future<void> _setUpCharacteristics(BluetoothDevice scooter) async {
+  Future<void> _setUpCharacteristics(BluetoothDevice scooter, {bool additionalLibrescootFeatures = false}) async {
     if (myScooter!.isDisconnected) {
       throw "Scooter disconnected, can't set up characteristics!";
     }
     try {
       characteristicRepository = CharacteristicRepository(myScooter!);
-      await characteristicRepository.findAll();
+      await characteristicRepository.findAll(additionalLibrescootFeatures: additionalLibrescootFeatures);
 
       log.info(
         "Found all characteristics! StateCharacteristic is: ${characteristicRepository.stateCharacteristic}",
@@ -541,6 +596,15 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     identity.wireNrfVersion(
       chars,
       onUpdate: () {
+        // Persist the discovered isLibrescoot flag to saved scooter data
+        final scooterId = myScooter?.remoteId.toString();
+        if (scooterId != null && savedScooters.containsKey(scooterId)) {
+          savedScooters[scooterId]!.isLibrescoot = identity.isLibrescoot;
+        }
+        // Dispatch any queued navigation to this librescoot
+        if (identity.isLibrescoot == true && _pendingNavigation != null) {
+          _dispatchPendingNavigation();
+        }
         notifyListeners();
       },
     );
@@ -927,7 +991,6 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     }
   }
 }
-
 
 class UnavailableCharacteristicsException {}
 

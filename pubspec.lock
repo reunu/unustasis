@@ -453,6 +453,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.4.6"
+  flutter_photon:
+    dependency: "direct main"
+    description:
+      name: flutter_photon
+      sha256: "8c90dfc6fb0f2d44661916f9c2c88515c5a37ab2e2e75ecef78a22d9518e7d67"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.1"
   flutter_plugin_android_lifecycle:
     dependency: transitive
     description:

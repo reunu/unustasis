@@ -31,7 +31,7 @@ void subscribeToStringValue(
 ) {
   subscribeCharacteristic(characteristic, (data) {
     String value = _bytesToString(data);
-    _log.info("$label received: $value");
+    //_log.info("$label received: $value");
     onChanged(value);
   });
 }
@@ -54,7 +54,7 @@ void subscribeToIntValue(
       value = _bytesToUint32(data);
     }
     if (value != null) {
-      _log.info("$label received: $value");
+      //_log.info("$label received: $value");
       onChanged(value);
     }
   });
