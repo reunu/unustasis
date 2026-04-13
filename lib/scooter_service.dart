@@ -236,6 +236,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     _state = ScooterState.parked;
     vehicle.seatClosed = true;
     vehicle.handlebarsLocked = false;
+    vehicle.navigationActive = false;
     identity.lastPing = DateTime.now();
     identity.name = "Demo Scooter";
 
@@ -300,6 +301,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   ScooterPowerState? get powerState => vehicle.powerState;
   bool? get seatClosed => vehicle.seatClosed;
   bool? get handlebarsLocked => vehicle.handlebarsLocked;
+  bool? get navigationActive => vehicle.navigationActive;
 
   // Passthrough getters for battery state
   int? get primarySOC => battery.primarySOC;
@@ -571,6 +573,10 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
         _updateAggregateState();
       },
       onSeatUpdate: () {
+        ping();
+        notifyListeners();
+      },
+      onNavigationChanged: () {
         ping();
         notifyListeners();
       },

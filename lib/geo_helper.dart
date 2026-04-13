@@ -6,9 +6,7 @@ import 'package:http/http.dart';
 import 'package:logging/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../domain/nav_destination.dart';
 import '../service/photon_service.dart';
-
 import '../domain/saved_scooter.dart';
 
 class GeoHelper {
@@ -166,7 +164,28 @@ class GeoHelper {
     return formattedAddress;
   }
 
-  static String createNameFromPhotonFeature(PhotonFeature feature) {
+  static String fullNameFromFeature(PhotonFeature feature) {
+    final parts = <String>[];
+    if (feature.name != null && feature.name != feature.street) {
+      parts.add(feature.name!);
+    }
+    if (feature.street != null) {
+      String street = feature.street!;
+      if (feature.houseNumber != null) {
+        street += " ${feature.houseNumber!}";
+      }
+      parts.add(street);
+    } else if (feature.name != null) {
+      parts.add(feature.name!);
+    }
+    final locality = <String>[];
+    if (feature.postcode != null) locality.add(feature.postcode!);
+    if (feature.city != null) locality.add(feature.city!);
+    if (locality.isNotEmpty) parts.add(locality.join(" "));
+    return parts.isNotEmpty ? parts.join(", ") : "${feature.coordinates.latitude}, ${feature.coordinates.longitude}";
+  }
+
+  static String nameFromFeature(PhotonFeature feature) {
     if (feature.name != null && feature.name != feature.street) {
       return sanitizeName(feature.name!);
     } else if (feature.street != null) {
@@ -180,35 +199,25 @@ class GeoHelper {
     }
   }
 
-  static Future<NavDestination> nameDestination(NavDestination destination) async {
-    if (destination.name != null) {
-      // this destination already has a name, use that!
-      return destination;
-    }
-
-    LatLng location = destination.location;
-
-    // see if we already have a name for this destination cached
+  static Future<String> nameFromCoordinates(LatLng location) async {
     SharedPreferencesAsync prefs = SharedPreferencesAsync();
     String cacheKey = "address_${location.latitude}_${location.longitude}";
     String? cachedName = await prefs.getString(cacheKey);
     if (cachedName != null) {
-      return destination..name = cachedName;
+      return cachedName;
     }
 
-    // see if user hasn't disabled geocoding services
     if (await prefs.getBool("osmConsent") == false) {
-      return destination..name = "${location.latitude}, ${location.longitude}";
+      return "${location.latitude}, ${location.longitude}";
     }
 
-    // use photon to get a name for this destination
     try {
       PhotonFeature feature = (await photonReverseSearch(location.latitude, location.longitude)).first;
-      final named = createNameFromPhotonFeature(feature);
-      await prefs.setString(cacheKey, named);
-      return destination..name = named;
+      String name = nameFromFeature(feature);
+      await prefs.setString(cacheKey, name);
+      return name;
     } catch (e) {
-      return destination..name = "${location.latitude}, ${location.longitude}";
+      return "${location.latitude}, ${location.longitude}";
     }
   }
 }

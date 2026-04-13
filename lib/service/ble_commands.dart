@@ -2,11 +2,10 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:logging/logging.dart';
-import 'package:unustasis/domain/nav_destination.dart';
 
+import '../domain/nav_destination.dart';
 import '../domain/statistics_helper.dart';
 import '../infrastructure/characteristic_repository.dart';
 
@@ -210,12 +209,6 @@ Future<bool> cancelNavigationCommand(
     repo,
     "nav:clear",
   );
-  // for debugging: show each received message as a toast
-  Fluttertoast.showToast(
-    msg: "Received: $response",
-    toastLength: Toast.LENGTH_SHORT,
-    gravity: ToastGravity.BOTTOM,
-  );
   return response == "nav:ok";
 }
 
@@ -232,13 +225,6 @@ Future<String> saveNavDestinationCommand(
     scooter,
     repo,
     "nav:fav:add ${destination.location.latitude},${destination.location.longitude},${destination.name}",
-  );
-
-  // For debugging: show each received message as a toast.
-  Fluttertoast.showToast(
-    msg: "Received: $response",
-    toastLength: Toast.LENGTH_SHORT,
-    gravity: ToastGravity.BOTTOM,
   );
 
   String? id = response?.split(":").last;
@@ -275,12 +261,6 @@ Future<List<NavDestination>> listFavDestinationsCommand(
     final List<NavDestination> destinations = [];
     int? count;
     await for (final msg in stream) {
-      // For debugging: show each received message as a toast.
-      Fluttertoast.showToast(
-        msg: "Received: $msg",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
-      );
       if (count == null) {
         // First message: nav:fav:count:<n>
         count = int.tryParse(msg.split(":").last) ?? 0;

@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../service/location_polling.dart';
 import '../service/photon_service.dart';
 import '../domain/nav_destination.dart';
 import '../domain/saved_scooter.dart';
@@ -26,6 +27,13 @@ class _NavigationScreenState extends State<NavigationScreen> {
   bool _osmConsent = false;
   bool _initialLoad = true;
   bool _showingCached = false;
+  final FocusNode _searchFocusNode = FocusNode();
+
+  @override
+  void dispose() {
+    _searchFocusNode.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -86,7 +94,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
       );
       // Ensure every destination has a display name
       final named = await Future.wait(
-        favs.map((d) => GeoHelper.nameDestination(d)),
+        favs.map((d) => d.ensureNamed()),
       );
       if (mounted) {
         setState(() {
@@ -138,6 +146,10 @@ class _NavigationScreenState extends State<NavigationScreen> {
               ),
               FilledButton(
                 onPressed: () => Navigator.of(ctx).pop(true),
+                style: TextButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                  foregroundColor: Theme.of(context).colorScheme.surface,
+                ),
                 child: const Text("Continue"),
               ),
             ],
@@ -148,15 +160,11 @@ class _NavigationScreenState extends State<NavigationScreen> {
 
   Future<void> _navigateToFav(NavDestination destination) async {
     if (!await _confirmIfFarAway(destination.location)) return;
+    if (!mounted) return;
     final service = context.read<ScooterService>();
     if (!service.connected) {
       // Queue for when a librescoot connects
       await service.setPendingNavigation(destination);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Navigation to \"${destination.name}\" queued")),
-        );
-      }
       return;
     }
     try {
@@ -165,23 +173,18 @@ class _NavigationScreenState extends State<NavigationScreen> {
         service.characteristicRepository,
         destination.id!,
       );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(success ? "Navigation started to ${destination.name}" : "Failed to start navigation."),
-        ));
-      }
+      if (!success) throw "Failed to start navigation.";
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: $e")),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e")),
+      );
     }
   }
 
   Future<void> _navigateToAddress(PhotonFeature feature) async {
     final service = context.read<ScooterService>();
-    final name = GeoHelper.createNameFromPhotonFeature(feature);
+    final name = GeoHelper.nameFromFeature(feature);
     final dest = NavDestination(
       location: LatLng(feature.coordinates.latitude.toDouble(), feature.coordinates.longitude.toDouble()),
       name: name,
@@ -190,11 +193,6 @@ class _NavigationScreenState extends State<NavigationScreen> {
     if (!service.connected) {
       // Queue for when a librescoot connects
       await service.setPendingNavigation(dest);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Navigation to "$name" queued')),
-        );
-      }
       return;
     }
     try {
@@ -203,11 +201,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
         service.characteristicRepository,
         dest,
       );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(success ? "Navigation started to $name" : "Failed to start navigation."),
-        ));
-      }
+      if (!success) throw "Failed to start navigation.";
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -217,29 +211,8 @@ class _NavigationScreenState extends State<NavigationScreen> {
     }
   }
 
-  String _namePhotonSuggestion(PhotonFeature feature) {
-    final parts = <String>[];
-    if (feature.name != null && feature.name != feature.street) {
-      parts.add(feature.name!);
-    }
-    if (feature.street != null) {
-      String street = feature.street!;
-      if (feature.houseNumber != null) {
-        street += " ${feature.houseNumber!}";
-      }
-      parts.add(street);
-    } else if (feature.name != null) {
-      parts.add(feature.name!);
-    }
-    final locality = <String>[];
-    if (feature.postcode != null) locality.add(feature.postcode!);
-    if (feature.city != null) locality.add(feature.city!);
-    if (locality.isNotEmpty) parts.add(locality.join(" "));
-    return parts.isNotEmpty ? parts.join(", ") : "${feature.coordinates.latitude}, ${feature.coordinates.longitude}";
-  }
-
   void _showNavigateConfirmation(PhotonFeature feature) {
-    final name = GeoHelper.createNameFromPhotonFeature(feature);
+    final name = GeoHelper.nameFromFeature(feature);
     final service = context.read<ScooterService>();
     final isConnected = service.connected;
     showDialog(
@@ -265,6 +238,10 @@ class _NavigationScreenState extends State<NavigationScreen> {
             ),
           FilledButton.icon(
             icon: const Icon(Icons.navigation),
+            style: TextButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              foregroundColor: Theme.of(context).colorScheme.surface,
+            ),
             label: Text(isConnected ? "Navigate" : "Queue navigation"),
             onPressed: () {
               Navigator.of(ctx).pop();
@@ -286,7 +263,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
   }
 
   void _showSaveFavoriteDialog(PhotonFeature feature) {
-    final name = GeoHelper.createNameFromPhotonFeature(feature);
+    final name = GeoHelper.nameFromFeature(feature);
     final nameController = TextEditingController(text: name);
     showDialog(
       context: context,
@@ -314,6 +291,10 @@ class _NavigationScreenState extends State<NavigationScreen> {
                       _saveDestination(feature, nameController.text.trim());
                     }
                   : null,
+              style: TextButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                foregroundColor: Theme.of(context).colorScheme.surface,
+              ),
               child: const Text("Save"),
             ),
           ],
@@ -325,7 +306,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
   Future<void> _saveDestination(PhotonFeature feature, String name) async {
     final service = context.read<ScooterService>();
     if (name.isEmpty) {
-      name = GeoHelper.createNameFromPhotonFeature(feature);
+      name = GeoHelper.nameFromFeature(feature);
     }
     try {
       await saveNavDestinationCommand(
@@ -373,6 +354,10 @@ class _NavigationScreenState extends State<NavigationScreen> {
               child: const Text("Cancel"),
             ),
             FilledButton(
+              style: TextButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                foregroundColor: Theme.of(context).colorScheme.surface,
+              ),
               onPressed: _validateDestName(nameController.text) == null
                   ? () async {
                       final newName = nameController.text.trim();
@@ -429,7 +414,10 @@ class _NavigationScreenState extends State<NavigationScreen> {
                 child: const Text("Cancel"),
               ),
               FilledButton(
-                style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                style: TextButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  foregroundColor: Theme.of(context).colorScheme.onSurface,
+                ),
                 onPressed: () => Navigator.of(ctx).pop(true),
                 child: const Text("Delete"),
               ),
@@ -468,201 +456,381 @@ class _NavigationScreenState extends State<NavigationScreen> {
     }
   }
 
+  Future<void> _confirmAndDeleteFav(NavDestination destination) async {
+    if (await _confirmDeleteFav(destination)) {
+      _deleteFav(destination);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final connected = context.select<ScooterService, bool>((s) => s.connected);
-    final pendingNav = context.select<ScooterService, NavDestination?>((s) => s.pendingNavigation);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text("Navigation"),
-        actions: [
-          if (connected)
-            IconButton(
-              icon: const Icon(Icons.location_off_outlined),
-              onPressed: () => cancelNavigationCommand(
-                context.read<ScooterService>().myScooter,
-                context.read<ScooterService>().characteristicRepository,
+        forceMaterialTransparency: true,
+        scrolledUnderElevation: 0,
+      ),
+      floatingActionButton: _osmConsent &&
+              context.watch<ScooterService>().pendingNavigation == null &&
+              context.watch<ScooterService>().vehicle.navigationActive != true
+          ? FloatingActionButton(
+              onPressed: () => _searchFocusNode.requestFocus(),
+              tooltip: "Search for an address",
+              child: Icon(
+                Icons.navigation_outlined,
+                color: Theme.of(context).colorScheme.surface,
               ),
-              tooltip: "Stop navigation",
             )
-        ],
-      ),
-      body: Column(
+          : null,
+      body: Stack(
         children: [
-          if (pendingNav != null) _buildPendingCard(pendingNav),
-          if (_osmConsent) _buildSearchField(),
-          Expanded(child: _buildDestinationList(connected)),
+          Column(
+            children: [
+              if (_osmConsent) _searchField(),
+              const SizedBox(height: 8),
+              if (_loading && _initialLoad)
+                const Expanded(child: _DestinationsLoading())
+              else if (_destinations.isEmpty && !connected && !_showingCached)
+                const Expanded(child: _DisconnectedEmpty())
+              else if (_destinations.isEmpty)
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: _fetchDestinations,
+                    child: const _NoDestinationsEmpty(),
+                  ),
+                )
+              else
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: _fetchDestinations,
+                    child: _destinationList(connected),
+                  ),
+                ),
+            ],
+          ),
+          Selector<ScooterService, ({String? pendingName, bool isNavigating})>(
+            selector: (_, s) => (
+              pendingName: s.pendingNavigation?.name,
+              isNavigating: s.vehicle.navigationActive == true,
+            ),
+            builder: (context, state, _) {
+              if (state.pendingName == null && !state.isNavigating) return const SizedBox.shrink();
+              return Positioned(
+                bottom: MediaQuery.of(context).viewInsets.bottom + 32,
+                left: 16,
+                right: 16,
+                child: _navigationStatusCard(
+                  isNavigating: state.isNavigating,
+                  pendingName: state.pendingName,
+                ),
+              );
+            },
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildPendingCard(NavDestination destination) {
-    return Card(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      color: Theme.of(context).colorScheme.primaryContainer,
-      child: ListTile(
-        leading: Icon(
-          Icons.schedule,
-          color: Theme.of(context).colorScheme.onPrimaryContainer,
-        ),
-        title: Text(
-          destination.name ?? "Unknown destination",
-          style: TextStyle(color: Theme.of(context).colorScheme.onPrimaryContainer),
-        ),
-        subtitle: Text(
-          "Pending \u2014 will start on next connection",
-          style: TextStyle(
-            fontStyle: FontStyle.italic,
-            color: Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
-          ),
-        ),
-        trailing: IconButton(
-          icon: Icon(
-            Icons.close,
-            color: Theme.of(context).colorScheme.onPrimaryContainer,
-          ),
-          tooltip: "Cancel pending navigation",
-          onPressed: () => context.read<ScooterService>().setPendingNavigation(null),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDestinationList(bool connected) {
-    if (_loading && _initialLoad) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (_destinations.isEmpty && !connected && !_showingCached) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(Icons.bluetooth_disabled, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
-            Text(
-              "Scooter not connected",
-              style: TextStyle(fontSize: 18, color: Colors.grey),
-            ),
-            SizedBox(height: 8),
-            Text(
-              "Connect to your scooter to see saved destinations.",
-              style: TextStyle(color: Colors.grey),
-            ),
-          ],
-        ),
-      );
-    }
-    if (_destinations.isEmpty) {
-      return RefreshIndicator(
-        onRefresh: _fetchDestinations,
-        child: ListView(
-          children: const [
-            SizedBox(height: 120),
-            Center(
-              child: Column(
-                children: [
-                  Icon(Icons.bookmark_border, size: 64, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text(
-                    "No saved destinations",
-                    style: TextStyle(fontSize: 18, color: Colors.grey),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    "Pull down to refresh.",
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: _fetchDestinations,
-      child: ListView.builder(
-        itemCount: _destinations.length,
-        itemBuilder: (context, index) {
-          final dest = _destinations[index];
-          if (_showingCached) {
-            return ListTile(
-              leading: const Icon(Icons.bookmark_outline),
-              title: Text(dest.name ?? "Unknown"),
-              subtitle: const Text(
-                "Cached",
-                style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
-              ),
-              trailing: IconButton(
-                icon: const Icon(Icons.navigation),
-                tooltip: "Navigate here",
-                onPressed: () => _navigateToFav(dest),
-              ),
-            );
-          }
-          return Dismissible(
-            key: Key(dest.id ?? dest.name ?? "$index"),
-            confirmDismiss: (direction) async {
-              if (direction == DismissDirection.startToEnd) {
-                _showRenameFavDialog(dest);
-                return false;
-              } else {
-                return await _confirmDeleteFav(dest);
-              }
-            },
-            onDismissed: (direction) {
-              if (direction == DismissDirection.endToStart) {
-                _deleteFav(dest);
-              }
-            },
-            background: Container(
-              color: Colors.blue,
-              child: const Padding(
-                padding: EdgeInsets.all(16),
-                child: Icon(
-                  Icons.edit,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-            secondaryBackground: Container(
-              color: Colors.red,
-              child: const Padding(
-                padding: EdgeInsets.all(16),
-                child: Icon(
-                  Icons.delete,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-            child: ListTile(
-              leading: const Icon(Icons.bookmark),
-              title: Text(dest.name ?? "Unknown"),
-              subtitle: Text(
-                "${dest.location.latitude.toStringAsFixed(4)}, ${dest.location.longitude.toStringAsFixed(4)}",
-              ),
-              trailing: IconButton(
-                icon: const Icon(Icons.navigation),
-                tooltip: "Navigate here",
-                onPressed: () => _navigateToFav(dest),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildSearchField() {
+  Widget _searchField() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       child: _PhotonAutocomplete(
         onSelected: _showNavigateConfirmation,
-        formatFeature: _namePhotonSuggestion,
+        formatFeature: GeoHelper.fullNameFromFeature,
+        focusNode: _searchFocusNode,
       ),
+    );
+  }
+
+  Widget _destinationQuickLaunch(bool connected) {
+    List<NavDestination> specialDests = _destinations.where((d) => d.type != null).toList();
+    if (specialDests.isEmpty) return const SizedBox.shrink();
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.only(bottom: 16),
+      crossAxisSpacing: 16,
+      mainAxisSpacing: 16,
+      crossAxisCount: 2,
+      childAspectRatio: 1.5,
+      children: specialDests.map((dest) => _specialDestinationCard(dest)).toList(),
+    );
+  }
+
+  Widget _destinationList(bool connected) {
+    final regularDests = _destinations.where((d) => d.type == null).toList();
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
+      itemCount: regularDests.length + 1,
+      itemBuilder: (context, index) {
+        if (index == 0) return _destinationQuickLaunch(connected);
+        return _destinationCard(regularDests[index - 1], index - 1);
+      },
+    );
+  }
+
+  Widget _specialDestinationCard(NavDestination destination) {
+    IconData icon;
+    switch (destination.type) {
+      case SpecialDestinationType.home:
+        icon = Icons.home_outlined;
+      case SpecialDestinationType.work:
+        icon = Icons.work_outline_rounded;
+      case SpecialDestinationType.school:
+        icon = Icons.school_outlined;
+      default:
+        icon = Icons.star_border_rounded;
+    }
+    return Material(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: Theme.of(context).colorScheme.surfaceContainer,
+      clipBehavior: Clip.antiAlias,
+      elevation: 1,
+      child: InkWell(
+        onTap: () => _navigateToFav(destination),
+        child: Stack(
+          children: [
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Icon(icon, size: 40),
+                const SizedBox(height: 8),
+                Text(
+                  destination.name!,
+                  style: Theme.of(context).textTheme.titleMedium,
+                  textAlign: TextAlign.center,
+                ),
+                _showingCached
+                    ? Text(
+                        "Cached",
+                        style: TextStyle(fontStyle: FontStyle.italic),
+                        textAlign: TextAlign.center,
+                      )
+                    : Text(
+                        "${destination.location.latitude.toStringAsFixed(4)}, ${destination.location.longitude.toStringAsFixed(4)}",
+                        textAlign: TextAlign.center,
+                      ),
+              ],
+            ),
+            if (!_showingCached)
+              Positioned(
+                top: 0,
+                right: 0,
+                child: PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert),
+                  onSelected: (value) {
+                    if (value == 'rename') _showRenameFavDialog(destination);
+                    if (value == 'delete') _confirmAndDeleteFav(destination);
+                  },
+                  itemBuilder: (_) => [
+                    const PopupMenuItem(value: 'rename', child: Text('Rename')),
+                    PopupMenuItem(
+                        value: 'delete',
+                        child: Text('Delete', style: TextStyle(color: Theme.of(context).colorScheme.error))),
+                  ],
+                ),
+              )
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _destinationCard(NavDestination dest, int index) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Dismissible(
+        key: Key(dest.id ?? dest.name ?? "$index"),
+        direction: _showingCached ? DismissDirection.none : DismissDirection.horizontal,
+        confirmDismiss: (direction) async {
+          if (direction == DismissDirection.startToEnd) {
+            _showRenameFavDialog(dest);
+            return false;
+          } else {
+            return await _confirmDeleteFav(dest);
+          }
+        },
+        onDismissed: (direction) {
+          if (direction == DismissDirection.endToStart) {
+            _deleteFav(dest);
+          }
+        },
+        background: Container(
+          decoration: BoxDecoration(
+            borderRadius: const BorderRadius.all(Radius.circular(16)),
+            color: Theme.of(context).colorScheme.primaryContainer,
+          ),
+          alignment: Alignment.centerLeft,
+          child: const Padding(
+            padding: EdgeInsets.all(16),
+            child: Icon(
+              Icons.edit,
+              color: Colors.white,
+            ),
+          ),
+        ),
+        secondaryBackground: Container(
+          decoration: BoxDecoration(
+            borderRadius: const BorderRadius.all(Radius.circular(16)),
+            color: Theme.of(context).colorScheme.errorContainer,
+          ),
+          alignment: Alignment.centerRight,
+          child: const Padding(
+            padding: EdgeInsets.all(16),
+            child: Icon(
+              Icons.delete,
+              color: Colors.white,
+            ),
+          ),
+        ),
+        child: Material(
+          color: Theme.of(context).colorScheme.surfaceContainer,
+          borderRadius: const BorderRadius.all(Radius.circular(16)),
+          clipBehavior: Clip.antiAlias,
+          child: ListTile(
+            contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            leading: const Icon(Icons.place_outlined),
+            title: Text(dest.name ?? "Unknown"),
+            subtitle: _showingCached
+                ? const Text("Cached", style: TextStyle(fontStyle: FontStyle.italic))
+                : Text(
+                    "${dest.location.latitude.toStringAsFixed(4)}, ${dest.location.longitude.toStringAsFixed(4)}",
+                  ),
+            onTap: () => _navigateToFav(dest),
+            trailing: _showingCached
+                ? Icon(Icons.navigate_next)
+                : PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert),
+                    onSelected: (value) {
+                      if (value == 'rename') _showRenameFavDialog(dest);
+                      if (value == 'delete') _confirmAndDeleteFav(dest);
+                    },
+                    itemBuilder: (_) => [
+                      const PopupMenuItem(value: 'rename', child: Text('Rename')),
+                      const PopupMenuItem(value: 'delete', child: Text('Delete')),
+                    ],
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _navigationStatusCard({required bool isNavigating, String? pendingName}) {
+    final service = context.read<ScooterService>();
+    return Dismissible(
+      key: const Key("navigation_status_card"),
+      direction: DismissDirection.horizontal,
+      onDismissed: (_) {
+        if (isNavigating) {
+          cancelNavigationCommand(
+            service.myScooter,
+            service.characteristicRepository,
+          );
+        } else {
+          service.setPendingNavigation(null);
+        }
+      },
+      child: Card(
+        color: Theme.of(context).colorScheme.primaryContainer,
+        child: ListTile(
+          leading: Icon(isNavigating ? Icons.navigation : Icons.schedule, color: Theme.of(context).colorScheme.surface),
+          title: Text(
+            isNavigating ? "Navigation is active" : "Pending navigation",
+            style: TextStyle(color: Theme.of(context).colorScheme.surface),
+          ),
+          subtitle: Text(
+            isNavigating
+                ? "Follow directions on your scooter's display."
+                : "Your scooter will navigate to ${pendingName ?? "your destination"} next time you connect.",
+            style: TextStyle(
+                color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.7), fontStyle: FontStyle.italic),
+          ),
+          trailing: IconButton(
+            icon: Icon(Icons.close, color: Theme.of(context).colorScheme.surface),
+            tooltip: "Cancel",
+            onPressed: () {
+              if (isNavigating) {
+                cancelNavigationCommand(
+                  service.myScooter,
+                  service.characteristicRepository,
+                );
+              } else {
+                service.setPendingNavigation(null);
+              }
+            },
+          ),
+          contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+        ),
+      ),
+    );
+  }
+}
+
+class _DestinationsLoading extends StatelessWidget {
+  const _DestinationsLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(child: CircularProgressIndicator());
+  }
+}
+
+class _DisconnectedEmpty extends StatelessWidget {
+  const _DisconnectedEmpty();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: const [
+          Icon(Icons.bluetooth_disabled, size: 64, color: Colors.grey),
+          SizedBox(height: 16),
+          Text(
+            "Scooter not connected",
+            style: TextStyle(fontSize: 18, color: Colors.grey),
+          ),
+          SizedBox(height: 8),
+          Text(
+            "Connect to your scooter to see saved destinations.",
+            style: TextStyle(color: Colors.grey),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NoDestinationsEmpty extends StatelessWidget {
+  const _NoDestinationsEmpty();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      children: const [
+        SizedBox(height: 120),
+        Center(
+          child: Column(
+            children: [
+              Icon(Icons.bookmark_border, size: 64, color: Colors.grey),
+              SizedBox(height: 16),
+              Text(
+                "No saved destinations",
+                style: TextStyle(fontSize: 18, color: Colors.grey),
+              ),
+              SizedBox(height: 8),
+              Text(
+                "Pull down to refresh.",
+                style: TextStyle(color: Colors.grey),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -670,10 +838,12 @@ class _NavigationScreenState extends State<NavigationScreen> {
 class _PhotonAutocomplete extends StatefulWidget {
   final void Function(PhotonFeature feature) onSelected;
   final String Function(PhotonFeature feature) formatFeature;
+  final FocusNode? focusNode;
 
   const _PhotonAutocomplete({
     required this.onSelected,
     required this.formatFeature,
+    this.focusNode,
   });
 
   @override
@@ -684,14 +854,19 @@ class _PhotonAutocompleteState extends State<_PhotonAutocomplete> {
   Timer? _debounce;
   List<PhotonFeature> _suggestions = [];
   final TextEditingController _controller = TextEditingController();
-  final FocusNode _focusNode = FocusNode();
+  late final FocusNode _focusNode;
   final LayerLink _layerLink = LayerLink();
   OverlayEntry? _overlayEntry;
+  LatLng? _lastOwnLocation;
 
   @override
-  void initState() {
+  void initState() async {
     super.initState();
+    _focusNode = widget.focusNode ?? FocusNode();
     _focusNode.addListener(_onFocusChanged);
+    pollLocation().then((loc) {
+      _lastOwnLocation = loc;
+    });
   }
 
   @override
@@ -699,7 +874,8 @@ class _PhotonAutocompleteState extends State<_PhotonAutocomplete> {
     _debounce?.cancel();
     _controller.dispose();
     _focusNode.removeListener(_onFocusChanged);
-    _focusNode.dispose();
+    // Only dispose the FocusNode if we created it internally
+    if (widget.focusNode == null) _focusNode.dispose();
     _removeOverlay();
     super.dispose();
   }
@@ -721,7 +897,10 @@ class _PhotonAutocompleteState extends State<_PhotonAutocomplete> {
     }
     _debounce = Timer(const Duration(milliseconds: 400), () async {
       try {
-        final results = await photonForwardSearch(query);
+        final results = await photonForwardSearch(
+          query,
+          ownLocation: _lastOwnLocation,
+        );
         if (mounted) {
           setState(() => _suggestions = results);
           if (results.isNotEmpty && _focusNode.hasFocus) {

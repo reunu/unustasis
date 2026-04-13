@@ -8,10 +8,11 @@ import '../infrastructure/characteristic_repository.dart';
 import '../infrastructure/scooter_reader.dart';
 
 class VehicleStatus {
-  final _log = Logger('VehicleStatus');
+  final log = Logger('VehicleStatus');
 
   bool? seatClosed;
   bool? handlebarsLocked;
+  bool? navigationActive;
   ScooterVehicleState? vehicleState;
   ScooterPowerState? powerState;
 
@@ -23,9 +24,10 @@ class VehicleStatus {
     CharacteristicRepository chars, {
     required VoidCallback onStateUpdate,
     required VoidCallback onSeatUpdate,
+    required void Function() onNavigationChanged,
     required void Function(bool?) onHandlebarsChanged,
   }) {
-    _log.info('Wiring vehicle status subscriptions');
+    log.info('Wiring vehicle status subscriptions');
 
     // Vehicle state
     subscribeToStringValue(chars.stateCharacteristic!, 'State', (value) {
@@ -52,5 +54,20 @@ class VehicleStatus {
       handlebarsLocked = value != 'unlocked';
       onHandlebarsChanged(handlebarsLocked);
     });
+
+    // Navigation
+    try {
+      subscribeToIntValue(
+        chars.navigationActiveCharacteristic!,
+        'Navigation',
+        singleByte: true,
+        (value) {
+          navigationActive = (value == 1);
+          onNavigationChanged();
+        },
+      );
+    } catch (e) {
+      log.info('Navigation characteristic not available, skipping subscription');
+    }
   }
 }
