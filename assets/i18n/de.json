@@ -289,5 +289,10 @@
     "lock_state_locked": "Verriegelt",
     "lock_state_unlocked": "Offen",
     "lock_state_unknown": "Unbekannt",
-    "error_generic": "FEHLER"
+    "error_generic": "FEHLER",
+    "share_no_librescoot_title": "Librescoot erforderlich",
+    "share_no_librescoot_body": "Das Navigieren zu geteilten Standorten erfordert einen Roller mit Librescoot-Firmware. Librescoot fügt Navigation, Ferndiagnose und mehr zu deinem unu Scooter Pro hinzu.",
+    "share_no_librescoot_close": "Schließen",
+    "share_no_librescoot_learn_more": "Mehr erfahren",
+    "share_parse_error": "Es konnte kein Standort aus dem geteilten Text extrahiert werden."
 }

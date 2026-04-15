@@ -289,5 +289,10 @@
     "lock_state_locked": "Locked",
     "lock_state_unlocked": "Unlocked",
     "lock_state_unknown": "Unknown",
-    "error_generic": "ERROR"
+    "error_generic": "ERROR",
+    "share_no_librescoot_title": "Librescoot Required",
+    "share_no_librescoot_body": "Navigating to shared locations requires a scooter with Librescoot firmware. Librescoot adds navigation, remote diagnostics, and more to your unu Scooter Pro.",
+    "share_no_librescoot_close": "Close",
+    "share_no_librescoot_learn_more": "Learn more",
+    "share_parse_error": "Could not extract a location from the shared text."
 }

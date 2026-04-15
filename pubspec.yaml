@@ -70,6 +70,7 @@ dependencies:
       path: workmanager
       ref: main
   flutter_photon: ^2.0.1
+  flutter_sharing_intent: ^2.0.4
 
 dev_dependencies:
   flutter_test:

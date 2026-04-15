@@ -288,5 +288,10 @@
     "lock_state_locked": "Verrouillé",
     "lock_state_unlocked": "Déverrouillé",
     "lock_state_unknown": "Inconnu",
-    "error_generic": "ERREUR"
+    "error_generic": "ERREUR",
+    "share_no_librescoot_title": "Librescoot requis",
+    "share_no_librescoot_body": "La navigation vers des lieux partagés nécessite un scooter avec le firmware Librescoot. Librescoot ajoute la navigation, le diagnostic à distance et plus encore à votre unu Scooter Pro.",
+    "share_no_librescoot_close": "Fermer",
+    "share_no_librescoot_learn_more": "En savoir plus",
+    "share_parse_error": "Impossible d'extraire un lieu du texte partagé."
 }

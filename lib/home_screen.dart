@@ -364,6 +364,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           Navigator.push(
                                             context,
                                             MaterialPageRoute(
+                                              settings: const RouteSettings(name: 'navigation'),
                                               builder: (context) => const NavigationScreen(),
                                             ),
                                           );

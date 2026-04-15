@@ -267,5 +267,10 @@
     "lock_state_locked": "Battened down",
     "lock_state_unlocked": "Open seas",
     "lock_state_unknown": "Lost at sea",
-    "error_generic": "BLIMEY!"
+    "error_generic": "BLIMEY!",
+    "share_no_librescoot_title": "Librescoot Be Needed",
+    "share_no_librescoot_body": "Sailin' to shared ports be needin' a vessel with Librescoot charts. Librescoot adds navigation, spyglass diagnostics, and more to yer unu Scooter Pro.",
+    "share_no_librescoot_close": "Batten down",
+    "share_no_librescoot_learn_more": "Learn more, matey",
+    "share_parse_error": "Couldn't find no port in that there message, cap'n."
 }

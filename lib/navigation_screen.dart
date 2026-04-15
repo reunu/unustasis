@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_photon/flutter_photon.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -15,7 +16,8 @@ import '../scooter_service.dart';
 import '../service/ble_commands.dart';
 
 class NavigationScreen extends StatefulWidget {
-  const NavigationScreen({super.key});
+  final NavDestination? initialDestination;
+  const NavigationScreen({this.initialDestination, super.key});
 
   @override
   State<NavigationScreen> createState() => _NavigationScreenState();
@@ -45,6 +47,9 @@ class _NavigationScreenState extends State<NavigationScreen> {
         _fetchDestinations();
       } else {
         _loadCachedDestinations();
+      }
+      if (widget.initialDestination != null) {
+        _showDestinationConfirmation(widget.initialDestination!);
       }
     });
   }
@@ -125,7 +130,17 @@ class _NavigationScreenState extends State<NavigationScreen> {
   /// scooter's last known location.
   Future<bool> _confirmIfFarAway(LatLng destination) async {
     final service = context.read<ScooterService>();
-    final scooterLocation = service.lastLocation;
+    var scooterLocation = service.lastLocation;
+    if (scooterLocation == null) {
+      // Scooter location not loaded yet (e.g. cold start via share intent).
+      // Fall back to the device's last known GPS position.
+      try {
+        final pos = await Geolocator.getLastKnownPosition();
+        if (pos != null) {
+          scooterLocation = LatLng(pos.latitude, pos.longitude);
+        }
+      } catch (_) {}
+    }
     if (scooterLocation == null) return true;
 
     const distCalc = Distance();
@@ -182,16 +197,52 @@ class _NavigationScreenState extends State<NavigationScreen> {
     }
   }
 
-  Future<void> _navigateToAddress(PhotonFeature feature) async {
+  void _showDestinationConfirmation(NavDestination dest) {
     final service = context.read<ScooterService>();
-    final name = GeoHelper.nameFromFeature(feature);
-    final dest = NavDestination(
-      location: LatLng(feature.coordinates.latitude.toDouble(), feature.coordinates.longitude.toDouble()),
-      name: name,
+    final isConnected = service.connected;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(dest.name ?? 'Unknown destination'),
+        content: Text(isConnected
+            ? "What would you like to do?"
+            : "Navigation will start automatically when you connect to your scooter."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text("Cancel"),
+          ),
+          if (isConnected)
+            OutlinedButton.icon(
+              icon: const Icon(Icons.bookmark_add),
+              label: const Text("Save"),
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                _showSaveDestinationDialog(dest);
+              },
+            ),
+          FilledButton.icon(
+            icon: const Icon(Icons.navigation),
+            style: TextButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              foregroundColor: Theme.of(context).colorScheme.surface,
+            ),
+            label: Text(isConnected ? "Navigate" : "Queue navigation"),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              _navigateToDestination(dest);
+            },
+          ),
+        ],
+      ),
     );
+  }
+
+  Future<void> _navigateToDestination(NavDestination dest) async {
     if (!await _confirmIfFarAway(dest.location)) return;
+    if (!mounted) return;
+    final service = context.read<ScooterService>();
     if (!service.connected) {
-      // Queue for when a librescoot connects
       await service.setPendingNavigation(dest);
       return;
     }
@@ -211,60 +262,8 @@ class _NavigationScreenState extends State<NavigationScreen> {
     }
   }
 
-  void _showNavigateConfirmation(PhotonFeature feature) {
-    final name = GeoHelper.nameFromFeature(feature);
-    final service = context.read<ScooterService>();
-    final isConnected = service.connected;
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(name),
-        content: Text(isConnected
-            ? "What would you like to do?"
-            : "Navigation will start automatically when you connect to your scooter."),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text("Cancel"),
-          ),
-          if (isConnected)
-            OutlinedButton.icon(
-              icon: const Icon(Icons.bookmark_add),
-              label: const Text("Save"),
-              onPressed: () {
-                Navigator.of(ctx).pop();
-                _showSaveFavoriteDialog(feature);
-              },
-            ),
-          FilledButton.icon(
-            icon: const Icon(Icons.navigation),
-            style: TextButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-              foregroundColor: Theme.of(context).colorScheme.surface,
-            ),
-            label: Text(isConnected ? "Navigate" : "Queue navigation"),
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              _navigateToAddress(feature);
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Returns an error string if [name] contains characters invalid for BLE
-  /// destination names (non-printable ASCII or colon), null if valid.
-  static String? _validateDestName(String name) {
-    if (name.trim().isEmpty) return 'Name cannot be empty';
-    if (name.contains(':')) return 'Name cannot contain colons';
-    if (RegExp(r'[^\x20-\x7E]').hasMatch(name)) return 'Name contains invalid characters';
-    return null;
-  }
-
-  void _showSaveFavoriteDialog(PhotonFeature feature) {
-    final name = GeoHelper.nameFromFeature(feature);
-    final nameController = TextEditingController(text: name);
+  void _showSaveDestinationDialog(NavDestination dest) {
+    final nameController = TextEditingController(text: dest.name ?? '');
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -288,7 +287,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
               onPressed: _validateDestName(nameController.text) == null
                   ? () {
                       Navigator.of(ctx).pop();
-                      _saveDestination(feature, nameController.text.trim());
+                      _saveNavDestination(dest, nameController.text.trim());
                     }
                   : null,
               style: TextButton.styleFrom(
@@ -303,33 +302,37 @@ class _NavigationScreenState extends State<NavigationScreen> {
     );
   }
 
-  Future<void> _saveDestination(PhotonFeature feature, String name) async {
+  Future<void> _saveNavDestination(NavDestination dest, String name) async {
     final service = context.read<ScooterService>();
-    if (name.isEmpty) {
-      name = GeoHelper.nameFromFeature(feature);
-    }
+    if (name.isEmpty) name = dest.name ?? 'Destination';
     try {
       await saveNavDestinationCommand(
         service.myScooter!,
         service.characteristicRepository,
-        NavDestination(
-          location: LatLng(feature.coordinates.latitude.toDouble(), feature.coordinates.longitude.toDouble()),
-          name: name,
-        ),
+        NavDestination(location: dest.location, name: name),
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Saved \"$name\" to favorites")),
+          SnackBar(content: Text('Saved "$name" to favorites')),
         );
         _fetchDestinations();
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Failed to save destination: $e")),
+          SnackBar(content: Text('Failed to save destination: $e')),
         );
       }
     }
+  }
+
+  /// Returns an error string if [name] contains characters invalid for BLE
+  /// destination names (non-printable ASCII or colon), null if valid.
+  static String? _validateDestName(String name) {
+    if (name.trim().isEmpty) return 'Name cannot be empty';
+    if (name.contains(':')) return 'Name cannot contain colons';
+    if (RegExp(r'[^\x20-\x7E]').hasMatch(name)) return 'Name contains invalid characters';
+    return null;
   }
 
   void _showRenameFavDialog(NavDestination destination) {
@@ -537,7 +540,13 @@ class _NavigationScreenState extends State<NavigationScreen> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       child: _PhotonAutocomplete(
-        onSelected: _showNavigateConfirmation,
+        onSelected: (feature) {
+          final dest = NavDestination(
+            location: LatLng(feature.coordinates.latitude.toDouble(), feature.coordinates.longitude.toDouble()),
+            name: GeoHelper.nameFromFeature(feature),
+          );
+          _showDestinationConfirmation(dest);
+        },
         formatFeature: GeoHelper.fullNameFromFeature,
         focusNode: _searchFocusNode,
       ),
