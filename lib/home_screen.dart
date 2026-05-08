@@ -358,17 +358,21 @@ class _HomeScreenState extends State<HomeScreen> {
                                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                   children: [
                                     ScooterActionButton(
-                                        icon: Icons.navigation_outlined,
-                                        label: "Navigation",
-                                        onPressed: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              settings: const RouteSettings(name: 'navigation'),
-                                              builder: (context) => const NavigationScreen(),
-                                            ),
-                                          );
-                                        }),
+                                      icon: Icons.navigation_outlined,
+                                      label: "Navigation",
+                                      showBubble: context.select<ScooterService, bool>(
+                                        (service) => service.navigationActive == true,
+                                      ),
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            settings: const RouteSettings(name: 'navigation'),
+                                            builder: (context) => const NavigationScreen(),
+                                          ),
+                                        );
+                                      },
+                                    ),
                                     ScooterActionButton(
                                       icon: Icons.settings,
                                       label: "Librescoot",
