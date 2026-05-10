@@ -11,6 +11,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:unustasis/background/bg_service.dart';
 
 import '../seat_warning.dart';
 import '../helper_widgets/leaves.dart';
@@ -35,6 +36,7 @@ import '../helper_widgets/clouds.dart';
 import '../helper_widgets/grassscape.dart';
 import '../ls_settings_screen.dart';
 import '../navigation_screen.dart';
+import 'state/vehicle_status.dart';
 
 class HomeScreen extends StatefulWidget {
   final bool? forceOpen;
@@ -361,7 +363,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                       icon: Icons.navigation_outlined,
                                       label: "Navigation",
                                       showBubble: context.select<ScooterService, bool>(
-                                        (service) => service.navigationActive == true,
+                                        (service) =>
+                                            service.navigationActive == true || service.pendingNavigation != null,
                                       ),
                                       onPressed: () {
                                         Navigator.push(
@@ -374,8 +377,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                       },
                                     ),
                                     ScooterActionButton(
-                                      icon: Icons.settings,
+                                      icon: Icons.local_fire_department_outlined,
                                       label: "Librescoot",
+                                      showBubble: context.select<ScooterService, bool>(
+                                        (service) => service.vehicle.usbMode == UsbMode.massStorage,
+                                      ),
                                       onPressed: !value.connected
                                           ? null
                                           : () {

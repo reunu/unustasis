@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_photon/flutter_photon.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
@@ -112,6 +113,28 @@ class _NavigationScreenState extends State<NavigationScreen> {
         final savedScooter = await _getCurrentSavedScooter(service);
         savedScooter?.cachedDestinations = named;
       }
+    } on TimeoutException {
+      // Fetch timed out — fall back to cached destinations if available
+      final savedScooter = await _getCurrentSavedScooter(service);
+      final cached = savedScooter?.cachedDestinations;
+      if (mounted) {
+        if (cached != null && cached.isNotEmpty) {
+          setState(() {
+            _destinations = cached;
+            _showingCached = true;
+            _loading = false;
+            _initialLoad = false;
+          });
+        } else {
+          setState(() {
+            _loading = false;
+            _initialLoad = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Connection timed out, showing last known destinations.")),
+          );
+        }
+      }
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -119,7 +142,9 @@ class _NavigationScreenState extends State<NavigationScreen> {
           _initialLoad = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Failed to load destinations: $e")),
+          SnackBar(
+              content:
+                  Text(FlutterI18n.translate(context, "nav_load_error", translationParams: {"error": e.toString()}))),
         );
       }
     }
@@ -150,22 +175,22 @@ class _NavigationScreenState extends State<NavigationScreen> {
     return await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text("Destination far away"),
+            title: Text(FlutterI18n.translate(ctx, "nav_far_away_title")),
             content: Text(
-              "This destination is about ${km.round()} km from your scooter's last known location. Continue?",
+              FlutterI18n.translate(ctx, "nav_far_away_body", translationParams: {"km": km.round().toString()}),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(ctx).pop(false),
-                child: const Text("Cancel"),
+                child: Text(FlutterI18n.translate(ctx, "cancel")),
               ),
               FilledButton(
                 onPressed: () => Navigator.of(ctx).pop(true),
-                style: TextButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                style: FilledButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.onSurface,
                   foregroundColor: Theme.of(context).colorScheme.surface,
                 ),
-                child: const Text("Continue"),
+                child: Text(FlutterI18n.translate(ctx, "nav_far_away_continue")),
               ),
             ],
           ),
@@ -183,16 +208,16 @@ class _NavigationScreenState extends State<NavigationScreen> {
       return;
     }
     try {
-      final success = await navigateFavCommand(
+      await navigateFavCommand(
         service.myScooter!,
         service.characteristicRepository,
         destination.id!,
       );
-      if (!success) throw "Failed to start navigation.";
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
+        SnackBar(
+            content: Text(FlutterI18n.translate(context, "nav_error", translationParams: {"error": e.toString()}))),
       );
     }
   }
@@ -203,19 +228,22 @@ class _NavigationScreenState extends State<NavigationScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(dest.name ?? 'Unknown destination'),
+        title: Text(dest.name ?? FlutterI18n.translate(ctx, "nav_unknown_destination")),
         content: Text(isConnected
-            ? "What would you like to do?"
-            : "Navigation will start automatically when you connect to your scooter."),
+            ? FlutterI18n.translate(ctx, "nav_confirmation_body_connected")
+            : FlutterI18n.translate(ctx, "nav_confirmation_body_pending")),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text("Cancel"),
+            child: Text(FlutterI18n.translate(ctx, "cancel")),
           ),
           if (isConnected)
             OutlinedButton.icon(
               icon: const Icon(Icons.bookmark_add),
-              label: const Text("Save"),
+              label: Text(FlutterI18n.translate(ctx, "nav_save")),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.onSurface,
+              ),
               onPressed: () {
                 Navigator.of(ctx).pop();
                 _showSaveDestinationDialog(dest);
@@ -223,11 +251,13 @@ class _NavigationScreenState extends State<NavigationScreen> {
             ),
           FilledButton.icon(
             icon: const Icon(Icons.navigation),
-            style: TextButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.onSurface,
               foregroundColor: Theme.of(context).colorScheme.surface,
             ),
-            label: Text(isConnected ? "Navigate" : "Queue navigation"),
+            label: Text(isConnected
+                ? FlutterI18n.translate(ctx, "nav_navigate")
+                : FlutterI18n.translate(ctx, "nav_queue_navigation")),
             onPressed: () {
               Navigator.of(ctx).pop();
               _navigateToDestination(dest);
@@ -247,16 +277,16 @@ class _NavigationScreenState extends State<NavigationScreen> {
       return;
     }
     try {
-      final success = await navigateCommand(
+      await navigateCommand(
         service.myScooter!,
         service.characteristicRepository,
         dest,
       );
-      if (!success) throw "Failed to start navigation.";
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: $e")),
+          SnackBar(
+              content: Text(FlutterI18n.translate(context, "nav_error", translationParams: {"error": e.toString()}))),
         );
       }
     }
@@ -268,33 +298,33 @@ class _NavigationScreenState extends State<NavigationScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setStateDialog) => AlertDialog(
-          title: const Text("Save destination"),
+          title: Text(FlutterI18n.translate(ctx, "nav_save_title")),
           content: TextField(
             controller: nameController,
             autofocus: true,
             onChanged: (_) => setStateDialog(() {}),
             decoration: InputDecoration(
-              labelText: "Name",
-              errorText: nameController.text.isEmpty ? null : _validateDestName(nameController.text),
+              labelText: FlutterI18n.translate(ctx, "nav_name_label"),
+              errorText: nameController.text.isEmpty ? null : _validateDestName(ctx, nameController.text),
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text("Cancel"),
+              child: Text(FlutterI18n.translate(ctx, "cancel")),
             ),
             FilledButton(
-              onPressed: _validateDestName(nameController.text) == null
+              onPressed: _validateDestName(ctx, nameController.text) == null
                   ? () {
                       Navigator.of(ctx).pop();
                       _saveNavDestination(dest, nameController.text.trim());
                     }
                   : null,
-              style: TextButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.onSurface,
                 foregroundColor: Theme.of(context).colorScheme.surface,
               ),
-              child: const Text("Save"),
+              child: Text(FlutterI18n.translate(ctx, "nav_save")),
             ),
           ],
         ),
@@ -304,7 +334,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
 
   Future<void> _saveNavDestination(NavDestination dest, String name) async {
     final service = context.read<ScooterService>();
-    if (name.isEmpty) name = dest.name ?? 'Destination';
+    if (name.isEmpty) name = dest.name ?? FlutterI18n.translate(context, "nav_destination_fallback");
     try {
       await saveNavDestinationCommand(
         service.myScooter!,
@@ -313,14 +343,17 @@ class _NavigationScreenState extends State<NavigationScreen> {
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Saved "$name" to favorites')),
+          SnackBar(
+              content: Text(FlutterI18n.translate(context, "nav_save_success", translationParams: {"name": name}))),
         );
         _fetchDestinations();
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save destination: $e')),
+          SnackBar(
+              content:
+                  Text(FlutterI18n.translate(context, "nav_save_error", translationParams: {"error": e.toString()}))),
         );
       }
     }
@@ -328,10 +361,10 @@ class _NavigationScreenState extends State<NavigationScreen> {
 
   /// Returns an error string if [name] contains characters invalid for BLE
   /// destination names (non-printable ASCII or colon), null if valid.
-  static String? _validateDestName(String name) {
-    if (name.trim().isEmpty) return 'Name cannot be empty';
-    if (name.contains(':')) return 'Name cannot contain colons';
-    if (RegExp(r'[^\x20-\x7E]').hasMatch(name)) return 'Name contains invalid characters';
+  String? _validateDestName(BuildContext context, String name) {
+    if (name.trim().isEmpty) return FlutterI18n.translate(context, "nav_name_empty_error");
+    if (name.contains(':')) return FlutterI18n.translate(context, "nav_name_colon_error");
+    if (RegExp(r'[^\x20-\x7E]').hasMatch(name)) return FlutterI18n.translate(context, "nav_name_invalid_chars_error");
     return null;
   }
 
@@ -341,34 +374,34 @@ class _NavigationScreenState extends State<NavigationScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setStateDialog) => AlertDialog(
-          title: const Text("Rename destination"),
+          title: Text(FlutterI18n.translate(ctx, "nav_rename_title")),
           content: TextField(
             controller: nameController,
             autofocus: true,
             onChanged: (_) => setStateDialog(() {}),
             decoration: InputDecoration(
-              labelText: "Name",
-              errorText: nameController.text.isEmpty ? null : _validateDestName(nameController.text),
+              labelText: FlutterI18n.translate(ctx, "nav_name_label"),
+              errorText: nameController.text.isEmpty ? null : _validateDestName(ctx, nameController.text),
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text("Cancel"),
+              child: Text(FlutterI18n.translate(ctx, "cancel")),
             ),
             FilledButton(
-              style: TextButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.onSurface,
                 foregroundColor: Theme.of(context).colorScheme.surface,
               ),
-              onPressed: _validateDestName(nameController.text) == null
+              onPressed: _validateDestName(ctx, nameController.text) == null
                   ? () async {
                       final newName = nameController.text.trim();
                       Navigator.of(ctx).pop();
                       await _renameFav(destination, newName);
                     }
                   : null,
-              child: const Text("Save"),
+              child: Text(FlutterI18n.translate(ctx, "nav_save")),
             ),
           ],
         ),
@@ -392,14 +425,18 @@ class _NavigationScreenState extends State<NavigationScreen> {
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Renamed to \"$newName\"")),
+          SnackBar(
+              content:
+                  Text(FlutterI18n.translate(context, "nav_rename_success", translationParams: {"name": newName}))),
         );
         _fetchDestinations();
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Failed to rename: $e")),
+          SnackBar(
+              content:
+                  Text(FlutterI18n.translate(context, "nav_rename_error", translationParams: {"error": e.toString()}))),
         );
       }
     }
@@ -409,20 +446,21 @@ class _NavigationScreenState extends State<NavigationScreen> {
     return await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text("Delete destination"),
-            content: Text("Remove \"${destination.name}\" from saved destinations?"),
+            title: Text(FlutterI18n.translate(ctx, "nav_delete_title")),
+            content: Text(
+                FlutterI18n.translate(ctx, "nav_delete_confirm", translationParams: {"name": destination.name ?? ""})),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(ctx).pop(false),
-                child: const Text("Cancel"),
+                child: Text(FlutterI18n.translate(ctx, "cancel")),
               ),
               FilledButton(
-                style: TextButton.styleFrom(
+                style: FilledButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.error,
                   foregroundColor: Theme.of(context).colorScheme.onSurface,
                 ),
                 onPressed: () => Navigator.of(ctx).pop(true),
-                child: const Text("Delete"),
+                child: Text(FlutterI18n.translate(ctx, "nav_delete_button")),
               ),
             ],
           ),
@@ -442,7 +480,9 @@ class _NavigationScreenState extends State<NavigationScreen> {
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("\"${destination.name}\" removed")),
+          SnackBar(
+              content: Text(FlutterI18n.translate(context, "nav_delete_success",
+                  translationParams: {"name": destination.name ?? ""}))),
         );
         // Update cache with the current list (destination already removed)
         final savedScooter = await _getCurrentSavedScooter(service);
@@ -453,7 +493,9 @@ class _NavigationScreenState extends State<NavigationScreen> {
       if (mounted) {
         setState(() => _destinations.add(destination));
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Failed to delete: $e")),
+          SnackBar(
+              content:
+                  Text(FlutterI18n.translate(context, "nav_delete_error", translationParams: {"error": e.toString()}))),
         );
       }
     }
@@ -471,7 +513,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Navigation"),
+        title: Text(FlutterI18n.translate(context, "nav_title")),
         forceMaterialTransparency: true,
         scrolledUnderElevation: 0,
       ),
@@ -480,7 +522,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
               context.watch<ScooterService>().vehicle.navigationActive != true
           ? FloatingActionButton(
               onPressed: () => _searchFocusNode.requestFocus(),
-              tooltip: "Search for an address",
+              tooltip: FlutterI18n.translate(context, "nav_search_tooltip"),
               child: Icon(
                 Icons.navigation_outlined,
                 color: Theme.of(context).colorScheme.surface,
@@ -614,8 +656,8 @@ class _NavigationScreenState extends State<NavigationScreen> {
                 ),
                 _showingCached
                     ? Text(
-                        "Cached",
-                        style: TextStyle(fontStyle: FontStyle.italic),
+                        FlutterI18n.translate(context, "nav_cached"),
+                        style: const TextStyle(fontStyle: FontStyle.italic),
                         textAlign: TextAlign.center,
                       )
                     : Text(
@@ -634,11 +676,12 @@ class _NavigationScreenState extends State<NavigationScreen> {
                     if (value == 'rename') _showRenameFavDialog(destination);
                     if (value == 'delete') _confirmAndDeleteFav(destination);
                   },
-                  itemBuilder: (_) => [
-                    const PopupMenuItem(value: 'rename', child: Text('Rename')),
+                  itemBuilder: (ctx) => [
+                    PopupMenuItem(value: 'rename', child: Text(FlutterI18n.translate(ctx, "nav_rename"))),
                     PopupMenuItem(
                         value: 'delete',
-                        child: Text('Delete', style: TextStyle(color: Theme.of(context).colorScheme.error))),
+                        child: Text(FlutterI18n.translate(ctx, "nav_delete_button"),
+                            style: TextStyle(color: Theme.of(context).colorScheme.error))),
                   ],
                 ),
               )
@@ -702,9 +745,10 @@ class _NavigationScreenState extends State<NavigationScreen> {
           child: ListTile(
             contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
             leading: const Icon(Icons.place_outlined),
-            title: Text(dest.name ?? "Unknown"),
+            title: Text(dest.name ?? FlutterI18n.translate(context, "nav_unknown")),
             subtitle: _showingCached
-                ? const Text("Cached", style: TextStyle(fontStyle: FontStyle.italic))
+                ? Text(FlutterI18n.translate(context, "nav_cached"),
+                    style: const TextStyle(fontStyle: FontStyle.italic))
                 : Text(
                     "${dest.location.latitude.toStringAsFixed(4)}, ${dest.location.longitude.toStringAsFixed(4)}",
                   ),
@@ -717,9 +761,9 @@ class _NavigationScreenState extends State<NavigationScreen> {
                       if (value == 'rename') _showRenameFavDialog(dest);
                       if (value == 'delete') _confirmAndDeleteFav(dest);
                     },
-                    itemBuilder: (_) => [
-                      const PopupMenuItem(value: 'rename', child: Text('Rename')),
-                      const PopupMenuItem(value: 'delete', child: Text('Delete')),
+                    itemBuilder: (ctx) => [
+                      PopupMenuItem(value: 'rename', child: Text(FlutterI18n.translate(ctx, "nav_rename"))),
+                      PopupMenuItem(value: 'delete', child: Text(FlutterI18n.translate(ctx, "nav_delete_button"))),
                     ],
                   ),
           ),
@@ -748,19 +792,23 @@ class _NavigationScreenState extends State<NavigationScreen> {
         child: ListTile(
           leading: Icon(isNavigating ? Icons.navigation : Icons.schedule, color: Theme.of(context).colorScheme.surface),
           title: Text(
-            isNavigating ? "Navigation is active" : "Pending navigation",
+            isNavigating
+                ? FlutterI18n.translate(context, "nav_status_active_title")
+                : FlutterI18n.translate(context, "nav_status_pending_title"),
             style: TextStyle(color: Theme.of(context).colorScheme.surface),
           ),
           subtitle: Text(
             isNavigating
-                ? "Follow directions on your scooter's display."
-                : "Your scooter will navigate to ${pendingName ?? "your destination"} next time you connect.",
+                ? FlutterI18n.translate(context, "nav_status_active_subtitle")
+                : FlutterI18n.translate(context, "nav_status_pending_subtitle", translationParams: {
+                    "destination": pendingName ?? FlutterI18n.translate(context, "nav_your_destination")
+                  }),
             style: TextStyle(
                 color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.7), fontStyle: FontStyle.italic),
           ),
           trailing: IconButton(
             icon: Icon(Icons.close, color: Theme.of(context).colorScheme.surface),
-            tooltip: "Cancel",
+            tooltip: FlutterI18n.translate(context, "cancel"),
             onPressed: () {
               if (isNavigating) {
                 cancelNavigationCommand(
@@ -796,17 +844,17 @@ class _DisconnectedEmpty extends StatelessWidget {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        children: const [
-          Icon(Icons.bluetooth_disabled, size: 64, color: Colors.grey),
-          SizedBox(height: 16),
+        children: [
+          const Icon(Icons.bluetooth_disabled, size: 64, color: Colors.grey),
+          const SizedBox(height: 16),
           Text(
-            "Scooter not connected",
-            style: TextStyle(fontSize: 18, color: Colors.grey),
+            FlutterI18n.translate(context, "nav_disconnected_title"),
+            style: const TextStyle(fontSize: 18, color: Colors.grey),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
-            "Connect to your scooter to see saved destinations.",
-            style: TextStyle(color: Colors.grey),
+            FlutterI18n.translate(context, "nav_disconnected_subtitle"),
+            style: const TextStyle(color: Colors.grey),
           ),
         ],
       ),
@@ -820,21 +868,21 @@ class _NoDestinationsEmpty extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      children: const [
-        SizedBox(height: 120),
+      children: [
+        const SizedBox(height: 120),
         Center(
           child: Column(
             children: [
-              Icon(Icons.bookmark_border, size: 64, color: Colors.grey),
-              SizedBox(height: 16),
+              const Icon(Icons.bookmark_border, size: 64, color: Colors.grey),
+              const SizedBox(height: 16),
               Text(
-                "No saved destinations",
-                style: TextStyle(fontSize: 18, color: Colors.grey),
+                FlutterI18n.translate(context, "nav_empty_title"),
+                style: const TextStyle(fontSize: 18, color: Colors.grey),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
-                "Pull down to refresh.",
-                style: TextStyle(color: Colors.grey),
+                FlutterI18n.translate(context, "nav_empty_subtitle"),
+                style: const TextStyle(color: Colors.grey),
               ),
             ],
           ),
@@ -983,7 +1031,7 @@ class _PhotonAutocompleteState extends State<_PhotonAutocomplete> {
         focusNode: _focusNode,
         onChanged: _onChanged,
         decoration: InputDecoration(
-          hintText: "Search for an address...",
+          hintText: FlutterI18n.translate(context, "nav_search_hint"),
           prefixIcon: const Icon(Icons.search),
           suffixIcon: _controller.text.isNotEmpty
               ? IconButton(

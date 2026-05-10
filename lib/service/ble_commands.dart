@@ -9,7 +9,31 @@ import '../domain/nav_destination.dart';
 import '../domain/statistics_helper.dart';
 import '../infrastructure/characteristic_repository.dart';
 
-final _log = Logger('BleCommands');
+final log = Logger('BleCommands');
+
+/// Reads a counted list from an extended response [stream].
+///
+/// Expects the first message to carry the count as its last colon-separated
+/// segment (e.g. `keycard:count:3`), followed by that many entry messages.
+/// [parseEntry] converts each entry message to [T]; returning null skips it.
+Future<List<T>> _readExtendedList<T>(
+  Stream<String> stream,
+  T? Function(String msg) parseEntry,
+) async {
+  final List<T> results = [];
+  int? count;
+  await for (final msg in stream) {
+    if (count == null) {
+      count = int.tryParse(msg.split(':').last) ?? 0;
+      if (count == 0) break;
+    } else {
+      final entry = parseEntry(msg);
+      if (entry != null) results.add(entry);
+      if (results.length >= count) break;
+    }
+  }
+  return results;
+}
 
 /// Writes an ASCII command to the scooter's BLE command characteristic.
 void sendCommand(
@@ -18,7 +42,7 @@ void sendCommand(
   String command, {
   BluetoothCharacteristic? characteristic,
 }) {
-  _log.fine("Sending command: $command");
+  log.fine("Sending command: $command");
   if (scooter == null) {
     throw "Scooter not found!";
   }
@@ -35,7 +59,9 @@ void sendCommand(
   target.write(ascii.encode(command));
 }
 
-/// sends a command to the extended characteristic (only available on librescoot firmware) and waits for a response on the extended response characteristic
+/// Sends a command to the extended characteristic (only available on librescoot
+/// firmware) and waits for a single response on the extended response
+/// characteristic. Returns null on timeout.
 Future<String?> sendLsExtendedCommand(
   BluetoothDevice? scooter,
   CharacteristicRepository repo,
@@ -53,13 +79,13 @@ Future<String?> sendLsExtendedCommand(
   await resp.setNotifyValue(true);
   try {
     sendCommand(scooter, repo, command, characteristic: cmd);
-    final value = await resp.onValueReceived
+    return await resp.onValueReceived
         .where((v) => v.isNotEmpty)
+        .map((v) => ascii.decode(v).replaceAll('\x00', ''))
         .timeout(const Duration(seconds: 10), onTimeout: (sink) => sink.close())
         .first;
-    return ascii.decode(value).replaceAll('\x00', '');
   } on StateError {
-    // stream closed without emitting a value (timeout)
+    log.warning("sendLsExtendedCommand: timeout waiting for response to '$command'");
     return null;
   } finally {
     await resp.setNotifyValue(false);
@@ -187,7 +213,39 @@ void hibernateCommand(
   );
 }
 
-Future<bool> navigateCommand(
+Future<void> enterUMSModeCommand(
+  BluetoothDevice? scooter,
+  CharacteristicRepository repo,
+) async {
+  final response = await sendLsExtendedCommand(
+    scooter,
+    repo,
+    "usb:ums",
+  );
+  if (response != "usb:ok") {
+    log.severe("Failed to enter UMS mode, response: $response");
+    throw "Failed to enter UMS mode, response: $response";
+  }
+  return;
+}
+
+Future<void> enterNormalUsbModeCommand(
+  BluetoothDevice? scooter,
+  CharacteristicRepository repo,
+) async {
+  final response = await sendLsExtendedCommand(
+    scooter,
+    repo,
+    "usb:normal",
+  );
+  if (response != "usb:ok") {
+    log.severe("Failed to enter normal USB mode, response: $response");
+    throw "Failed to enter normal USB mode, response: $response";
+  }
+  return;
+}
+
+Future<void> navigateCommand(
   BluetoothDevice? scooter,
   CharacteristicRepository repo,
   NavDestination destination,
@@ -197,10 +255,14 @@ Future<bool> navigateCommand(
     repo,
     "nav:dest ${destination.location.latitude},${destination.location.longitude}${destination.name != null ? ",${destination.name}" : ""}",
   );
-  return response == "nav:ok";
+  if (response != "nav:ok") {
+    log.severe("Failed to navigate, response: $response");
+    throw "Failed to navigate, response: $response";
+  }
+  return;
 }
 
-Future<bool> cancelNavigationCommand(
+Future<void> cancelNavigationCommand(
   BluetoothDevice? scooter,
   CharacteristicRepository repo,
 ) async {
@@ -209,7 +271,11 @@ Future<bool> cancelNavigationCommand(
     repo,
     "nav:clear",
   );
-  return response == "nav:ok";
+  if (response != "nav:ok") {
+    log.severe("Failed to cancel navigation, response: $response");
+    throw "Failed to cancel navigation, response: $response";
+  }
+  return;
 }
 
 /// Saves a navigation destination on the scooter. Returns the ID of the saved destination if successful.
@@ -219,6 +285,7 @@ Future<String> saveNavDestinationCommand(
   NavDestination destination,
 ) async {
   if (destination.name == null || destination.name!.isEmpty) {
+    log.warning("Destination name cannot be empty when storing as favorite");
     throw "Destination name cannot be empty when storing as favorite";
   }
   final response = await sendLsExtendedCommand(
@@ -229,6 +296,7 @@ Future<String> saveNavDestinationCommand(
 
   String? id = response?.split(":").last;
   if (id == null) {
+    log.severe("Failed to save navigation destination, response: $response");
     throw "Failed to save navigation destination";
   }
   return id;
@@ -250,50 +318,32 @@ Future<List<NavDestination>> listFavDestinationsCommand(
   await resp.setNotifyValue(true);
   try {
     sendCommand(scooter, repo, "nav:fav:list", characteristic: cmd);
-
     final stream = resp.onValueReceived
         .where((v) => v.isNotEmpty)
         .map((v) => ascii.decode(v).replaceAll('\x00', ''))
         .timeout(const Duration(seconds: 10));
-
-    // Use a single subscription to avoid BehaviorSubject replay issues.
-    // First message is nav:fav:count:<n>, followed by one message per entry.
-    final List<NavDestination> destinations = [];
-    int? count;
-    await for (final msg in stream) {
-      if (count == null) {
-        // First message: nav:fav:count:<n>
-        count = int.tryParse(msg.split(":").last) ?? 0;
-        if (count == 0) break;
-      } else {
-        // Subsequent messages: nav:fav:<id>:lat,lon,name
-        final parts = msg.split(":");
-        if (parts.length >= 4) {
-          final id = parts[2];
-          final coords = parts[3].split(",");
-          if (coords.length >= 2) {
-            final lat = double.tryParse(coords[0]);
-            final lon = double.tryParse(coords[1]);
-            if (lat != null && lon != null) {
-              final name = coords.length >= 3 ? coords.sublist(2).join(",") : null;
-              destinations.add(NavDestination(
-                location: LatLng(lat, lon),
-                name: name?.isNotEmpty == true ? name : null,
-                id: id,
-              ));
-            }
-          }
-        }
-        if (destinations.length >= count) break;
-      }
-    }
-    return destinations;
+    return await _readExtendedList(stream, (msg) {
+      // format: nav:fav:<id>:lat,lon[,name]
+      final parts = msg.split(":");
+      if (parts.length < 4) return null;
+      final coords = parts[3].split(",");
+      if (coords.length < 2) return null;
+      final lat = double.tryParse(coords[0]);
+      final lon = double.tryParse(coords[1]);
+      if (lat == null || lon == null) return null;
+      final name = coords.length >= 3 ? coords.sublist(2).join(",") : null;
+      return NavDestination(
+        location: LatLng(lat, lon),
+        name: name?.isNotEmpty == true ? name : null,
+        id: parts[2],
+      );
+    });
   } finally {
     await resp.setNotifyValue(false);
   }
 }
 
-Future<bool> navigateFavCommand(
+Future<void> navigateFavCommand(
   BluetoothDevice? scooter,
   CharacteristicRepository repo,
   String id,
@@ -303,10 +353,14 @@ Future<bool> navigateFavCommand(
     repo,
     "nav:fav:navigate $id",
   );
-  return response == "nav:ok";
+  if (response != "nav:ok") {
+    log.severe("Failed to navigate to favorite destination, response: $response");
+    throw "Failed to navigate to favorite destination, response: $response";
+  }
+  return;
 }
 
-Future<bool> deleteFavDestinationCommand(
+Future<void> deleteFavDestinationCommand(
   BluetoothDevice? scooter,
   CharacteristicRepository repo,
   String id,
@@ -316,11 +370,32 @@ Future<bool> deleteFavDestinationCommand(
     repo,
     "nav:fav:delete $id",
   );
-  return response == "nav:ok";
+  if (response != "nav:ok") {
+    log.severe("Failed to delete favorite destination, response: $response");
+    throw "Failed to delete favorite destination, response: $response";
+  }
+  return;
+}
+
+/// Counts the number of keycards registered on the scooter by sending a command and listening for the count response.
+/// Returns the count as an integer, or null if the command fails or times out.
+Future<int?> countKeycardsCommand(
+  BluetoothDevice? scooter,
+  CharacteristicRepository repo,
+) async {
+  final response = await sendLsExtendedCommand(
+    scooter,
+    repo,
+    "keycard:count",
+  );
+  if (response != null && response.startsWith("keycard:count:")) {
+    return int.tryParse(response.split(":").last);
+  }
+  return null;
 }
 
 /// Lists keycards registered on the scooter.
-/// Expects: keycard:count:<n>, then one keycard:<uid> message per entry.
+/// Expects: keycard:count:<n>, then one keycard:card:<uid> message per entry.
 Future<List<String>> listKeycardsCommand(
   BluetoothDevice? scooter,
   CharacteristicRepository repo,
@@ -337,32 +412,55 @@ Future<List<String>> listKeycardsCommand(
   await resp.setNotifyValue(true);
   try {
     sendCommand(scooter, repo, "keycard:list", characteristic: cmd);
-
     final stream = resp.onValueReceived
         .where((v) => v.isNotEmpty)
         .map((v) => ascii.decode(v).replaceAll('\x00', ''))
         .timeout(const Duration(seconds: 10));
-
-    // Use a single subscription to avoid BehaviorSubject replay issues.
-    // First message: keycard:count:<n>, followed by one keycard:<uid> per entry.
-    final List<String> uids = [];
-    int? count;
-    await for (final msg in stream) {
-      if (count == null) {
-        count = int.tryParse(msg.split(":").last) ?? 0;
-        if (count == 0) break;
-      } else {
-        // format: keycard:<uid>
-        final parts = msg.split(":");
-        if (parts.length >= 2) {
-          final uid = parts.sublist(1).join(":");
-          if (uid.isNotEmpty) uids.add(uid);
-        }
-        if (uids.length >= count) break;
+    return await _readExtendedList(stream, (msg) {
+      // format: keycard:card:<uid>
+      final parts = msg.split(":");
+      if (parts.length >= 3 && parts[0] == "keycard" && parts[1] == "card") {
+        final uid = parts.sublist(2).join(":");
+        return uid.isNotEmpty ? uid : null;
       }
-    }
-    return uids;
+      log.warning("listKeycardsCommand: unexpected message format: '$msg'");
+      return null;
+    });
   } finally {
     await resp.setNotifyValue(false);
   }
+}
+
+Future<void> deleteKeycardCommand(
+  BluetoothDevice? scooter,
+  CharacteristicRepository repo,
+  String uid,
+) async {
+  final response = await sendLsExtendedCommand(
+    scooter,
+    repo,
+    "keycard:remove:$uid",
+  );
+  if (response != "keycard:ok") {
+    log.severe("Failed to delete keycard, response: $response");
+    throw "Failed to delete keycard, response: $response";
+  }
+  return;
+}
+
+Future<void> addKeycardCommand(
+  BluetoothDevice? scooter,
+  CharacteristicRepository repo,
+  String uid,
+) async {
+  final response = await sendLsExtendedCommand(
+    scooter,
+    repo,
+    "keycard:add:$uid",
+  );
+  if (response != "keycard:ok") {
+    log.severe("Failed to add keycard, response: $response");
+    throw "Failed to add keycard, response: $response";
+  }
+  return;
 }

@@ -12,7 +12,7 @@ class ScooterActionButton extends StatelessWidget {
         _icon = icon,
         _iconColor = iconColor,
         _label = label,
-        _showBubble = false;
+        _showBubble = showBubble;
 
   final void Function()? _onPressed;
   final IconData _icon;
@@ -30,19 +30,6 @@ class ScooterActionButton extends StatelessWidget {
       children: [
         Stack(
           children: [
-            if (_showBubble)
-              Positioned(
-                right: 0,
-                top: 0,
-                child: Container(
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
             OutlinedButton(
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.all(24),
@@ -56,6 +43,19 @@ class ScooterActionButton extends StatelessWidget {
                 color: mainColor,
               ),
             ),
+            if (_showBubble)
+              Positioned(
+                right: 2,
+                top: 2,
+                child: Container(
+                  width: 16,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
           ],
         ),
         const SizedBox(height: 16),

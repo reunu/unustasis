@@ -7,12 +7,18 @@ import '../domain/scooter_power_state.dart';
 import '../infrastructure/characteristic_repository.dart';
 import '../infrastructure/scooter_reader.dart';
 
+enum UsbMode {
+  normal,
+  massStorage,
+}
+
 class VehicleStatus {
   final log = Logger('VehicleStatus');
-
   bool? seatClosed;
   bool? handlebarsLocked;
   bool? navigationActive;
+
+  UsbMode? usbMode;
   ScooterVehicleState? vehicleState;
   ScooterPowerState? powerState;
 
@@ -25,6 +31,7 @@ class VehicleStatus {
     required VoidCallback onStateUpdate,
     required VoidCallback onSeatUpdate,
     required void Function() onNavigationChanged,
+    required void Function() onUsbModeChanged,
     required void Function(bool?) onHandlebarsChanged,
   }) {
     log.info('Wiring vehicle status subscriptions');
@@ -54,6 +61,29 @@ class VehicleStatus {
       handlebarsLocked = value != 'unlocked';
       onHandlebarsChanged(handlebarsLocked);
     });
+
+    // USB status
+    try {
+      subscribeToIntValue(
+        chars.umsStatusCharacteristic!,
+        'USB Status',
+        singleByte: true,
+        (value) {
+          log.info('USB status update: $value');
+          // USB status codes: 0 = normal, 1 = usb mass storage
+          if (value == 0) {
+            usbMode = UsbMode.normal;
+            log.info('Scooter is in normal mode');
+          } else if (value == 1) {
+            usbMode = UsbMode.massStorage;
+            log.info('Scooter is in usb mass storage mode');
+          }
+          onUsbModeChanged();
+        },
+      );
+    } catch (e) {
+      log.info('UMS status characteristic not available, skipping subscription');
+    }
 
     // Navigation
     try {

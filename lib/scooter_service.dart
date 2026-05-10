@@ -265,19 +265,16 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   Future<void> _dispatchPendingNavigation() async {
     if (_pendingNavigation == null || myScooter == null) return;
     try {
-      final success = await commands.navigateCommand(
+      await commands.navigateCommand(
         myScooter!,
         characteristicRepository,
         _pendingNavigation!,
       );
-      if (success) {
-        log.info('Pending navigation dispatched to ${_pendingNavigation!.name}');
-        await setPendingNavigation(null);
-      } else {
-        log.warning('Pending navigation dispatch failed (nav:ok not received)');
-      }
+
+      log.info('Pending navigation dispatched to ${_pendingNavigation!.name}');
+      await setPendingNavigation(null);
     } catch (e) {
-      log.warning('Error dispatching pending navigation', e);
+      log.warning('Pending navigation dispatch failed: $e');
     }
   }
 
@@ -577,6 +574,10 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
         notifyListeners();
       },
       onNavigationChanged: () {
+        ping();
+        notifyListeners();
+      },
+      onUsbModeChanged: () {
         ping();
         notifyListeners();
       },
