@@ -29,27 +29,27 @@ class UserSettings {
     _log.info("Restored cached settings");
   }
 
-  void setAutoUnlock(bool enabled) {
+  Future<void> setAutoUnlock(bool enabled) async {
     autoUnlock = enabled;
-    _prefs.setBool("autoUnlock", enabled);
+    await _prefs.setBool("autoUnlock", enabled);
     _updateBackgroundService({"autoUnlock": enabled});
   }
 
-  void setAutoUnlockThreshold(int threshold) {
+  Future<void> setAutoUnlockThreshold(int threshold) async {
     autoUnlockThreshold = threshold;
-    _prefs.setInt("autoUnlockThreshold", threshold);
+    await _prefs.setInt("autoUnlockThreshold", threshold);
     _updateBackgroundService({"autoUnlockThreshold": threshold});
   }
 
-  void setOpenSeatOnUnlock(bool enabled) {
+  Future<void> setOpenSeatOnUnlock(bool enabled) async {
     openSeatOnUnlock = enabled;
-    _prefs.setBool("openSeatOnUnlock", enabled);
+    await _prefs.setBool("openSeatOnUnlock", enabled);
     _updateBackgroundService({"openSeatOnUnlock": enabled});
   }
 
-  void setHazardLocking(bool enabled) {
+  Future<void> setHazardLocking(bool enabled) async {
     hazardLocking = enabled;
-    _prefs.setBool("hazardLocking", enabled);
+    await _prefs.setBool("hazardLocking", enabled);
     _updateBackgroundService({"hazardLocking": enabled});
   }
 

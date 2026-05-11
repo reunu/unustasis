@@ -918,7 +918,7 @@ class _PhotonAutocompleteState extends State<_PhotonAutocomplete> {
   LatLng? _lastOwnLocation;
 
   @override
-  void initState() async {
+  void initState() {
     super.initState();
     _focusNode = widget.focusNode ?? FocusNode();
     _focusNode.addListener(_onFocusChanged);
