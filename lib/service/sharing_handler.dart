@@ -163,19 +163,9 @@ class SharingHandler with WidgetsBindingObserver {
     final nav = navigatorKey.currentState;
     if (nav == null) return;
 
-    // If NavigationScreen is already open, pop it first so we get a fresh
-    // instance that shows the confirmation dialog for the new destination.
-    bool alreadyOnNavScreen = false;
-    nav.popUntil((route) {
-      if (route.settings.name == 'navigation') {
-        alreadyOnNavScreen = true;
-      }
-      return true; // don't actually pop
-    });
-    if (alreadyOnNavScreen) {
-      // Pop the existing NavigationScreen, then push a new one
-      nav.popUntil((route) => route.settings.name != 'navigation');
-    }
+    // Pop any existing NavigationScreen so we always get a fresh instance
+    // that shows the confirmation dialog for the new destination.
+    nav.popUntil((route) => route.settings.name != 'navigation');
     nav.push(
       MaterialPageRoute(
         settings: const RouteSettings(name: 'navigation'),

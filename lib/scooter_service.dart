@@ -644,7 +644,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     bool checkHandlebars = true,
     EventSource source = EventSource.app,
   }) async {
-    commands.unlockScooter(
+    await commands.unlockScooter(
       myScooter,
       characteristicRepository,
       primarySOC: battery.primarySOC,
@@ -695,7 +695,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       log.warning("Locking with open seatbox!");
     }
 
-    commands.lockScooter(
+    await commands.lockScooter(
       myScooter,
       characteristicRepository,
       primarySOC: battery.primarySOC,
@@ -735,8 +735,8 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     });
   }
 
-  void openSeat({EventSource source = EventSource.app}) {
-    commands.openSeatCommand(
+  Future<void> openSeat({EventSource source = EventSource.app}) async {
+    await commands.openSeatCommand(
       myScooter,
       characteristicRepository,
       primarySOC: battery.primarySOC,
@@ -745,8 +745,8 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     );
   }
 
-  void blink({required bool left, required bool right}) {
-    commands.blinkCommand(myScooter, characteristicRepository, left: left, right: right);
+  Future<void> blink({required bool left, required bool right}) async {
+    await commands.blinkCommand(myScooter, characteristicRepository, left: left, right: right);
   }
 
   Future<void> hazard({int times = 1}) async {
@@ -756,11 +756,19 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   }
 
   Future<void> wakeUp() async {
-    commands.wakeUpCommand(myScooter, characteristicRepository);
+    await commands.wakeUpCommand(myScooter, characteristicRepository);
   }
 
   Future<void> hibernate() async {
-    commands.hibernateCommand(myScooter, characteristicRepository);
+    await commands.hibernateCommand(myScooter, characteristicRepository);
+  }
+
+  Future<void> reboot() async {
+    await commands.rebootCommand(myScooter, characteristicRepository);
+  }
+
+  Future<void> hardReboot() async {
+    await commands.hardRebootCommand(myScooter, characteristicRepository);
   }
 
   void _pollLocation() async {

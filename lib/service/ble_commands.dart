@@ -36,12 +36,12 @@ Future<List<T>> _readExtendedList<T>(
 }
 
 /// Writes an ASCII command to the scooter's BLE command characteristic.
-void sendCommand(
+Future<void> sendCommand(
   BluetoothDevice? scooter,
   CharacteristicRepository characteristicRepository,
   String command, {
   BluetoothCharacteristic? characteristic,
-}) {
+}) async {
   log.fine("Sending command: $command");
   if (scooter == null) {
     throw "Scooter not found!";
@@ -56,7 +56,7 @@ void sendCommand(
     throw "Could not send command, move closer or reconnect";
   }
 
-  target.write(ascii.encode(command));
+  await target.write(ascii.encode(command));
 }
 
 /// Sends a command to the extended characteristic (only available on librescoot
@@ -78,7 +78,7 @@ Future<String?> sendLsExtendedCommand(
 
   await resp.setNotifyValue(true);
   try {
-    sendCommand(scooter, repo, command, characteristic: cmd);
+    await sendCommand(scooter, repo, command, characteristic: cmd);
     return await resp.onValueReceived
         .where((v) => v.isNotEmpty)
         .map((v) => ascii.decode(v).replaceAll('\x00', ''))
@@ -107,14 +107,14 @@ Future<void> sendStaticPowerCommand(String id, String command) async {
   await commandCharacteristic!.write(ascii.encode(command));
 }
 
-void unlockScooter(
+Future<void> unlockScooter(
   BluetoothDevice? scooter,
   CharacteristicRepository repo, {
   required int? primarySOC,
   required int? secondarySOC,
   required EventSource source,
-}) {
-  sendCommand(scooter, repo, "scooter:state unlock");
+}) async {
+  await sendCommand(scooter, repo, "scooter:state unlock");
   HapticFeedback.heavyImpact();
   StatisticsHelper().logEvent(
     eventType: EventType.unlock,
@@ -125,15 +125,15 @@ void unlockScooter(
   );
 }
 
-void lockScooter(
+Future<void> lockScooter(
   BluetoothDevice? scooter,
   CharacteristicRepository repo, {
   required int? primarySOC,
   required int? secondarySOC,
   required EventSource source,
   dynamic lastLocation,
-}) {
-  sendCommand(scooter, repo, "scooter:state lock");
+}) async {
+  await sendCommand(scooter, repo, "scooter:state lock");
   HapticFeedback.heavyImpact();
   StatisticsHelper().logEvent(
     eventType: EventType.lock,
@@ -145,14 +145,14 @@ void lockScooter(
   );
 }
 
-void openSeatCommand(
+Future<void> openSeatCommand(
   BluetoothDevice? scooter,
   CharacteristicRepository repo, {
   required int? primarySOC,
   required int? secondarySOC,
   required EventSource source,
-}) {
-  sendCommand(scooter, repo, "scooter:seatbox open");
+}) async {
+  await sendCommand(scooter, repo, "scooter:seatbox open");
   StatisticsHelper().logEvent(
     eventType: EventType.openSeat,
     scooterId: scooter!.remoteId.toString(),
@@ -162,28 +162,28 @@ void openSeatCommand(
   );
 }
 
-void blinkCommand(
+Future<void> blinkCommand(
   BluetoothDevice? scooter,
   CharacteristicRepository repo, {
   required bool left,
   required bool right,
-}) {
+}) async {
   if (left && !right) {
-    sendCommand(scooter, repo, "scooter:blinker left");
+    await sendCommand(scooter, repo, "scooter:blinker left");
   } else if (!left && right) {
-    sendCommand(scooter, repo, "scooter:blinker right");
+    await sendCommand(scooter, repo, "scooter:blinker right");
   } else if (left && right) {
-    sendCommand(scooter, repo, "scooter:blinker both");
+    await sendCommand(scooter, repo, "scooter:blinker both");
   } else {
-    sendCommand(scooter, repo, "scooter:blinker off");
+    await sendCommand(scooter, repo, "scooter:blinker off");
   }
 }
 
-void wakeUpCommand(
+Future<void> wakeUpCommand(
   BluetoothDevice? scooter,
   CharacteristicRepository repo,
-) {
-  sendCommand(
+) async {
+  await sendCommand(
     scooter,
     repo,
     "wakeup",
@@ -196,11 +196,11 @@ void wakeUpCommand(
   );
 }
 
-void hibernateCommand(
+Future<void> hibernateCommand(
   BluetoothDevice? scooter,
   CharacteristicRepository repo,
-) {
-  sendCommand(
+) async {
+  await sendCommand(
     scooter,
     repo,
     "hibernate",
@@ -210,6 +210,30 @@ void hibernateCommand(
     eventType: EventType.hibernate,
     scooterId: scooter!.remoteId.toString(),
     source: EventSource.app,
+  );
+}
+
+Future<void> rebootCommand(
+  BluetoothDevice? scooter,
+  CharacteristicRepository repo,
+) async {
+  await sendCommand(
+    scooter,
+    repo,
+    "reboot",
+    characteristic: repo.hibernationCommandCharacteristic,
+  );
+}
+
+Future<void> hardRebootCommand(
+  BluetoothDevice? scooter,
+  CharacteristicRepository repo,
+) async {
+  await sendCommand(
+    scooter,
+    repo,
+    "hard-reboot",
+    characteristic: repo.hibernationCommandCharacteristic,
   );
 }
 
@@ -317,7 +341,7 @@ Future<List<NavDestination>> listFavDestinationsCommand(
 
   await resp.setNotifyValue(true);
   try {
-    sendCommand(scooter, repo, "nav:fav:list", characteristic: cmd);
+    await sendCommand(scooter, repo, "nav:fav:list", characteristic: cmd);
     final stream = resp.onValueReceived
         .where((v) => v.isNotEmpty)
         .map((v) => ascii.decode(v).replaceAll('\x00', ''))
@@ -411,7 +435,7 @@ Future<List<String>> listKeycardsCommand(
 
   await resp.setNotifyValue(true);
   try {
-    sendCommand(scooter, repo, "keycard:list", characteristic: cmd);
+    await sendCommand(scooter, repo, "keycard:list", characteristic: cmd);
     final stream = resp.onValueReceived
         .where((v) => v.isNotEmpty)
         .map((v) => ascii.decode(v).replaceAll('\x00', ''))
