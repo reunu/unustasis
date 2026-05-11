@@ -360,7 +360,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   children: [
                                     ScooterActionButton(
                                       icon: Icons.navigation_outlined,
-                                      label: "Navigation",
+                                      label: FlutterI18n.translate(context, 'nav_title'),
                                       showBubble: context.select<ScooterService, bool>(
                                         (service) =>
                                             service.navigationActive == true || service.pendingNavigation != null,
