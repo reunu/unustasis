@@ -131,7 +131,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
             _initialLoad = false;
           });
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Connection timed out, showing last known destinations.")),
+            SnackBar(content: Text(FlutterI18n.translate(context, "nav_timeout_cached"))),
           );
         }
       }

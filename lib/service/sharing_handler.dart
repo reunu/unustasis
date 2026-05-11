@@ -139,13 +139,17 @@ class SharingHandler with WidgetsBindingObserver {
         _pushNavigationScreen(initialDestination: dest);
       } else {
         _log.info('Could not parse location from shared text');
-        Fluttertoast.showToast(
-          msg: FlutterI18n.translate(
-            navigatorKey.currentContext!,
-            "share_parse_error",
-          ),
-          toastLength: Toast.LENGTH_LONG,
-        );
+        final ctx = navigatorKey.currentContext;
+        if (ctx != null) {
+          Fluttertoast.showToast(
+            msg: FlutterI18n.translate(
+              // ignore: use_build_context_synchronously
+              ctx,
+              "share_parse_error",
+            ),
+            toastLength: Toast.LENGTH_LONG,
+          );
+        }
 
         // Open NavigationScreen so the user can search manually
         _pushNavigationScreen();

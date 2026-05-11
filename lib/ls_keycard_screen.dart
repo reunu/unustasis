@@ -198,7 +198,7 @@ class _LsKeycardScreenState extends State<LsKeycardScreen> {
         context.read<ScooterService>().characteristicRepository,
         uid,
       );
-      if(!mounted) return;
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(FlutterI18n.translate(context, "ls_keycard_add_success"))),
       );
@@ -347,9 +347,10 @@ class _KeycardCardState extends State<KeycardCard> with SingleTickerProviderStat
             if (value == 'rename') _showRenameDialog(context);
             if (value == 'delete') _confirmAndDeleteKeycard(context);
           },
-          itemBuilder: (_) => [
-            const PopupMenuItem(value: 'rename', child: Text('Rename')),
-            if (!widget.onlyCard) const PopupMenuItem(value: 'delete', child: Text('Delete')),
+          itemBuilder: (ctx) => [
+            PopupMenuItem(value: 'rename', child: Text(FlutterI18n.translate(ctx, "nav_rename"))),
+            if (!widget.onlyCard)
+              PopupMenuItem(value: 'delete', child: Text(FlutterI18n.translate(ctx, "ls_keycard_delete_button"))),
           ],
         ),
       ),
@@ -382,22 +383,22 @@ class _KeycardCardState extends State<KeycardCard> with SingleTickerProviderStat
     final alias = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Rename Keycard"),
+        title: Text(FlutterI18n.translate(context, "ls_keycard_rename_title")),
         content: TextField(
           controller: controller,
           autofocus: true,
           textCapitalization: TextCapitalization.words,
-          decoration: const InputDecoration(hintText: "Alias (optional)"),
+          decoration: InputDecoration(hintText: FlutterI18n.translate(context, "ls_keycard_alias_hint")),
           onSubmitted: (v) => Navigator.of(context).pop(v.trim()),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text("Cancel"),
+            child: Text(FlutterI18n.translate(context, "cancel")),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(controller.text.trim()),
-            child: const Text("Save"),
+            child: Text(FlutterI18n.translate(context, "ls_keycard_save")),
           ),
         ],
       ),
@@ -433,4 +434,3 @@ class _KeycardCardState extends State<KeycardCard> with SingleTickerProviderStat
     );
   }
 }
-

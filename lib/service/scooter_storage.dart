@@ -16,7 +16,12 @@ class ScooterStorage {
     _log.info("Fetching saved scooters from SharedPreferences");
     Map<String, SavedScooter> loaded = {};
     try {
-      Map<String, dynamic> data = jsonDecode((await _prefs.getString("savedScooters"))!) as Map<String, dynamic>;
+      final saved = await _prefs.getString("savedScooters");
+      if (saved == null) {
+        _log.info("No saved scooters found");
+        return;
+      }
+      Map<String, dynamic> data = jsonDecode(saved) as Map<String, dynamic>;
       _log.info("Found ${data.length} saved scooters");
       for (String id in data.keys) {
         if (data[id] is Map<String, dynamic>) {
