@@ -173,6 +173,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
     if (km <= 100) return true;
 
     return await showDialog<bool>(
+          // ignore: use_build_context_synchronously
           context: context,
           builder: (ctx) => AlertDialog(
             title: Text(FlutterI18n.translate(ctx, "nav_far_away_title")),
