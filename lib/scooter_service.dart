@@ -355,7 +355,6 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
 
     return scanner.findEligibleScooter(
       getIds: getSavedScooterIds,
-      hasSavedScooters: savedScooters.isNotEmpty,
       excludedScooterIds: excludedScooterIds,
       includeSystemScooters: includeSystemScooters,
     );
@@ -444,8 +443,12 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     Future.delayed(const Duration(milliseconds: 1500), () {
       FlutterNativeSplash.remove();
     });
-    // Try to turn on Bluetooth (Android-Only)
-    await FlutterBluePlus.adapterState.where((val) => val == BluetoothAdapterState.on).first;
+
+    // If Bluetooth is already on, don't wait for another "on" transition event.
+    final BluetoothAdapterState adapterStateNow = await flutterBluePlus.adapterState.first;
+    if (adapterStateNow != BluetoothAdapterState.on) {
+      await FlutterBluePlus.adapterState.where((val) => val == BluetoothAdapterState.on).first;
+    }
 
     // CLEANUP
     _foundSth = false;
@@ -484,26 +487,38 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       ) async {
         // retry if we stop scanning without having found anything
         if (scanState == false && !_foundSth) {
-          await Future.delayed(const Duration(seconds: 3));
-          if (!_foundSth && !scanning && _autoRestarting) {
-            // make sure nothing happened in these few seconds
-            log.info("Auto-restarting...${_targetScooterId != null ? " targeting $_targetScooterId" : ""}");
-            if (_targetScooterId != null) {
-              // Try to connect to the specific scooter the user selected
-              try {
-                await connectToScooterId(_targetScooterId!);
-              } catch (e) {
-                log.warning("Failed to connect to target scooter $_targetScooterId during auto-restart: $e");
-              }
-            } else {
-              // Fall back to generic start() for auto-connect behavior
-              start();
-            }
-          }
+          await _attemptAutoRestart();
         }
       });
+
+      // If scan already ended before this listener was attached, trigger the same check.
+      if (!_foundSth && !flutterBluePlus.isScanningNow) {
+        await _attemptAutoRestart();
+      }
     } else {
       log.info("Auto-restart already running, avoiding duplicate");
+      if (targetScooterId != null) {
+        _targetScooterId = targetScooterId;
+      }
+    }
+  }
+
+  Future<void> _attemptAutoRestart() async {
+    await Future.delayed(const Duration(seconds: 3));
+    if (!_foundSth && !scanning && _autoRestarting) {
+      // make sure nothing happened in these few seconds
+      log.info("Auto-restarting...${_targetScooterId != null ? " targeting $_targetScooterId" : ""}");
+      if (_targetScooterId != null) {
+        // Try to connect to the specific scooter the user selected
+        try {
+          await connectToScooterId(_targetScooterId!);
+        } catch (e) {
+          log.warning("Failed to connect to target scooter $_targetScooterId during auto-restart: $e");
+        }
+      } else {
+        // Fall back to generic start() for auto-connect behavior
+        start();
+      }
     }
   }
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:logging/logging.dart';
 
@@ -14,7 +16,6 @@ class BleScanner {
   /// then falls back to a BLE scan.
   Future<BluetoothDevice?> findEligibleScooter({
     required Future<List<String>> Function({required bool onlyAutoConnect}) getIds,
-    required bool hasSavedScooters,
     List<String> excludedScooterIds = const [],
     bool includeSystemScooters = true,
   }) async {
@@ -37,7 +38,6 @@ class BleScanner {
     _log.info("Searching nearby devices");
     await for (BluetoothDevice foundScooter in getNearbyScooters(
       getIds: getIds,
-      hasSavedScooters: hasSavedScooters,
       preferSavedScooters: excludedScooterIds.isEmpty,
     )) {
       _log.fine("Found scooter: ${foundScooter.remoteId.toString()}");
@@ -73,24 +73,20 @@ class BleScanner {
   /// for those specific remote IDs. Otherwise scans for any "unu Scooter".
   Stream<BluetoothDevice> getNearbyScooters({
     required Future<List<String>> Function({required bool onlyAutoConnect}) getIds,
-    required bool hasSavedScooters,
     bool preferSavedScooters = true,
   }) async* {
     List<BluetoothDevice> foundScooterCache = [];
-    List<String> savedScooterIds = await getIds(onlyAutoConnect: true);
+    List<String> autoConnectScooterIds = await getIds(onlyAutoConnect: true);
 
-    if (savedScooterIds.isEmpty && hasSavedScooters) {
-      _log.info(
-        "We have saved scooters, but none with auto-connect enabled. Not scanning.",
-      );
-      return;
-    }
+    // Don't early-return here. Even if no scooters have autoConnect enabled,
+    // the user might still want to search for new scooters. The logic below
+    // will handle scanning appropriately based on preferSavedScooters.
 
-    if (hasSavedScooters && preferSavedScooters) {
-      _log.info("Looking for our scooters (saved IDs: $savedScooterIds)");
+    if (autoConnectScooterIds.isNotEmpty && preferSavedScooters) {
+      _log.info("Looking for our scooters (saved IDs: $autoConnectScooterIds)");
       try {
         _flutterBluePlus.startScan(
-          withRemoteIds: savedScooterIds,
+          withRemoteIds: autoConnectScooterIds,
           timeout: const Duration(seconds: 30),
         );
       } catch (e, stack) {
@@ -108,14 +104,40 @@ class BleScanner {
       }
     }
 
-    await for (var scanResult in _flutterBluePlus.onScanResults) {
-      if (scanResult.isNotEmpty) {
-        ScanResult r = scanResult.last;
-        if (!foundScooterCache.contains(r.device)) {
-          foundScooterCache.add(r.device);
-          yield r.device;
+    // onScanResults is a broadcast stream that never closes, so we wrap it in
+    // a StreamController that closes when isScanning goes false. Without this,
+    // the await-for loop hangs forever when no scooter is found, and start()
+    // never reaches startAutoRestart().
+    final scanResultsController = StreamController<List<ScanResult>>();
+
+    final resultsSub = _flutterBluePlus.onScanResults.listen(
+      (r) {
+        if (!scanResultsController.isClosed) scanResultsController.add(r);
+      },
+    );
+
+    // isScanning emits the current value immediately on listen. Skip the initial
+    // value and only close when it transitions from true→false.
+    final isScanSub = _flutterBluePlus.isScanning.skip(1).listen((isScanning) {
+      if (!isScanning && !scanResultsController.isClosed) {
+        scanResultsController.close();
+      }
+    });
+
+    try {
+      await for (var scanResult in scanResultsController.stream) {
+        if (scanResult.isNotEmpty) {
+          ScanResult r = scanResult.last;
+          if (!foundScooterCache.contains(r.device)) {
+            foundScooterCache.add(r.device);
+            yield r.device;
+          }
         }
       }
+    } finally {
+      resultsSub.cancel();
+      isScanSub.cancel();
+      if (!scanResultsController.isClosed) scanResultsController.close();
     }
   }
 }

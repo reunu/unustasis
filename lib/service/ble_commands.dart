@@ -488,3 +488,41 @@ Future<void> addKeycardCommand(
   }
   return;
 }
+
+/// Sets the auto-standby timer on the scooter. [time] is the duration until the scooter automatically enters standby mode when idle.
+/// 0 = disabled
+Future<void> setAutoStandbyTimeCommand(BluetoothDevice? scooter, CharacteristicRepository repo, Duration time) async {
+  final seconds = time.inSeconds;
+  if (seconds < 0) {
+    log.warning("Auto-standby time cannot be negative");
+    throw "Auto-standby time cannot be negative";
+  }
+  if (seconds > 3600) {
+    log.warning("Auto-standby time cannot be greater than 1 hour");
+    throw "Auto-standby time cannot be greater than 1 hour";
+  }
+  final response = await sendLsExtendedCommand(
+    scooter,
+    repo,
+    "config:auto-standby-seconds $seconds",
+  );
+  if (response != "config:ok") {
+    log.severe("Failed to set auto-standby time, response: $response");
+    throw "Failed to set auto-standby time, response: $response";
+  }
+  return;
+}
+
+Future<void> setAutoHibernateTimeCommand(BluetoothDevice? scooter, CharacteristicRepository repo, Duration time) async {
+  final seconds = time.inSeconds;
+  final response = await sendLsExtendedCommand(
+    scooter,
+    repo,
+    "config:hibernate-timer $seconds",
+  );
+  if (response != "config:ok") {
+    log.severe("Failed to set auto-hibernate time, response: $response");
+    throw "Failed to set auto-hibernate time, response: $response";
+  }
+  return;
+}
