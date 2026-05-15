@@ -606,7 +606,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
       crossAxisSpacing: 16,
       mainAxisSpacing: 16,
       crossAxisCount: 2,
-      childAspectRatio: 1.5,
+      childAspectRatio: 1.3,
       children: specialDests.map((dest) => _specialDestinationCard(dest)).toList(),
     );
   }
@@ -652,19 +652,20 @@ class _NavigationScreenState extends State<NavigationScreen> {
                 const SizedBox(height: 8),
                 Text(
                   destination.name!,
-                  style: Theme.of(context).textTheme.titleMedium,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(height: 1.1),
+                  maxLines: 2,
+                  overflow: TextOverflow.fade,
                   textAlign: TextAlign.center,
                 ),
-                _showingCached
-                    ? Text(
-                        FlutterI18n.translate(context, "nav_cached"),
-                        style: const TextStyle(fontStyle: FontStyle.italic),
-                        textAlign: TextAlign.center,
-                      )
-                    : Text(
-                        "${destination.location.latitude.toStringAsFixed(4)}, ${destination.location.longitude.toStringAsFixed(4)}",
-                        textAlign: TextAlign.center,
-                      ),
+                if (_showingCached)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      FlutterI18n.translate(context, "nav_cached"),
+                      style: const TextStyle(fontStyle: FontStyle.italic),
+                      textAlign: TextAlign.center,
+                    ),
+                  )
               ],
             ),
             if (!_showingCached)

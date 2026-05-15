@@ -45,7 +45,7 @@ dependencies:
   flutter_map: ^8.0.0
   geolocator: ^13.0.2
   latlong2: ^0.9.1
-  nfc_manager: ^4.0.2
+  flutter_nfc_kit: ^3.6.2
   package_info_plus: ^8.2.1
   http: ^1.2.1
   local_auth: ^2.2.0

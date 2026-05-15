@@ -202,7 +202,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.only(top: 40, bottom: 40),
+                      padding: const EdgeInsets.only(top: 40, bottom: 20),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         mainAxisSize: MainAxisSize.max,
@@ -219,10 +219,15 @@ class _HomeScreenState extends State<HomeScreen> {
                                     builder: (context) => const ScooterScreen(),
                                   ),
                                 ),
-                                // Hidden for stable release, but useful for various debugging
-                                //onLongPress: () {
-                                //  showSeatWarning();
-                                //},
+                                // // Hidden for stable release, but useful for various debugging
+                                // onLongPress: () {
+                                //   Navigator.push(
+                                //     context,
+                                //     MaterialPageRoute(
+                                //       builder: (context) => const LsKeycardScreen(),
+                                //     ),
+                                //   );
+                                // },
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   mainAxisSize: MainAxisSize.min,

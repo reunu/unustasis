@@ -394,5 +394,6 @@
     "nav_disconnected_subtitle": "Verbind je scooter om opgeslagen bestemmingen te zien.",
     "nav_empty_title": "Geen opgeslagen bestemmingen",
     "nav_empty_subtitle": "Veeg omlaag om te vernieuwen.",
+    "ls_keycard_ios_unsupported": "Kaart niet gedetecteerd? Zorg ervoor dat deze wordt ondersteund door iOS (MIFARE, ISO 7816, ISO 15693).",
     "ls_keycard_add_success": "Keycard succesvol toegevoegd!"
 }

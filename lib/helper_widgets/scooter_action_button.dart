@@ -32,7 +32,8 @@ class ScooterActionButton extends StatelessWidget {
           children: [
             OutlinedButton(
               style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.all(24),
+                shape: CircleBorder(),
+                padding: const EdgeInsets.all(20),
                 side: BorderSide(
                   color: mainColor,
                 ),
@@ -58,7 +59,7 @@ class ScooterActionButton extends StatelessWidget {
               ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         Text(
           _label,
           style: Theme.of(context).textTheme.labelLarge?.copyWith(color: mainColor),

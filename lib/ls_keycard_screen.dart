@@ -4,8 +4,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_nfc_kit/flutter_nfc_kit.dart';
 import 'package:logging/logging.dart';
-import 'package:nfc_manager/nfc_manager.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -53,10 +54,11 @@ class _LsKeycardScreenState extends State<LsKeycardScreen> {
         child: ListView.builder(
           physics: const AlwaysScrollableScrollPhysics(),
           itemCount: keycards.length,
+          padding: const EdgeInsets.only(top: 16, bottom: 32),
           itemBuilder: (context, index) {
             final keycard = keycards[index];
             return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: KeycardCard(
                 key: ValueKey(keycard),
                 index: index,
@@ -126,12 +128,17 @@ class _LsKeycardScreenState extends State<LsKeycardScreen> {
   void _startBackgroundNfcScan() async {
     if (!Platform.isAndroid) return;
     if (_isBackgroundScanning) return;
-    final availability = await NfcManager.instance.checkAvailability();
-    if (availability == NfcAvailability.unsupported || availability == NfcAvailability.disabled || !mounted) return;
+    final availability = await FlutterNfcKit.nfcAvailability;
+    if (availability != NFCAvailability.available || !mounted) return;
     setState(() => _isBackgroundScanning = true);
-    NfcManager.instance.startSession(
-      pollingOptions: {NfcPollingOption.iso14443},
-      onDiscovered: (tag) async {
+    // Poll in a loop so that each tap can be detected while the screen is open.
+    while (_isBackgroundScanning && mounted) {
+      try {
+        final tag = await FlutterNfcKit.poll(
+          androidPlatformSound: false,
+          androidCheckNDEF: false,
+        );
+        await FlutterNfcKit.finish();
         final uid = extractKeycardUid(tag);
         if (uid != null && keycards.contains(uid)) {
           await HapticFeedback.lightImpact();
@@ -141,31 +148,36 @@ class _LsKeycardScreenState extends State<LsKeycardScreen> {
           if (!mounted) return;
           setState(() => _highlightedUid = null);
         }
-      },
-    );
+      } catch (_) {
+        // Poll was cancelled (e.g. dialog opened) — stop the loop.
+        break;
+      }
+    }
+    if (mounted) setState(() => _isBackgroundScanning = false);
   }
 
   void _stopBackgroundNfcScan() {
     if (!_isBackgroundScanning) return;
-    NfcManager.instance.stopSession();
-    if (mounted) setState(() => _isBackgroundScanning = false);
+    _isBackgroundScanning = false;
+    FlutterNfcKit.finish().catchError((_) {});
+    if (mounted) setState(() {});
   }
 
   void _showAddKeycardDialog() async {
     _stopBackgroundNfcScan();
     // Check NFC availability before showing the dialog
-    final NfcAvailability nfcAvailability = await NfcManager.instance.checkAvailability();
+    final nfcAvailability = await FlutterNfcKit.nfcAvailability;
     if (!mounted) {
       _startBackgroundNfcScan();
       return;
     }
-    if (nfcAvailability == NfcAvailability.unsupported) {
+    if (nfcAvailability == NFCAvailability.not_supported) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(FlutterI18n.translate(context, "ls_keycard_nfc_unavailable"))),
       );
       _startBackgroundNfcScan();
       return;
-    } else if (nfcAvailability == NfcAvailability.disabled) {
+    } else if (nfcAvailability == NFCAvailability.disabled) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(FlutterI18n.translate(context, "ls_keycard_nfc_disabled")),
@@ -178,10 +190,20 @@ class _LsKeycardScreenState extends State<LsKeycardScreen> {
     // show the dialog and wait for a UID to be determined
     final String? uid = await showDialog<String>(
       context: context,
+      barrierDismissible: false,
       builder: (context) => KeycardAddDialog(existingUids: keycards),
     );
 
-    if (uid == null || !mounted) {
+    if (uid == null) {
+      if (mounted && Platform.isIOS) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(FlutterI18n.translate(context, "ls_keycard_ios_unsupported"))),
+        );
+      }
+      _startBackgroundNfcScan();
+      return;
+    }
+    if (!mounted) {
       _startBackgroundNfcScan();
       return;
     }
@@ -319,40 +341,86 @@ class _KeycardCardState extends State<KeycardCard> with SingleTickerProviderStat
     return AnimatedBuilder(
       animation: _animation,
       builder: (context, child) => Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black54,
+              blurRadius: 16,
+            ),
+          ],
           borderRadius: const BorderRadius.all(Radius.circular(16)),
-          color: Color.lerp(
-            Theme.of(context).colorScheme.surfaceContainer,
-            Theme.of(context).colorScheme.primaryContainer,
-            _animation.value,
+          gradient: LinearGradient(
+            colors: [
+              HSLColor.fromColor(_getColorForIndex(widget.index)).withLightness(0.4).toColor(),
+              HSLColor.fromColor(_getColorForIndex(widget.index)).withLightness(0.2).toColor(),
+            ],
+            begin: Alignment.topRight,
+            end: Alignment.topLeft,
           ),
         ),
+        height: MediaQuery.of(context).size.width * 0.55,
         child: child,
       ),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: _getColorForIndex(widget.index),
-          foregroundColor: Colors.white,
-          child: Text((widget.index + 1).toString()),
-        ),
-        title: Text(widget.alias?.isNotEmpty == true
-            ? widget.alias!
-            : FlutterI18n.translate(context, "ls_keycard_default_name",
-                translationParams: {"number": (widget.index + 1).toString()})),
-        subtitle: Text(widget.uid),
-        trailing: PopupMenuButton<String>(
-          icon: const Icon(Icons.more_vert),
-          onSelected: (value) {
-            if (value == 'rename') _showRenameDialog(context);
-            if (value == 'delete') _confirmAndDeleteKeycard(context);
-          },
-          itemBuilder: (ctx) => [
-            PopupMenuItem(value: 'rename', child: Text(FlutterI18n.translate(ctx, "nav_rename"))),
-            if (!widget.onlyCard)
-              PopupMenuItem(value: 'delete', child: Text(FlutterI18n.translate(ctx, "ls_keycard_delete_button"))),
-          ],
-        ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Icon(Icons.contactless_outlined, size: 40, color: Colors.white),
+              PopupMenuButton<String>(
+                icon: const Icon(
+                  Icons.more_vert,
+                  color: Colors.white,
+                ),
+                onSelected: (value) {
+                  if (value == 'rename') _showRenameDialog(context);
+                  if (value == 'delete') _confirmAndDeleteKeycard(context);
+                },
+                itemBuilder: (ctx) => [
+                  PopupMenuItem(value: 'rename', child: Text(FlutterI18n.translate(ctx, "nav_rename"))),
+                  if (!widget.onlyCard)
+                    PopupMenuItem(value: 'delete', child: Text(FlutterI18n.translate(ctx, "ls_keycard_delete_button"))),
+                ],
+              ),
+            ],
+          ),
+          Spacer(),
+          Text(
+            // split the UID into groups of 4 characters to match the credit card style design
+            List.generate(
+                    (widget.uid.length / 4).ceil(),
+                    (i) =>
+                        widget.uid.substring(i * 4, (i + 1) * 4 > widget.uid.length ? widget.uid.length : (i + 1) * 4))
+                .join(' '),
+            style: GoogleFonts.kodeMono(
+              color: Colors.white,
+              fontSize: 28,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.left,
+            textDirection: TextDirection.rtl,
+          ),
+          SizedBox(height: 16),
+          Text(
+            widget.alias?.isNotEmpty == true
+                ? widget.alias!
+                : FlutterI18n.translate(context, "ls_keycard_default_name",
+                    translationParams: {"number": (widget.index + 1).toString()}),
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: 12),
+        ],
       ),
     );
   }

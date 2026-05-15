@@ -372,5 +372,6 @@
     "nav_disconnected_subtitle": "Connect yer scooter to see saved ports.",
     "nav_empty_title": "No saved destinations",
     "nav_empty_subtitle": "Pull down to search the seas.",
+    "ls_keycard_ios_unsupported": "Couldn't detect yer card, matey? Make sure it be plunderable by iOS (MIFARE, ISO 7816, ISO 15693).",
     "ls_keycard_add_success": "Keycard added to yer crew, arrr!"
 }

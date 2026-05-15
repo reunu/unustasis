@@ -393,5 +393,6 @@
     "nav_disconnected_subtitle": "Connectez votre scooter pour voir les destinations enregistrées.",
     "nav_empty_title": "Aucune destination enregistrée",
     "nav_empty_subtitle": "Tirez vers le bas pour actualiser.",
+    "ls_keycard_ios_unsupported": "Carte non détectée ? Assurez-vous qu'elle est prise en charge par iOS (MIFARE, ISO 7816, ISO 15693).",
     "ls_keycard_add_success": "Carte-clé ajoutée avec succès !"
 }

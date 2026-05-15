@@ -394,5 +394,6 @@
     "nav_disconnected_subtitle": "Verbinde deinen Roller, um gespeicherte Ziele zu sehen.",
     "nav_empty_title": "Keine gespeicherten Ziele",
     "nav_empty_subtitle": "Zum Aktualisieren nach unten ziehen.",
+    "ls_keycard_ios_unsupported": "Karte nicht erkannt? Stelle sicher, dass sie von iOS unterstützt wird (MIFARE, ISO 7816, ISO 15693).",
     "ls_keycard_add_success": "Keycard erfolgreich hinzugefügt!"
 }

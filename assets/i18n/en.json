@@ -394,5 +394,6 @@
     "nav_disconnected_subtitle": "Connect to your scooter to see saved destinations.",
     "nav_empty_title": "No saved destinations",
     "nav_empty_subtitle": "Pull down to refresh.",
+    "ls_keycard_ios_unsupported": "Couldn't detect your card? Make sure it is supported by iOS (MIFARE, ISO 7816, ISO 15693).",
     "ls_keycard_add_success": "Keycard added successfully!"
 }
