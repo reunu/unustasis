@@ -46,9 +46,9 @@ target 'Runner' do
     pod 'home_widget', :path => '.symlinks/plugins/home_widget/ios'
   end
 
-  target 'Share Extension' do
-    inherit! :search_paths
-  end
+  # target 'Share Extension' do
+  #   inherit! :search_paths
+  # end
 
 end
 
