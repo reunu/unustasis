@@ -1,6 +1,7 @@
 import Flutter
 import UIKit
 import flutter_background_service_ios
+import flutter_sharing_intent
 import home_widget
 import workmanager_apple
 
@@ -31,5 +32,15 @@ import workmanager_apple
 
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  override func application(
+    _ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]
+  ) -> Bool {
+    let sharingIntent = SwiftFlutterSharingIntentPlugin.instance
+    if sharingIntent.hasSameSchemePrefix(url: url) {
+      return sharingIntent.application(app, open: url, options: options)
+    }
+    return super.application(app, open: url, options: options)
   }
 }

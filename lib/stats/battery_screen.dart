@@ -5,10 +5,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:flutter_nfc_kit/flutter_nfc_kit.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:logging/logging.dart';
-import 'package:nfc_manager/nfc_manager.dart';
-import 'package:nfc_manager/nfc_manager_android.dart';
 import 'package:provider/provider.dart';
 
 import '../domain/scooter_battery.dart';
@@ -43,14 +42,14 @@ class _BatteryScreenState extends State<BatteryScreen> {
   Widget build(BuildContext context) {
     return Selector<ScooterService, _BatteryScreenViewData>(
       selector: (context, service) => (
-        primarySOC: service.primarySOC,
-        primaryCycles: service.primaryCycles,
-        secondarySOC: service.secondarySOC,
-        secondaryCycles: service.secondaryCycles,
-        cbbSOC: service.cbbSOC,
-        cbbCharging: service.cbbCharging,
-        auxSOC: service.auxSOC,
-        lastPing: service.lastPing,
+        primarySOC: service.battery.primarySOC,
+        primaryCycles: service.battery.primaryCycles,
+        secondarySOC: service.battery.secondarySOC,
+        secondaryCycles: service.battery.secondaryCycles,
+        cbbSOC: service.battery.cbbSOC,
+        cbbCharging: service.battery.cbbCharging,
+        auxSOC: service.battery.auxSOC,
+        lastPing: service.identity.lastPing,
       ),
       builder: (context, data, _) {
         final int primarySoc = data.primarySOC ?? 0;
@@ -214,8 +213,8 @@ class _BatteryScreenState extends State<BatteryScreen> {
                               ),
                               onPressed: () async {
                                 // Check availability
-                                NfcAvailability availability = await NfcManager.instance.checkAvailability();
-                                if (availability == NfcAvailability.unsupported && context.mounted) {
+                                final availability = await FlutterNfcKit.nfcAvailability;
+                                if (availability == NFCAvailability.not_supported && context.mounted) {
                                   Fluttertoast.showToast(
                                     msg: FlutterI18n.translate(context, "stats_nfc_not_available"),
                                   );
@@ -223,7 +222,7 @@ class _BatteryScreenState extends State<BatteryScreen> {
                                     nfcScanning = false;
                                   });
                                   return;
-                                } else if (availability == NfcAvailability.disabled && context.mounted) {
+                                } else if (availability == NFCAvailability.disabled && context.mounted) {
                                   Fluttertoast.showToast(
                                     msg: FlutterI18n.translate(context, "stats_nfc_not_enabled"),
                                   );
@@ -242,56 +241,63 @@ class _BatteryScreenState extends State<BatteryScreen> {
                                   });
                                 });
                                 // Start Session
-                                NfcManager.instance.startSession(
-                                  pollingOptions: {NfcPollingOption.iso14443},
-                                  onDiscovered: (NfcTag tag) async {
-                                    noticeTimer.cancel();
-                                    setState(() {
-                                      nfcScanning = false;
-                                      nfcBattery = null;
-                                      nfcCycles = null;
-                                      showNfcNotice = false;
-                                    });
-                                    try {
-                                      Uint8List socData;
-                                      Uint8List cycleData;
-                                      // Read from battery
-                                      if (Platform.isAndroid) {
-                                        var mifare = MifareUltralightAndroid.from(tag);
-                                        if (mifare == null) {
-                                          Fluttertoast.showToast(
-                                            msg: FlutterI18n.translate(context, "stats_nfc_invalid"),
-                                          );
-                                          return;
-                                        }
-                                        socData = await mifare.readPages(pageOffset: 23);
-                                        cycleData = await mifare.readPages(pageOffset: 20);
-                                      } else {
-                                        return;
+                                try {
+                                  final tag = await FlutterNfcKit.poll(
+                                    androidCheckNDEF: false,
+                                  );
+                                  noticeTimer.cancel();
+                                  setState(() {
+                                    nfcScanning = false;
+                                    nfcBattery = null;
+                                    nfcCycles = null;
+                                    showNfcNotice = false;
+                                  });
+                                  try {
+                                    Uint8List socData;
+                                    Uint8List cycleData;
+                                    // Read from battery (Android only — MiFare Ultralight)
+                                    if (Platform.isAndroid && tag.type == NFCTagType.mifare_ultralight) {
+                                      socData = await FlutterNfcKit.readBlock(23);
+                                      cycleData = await FlutterNfcKit.readBlock(20);
+                                    } else {
+                                      await FlutterNfcKit.finish();
+                                      if (context.mounted) {
+                                        Fluttertoast.showToast(
+                                          msg: FlutterI18n.translate(context, "stats_nfc_invalid"),
+                                        );
                                       }
+                                      return;
+                                    }
+                                    await FlutterNfcKit.finish();
 
-                                      // Parse data
-                                      log.info("SOC Hex: ${socData.map((e) => e.toRadixString(16))}");
-                                      int fullCap = 33000; //(socData[5] << 8) + socData[4];
-                                      int remainingCap = (socData[3] << 8) + socData[1];
-                                      int cycles = cycleData[0] - 1;
-                                      log.info("Remaining: $remainingCap");
-                                      log.info("Full: $fullCap");
-                                      log.info("Cycles: $cycles");
+                                    // Parse data
+                                    log.info("SOC Hex: ${socData.map((e) => e.toRadixString(16))}");
+                                    int fullCap = 33000; //(socData[5] << 8) + socData[4];
+                                    int remainingCap = (socData[3] << 8) + socData[1];
+                                    int cycles = cycleData[0] - 1;
+                                    log.info("Remaining: $remainingCap");
+                                    log.info("Full: $fullCap");
+                                    log.info("Cycles: $cycles");
+                                    if (context.mounted) {
                                       setState(() {
                                         nfcBattery = (remainingCap / fullCap * 100).round();
                                         nfcCycles = cycles;
                                       });
-                                    } catch (e, stack) {
-                                      log.severe("Error reading NFC", e, stack);
-                                      Fluttertoast.showToast(
-                                        msg: "Error reading NFC",
-                                      );
                                     }
-                                    // We have our data, stop session
-                                    NfcManager.instance.stopSession();
-                                  },
-                                );
+                                  } catch (e, stack) {
+                                    log.severe("Error reading NFC", e, stack);
+                                    await FlutterNfcKit.finish();
+                                    Fluttertoast.showToast(
+                                      msg: "Error reading NFC",
+                                    );
+                                  }
+                                } catch (e) {
+                                  noticeTimer.cancel();
+                                  setState(() {
+                                    nfcScanning = false;
+                                    showNfcNotice = false;
+                                  });
+                                }
                               },
                               child: Text(
                                 FlutterI18n.translate(context, "stats_nfc_button"),
@@ -389,10 +395,11 @@ class _BatteryScreenState extends State<BatteryScreen> {
   }
 
   AlertDialog _auxDiagnosticDialog(BuildContext context) {
-    int? auxSOC = context.select<ScooterService, int?>((service) => service.auxSOC);
-    AUXChargingState? auxCharging = context.select<ScooterService, AUXChargingState?>((service) => service.auxCharging);
-    int? auxVoltage = context.select<ScooterService, int?>((service) => service.auxVoltage);
-    DateTime? lastPing = context.select<ScooterService, DateTime?>((service) => service.lastPing);
+    int? auxSOC = context.select<ScooterService, int?>((service) => service.battery.auxSOC);
+    AUXChargingState? auxCharging =
+        context.select<ScooterService, AUXChargingState?>((service) => service.battery.auxCharging);
+    int? auxVoltage = context.select<ScooterService, int?>((service) => service.battery.auxVoltage);
+    DateTime? lastPing = context.select<ScooterService, DateTime?>((service) => service.identity.lastPing);
 
     return AlertDialog(
       title: Text(
@@ -428,11 +435,11 @@ class _BatteryScreenState extends State<BatteryScreen> {
   }
 
   AlertDialog _cbbDiagnosticDialog(BuildContext context) {
-    int? cbbSOC = context.select<ScooterService, int?>((service) => service.cbbSOC);
-    bool? cbbCharging = context.select<ScooterService, bool?>((service) => service.cbbCharging);
-    int? cbbVoltage = context.select<ScooterService, int?>((service) => service.cbbVoltage);
-    int? cbbCapacity = context.select<ScooterService, int?>((service) => service.cbbCapacity);
-    DateTime? lastPing = context.select<ScooterService, DateTime?>((service) => service.lastPing);
+    int? cbbSOC = context.select<ScooterService, int?>((service) => service.battery.cbbSOC);
+    bool? cbbCharging = context.select<ScooterService, bool?>((service) => service.battery.cbbCharging);
+    int? cbbVoltage = context.select<ScooterService, int?>((service) => service.battery.cbbVoltage);
+    int? cbbCapacity = context.select<ScooterService, int?>((service) => service.battery.cbbCapacity);
+    DateTime? lastPing = context.select<ScooterService, DateTime?>((service) => service.identity.lastPing);
 
     return AlertDialog(
       title: Text(
@@ -616,7 +623,7 @@ class _BatteryScreenState extends State<BatteryScreen> {
           Text("${FlutterI18n.translate(context, "stats_battery_capacity")}: ${(soc * 450).round()} Wh / 45000 Wh"),
           Text(
               "${FlutterI18n.translate(context, "stats_battery_last_update")}: ${context.select<ScooterService, DateTime?>(
-                    (service) => service.lastPing,
+                    (service) => service.identity.lastPing,
                   )?.toString().split('.').first ?? "Never"}"),
         ],
       ),

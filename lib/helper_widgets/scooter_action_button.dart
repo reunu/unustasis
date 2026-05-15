@@ -6,16 +6,19 @@ class ScooterActionButton extends StatelessWidget {
     required void Function()? onPressed,
     required IconData icon,
     Color? iconColor,
+    bool showBubble = false,
     required String label,
   })  : _onPressed = onPressed,
         _icon = icon,
         _iconColor = iconColor,
-        _label = label;
+        _label = label,
+        _showBubble = showBubble;
 
   final void Function()? _onPressed;
   final IconData _icon;
   final String _label;
   final Color? _iconColor;
+  final bool _showBubble;
 
   @override
   Widget build(BuildContext context) {
@@ -25,20 +28,38 @@ class ScooterActionButton extends StatelessWidget {
             : Theme.of(context).colorScheme.onSurface);
     return Column(
       children: [
-        OutlinedButton(
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.all(24),
-            side: BorderSide(
-              color: mainColor,
+        Stack(
+          children: [
+            OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                shape: CircleBorder(),
+                padding: const EdgeInsets.all(20),
+                side: BorderSide(
+                  color: mainColor,
+                ),
+              ),
+              onPressed: _onPressed,
+              child: Icon(
+                _icon,
+                color: mainColor,
+              ),
             ),
-          ),
-          onPressed: _onPressed,
-          child: Icon(
-            _icon,
-            color: mainColor,
-          ),
+            if (_showBubble)
+              Positioned(
+                right: 2,
+                top: 2,
+                child: Container(
+                  width: 16,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+          ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         Text(
           _label,
           style: Theme.of(context).textTheme.labelLarge?.copyWith(color: mainColor),

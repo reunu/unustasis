@@ -15,6 +15,10 @@ PODS:
     - Flutter
   - flutter_native_splash (2.4.3):
     - Flutter
+  - flutter_nfc_kit (3.6.0):
+    - Flutter
+  - flutter_sharing_intent (1.0.1):
+    - Flutter
   - fluttertoast (0.0.2):
     - Flutter
   - geolocator_apple (1.2.0):
@@ -26,8 +30,6 @@ PODS:
     - Flutter
     - FlutterMacOS
   - maps_launcher (0.0.1):
-    - Flutter
-  - nfc_manager (0.0.1):
     - Flutter
   - package_info_plus (0.4.5):
     - Flutter
@@ -51,12 +53,13 @@ DEPENDENCIES:
   - flutter_email_sender (from `.symlinks/plugins/flutter_email_sender/ios`)
   - flutter_local_notifications (from `.symlinks/plugins/flutter_local_notifications/ios`)
   - flutter_native_splash (from `.symlinks/plugins/flutter_native_splash/ios`)
+  - flutter_nfc_kit (from `.symlinks/plugins/flutter_nfc_kit/ios`)
+  - flutter_sharing_intent (from `.symlinks/plugins/flutter_sharing_intent/ios`)
   - fluttertoast (from `.symlinks/plugins/fluttertoast/ios`)
   - geolocator_apple (from `.symlinks/plugins/geolocator_apple/darwin`)
   - home_widget (from `.symlinks/plugins/home_widget/ios`)
   - local_auth_darwin (from `.symlinks/plugins/local_auth_darwin/darwin`)
   - maps_launcher (from `.symlinks/plugins/maps_launcher/ios`)
-  - nfc_manager (from `.symlinks/plugins/nfc_manager/ios`)
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
@@ -80,6 +83,10 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_local_notifications/ios"
   flutter_native_splash:
     :path: ".symlinks/plugins/flutter_native_splash/ios"
+  flutter_nfc_kit:
+    :path: ".symlinks/plugins/flutter_nfc_kit/ios"
+  flutter_sharing_intent:
+    :path: ".symlinks/plugins/flutter_sharing_intent/ios"
   fluttertoast:
     :path: ".symlinks/plugins/fluttertoast/ios"
   geolocator_apple:
@@ -90,8 +97,6 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/local_auth_darwin/darwin"
   maps_launcher:
     :path: ".symlinks/plugins/maps_launcher/ios"
-  nfc_manager:
-    :path: ".symlinks/plugins/nfc_manager/ios"
   package_info_plus:
     :path: ".symlinks/plugins/package_info_plus/ios"
   path_provider_foundation:
@@ -112,18 +117,19 @@ SPEC CHECKSUMS:
   flutter_email_sender: aa1e9772696691d02cd91fea829856c11efb8e58
   flutter_local_notifications: 395056b3175ba4f08480a7c5de30cd36d69827e4
   flutter_native_splash: c32d145d68aeda5502d5f543ee38c192065986cf
+  flutter_nfc_kit: e1b71583eafd2c9650bc86844a7f2d185fb414f6
+  flutter_sharing_intent: 0c1e53949f09fa8df8ac2268505687bde8ff264c
   fluttertoast: 2c67e14dce98bbdb200df9e1acf610d7a6264ea1
   geolocator_apple: ab36aa0e8b7d7a2d7639b3b4e48308394e8cef5e
-  home_widget: f169fc41fd807b4d46ab6615dc44d62adbf9f64f
+  home_widget: 54b4f6b36ed8d64cfee594a476225c35c3e45091
   local_auth_darwin: c3ee6cce0a8d56be34c8ccb66ba31f7f180aaebb
   maps_launcher: edf829809ba9e894d70e569bab11c16352dedb45
-  nfc_manager: f6d5609c09b4640b914a3dc67479a2e392965fd0
   package_info_plus: af8e2ca6888548050f16fa2f1938db7b5a5df499
   path_provider_foundation: bb55f6dbba17d0dccd6737fe6f7f34fbd0376880
   shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb
   url_launcher_ios: 7a95fa5b60cc718a708b8f2966718e93db0cef1b
   workmanager_apple: 904529ae31e97fc5be632cf628507652294a0778
 
-PODFILE CHECKSUM: 67876e97078b95d8e1abda1f54441797c623394d
+PODFILE CHECKSUM: 09d3fea06def48e2efe42ed71116e3b9ba727354
 
 COCOAPODS: 1.16.2

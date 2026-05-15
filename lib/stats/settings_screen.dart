@@ -134,7 +134,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   value: autoUnlockDistance.threshold.toDouble(),
                   min: ScooterKeylessDistance.getMinThresholdDistance().threshold.toDouble(),
                   max: ScooterKeylessDistance.getMaxThresholdDistance().threshold.toDouble(),
-                  secondaryTrackValue: context.read<ScooterService>().rssi?.toDouble(),
+                  secondaryTrackValue: context.read<ScooterService>().identity.rssi?.toDouble(),
                   divisions: ScooterKeylessDistance.values.length - 1,
                   label: autoUnlockDistance.getFormattedThreshold(),
                   onChanged: (value) async {
@@ -149,13 +149,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     });
                   },
                 ),
-                if (context.read<ScooterService>().rssi != null)
+                if (context.read<ScooterService>().identity.rssi != null)
                   Text(
                     FlutterI18n.translate(
                       context,
                       "settings_auto_unlock_threshold_explainer",
                       translationParams: {
-                        "rssi": context.read<ScooterService>().rssi.toString(),
+                        "rssi": context.read<ScooterService>().identity.rssi.toString(),
                       },
                     ),
                   ),

@@ -119,7 +119,7 @@ class _DrivingScreenState extends State<DrivingScreen> {
             ),
             const SizedBox(height: 32),
             Selector<ScooterService, int?>(
-              selector: (context, service) => service.primarySOC,
+              selector: (context, service) => service.battery.primarySOC,
               builder: (context, primarySOC, _) {
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -142,7 +142,7 @@ class _DrivingScreenState extends State<DrivingScreen> {
             ),
             const SizedBox(height: 8),
             Selector<ScooterService, int?>(
-              selector: (context, service) => service.secondarySOC,
+              selector: (context, service) => service.battery.secondarySOC,
               builder: (context, secondarySOC, _) {
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.center,

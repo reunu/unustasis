@@ -16,7 +16,8 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.6.0+35
+# this project uses Pride Versioning: https://pridever.org/
+version: 2.0.0-prealpha.1+36
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
@@ -44,7 +45,7 @@ dependencies:
   flutter_map: ^8.0.0
   geolocator: ^13.0.2
   latlong2: ^0.9.1
-  nfc_manager: ^4.0.2
+  flutter_nfc_kit: ^3.6.2
   package_info_plus: ^8.2.1
   http: ^1.2.1
   local_auth: ^2.2.0
@@ -69,6 +70,8 @@ dependencies:
       url: https://github.com/fluttercommunity/flutter_workmanager.git
       path: workmanager
       ref: main
+  flutter_photon: ^2.0.1
+  flutter_sharing_intent: ^2.0.4
 
 dev_dependencies:
   flutter_test:

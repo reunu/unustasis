@@ -252,4 +252,15 @@ extension StateExtension on ScooterState {
         return true;
     }
   }
+
+  bool get permitsHardReboot {
+    switch (this) {
+      case ScooterState.standby:
+      case ScooterState.parked:
+      case ScooterState.ready:
+        return true;
+      default:
+        return false;
+    }
+  }
 }

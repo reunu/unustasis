@@ -17,15 +17,27 @@ class CharacteristicRepository {
   late BluetoothCharacteristic? cbbVoltageCharacteristic;
   late BluetoothCharacteristic? cbbCapacityCharacteristic;
   late BluetoothCharacteristic? cbbChargingCharacteristic;
+  late BluetoothCharacteristic? cbbFullCapacityCharacteristic;
+  late BluetoothCharacteristic? primaryStateCharacteristic;
+  late BluetoothCharacteristic? primaryPresentCharacteristic;
   late BluetoothCharacteristic? primaryCyclesCharacteristic;
   late BluetoothCharacteristic? primarySOCCharacteristic;
   late BluetoothCharacteristic? secondaryCyclesCharacteristic;
   late BluetoothCharacteristic? secondarySOCCharacteristic;
   late BluetoothCharacteristic? nrfVersionCharacteristic;
 
+  // librescoot-specific characteristics
+  late BluetoothCharacteristic? imxVersionCharacteristic;
+  late BluetoothCharacteristic? odometerCharacteristic;
+  late BluetoothCharacteristic? systemTimeCharacteristic;
+  late BluetoothCharacteristic? navigationActiveCharacteristic;
+  late BluetoothCharacteristic? umsStatusCharacteristic;
+  late BluetoothCharacteristic? extendedCommandCharacteristic;
+  late BluetoothCharacteristic? extendedResponseCharacteristic;
+
   CharacteristicRepository(this.scooter);
 
-  Future<void> findAll() async {
+  Future<void> findAll({bool additionalLibrescootFeatures = false}) async {
     log.info("findAll running");
     await scooter.discoverServices();
     commandCharacteristic =
@@ -34,7 +46,6 @@ class CharacteristicRepository {
         findCharacteristic(scooter, "9a590000-6e67-5d0d-aab9-ad9126b66f91", "9a590002-6e67-5d0d-aab9-ad9126b66f91");
     stateCharacteristic =
         findCharacteristic(scooter, "9a590020-6e67-5d0d-aab9-ad9126b66f91", "9a590021-6e67-5d0d-aab9-ad9126b66f91");
-    log.info("State characteristic initialized! It's $stateCharacteristic");
     powerStateCharacteristic =
         findCharacteristic(scooter, "9a5900a0-6e67-5d0d-aab9-ad9126b66f91", "9a5900a1-6e67-5d0d-aab9-ad9126b66f91");
     seatCharacteristic =
@@ -65,6 +76,23 @@ class CharacteristicRepository {
         findCharacteristic(scooter, "9a5900e0-6e67-5d0d-aab9-ad9126b66f91", "9a5900f5-6e67-5d0d-aab9-ad9126b66f91");
     nrfVersionCharacteristic =
         findCharacteristic(scooter, "9a59a000-6e67-5d0d-aab9-ad9126b66f91", "9a59a001-6e67-5d0d-aab9-ad9126b66f91");
+
+    if (additionalLibrescootFeatures) {
+      imxVersionCharacteristic =
+          findCharacteristic(scooter, "9a59a040-6e67-5d0d-aab9-ad9126b66f91", "9a59a041-6e67-5d0d-aab9-ad9126b66f91");
+      odometerCharacteristic =
+          findCharacteristic(scooter, "9a59a040-6e67-5d0d-aab9-ad9126b66f91", "9a59a042-6e67-5d0d-aab9-ad9126b66f91");
+      systemTimeCharacteristic =
+          findCharacteristic(scooter, "9a59a040-6e67-5d0d-aab9-ad9126b66f91", "9a59a043-6e67-5d0d-aab9-ad9126b66f91");
+      navigationActiveCharacteristic =
+          findCharacteristic(scooter, "9a59a040-6e67-5d0d-aab9-ad9126b66f91", "9a59a044-6e67-5d0d-aab9-ad9126b66f91");
+      umsStatusCharacteristic =
+          findCharacteristic(scooter, "9a59a040-6e67-5d0d-aab9-ad9126b66f91", "9a59a045-6e67-5d0d-aab9-ad9126b66f91");
+      extendedCommandCharacteristic =
+          findCharacteristic(scooter, "9a590400-6e67-5d0d-aab9-ad9126b66f91", "9a590401-6e67-5d0d-aab9-ad9126b66f91");
+      extendedResponseCharacteristic =
+          findCharacteristic(scooter, "9a590400-6e67-5d0d-aab9-ad9126b66f91", "9a590402-6e67-5d0d-aab9-ad9126b66f91");
+    }
     return;
   }
 

@@ -33,6 +33,9 @@ import '../control_sheet.dart';
 import '../helper_widgets/snowfall.dart';
 import '../helper_widgets/clouds.dart';
 import '../helper_widgets/grassscape.dart';
+import '../ls_settings_screen.dart';
+import '../navigation_screen.dart';
+import 'state/vehicle_status.dart';
 
 class HomeScreen extends StatefulWidget {
   final bool? forceOpen;
@@ -199,7 +202,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.only(top: 40, bottom: 40),
+                      padding: const EdgeInsets.only(top: 40, bottom: 20),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         mainAxisSize: MainAxisSize.max,
@@ -216,10 +219,15 @@ class _HomeScreenState extends State<HomeScreen> {
                                     builder: (context) => const ScooterScreen(),
                                   ),
                                 ),
-                                // Hidden for stable release, but useful for various debugging
-                                //onLongPress: () {
-                                //  showSeatWarning();
-                                //},
+                                // // Hidden for stable release, but useful for various debugging
+                                // onLongPress: () {
+                                //   Navigator.push(
+                                //     context,
+                                //     MaterialPageRoute(
+                                //       builder: (context) => const LsKeycardScreen(),
+                                //     ),
+                                //   );
+                                // },
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   mainAxisSize: MainAxisSize.min,
@@ -234,7 +242,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     Flexible(
                                       child: Text(
                                         context.select<ScooterService, String?>(
-                                              (service) => service.scooterName,
+                                              (service) => service.identity.name,
                                             ) ??
                                             FlutterI18n.translate(
                                               context,
@@ -258,22 +266,22 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           const StatusText(),
                           if (context.select<ScooterService, String?>(
-                                    (service) => service.scooterName,
+                                    (service) => service.identity.name,
                                   ) !=
                                   null &&
                               context.select<ScooterService, String?>(
-                                    (service) => service.scooterName,
+                                    (service) => service.identity.name,
                                   ) !=
                                   FlutterI18n.translate(
                                     context,
                                     "stats_no_name",
                                   ) &&
                               (context.select<ScooterService, int?>(
-                                        (service) => service.primarySOC,
+                                        (service) => service.battery.primarySOC,
                                       ) !=
                                       null ||
                                   context.select<ScooterService, int?>(
-                                        (service) => service.secondarySOC,
+                                        (service) => service.battery.secondarySOC,
                                       ) !=
                                       null))
                             Material(
@@ -296,19 +304,19 @@ class _HomeScreenState extends State<HomeScreen> {
                                       const SizedBox(width: 16),
                                       BatteryBars(
                                         primarySOC: context.select<ScooterService, int?>(
-                                          (service) => service.primarySOC,
+                                          (service) => service.battery.primarySOC,
                                         ),
                                         secondarySOC: context.select<ScooterService, int?>(
-                                          (service) => service.secondarySOC,
+                                          (service) => service.battery.secondarySOC,
                                         ),
                                         dataIsOld: context.select<ScooterService, DateTime?>(
-                                                  (service) => service.lastPing,
+                                                  (service) => service.identity.lastPing,
                                                 ) ==
                                                 null
                                             ? true
                                             : context
                                                     .select<ScooterService, DateTime?>(
-                                                      (service) => service.lastPing,
+                                                      (service) => service.identity.lastPing,
                                                     )!
                                                     .difference(
                                                       DateTime.now(),
@@ -330,7 +338,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           Expanded(
                             child: ScooterVisual(
                               color: context.select<ScooterService, int?>(
-                                    (service) => service.scooterColor,
+                                    (service) => service.identity.color,
                                   ) ??
                                   1,
                               state: context.select(
@@ -347,6 +355,51 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                           const SizedBox(height: 16),
+                          Selector<ScooterService, ({bool connected, bool? isLibrescoot})>(
+                            selector: (context, service) =>
+                                (connected: service.connected, isLibrescoot: service.identity.isLibrescoot),
+                            builder: (context, value, child) => Visibility(
+                                visible: value.isLibrescoot == true,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    ScooterActionButton(
+                                      icon: Icons.navigation_outlined,
+                                      label: FlutterI18n.translate(context, 'nav_title'),
+                                      showBubble: context.select<ScooterService, bool>(
+                                        (service) =>
+                                            service.navigationActive == true || service.pendingNavigation != null,
+                                      ),
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            settings: const RouteSettings(name: 'navigation'),
+                                            builder: (context) => const NavigationScreen(),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                    ScooterActionButton(
+                                      icon: Icons.local_fire_department_outlined,
+                                      label: "Librescoot",
+                                      showBubble: context.select<ScooterService, bool>(
+                                        (service) => service.vehicle.usbMode == UsbMode.massStorage,
+                                      ),
+                                      onPressed: !value.connected
+                                          ? null
+                                          : () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) => const LsSettingsScreen(),
+                                                ),
+                                              );
+                                            },
+                                    )
+                                  ],
+                                )),
+                          ),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             mainAxisSize: MainAxisSize.max,
@@ -360,7 +413,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       action: state != null && state.isReadyForLockChange
                                           ? (state.isOn
                                               ? () async {
-                                                  if (context.read<ScooterService>().seatClosed == false) {
+                                                  if (context.read<ScooterService>().vehicle.seatClosed == false) {
                                                     bool overrideSeat = await showSeatWarning() == true;
                                                     if (!overrideSeat) {
                                                       return;
@@ -577,7 +630,7 @@ class SeatButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Selector<ScooterService, ({bool? seatClosed, ScooterState? state})>(
-      selector: (context, service) => (seatClosed: service.seatClosed, state: service.state),
+      selector: (context, service) => (seatClosed: service.vehicle.seatClosed, state: service.state),
       builder: (context, data, _) {
         return Expanded(
           child: ScooterActionButton(
@@ -720,7 +773,7 @@ class StatusText extends StatelessWidget {
         // Add handlebar unlocked indicator
         if (data.connected &&
             context.select<ScooterService, bool?>(
-                  (service) => service.handlebarsLocked,
+                  (service) => service.vehicle.handlebarsLocked,
                 ) ==
                 false) {
           stateText += FlutterI18n.translate(context, "home_unlocked");

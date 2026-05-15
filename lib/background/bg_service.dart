@@ -76,14 +76,14 @@ Future<bool> onIosBackground(ServiceInstance service) async {
   // update the widget
   passToWidget(
     connected: scooterService.connected,
-    lastPing: scooterService.lastPing,
+    lastPing: scooterService.identity.lastPing,
     scooterState: scooterService.state,
-    primarySOC: scooterService.primarySOC,
-    secondarySOC: scooterService.secondarySOC,
-    scooterName: scooterService.scooterName,
-    scooterColor: scooterService.scooterColor,
-    lastLocation: scooterService.lastLocation,
-    seatClosed: scooterService.seatClosed,
+    primarySOC: scooterService.battery.primarySOC,
+    secondarySOC: scooterService.battery.secondarySOC,
+    scooterName: scooterService.identity.name,
+    scooterColor: scooterService.identity.color,
+    lastLocation: scooterService.identity.lastLocation,
+    seatClosed: scooterService.vehicle.seatClosed,
     scooterId: scooterService.myScooter?.remoteId.toString(),
   );
   return true;
@@ -303,6 +303,7 @@ void onStart(ServiceInstance service) async {
     }
   }
 
+  Logger("bgservice").info("Seeding widget with initial data");
   // Seed the widget with scooterService data once it's had time to load caches.
   // Skip if we were restarted by a widget action — the widget already has valid data.
   if (!pendingWidgetAction) {
@@ -320,6 +321,7 @@ void onStart(ServiceInstance service) async {
           scooterId: scooterService.myScooter?.remoteId.toString());
     });
   }
+  Logger("bgservice").info("Widget seeded with initial data. ScooterName: ${scooterService.identity.name}");
 
   service.on("autoUnlockCooldown").listen((data) async {
     Logger("bgservice").info("Received autoUnlockCooldown command");
@@ -368,14 +370,14 @@ void onStart(ServiceInstance service) async {
       Future.delayed(const Duration(seconds: 3), () {
         passToWidget(
           connected: scooterService.connected,
-          lastPing: scooterService.lastPing,
+          lastPing: scooterService.identity.lastPing,
           scooterState: scooterService.state,
-          primarySOC: scooterService.primarySOC,
-          secondarySOC: scooterService.secondarySOC,
-          scooterName: scooterService.scooterName,
-          scooterColor: scooterService.scooterColor,
-          lastLocation: scooterService.lastLocation,
-          seatClosed: scooterService.seatClosed,
+          primarySOC: scooterService.battery.primarySOC,
+          secondarySOC: scooterService.battery.secondarySOC,
+          scooterName: scooterService.identity.name,
+          scooterColor: scooterService.identity.color,
+          lastLocation: scooterService.identity.lastLocation,
+          seatClosed: scooterService.vehicle.seatClosed,
           scooterId: scooterService.myScooter?.remoteId.toString(),
         );
       });
@@ -396,15 +398,15 @@ void onStart(ServiceInstance service) async {
   scooterService.addListener(() async {
     passToWidget(
       connected: scooterService.connected,
-      lastPing: scooterService.lastPing,
+      lastPing: scooterService.identity.lastPing,
       scooterState: scooterService.state,
-      primarySOC: scooterService.primarySOC,
-      secondarySOC: scooterService.secondarySOC,
-      scooterName: scooterService.scooterName,
-      scooterColor: scooterService.scooterColor,
-      lastLocation: scooterService.lastLocation,
-      seatClosed: scooterService.seatClosed,
-      scooterLocked: scooterService.handlebarsLocked,
+      primarySOC: scooterService.battery.primarySOC,
+      secondarySOC: scooterService.battery.secondarySOC,
+      scooterName: scooterService.identity.name,
+      scooterColor: scooterService.identity.color,
+      lastLocation: scooterService.identity.lastLocation,
+      seatClosed: scooterService.vehicle.seatClosed,
+      scooterLocked: scooterService.vehicle.handlebarsLocked,
       scooterId: scooterService.myScooter?.remoteId.toString(),
     );
     if (backgroundScanEnabled) {

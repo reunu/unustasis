@@ -3,6 +3,7 @@ import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 
+import '../domain/scooter_state.dart';
 import '../helper_widgets/header.dart';
 import '../scooter_service.dart';
 
@@ -18,6 +19,31 @@ class ControlSheet extends StatefulWidget {
 class _ControlSheetState extends State<ControlSheet> with TickerProviderStateMixin {
   BlinkerMode _blinkerMode = BlinkerMode.off;
   bool _disconnectedHandled = false;
+
+  Future<bool> _confirmHardReboot(BuildContext context) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(FlutterI18n.translate(context, "controls_hard_reboot_confirm_title")),
+            content: Text(FlutterI18n.translate(context, "controls_hard_reboot_confirm_message")),
+            actions: [
+              TextButton(
+                child: Text(FlutterI18n.translate(context, "cancel")),
+                onPressed: () => Navigator.of(context).pop(false),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.onSurface,
+                  foregroundColor: Theme.of(context).colorScheme.surface,
+                ),
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text(FlutterI18n.translate(context, "controls_hard_reboot_confirm_button")),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -183,6 +209,74 @@ class _ControlSheetState extends State<ControlSheet> with TickerProviderStateMix
                 ),
               ),
             ],
+          ),
+          Selector<ScooterService, bool>(
+            selector: (context, s) => s.identity.isLibrescoot == true,
+            builder: (context, isLibrescoot, _) {
+              if (!isLibrescoot) return const SizedBox.shrink();
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 16),
+                  Selector<ScooterService, bool>(
+                    selector: (context, s) => s.state?.permitsHardReboot == true,
+                    builder: (context, permitsHardReboot, _) {
+                      return Row(
+                        children: [
+                          Expanded(
+                            child: TextButton.icon(
+                              style: TextButton.styleFrom(
+                                backgroundColor: Theme.of(context).colorScheme.onSurface,
+                                foregroundColor: Theme.of(context).colorScheme.surface,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                              ),
+                              onPressed: () async {
+                                try {
+                                  await context.read<ScooterService>().reboot();
+                                  if (!context.mounted) return;
+                                  Navigator.of(context).pop();
+                                } catch (e) {
+                                  Fluttertoast.showToast(msg: e.toString());
+                                }
+                              },
+                              label: Text(FlutterI18n.translate(context, "controls_reboot")),
+                              icon: const Icon(Icons.restart_alt_rounded),
+                            ),
+                          ),
+                          if (permitsHardReboot) ...[
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: TextButton.icon(
+                                style: TextButton.styleFrom(
+                                  backgroundColor: Theme.of(context).colorScheme.onSurface,
+                                  foregroundColor: Theme.of(context).colorScheme.surface,
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                ),
+                                onPressed: () async {
+                                  final confirmed = await _confirmHardReboot(context);
+                                  if (!mounted) return;
+                                  if (!confirmed) return;
+                                  try {
+                                    if (!context.mounted) return;
+                                    await context.read<ScooterService>().hardReboot();
+                                    if (!context.mounted) return;
+                                    Navigator.of(context).pop();
+                                  } catch (e) {
+                                    Fluttertoast.showToast(msg: e.toString());
+                                  }
+                                },
+                                label: Text(FlutterI18n.translate(context, "controls_hard_reboot")),
+                                icon: const Icon(Icons.warning_amber_rounded),
+                              ),
+                            ),
+                          ],
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              );
+            },
           ),
           SizedBox(height: 64),
         ],

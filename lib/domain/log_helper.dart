@@ -138,7 +138,7 @@ Settings:
 Saved scooters: ${await prefs.getString("savedScooters") ?? 'none'}
 ''',
             subject: FlutterI18n.translate(context, "report_subject"),
-            recipients: ['unu@freal.de'],
+            recipients: ['oss4unu@freal.de'],
             attachmentPaths: [logFile.path],
             isHTML: false,
           );

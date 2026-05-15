@@ -18,6 +18,7 @@ import '../domain/log_helper.dart';
 import '../flutter/blue_plus_mockable.dart';
 import '../home_screen.dart';
 import '../scooter_service.dart';
+import '../service/sharing_handler.dart';
 import '../background/widget_handler.dart';
 
 void main() async {
@@ -86,30 +87,50 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 class _MyAppState extends State<MyApp> {
+  SharingHandler? _sharingHandler;
+
   @override
   void initState() {
+    super.initState();
+    // SharingHandler is initialized in didChangeDependencies
+    // where the Provider context is available
     scooterService.addListener(() async {
       passToWidget(
         connected: scooterService.connected,
-        lastPing: scooterService.lastPing,
+        lastPing: scooterService.identity.lastPing,
         scooterState: scooterService.state,
-        primarySOC: scooterService.primarySOC,
-        secondarySOC: scooterService.secondarySOC,
-        scooterName: scooterService.scooterName,
-        scooterColor: scooterService.scooterColor,
-        lastLocation: scooterService.lastLocation,
-        seatClosed: scooterService.seatClosed,
-        scooterLocked: scooterService.handlebarsLocked,
+        primarySOC: scooterService.battery.primarySOC,
+        secondarySOC: scooterService.battery.secondarySOC,
+        scooterName: scooterService.identity.name,
+        scooterColor: scooterService.identity.color,
+        lastLocation: scooterService.identity.lastLocation,
+        seatClosed: scooterService.vehicle.seatClosed,
+        scooterLocked: scooterService.vehicle.handlebarsLocked,
         scooterId: scooterService.myScooter?.remoteId.toString(),
       );
     });
-    super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_sharingHandler == null) {
+      final service = Provider.of<ScooterService>(context, listen: false);
+      _sharingHandler = SharingHandler(
+        navigatorKey: navigatorKey,
+        service: service,
+      );
+      _sharingHandler!.init();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'unustasis',
       theme: ThemeData(
         appBarTheme: const AppBarTheme(
@@ -171,6 +192,7 @@ class _MyAppState extends State<MyApp> {
 
   @override
   void dispose() {
+    _sharingHandler?.dispose();
     super.dispose();
   }
 }
