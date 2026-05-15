@@ -17,7 +17,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
 # this project uses Pride Versioning: https://pridever.org/
-version: 2.0.0-rc1+37
+version: 2.0.0-rc2+38
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
