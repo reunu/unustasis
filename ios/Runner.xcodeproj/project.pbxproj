@@ -58,7 +58,6 @@
 			dstSubfolderSpec = 13;
 			files = (
 				B3D281C02E214678001687E0 /* ScooterWidgetExtension.appex in Embed Foundation Extensions */,
-				B39345D42F8E979500B47EEE /* Share Extension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -324,7 +323,6 @@
 			);
 			dependencies = (
 				B3D281BF2E214678001687E0 /* PBXTargetDependency */,
-				B39345D32F8E979500B47EEE /* PBXTargetDependency */,
 			);
 			name = Runner;
 			productName = Runner;
