@@ -4,7 +4,7 @@ import 'package:flutter_photon/flutter_photon.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 
-const _userAgent = 'UnustasisApp (unu@freal.de)';
+const _userAgent = 'UnustasisApp (oss4unu@freal.de)';
 
 /// Forward geocoding search using the Photon API with proper User-Agent.
 Future<List<PhotonFeature>> photonForwardSearch(String query, {LatLng? ownLocation, int? limit}) async {
