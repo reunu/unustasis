@@ -199,9 +199,14 @@ class GeoHelper {
     }
   }
 
+  static String _coordinateCacheComponent(double value) {
+    return value.toStringAsFixed(6);
+  }
+
   static Future<String> nameFromCoordinates(LatLng location) async {
     SharedPreferencesAsync prefs = SharedPreferencesAsync();
-    String cacheKey = "address_${location.latitude}_${location.longitude}";
+    String cacheKey =
+        "address_${_coordinateCacheComponent(location.latitude)}_${_coordinateCacheComponent(location.longitude)}";
     String? cachedName = await prefs.getString(cacheKey);
     if (cachedName != null) {
       return cachedName;
