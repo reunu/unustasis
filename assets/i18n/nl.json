@@ -327,7 +327,7 @@
     "ls_settings_auto_hibernate_error": "Auto-sluimertijd bijwerken mislukt: {error}",
     "ls_settings_duration_hint": "Duur",
     "ls_settings_duration_never": "Nooit",
-    "ls_settings_duration_1_min": "1 minuut",
+    "ls_settings_duration_3_min": "3 minuten",
     "ls_settings_duration_5_min": "5 minuten",
     "ls_settings_duration_10_min": "10 minuten",
     "ls_settings_duration_1_hour": "1 uur",
