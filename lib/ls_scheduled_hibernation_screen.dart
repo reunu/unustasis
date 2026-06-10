@@ -467,12 +467,13 @@ class _LsScheduledHibernationScreenState extends State<LsScheduledHibernationScr
                       label: Text(_weekdayLabel(context, day)),
                       selected: _schedule.weekdays.contains(day),
                       onSelected: _sending ? null : (_) => _toggleWeekday(day),
-                      // use the accent color; the theme's secondary fallback is
-                      // a generic green that doesn't match the rest of the UI
+                      // accent color with onTertiary foreground, matching the
+                      // theme picker in settings (onPrimary lacks contrast on
+                      // the dark green in light mode)
                       selectedColor: Theme.of(context).colorScheme.primary,
-                      checkmarkColor: Theme.of(context).colorScheme.onPrimary,
+                      checkmarkColor: Theme.of(context).colorScheme.onTertiary,
                       labelStyle: _schedule.weekdays.contains(day)
-                          ? TextStyle(color: Theme.of(context).colorScheme.onPrimary)
+                          ? TextStyle(color: Theme.of(context).colorScheme.onTertiary)
                           : null,
                     ),
                 ],

@@ -48,7 +48,10 @@ class _HibernateSheetState extends State<HibernateSheet> {
   }
 
   /// A choice chip in the app's accent color (the theme's secondary fallback
-  /// is a generic green that doesn't match the rest of the UI).
+  /// is a generic green that doesn't match the rest of the UI). Foreground
+  /// uses onTertiary — the scheme's contrast color on primary, like the theme
+  /// picker in settings — since onPrimary is black-on-dark-green in light
+  /// mode.
   Widget _accentChip(
     BuildContext context, {
     required String label,
@@ -61,8 +64,8 @@ class _HibernateSheetState extends State<HibernateSheet> {
       selected: selected,
       onSelected: onSelected,
       selectedColor: colors.primary,
-      checkmarkColor: colors.onPrimary,
-      labelStyle: selected ? TextStyle(color: colors.onPrimary) : null,
+      checkmarkColor: colors.onTertiary,
+      labelStyle: selected ? TextStyle(color: colors.onTertiary) : null,
     );
   }
 
