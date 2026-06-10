@@ -61,13 +61,15 @@ class BatteryState {
       onUpdate();
     });
     subscribeToIntValue(chars.cbbVoltageCharacteristic!, 'CBB Voltage', (voltage) {
-      cbbVoltage = voltage;
+      // Cell voltage is a uint32 in µV; store as mV for display.
+      cbbVoltage = voltage ~/ 1000;
       onUpdate();
-    }, singleByte: true);
+    });
     subscribeToIntValue(chars.cbbCapacityCharacteristic!, 'CBB Capacity', (capacity) {
-      cbbCapacity = capacity;
+      // Remaining capacity is a uint32 in µAh; store as mAh for display.
+      cbbCapacity = capacity ~/ 1000;
       onUpdate();
-    }, singleByte: true);
+    });
 
     // AUX battery
     subscribeToIntValue(chars.auxSOCCharacteristic!, 'AUX SOC', (soc) {

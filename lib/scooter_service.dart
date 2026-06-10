@@ -224,8 +224,8 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     battery.primarySOC = 53;
     battery.secondarySOC = 100;
     battery.cbbSOC = 98;
-    battery.cbbVoltage = 15000;
-    battery.cbbCapacity = 33000;
+    battery.cbbVoltage = 3700;
+    battery.cbbCapacity = 3000;
     battery.cbbCharging = false;
     battery.auxSOC = 100;
     battery.auxVoltage = 15000;
