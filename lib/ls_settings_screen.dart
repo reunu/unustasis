@@ -165,10 +165,6 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
             value: _autoHibernateDuration,
             items: [
               DropdownMenuItem(
-                value: 1,
-                child: Text(FlutterI18n.translate(context, "ls_settings_duration_immediately")),
-              ),
-              DropdownMenuItem(
                 value: 86400,
                 child: Text(FlutterI18n.translate(context, "ls_settings_duration_1_day")),
               ),
