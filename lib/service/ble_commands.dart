@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/services.dart';
@@ -10,6 +11,22 @@ import '../domain/statistics_helper.dart';
 import '../infrastructure/characteristic_repository.dart';
 
 final log = Logger('BleCommands');
+
+/// Librescoot settings keys for scheduled hibernation.
+const String lsKeyScheduledHibernateEnabled = "pm.scheduled-hibernate-enabled";
+const String lsKeyScheduledHibernateCron = "pm.scheduled-hibernate-cron";
+const String lsKeyScheduledHibernateDuration = "pm.scheduled-hibernate-duration";
+
+Future<void> _extendedChannelQueue = Future.value();
+
+/// Serializes access to the extended command/response characteristics so that
+/// concurrent callers can't consume each other's responses or toggle the
+/// notify state underneath each other.
+Future<T> _withExtendedChannel<T>(Future<T> Function() action) {
+  final result = _extendedChannelQueue.then((_) => action());
+  _extendedChannelQueue = result.then((_) {}, onError: (_) {});
+  return result;
+}
 
 /// Reads a counted list from an extended response [stream].
 ///
@@ -63,6 +80,13 @@ Future<void> sendCommand(
 /// firmware) and waits for a single response on the extended response
 /// characteristic. Returns null on timeout.
 Future<String?> sendLsExtendedCommand(
+  BluetoothDevice? scooter,
+  CharacteristicRepository repo,
+  String command,
+) =>
+    _withExtendedChannel(() => _sendLsExtendedCommandUnguarded(scooter, repo, command));
+
+Future<String?> _sendLsExtendedCommandUnguarded(
   BluetoothDevice? scooter,
   CharacteristicRepository repo,
   String command,
@@ -329,7 +353,8 @@ Future<String> saveNavDestinationCommand(
 Future<List<NavDestination>> listFavDestinationsCommand(
   BluetoothDevice? scooter,
   CharacteristicRepository repo,
-) async {
+) =>
+    _withExtendedChannel(() async {
   if (scooter == null || scooter.isDisconnected) {
     throw "Scooter not connected!";
   }
@@ -365,7 +390,7 @@ Future<List<NavDestination>> listFavDestinationsCommand(
   } finally {
     await resp.setNotifyValue(false);
   }
-}
+});
 
 Future<void> navigateFavCommand(
   BluetoothDevice? scooter,
@@ -423,7 +448,8 @@ Future<int?> countKeycardsCommand(
 Future<List<String>> listKeycardsCommand(
   BluetoothDevice? scooter,
   CharacteristicRepository repo,
-) async {
+) =>
+    _withExtendedChannel(() async {
   if (scooter == null || scooter.isDisconnected) {
     throw "Scooter not connected!";
   }
@@ -453,7 +479,7 @@ Future<List<String>> listKeycardsCommand(
   } finally {
     await resp.setNotifyValue(false);
   }
-}
+});
 
 Future<void> deleteKeycardCommand(
   BluetoothDevice? scooter,
@@ -525,4 +551,121 @@ Future<void> setAutoHibernateTimeCommand(BluetoothDevice? scooter, Characteristi
     throw "Failed to set auto-hibernate time, response: $response";
   }
   return;
+}
+
+/// Hibernates the scooter and arms a wake timer (librescoot pm capability).
+/// [wakeAfter] must be positive; firmware silently clamps to its configured
+/// maximum (7 days by default).
+Future<void> hibernateForCommand(
+  BluetoothDevice? scooter,
+  CharacteristicRepository repo,
+  Duration wakeAfter,
+) async {
+  if (wakeAfter <= Duration.zero) {
+    throw "Hibernate wake timer must be positive";
+  }
+  final response = await sendLsExtendedCommand(
+    scooter,
+    repo,
+    "pm:hibernate-for ${wakeAfter.inSeconds}s",
+  );
+  if (response != "pm:ok") {
+    log.severe("Failed to hibernate with wake timer, response: $response");
+    throw "Failed to hibernate, response: $response";
+  }
+  StatisticsHelper().logEvent(
+    eventType: EventType.hibernate,
+    scooterId: scooter!.remoteId.toString(),
+    source: EventSource.app,
+  );
+}
+
+/// Cancels a pending hibernate-for wake timer.
+Future<void> hibernateCancelCommand(
+  BluetoothDevice? scooter,
+  CharacteristicRepository repo,
+) async {
+  final response = await sendLsExtendedCommand(scooter, repo, "pm:hibernate-cancel");
+  if (response != "pm:ok") {
+    log.severe("Failed to cancel hibernation, response: $response");
+    throw "Failed to cancel hibernation, response: $response";
+  }
+}
+
+/// Queries the scooter's power-management capabilities (e.g. "hibernate-for",
+/// "hibernate-cancel"). Returns an empty set on firmware that doesn't support
+/// the capability query (error response or timeout).
+Future<Set<String>> getPmCapabilitiesCommand(
+  BluetoothDevice? scooter,
+  CharacteristicRepository repo,
+) =>
+    _withExtendedChannel(() async {
+  if (scooter == null || scooter.isDisconnected) {
+    throw "Scooter not connected!";
+  }
+  final cmd = repo.extendedCommandCharacteristic;
+  final resp = repo.extendedResponseCharacteristic;
+  if (cmd == null || resp == null) {
+    throw "Extended command characteristics not available";
+  }
+
+  await resp.setNotifyValue(true);
+  try {
+    await sendCommand(scooter, repo, "cap:pm", characteristic: cmd);
+    final stream = resp.onValueReceived
+        .where((v) => v.isNotEmpty)
+        .map((v) => ascii.decode(v).replaceAll('\x00', ''))
+        .timeout(const Duration(seconds: 10));
+    // format: cap:pm:count:<n>, then cap:pm:<command>[ <args>] per entry.
+    // Error responses fail the count parse and yield an empty list.
+    final entries = await _readExtendedList(stream, (msg) {
+      if (!msg.startsWith("cap:pm:")) return null;
+      final name = msg.substring("cap:pm:".length).split(" ").first;
+      return name.isNotEmpty ? name : null;
+    });
+    return entries.toSet();
+  } on TimeoutException {
+    log.info("getPmCapabilitiesCommand: timeout, assuming no pm capabilities");
+    return <String>{};
+  } finally {
+    await resp.setNotifyValue(false);
+  }
+});
+
+/// Reads a librescoot settings key via the generic get command. Returns null
+/// if the key or the get command itself is unsupported (or on timeout), and
+/// "" if the key exists but is unset.
+Future<String?> getLsSettingCommand(
+  BluetoothDevice? scooter,
+  CharacteristicRepository repo,
+  String key,
+) async {
+  final response = await sendLsExtendedCommand(scooter, repo, "get:$key");
+  final prefix = "get:$key:";
+  if (response == null || !response.startsWith(prefix)) {
+    // covers "get:error:unknown key", "error:unknown command" and timeouts
+    log.info("getLsSettingCommand: '$key' unsupported or failed, response: $response");
+    return null;
+  }
+  // the value is everything after the first colon following the key; it may
+  // itself contain spaces or colons (e.g. cron expressions)
+  return response.substring(prefix.length);
+}
+
+/// Writes a librescoot settings key. [value] must not be empty (the firmware
+/// rejects empty values).
+Future<void> setLsSettingCommand(
+  BluetoothDevice? scooter,
+  CharacteristicRepository repo,
+  String key,
+  String value,
+) async {
+  if (value.isEmpty) {
+    throw "Setting value must not be empty";
+  }
+  final response = await sendLsExtendedCommand(scooter, repo, "set:$key:$value");
+  if (response != "set:ok:$key") {
+    log.severe("Failed to set $key, response: $response");
+    throw "Failed to set $key, response: $response";
+  }
 }

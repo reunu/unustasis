@@ -380,6 +380,8 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       log.info("Connected to ${attemptedScooter.remoteId}");
       // Set up this scooter as ours
       myScooter = attemptedScooter;
+      identity.resetLsCapabilities();
+      _lsProbeGeneration++;
       addSavedScooter(myScooter!.remoteId.toString());
 
       // Save scooter ID directly for iOS widget native Bluetooth access
@@ -627,9 +629,52 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
         if (identity.isLibrescoot == true && _pendingNavigation != null) {
           _dispatchPendingNavigation();
         }
+        if (identity.isLibrescoot == true) {
+          _probeLsCapabilities();
+        } else {
+          identity.supportsHibernateFor = false;
+          identity.supportsScheduledHibernation = false;
+        }
         notifyListeners();
       },
     );
+  }
+
+  // bumped on each (re)connect so a stale in-flight probe from a previous
+  // connection can't apply its results to the current one
+  int _lsProbeGeneration = 0;
+
+  /// Probes which of the newer librescoot features this scooter supports.
+  /// Fire-and-forget; flags stay null until the probe resolves.
+  Future<void> _probeLsCapabilities() async {
+    final generation = _lsProbeGeneration;
+    bool? supportsHibernateFor;
+    try {
+      final caps = await commands.getPmCapabilitiesCommand(myScooter, characteristicRepository);
+      supportsHibernateFor = caps.contains("hibernate-for");
+    } catch (e, stack) {
+      log.warning("pm capability probe failed", e, stack);
+      supportsHibernateFor = false;
+    }
+    if (generation != _lsProbeGeneration) return;
+    identity.supportsHibernateFor = supportsHibernateFor;
+    notifyListeners();
+
+    bool? supportsScheduledHibernation;
+    try {
+      final value = await commands.getLsSettingCommand(
+        myScooter,
+        characteristicRepository,
+        commands.lsKeyScheduledHibernateEnabled,
+      );
+      supportsScheduledHibernation = value != null;
+    } catch (e, stack) {
+      log.warning("scheduled hibernation probe failed", e, stack);
+      supportsScheduledHibernation = false;
+    }
+    if (generation != _lsProbeGeneration) return;
+    identity.supportsScheduledHibernation = supportsScheduledHibernation;
+    notifyListeners();
   }
 
   void _updateAggregateState() {
@@ -776,6 +821,11 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
 
   Future<void> hibernate() async {
     await commands.hibernateCommand(myScooter, characteristicRepository);
+  }
+
+  /// Hibernates the scooter with a wake timer (librescoot pm capability).
+  Future<void> hibernateFor(Duration wakeAfter) async {
+    await commands.hibernateForCommand(myScooter, characteristicRepository, wakeAfter);
   }
 
   Future<void> reboot() async {
