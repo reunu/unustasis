@@ -3,6 +3,7 @@ import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:provider/provider.dart';
 
 import 'ls_keycard_screen.dart';
+import 'ls_scheduled_hibernation_screen.dart';
 import 'scooter_service.dart';
 import 'service/ble_commands.dart';
 import 'state/vehicle_status.dart';
@@ -226,6 +227,17 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
                   },
           ),
         ),
+        if (context.watch<ScooterService>().identity.supportsScheduledHibernation == true)
+          ListTile(
+            leading: Icon(Icons.bedtime_outlined),
+            title: Text(FlutterI18n.translate(context, "ls_scheduled_hibernation_title")),
+            subtitle: Text(FlutterI18n.translate(context, "ls_settings_scheduled_hibernation_subtitle")),
+            trailing: Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.push(
+                  context, MaterialPageRoute(builder: (context) => LsScheduledHibernationScreen()));
+            },
+          ),
         ListTile(
           leading: Icon(Icons.usb_outlined),
           title: Text(FlutterI18n.translate(context, "ls_settings_update_mode_title")),

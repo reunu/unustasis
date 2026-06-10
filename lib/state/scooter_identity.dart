@@ -16,6 +16,16 @@ class ScooterIdentity {
   bool? isLibrescoot;
   int? rssi;
 
+  // librescoot capability flags, probed after each connection.
+  // null = unknown / not yet probed.
+  bool? supportsHibernateFor;
+  bool? supportsScheduledHibernation;
+
+  void resetLsCapabilities() {
+    supportsHibernateFor = null;
+    supportsScheduledHibernation = null;
+  }
+
   void wireNrfVersion(
     CharacteristicRepository chars, {
     required VoidCallback onUpdate,

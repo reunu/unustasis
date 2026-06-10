@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../domain/scooter_state.dart';
 import '../helper_widgets/header.dart';
+import '../hibernate_sheet.dart';
 import '../scooter_service.dart';
 
 enum BlinkerMode { left, right, hazard, off }
@@ -196,12 +197,29 @@ class _ControlSheetState extends State<ControlSheet> with TickerProviderStateMix
                     foregroundColor: Theme.of(context).colorScheme.surface,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  onPressed: () {
-                    try {
-                      context.read<ScooterService>().hibernate();
-                      Navigator.of(context).pop();
-                    } catch (e) {
-                      Fluttertoast.showToast(msg: e.toString());
+                  onPressed: () async {
+                    final service = context.read<ScooterService>();
+                    if (service.identity.supportsHibernateFor == true) {
+                      final done = await showModalBottomSheet<bool>(
+                        context: context,
+                        showDragHandle: true,
+                        isScrollControlled: true,
+                        builder: (context) => const HibernateSheet(),
+                      );
+                      if (!context.mounted) return;
+                      // also close if the scooter disconnected while the sheet
+                      // was open: the disconnect listener above will have
+                      // popped the sheet instead of this control sheet
+                      if (done == true || !service.connected) {
+                        Navigator.of(context).pop();
+                      }
+                    } else {
+                      try {
+                        service.hibernate();
+                        Navigator.of(context).pop();
+                      } catch (e) {
+                        Fluttertoast.showToast(msg: e.toString());
+                      }
                     }
                   },
                   label: Text(FlutterI18n.translate(context, "controls_hibernate")),
