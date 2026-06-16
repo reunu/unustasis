@@ -52,12 +52,20 @@ Future<List<T>> _readExtendedList<T>(
   return results;
 }
 
+// Maximum payload for the extended command characteristic. The basic command
+// characteristic is limited to 20 bytes (default BLE MTU minus ATT overhead),
+// but the extended characteristic uses allowLongWrite so it can carry more.
+// Keep this well under typical negotiated MTUs (185–512 bytes) and the
+// scooter's own command-buffer size.
+const int _extendedCommandMaxBytes = 100;
+
 /// Writes an ASCII command to the scooter's BLE command characteristic.
 Future<void> sendCommand(
   BluetoothDevice? scooter,
   CharacteristicRepository characteristicRepository,
   String command, {
   BluetoothCharacteristic? characteristic,
+  bool allowLongWrite = false,
 }) async {
   log.fine("Sending command: $command");
   if (scooter == null) {
@@ -73,7 +81,16 @@ Future<void> sendCommand(
     throw "Could not send command, move closer or reconnect";
   }
 
-  await target.write(ascii.encode(command));
+  await target.write(ascii.encode(command), allowLongWrite: allowLongWrite);
+}
+
+/// Returns [name] truncated so that [prefix] + "," + name fits within
+/// [_extendedCommandMaxBytes]. Returns null when there is no room at all.
+String? _truncateNavName(String prefix, String? name) {
+  if (name == null || name.isEmpty) return null;
+  final available = _extendedCommandMaxBytes - prefix.length - 1; // -1 for ","
+  if (available <= 0) return null;
+  return name.length > available ? name.substring(0, available) : name;
 }
 
 /// Sends a command to the extended characteristic (only available on librescoot
@@ -102,7 +119,7 @@ Future<String?> _sendLsExtendedCommandUnguarded(
 
   await resp.setNotifyValue(true);
   try {
-    await sendCommand(scooter, repo, command, characteristic: cmd);
+    await sendCommand(scooter, repo, command, characteristic: cmd, allowLongWrite: true);
     return await resp.onValueReceived
         .where((v) => v.isNotEmpty)
         .map((v) => ascii.decode(v).replaceAll('\x00', ''))
@@ -298,10 +315,13 @@ Future<void> navigateCommand(
   CharacteristicRepository repo,
   NavDestination destination,
 ) async {
+  final base = "nav:dest ${destination.location.latitude},${destination.location.longitude}";
+  final name = _truncateNavName(base, destination.name);
+  final command = name != null ? "$base,$name" : base;
   final response = await sendLsExtendedCommand(
     scooter,
     repo,
-    "nav:dest ${destination.location.latitude},${destination.location.longitude}${destination.name != null ? ",${destination.name}" : ""}",
+    command,
   );
   if (response != "nav:ok") {
     log.severe("Failed to navigate, response: $response");
@@ -336,10 +356,12 @@ Future<String> saveNavDestinationCommand(
     log.warning("Destination name cannot be empty when storing as favorite");
     throw "Destination name cannot be empty when storing as favorite";
   }
+  final base = "nav:fav:add ${destination.location.latitude},${destination.location.longitude}";
+  final name = _truncateNavName(base, destination.name) ?? destination.name!;
   final response = await sendLsExtendedCommand(
     scooter,
     repo,
-    "nav:fav:add ${destination.location.latitude},${destination.location.longitude},${destination.name}",
+    "$base,$name",
   );
 
   String? id = response?.split(":").last;
