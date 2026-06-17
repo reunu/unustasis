@@ -64,7 +64,7 @@
     "state_name_linking": "Verbindet...",
     "power_state_booting": "Fährt hoch...",
     "power_state_running": "Läuft",
-    "power_state_suspending": "Geht in Ruhezustand...",
+    "power_state_suspending": "Im Ruhezustand",
     "power_state_suspending_imminent": "Ruhezustand bald",
     "power_state_hibernating": "Im Tiefschlaf",
     "power_state_hibernating_imminent": "Beginne Tiefschlaf...",

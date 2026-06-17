@@ -65,7 +65,7 @@
     "state_name_scanning": "Scanning...",
     "power_state_booting": "Booting...",
     "power_state_running": "Running",
-    "power_state_suspending": "Suspending",
+    "power_state_suspending": "Asleep",
     "power_state_suspending_imminent": "Suspending soon...",
     "power_state_hibernating": "Hibernating",
     "power_state_hibernating_imminent": "Entering hibernation...",

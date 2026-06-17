@@ -65,7 +65,7 @@
     "state_name_scanning": "Analyse...",
     "power_state_booting": "Démarrage...",
     "power_state_running": "En marche",
-    "power_state_suspending": "Mise en veille",
+    "power_state_suspending": "En veille",
     "power_state_suspending_imminent": "Mise en veille imminente...",
     "power_state_hibernating": "En hibernation",
     "power_state_hibernating_imminent": "Entrée en hibernation...",
