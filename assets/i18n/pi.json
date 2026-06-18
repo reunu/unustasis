@@ -58,6 +58,8 @@
     "state_name_booting": "Bootin' up...",
     "state_name_unknown": "In the harbor",
     "state_name_disconnected": "Adrift in the vast ocean",
+    "power_state_suspending": "Catchin' forty winks",
+    "power_state_suspending_imminent": "Driftin' off to sleep soon...",
     "state_name_linking": "Joinin' forces with the app, arrr!",
     "state_desc_standby": "Shhh! Yer ship be takin' a nap",
     "state_desc_off": "Yer ship be as dead as Davy Jones' locker",
