@@ -141,6 +141,21 @@ class OtaTransferService extends ChangeNotifier {
       throw "OTA characteristics not available (firmware too old?)";
     }
 
+    if (Platform.isAndroid) {
+      // The scooter renegotiates its power-friendly connection parameters
+      // (up to a 75 ms interval) a few seconds after connecting, overriding
+      // the high priority requested at connect time — and at 75 ms the link
+      // tops out around 30 kB/s. The central can set parameters
+      // unilaterally, so re-request high priority (11.25-15 ms) for the
+      // transfer; the nRF's own OTA link boost is best-effort only.
+      try {
+        await scooter.requestConnectionPriority(
+            connectionPriorityRequest: ConnectionPriority.high);
+      } catch (e) {
+        log.warning("Connection priority request failed (continuing): $e");
+      }
+    }
+
     _abortRequested = false;
     resumable = false;
     installPercent = 0;
@@ -319,6 +334,15 @@ class OtaTransferService extends ChangeNotifier {
     var rateMark = DateTime.now();
     var rateBase = from;
 
+    // throughput diagnostics, logged every few seconds: distinguishes a
+    // phone-side bottleneck (high avg write time, window never full) from a
+    // scooter-side one (fast writes, sender mostly parked on a full window)
+    var diagWrites = 0;
+    var diagWriteMicros = 0;
+    var diagWindowWaits = 0;
+    var diagRewindBase = 0;
+    var diagMark = DateTime.now();
+
     final ackSub = messages.listen((m) {
       if (m is OtaAck) {
         if (m.offset > acked) {
@@ -351,13 +375,17 @@ class OtaTransferService extends ChangeNotifier {
         if (sendPos < totalSize && sendPos - acked < windowBytes) {
           await raf.setPosition(sendPos);
           final chunk = await raf.read(min(chunkSize, totalSize - sendPos));
+          final writeStart = DateTime.now();
           await dataChar.write(
             OtaProtocol.encodeData(sendPos, chunk),
             withoutResponse: true,
           );
+          diagWriteMicros += DateTime.now().difference(writeStart).inMicroseconds;
+          diagWrites++;
           sendPos += chunk.length;
         } else {
           // window full (or everything sent): wait for ACK movement
+          diagWindowWaits++;
           await Future.delayed(const Duration(milliseconds: 20));
           if (DateTime.now().difference(lastAckAt) > _ackTimeout) {
             log.warning("ACK timeout, rewinding to $acked");
@@ -365,6 +393,22 @@ class OtaTransferService extends ChangeNotifier {
             lastAckAt = DateTime.now();
             rewinds++;
           }
+        }
+
+        if (DateTime.now().difference(diagMark).inSeconds >= 5) {
+          final avgWriteMs = diagWrites > 0
+              ? (diagWriteMicros / diagWrites / 1000).toStringAsFixed(1)
+              : "-";
+          log.info("OTA diag: ${(throughput / 1024).toStringAsFixed(1)} kB/s, "
+              "$diagWrites writes (avg $avgWriteMs ms), "
+              "$diagWindowWaits window-full waits, "
+              "${rewinds - diagRewindBase} rewinds, "
+              "in-flight ${sendPos - acked}/$windowBytes B");
+          diagWrites = 0;
+          diagWriteMicros = 0;
+          diagWindowWaits = 0;
+          diagRewindBase = rewinds;
+          diagMark = DateTime.now();
         }
 
         // progress + throughput bookkeeping
