@@ -95,25 +95,7 @@ class UpdateStep {
     required this.kind,
   });
 
-  String get componentLabel =>
-      component == OtaProtocol.componentDbc ? "Dashboard (DBC)" : "Scooter (MDB)";
-
   bool get isFullImage => kind != StepKind.delta && kind != StepKind.convergeDelta;
-
-  String get kindLabel {
-    switch (kind) {
-      case StepKind.delta:
-        return "delta update";
-      case StepKind.full:
-        return "full image";
-      case StepKind.convergeDelta:
-        return "sync to newer board (delta)";
-      case StepKind.convergeFull:
-        return "sync to newer board (full image)";
-      case StepKind.channelSwitchFull:
-        return "full image (channel switch)";
-    }
-  }
 
   /// The bundle_id sent in the OTA START message. Contract with
   /// bluetooth-service's staging (pkg/ota/staging.go stagedName): full images
@@ -131,9 +113,18 @@ class UpdateStep {
   }
 }
 
+/// A user-facing warning attached to a plan. Carries an i18n key (plus its
+/// placeholder values) instead of text so the UI layer owns the wording.
+class PlanWarning {
+  final String key;
+  final Map<String, String> params;
+
+  const PlanWarning(this.key, [this.params = const {}]);
+}
+
 class UpdatePlan {
   final List<UpdateStep> steps;
-  final List<String> warnings;
+  final List<PlanWarning> warnings;
   final bool upToDate;
 
   const UpdatePlan({required this.steps, required this.warnings, required this.upToDate});
@@ -299,7 +290,7 @@ class UpdatePlanner {
     bool channelSwitch = false,
   }) {
     final steps = <UpdateStep>[];
-    final warnings = <String>[];
+    final warnings = <PlanWarning>[];
 
     // A known MDB version on a different channel is a channel switch even if
     // the caller didn't flag it (e.g. restored app state).
@@ -308,8 +299,7 @@ class UpdatePlanner {
         channelSwitch || (mdbChannel != null && mdbChannel != channel);
 
     if (effectiveSwitch) {
-      warnings.add("Switching channels transfers full images for both boards — "
-          "this takes a long time over Bluetooth.");
+      warnings.add(const PlanWarning("ls_ota_warn_channel_switch"));
       for (final component in [OtaProtocol.componentMdb, OtaProtocol.componentDbc]) {
         final release = latestFull(releases, channel, variantFor(component));
         if (release == null) continue;
@@ -321,18 +311,17 @@ class UpdatePlanner {
         ));
       }
       if (steps.isEmpty) {
-        warnings.add("No $channel images found in the release index.");
+        warnings.add(PlanWarning("ls_ota_warn_no_images", {"channel": channel}));
       }
       return UpdatePlan(steps: steps, warnings: warnings, upToDate: false);
     }
 
     if (!isKnownVersion(mdbVersion)) {
       // Degrades to the old behavior: newest full MDB image.
-      warnings.add("Couldn't read the installed scooter version — "
-          "offering the latest full image.");
+      warnings.add(const PlanWarning("ls_ota_warn_mdb_unknown"));
       final release = latestFull(releases, channel, variantMdb);
       if (release == null) {
-        warnings.add("No MDB bundle found on the $channel channel.");
+        warnings.add(PlanWarning("ls_ota_warn_no_mdb_bundle", {"channel": channel}));
         return UpdatePlan(steps: const [], warnings: warnings, upToDate: false);
       }
       steps.add(UpdateStep(
@@ -349,8 +338,7 @@ class UpdatePlanner {
     final dbcChannel = inferChannel(dbcVersion);
 
     if (!dbcKnown) {
-      warnings.add("Dashboard version unknown — switch the scooter on so the "
-          "dashboard boots, then check again. Updating the scooter only for now.");
+      warnings.add(const PlanWarning("ls_ota_warn_dbc_unknown"));
       _addBoardSteps(steps, warnings, releases, channel, OtaProtocol.componentMdb, normMdb);
       return UpdatePlan(
           steps: steps, warnings: warnings, upToDate: steps.isEmpty && warnings.length == 1);
@@ -361,8 +349,7 @@ class UpdatePlanner {
     if (dbcChannel != null && dbcChannel != channel) {
       // Cross-channel divergence: the scooter is the reference; the dashboard
       // needs a full image, deltas can't cross channels.
-      warnings.add("Dashboard is on the $dbcChannel channel — "
-          "a full image is needed to bring it to the scooter's version.");
+      warnings.add(PlanWarning("ls_ota_warn_dbc_channel", {"channel": dbcChannel}));
       final target = _releaseByTag(releases, channel, normMdb);
       final release = (target != null && target.menderAsset(variantDbc) != null)
           ? target
@@ -375,7 +362,7 @@ class UpdatePlanner {
           kind: StepKind.convergeFull,
         ));
       } else {
-        warnings.add("No DBC image found on the $channel channel.");
+        warnings.add(PlanWarning("ls_ota_warn_no_dbc_image", {"channel": channel}));
       }
       _addBoardSteps(steps, warnings, releases, channel, OtaProtocol.componentMdb, normMdb);
       return UpdatePlan(steps: steps, warnings: warnings, upToDate: false);
@@ -395,8 +382,7 @@ class UpdatePlanner {
       if (target == null) {
         // The newer board's version is no longer in the index; converge on
         // the latest instead.
-        warnings.add("The newer board's version ($newerNorm) is no longer "
-            "published — updating both boards to the latest instead.");
+        warnings.add(PlanWarning("ls_ota_warn_version_unpublished", {"version": newerNorm}));
         final release = latestFull(releases, channel, variant);
         if (release != null) {
           steps.add(UpdateStep(
@@ -427,7 +413,8 @@ class UpdatePlanner {
             kind: StepKind.convergeFull,
           ));
         } else {
-          warnings.add("No ${dbcOlder ? 'DBC' : 'MDB'} image found for $newerNorm.");
+          warnings.add(PlanWarning("ls_ota_warn_no_image_for",
+              {"board": dbcOlder ? "DBC" : "MDB", "version": newerNorm}));
         }
         converged = newerNorm;
       }
@@ -454,7 +441,7 @@ class UpdatePlanner {
   /// image when the version has no delta path. No step when up to date.
   static void _addBoardSteps(
     List<UpdateStep> steps,
-    List<String> warnings,
+    List<PlanWarning> warnings,
     List<FirmwareRelease> releases,
     String channel,
     int component,
@@ -490,8 +477,8 @@ class UpdatePlanner {
       ));
       return;
     }
-    warnings.add("No delta path from $normalizedCurrent — "
-        "a full image is needed (${latest.tagName}).");
+    warnings.add(PlanWarning("ls_ota_warn_no_delta_path",
+        {"version": normalizedCurrent, "latest": latest.tagName}));
     steps.add(UpdateStep(
       component: component,
       release: latest,

@@ -303,8 +303,8 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
             context.read<ScooterService>().characteristicRepository.otaAvailable)
           ListTile(
             leading: Icon(Icons.system_update_alt_outlined),
-            title: Text("Firmware update"),
-            subtitle: Text("Install scooter updates over Bluetooth"),
+            title: Text(FlutterI18n.translate(context, "ls_settings_ota_title")),
+            subtitle: Text(FlutterI18n.translate(context, "ls_settings_ota_subtitle")),
             trailing: Icon(Icons.chevron_right),
             onTap: () {
               Navigator.push(context, MaterialPageRoute(builder: (context) => LsOtaScreen()));

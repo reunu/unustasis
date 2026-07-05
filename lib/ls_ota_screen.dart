@@ -2,11 +2,13 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
+import 'domain/ota_protocol.dart';
 import 'domain/update_planner.dart';
 import 'scooter_service.dart';
 import 'service/ble_commands.dart';
@@ -141,8 +143,10 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
       final resp = await http
           .get(Uri.parse("$_releasesBase/$_channel.json"))
           .timeout(const Duration(seconds: 15));
+      if (!mounted) return;
       if (resp.statusCode != 200) {
-        throw "Release index unavailable (HTTP ${resp.statusCode})";
+        throw FlutterI18n.translate(context, "ls_ota_error_index",
+            translationParams: {"code": "${resp.statusCode}"});
       }
       final releases = [
         for (final r in jsonDecode(resp.body) as List<dynamic>)
@@ -165,7 +169,8 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
       log.warning("Update check failed: $e");
       if (!mounted) return;
       setState(() {
-        _error = "Update check failed: $e";
+        _error = FlutterI18n.translate(context, "ls_ota_error_check_failed",
+            translationParams: {"error": "$e"});
         _phase = _PlanPhase.error;
       });
     }
@@ -178,19 +183,18 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
       final ok = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text("Switch update channel?"),
-          content: Text(
-              "The scooter is on the ${_inferredChannel!} channel. Switching to "
-              "$selected requires downloading and transferring a full firmware "
-              "image for both boards, which takes a long time over Bluetooth."),
+          title: Text(FlutterI18n.translate(context, "ls_ota_switch_channel_title")),
+          content: Text(FlutterI18n.translate(context, "ls_ota_switch_channel_body",
+              translationParams: {"current": _inferredChannel!, "selected": selected})),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text("Cancel"),
+              child: Text(FlutterI18n.translate(context, "cancel")),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child: Text("Switch to $selected"),
+              child: Text(FlutterI18n.translate(context, "ls_ota_switch_channel_confirm",
+                  translationParams: {"channel": selected})),
             ),
           ],
         ),
@@ -206,19 +210,20 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
       final ok = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text("Install full image?"),
-          content: Text(
-              "${step.asset.name} is a full firmware image "
-              "(${_formatBytes(step.asset.size)}). Transferring it over "
-              "Bluetooth can take a long time. Continue?"),
+          title: Text(FlutterI18n.translate(context, "ls_ota_full_image_title")),
+          content: Text(FlutterI18n.translate(context, "ls_ota_full_image_body",
+              translationParams: {
+                "asset": step.asset.name,
+                "size": _formatBytes(step.asset.size),
+              })),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text("Cancel"),
+              child: Text(FlutterI18n.translate(context, "cancel")),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text("Install"),
+              child: Text(FlutterI18n.translate(context, "ls_ota_install")),
             ),
           ],
         ),
@@ -261,7 +266,8 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
       final latest = UpdatePlanner.latestFull(_releases, _channel, variant);
       asset = latest?.menderAsset(variant);
       if (latest == null || asset == null) {
-        setState(() => _error = "No full image available on the $_channel channel");
+        setState(() => _error = FlutterI18n.translate(context, "ls_ota_error_no_full_image",
+            translationParams: {"channel": _channel}));
         return;
       }
       release = latest;
@@ -294,7 +300,11 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
       final req = http.Request("GET", Uri.parse(asset.url));
       final resp = await http.Client().send(req);
       if (resp.statusCode != 200) {
-        throw "Download failed (HTTP ${resp.statusCode})";
+        // the download may outlive the screen; only translate with a live context
+        throw !mounted
+            ? "Download failed (HTTP ${resp.statusCode})"
+            : FlutterI18n.translate(context, "ls_ota_error_download",
+                translationParams: {"code": "${resp.statusCode}"});
       }
       final total = resp.contentLength ?? asset.size;
       final sink = file.openWrite();
@@ -321,22 +331,63 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
 
   String _formatEta(int? seconds) {
     if (seconds == null) return "";
-    if (seconds >= 3600) return " — ~${(seconds / 3600).toStringAsFixed(1)} h left";
-    if (seconds >= 90) return " — ~${(seconds / 60).round()} min left";
-    return " — ~$seconds s left";
+    if (seconds >= 3600) {
+      return FlutterI18n.translate(context, "ls_ota_eta_hours",
+          translationParams: {"hours": (seconds / 3600).toStringAsFixed(1)});
+    }
+    if (seconds >= 90) {
+      return FlutterI18n.translate(context, "ls_ota_eta_minutes",
+          translationParams: {"minutes": "${(seconds / 60).round()}"});
+    }
+    return FlutterI18n.translate(context, "ls_ota_eta_seconds",
+        translationParams: {"seconds": "$seconds"});
   }
 
-  Widget _versionTile(String label, String? version, IconData icon) {
+  String _boardLabel(int component) => FlutterI18n.translate(
+      context, component == OtaProtocol.componentDbc ? "ls_ota_board_dbc" : "ls_ota_board_mdb");
+
+  String _kindLabel(StepKind kind) {
+    switch (kind) {
+      case StepKind.delta:
+        return FlutterI18n.translate(context, "ls_ota_kind_delta");
+      case StepKind.full:
+        return FlutterI18n.translate(context, "ls_ota_kind_full");
+      case StepKind.convergeDelta:
+        return FlutterI18n.translate(context, "ls_ota_kind_converge_delta");
+      case StepKind.convergeFull:
+        return FlutterI18n.translate(context, "ls_ota_kind_converge_full");
+      case StepKind.channelSwitchFull:
+        return FlutterI18n.translate(context, "ls_ota_kind_channel_switch");
+    }
+  }
+
+  /// Progress bar in the app's house style (see driving_screen/home_screen) —
+  /// the M3 default derives its track color from `secondary`, which is green
+  /// like `primary` here, making the bar green-on-green.
+  Widget _progressBar(double? value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: LinearProgressIndicator(
+        value: value,
+        backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+        color: Theme.of(context).colorScheme.primary,
+        minHeight: 8,
+        borderRadius: BorderRadius.circular(8),
+      ),
+    );
+  }
+
+  Widget _versionTile(String labelKey, String? version, IconData icon) {
     final known = UpdatePlanner.isKnownVersion(version);
     return ListTile(
       dense: true,
       leading: Icon(icon),
-      title: Text(label),
+      title: Text(FlutterI18n.translate(context, labelKey)),
       subtitle: Text(known
           ? version!
-          : version == "unknown"
-              ? "unknown — switch the scooter on so the dashboard boots"
-              : "unavailable (older firmware?)"),
+          : FlutterI18n.translate(
+              context,
+              version == "unknown" ? "ls_ota_version_unknown" : "ls_ota_version_unavailable")),
       trailing: known ? null : const Icon(Icons.warning_amber, color: Colors.amber),
     );
   }
@@ -349,31 +400,39 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
           ListTile(
             dense: true,
             leading: const Icon(Icons.info_outline),
-            title: Text(warning, style: const TextStyle(fontSize: 13)),
+            title: Text(
+                FlutterI18n.translate(context, warning.key, translationParams: warning.params),
+                style: const TextStyle(fontSize: 13)),
           ),
         for (var i = 0; i < plan.steps.length; i++)
           ListTile(
             leading: Icon(plan.steps[i].isFullImage
                 ? Icons.system_update_alt
                 : Icons.compress),
-            title: Text(
-                "Step ${i + 1}: ${plan.steps[i].componentLabel} → ${plan.steps[i].release.tagName}"),
-            subtitle: Text(
-                "${plan.steps[i].asset.name} (${_formatBytes(plan.steps[i].asset.size)})"
-                " — ${plan.steps[i].kindLabel}"),
+            title: Text(FlutterI18n.translate(context, "ls_ota_step_title", translationParams: {
+              "number": "${i + 1}",
+              "board": _boardLabel(plan.steps[i].component),
+              "version": plan.steps[i].release.tagName,
+            })),
+            subtitle: Text(FlutterI18n.translate(context, "ls_ota_step_subtitle",
+                translationParams: {
+                  "asset": plan.steps[i].asset.name,
+                  "size": _formatBytes(plan.steps[i].asset.size),
+                  "kind": _kindLabel(plan.steps[i].kind),
+                })),
             trailing: i == 0
                 ? TextButton(
                     onPressed: actionable ? () => _onInstallPressed(plan.steps[i]) : null,
-                    child: const Text("Install"),
+                    child: Text(FlutterI18n.translate(context, "ls_ota_install")),
                   )
                 : const Icon(Icons.lock_outline, size: 18),
           ),
         if (plan.steps.length > 1)
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
-              "One update at a time — the plan refreshes after each step.",
-              style: TextStyle(fontSize: 12),
+              FlutterI18n.translate(context, "ls_ota_one_at_a_time"),
+              style: const TextStyle(fontSize: 12),
             ),
           ),
       ],
@@ -384,13 +443,11 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
   /// its own and the app can be closed — the session is re-adopted via
   /// STATUS_REQ when the screen is opened again.
   Widget _closableNote() {
-    return const Padding(
-      padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       child: Text(
-        "The transfer is complete — you can close the app now. The "
-        "installation continues on the scooter, and this screen picks it "
-        "up again when you come back.",
-        style: TextStyle(fontSize: 12),
+        FlutterI18n.translate(context, "ls_ota_closable_note"),
+        style: const TextStyle(fontSize: 12),
       ),
     );
   }
@@ -403,27 +460,36 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
       case OtaTransferState.handshaking:
         return ListTile(
           leading: const CircularProgressIndicator(),
-          title: Text(_transfer.statusMessage),
+          title: Text(FlutterI18n.translate(
+              context,
+              _transfer.state == OtaTransferState.hashing
+                  ? "ls_ota_status_preparing"
+                  : "ls_ota_status_contacting")),
         );
       case OtaTransferState.transferring:
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ListTile(
-              title: Text("Transferring to ${_activeStep?.componentLabel ?? 'scooter'}"),
-              subtitle: Text(
-                  "${_formatBytes(_transfer.ackedBytes)} of ${_formatBytes(_transfer.totalBytes)}"
-                  " — ${_formatBytes(_transfer.throughput)}/s"
-                  "${_formatEta(_transfer.etaSeconds)}"),
+              title: Text(FlutterI18n.translate(context, "ls_ota_transferring_to",
+                  translationParams: {
+                    "board": _activeStep != null
+                        ? _boardLabel(_activeStep!.component)
+                        : _boardLabel(OtaProtocol.componentMdb),
+                  })),
+              subtitle: Text(FlutterI18n.translate(context, "ls_ota_transfer_stats",
+                      translationParams: {
+                        "done": _formatBytes(_transfer.ackedBytes),
+                        "total": _formatBytes(_transfer.totalBytes),
+                        "rate": _formatBytes(_transfer.throughput),
+                      }) +
+                  _formatEta(_transfer.etaSeconds)),
               trailing: TextButton(
                 onPressed: _transfer.abort,
-                child: const Text("Cancel"),
+                child: Text(FlutterI18n.translate(context, "cancel")),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: LinearProgressIndicator(value: _transfer.progress),
-            ),
+            _progressBar(_transfer.progress),
           ],
         );
       case OtaTransferState.verifying:
@@ -432,8 +498,7 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
           children: [
             ListTile(
               leading: const CircularProgressIndicator(),
-              title: const Text("Verifying transfer"),
-              subtitle: Text(_transfer.statusMessage),
+              title: Text(FlutterI18n.translate(context, "ls_ota_status_verifying")),
             ),
             _closableNote(),
           ],
@@ -443,28 +508,26 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ListTile(
-              title: const Text("Installing"),
-              subtitle: Text(_transfer.statusMessage),
+              title: Text(FlutterI18n.translate(context, "ls_ota_status_installing")),
+              subtitle: Text(FlutterI18n.translate(context, "ls_ota_installing_percent",
+                  translationParams: {"percent": "${_transfer.installPercent}"})),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: LinearProgressIndicator(value: _transfer.installPercent / 100),
-            ),
+            _progressBar(_transfer.installPercent / 100),
             _closableNote(),
           ],
         );
       case OtaTransferState.pendingReboot:
         return Column(
           children: [
-            const ListTile(
-              leading: Icon(Icons.lock_outline),
-              title: Text("Installed"),
-              subtitle: Text("Lock the scooter to reboot and finish the update."),
+            ListTile(
+              leading: const Icon(Icons.lock_outline),
+              title: Text(FlutterI18n.translate(context, "ls_ota_installed_title")),
+              subtitle: Text(FlutterI18n.translate(context, "ls_ota_installed_subtitle")),
             ),
             ListTile(
               leading: const Icon(Icons.refresh),
-              title: const Text("Check again"),
-              subtitle: const Text("Re-reads the installed versions and plans the next step."),
+              title: Text(FlutterI18n.translate(context, "ls_ota_check_again")),
+              subtitle: Text(FlutterI18n.translate(context, "ls_ota_check_again_subtitle")),
               onTap: _refreshing ? null : () => _refresh(),
             ),
           ],
@@ -472,13 +535,13 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
       case OtaTransferState.success:
         return Column(
           children: [
-            const ListTile(
-              leading: Icon(Icons.check_circle_outline),
-              title: Text("Update installed"),
+            ListTile(
+              leading: const Icon(Icons.check_circle_outline),
+              title: Text(FlutterI18n.translate(context, "ls_ota_success")),
             ),
             ListTile(
               leading: const Icon(Icons.refresh),
-              title: const Text("Check again"),
+              title: Text(FlutterI18n.translate(context, "ls_ota_check_again")),
               onTap: _refreshing ? null : () => _refresh(),
             ),
           ],
@@ -489,21 +552,19 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
           children: [
             ListTile(
               leading: const Icon(Icons.error_outline),
-              title: const Text("Update failed"),
+              title: Text(FlutterI18n.translate(context, "ls_ota_failed")),
               subtitle: Text(_transfer.statusMessage),
               trailing: _transfer.resumable && active != null
                   ? TextButton(
                       onPressed: () => _executeStep(active),
-                      child: const Text("Resume"))
+                      child: Text(FlutterI18n.translate(context, "ls_ota_resume")))
                   : null,
             ),
             if (active != null && !active.isFullImage)
               ListTile(
                 leading: const Icon(Icons.system_update_alt),
-                title: const Text("Try full image instead"),
-                subtitle: const Text(
-                    "Use this when the scooter can't apply the delta "
-                    "(e.g. no base image on the scooter)."),
+                title: Text(FlutterI18n.translate(context, "ls_ota_try_full_title")),
+                subtitle: Text(FlutterI18n.translate(context, "ls_ota_try_full_subtitle")),
                 onTap: () => _tryFullImageInstead(active),
               ),
           ],
@@ -532,34 +593,34 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
     final actionable = connected && otaAvailable && !_transfer.active && !_downloading;
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Firmware update")),
+      appBar: AppBar(title: Text(FlutterI18n.translate(context, "ls_ota_title"))),
       body: ListView(
         children: [
           if (!connected)
-            const ListTile(
-              leading: Icon(Icons.bluetooth_disabled),
-              title: Text("Scooter not connected"),
+            ListTile(
+              leading: const Icon(Icons.bluetooth_disabled),
+              title: Text(FlutterI18n.translate(context, "ls_ota_not_connected")),
             )
           else if (!otaAvailable)
-            const ListTile(
-              leading: Icon(Icons.info_outline),
-              title: Text("Wireless updates not supported"),
-              subtitle: Text("The scooter's firmware does not expose the OTA service yet."),
+            ListTile(
+              leading: const Icon(Icons.info_outline),
+              title: Text(FlutterI18n.translate(context, "ls_ota_not_supported_title")),
+              subtitle: Text(FlutterI18n.translate(context, "ls_ota_not_supported_subtitle")),
             ),
           // After an app restart into a recovered session the versions were
           // never queried — hide the tiles instead of showing bogus warnings.
           if (_mdbVersion != null ||
               _dbcVersion != null ||
               _transfer.state == OtaTransferState.idle) ...[
-            _versionTile("Scooter (MDB)", _mdbVersion, Icons.memory),
-            _versionTile("Dashboard (DBC)", _dbcVersion, Icons.speed),
+            _versionTile("ls_ota_board_mdb", _mdbVersion, Icons.memory),
+            _versionTile("ls_ota_board_dbc", _dbcVersion, Icons.speed),
           ],
           ListTile(
             leading: const Icon(Icons.alt_route),
-            title: const Text("Channel"),
+            title: Text(FlutterI18n.translate(context, "ls_ota_channel")),
             subtitle: _channelSwitch
-                ? const Text("Channel switch: full images required",
-                    style: TextStyle(color: Colors.amber))
+                ? Text(FlutterI18n.translate(context, "ls_ota_channel_switch_note"),
+                    style: const TextStyle(color: Colors.amber))
                 : null,
             trailing: DropdownButton<String>(
               value: _channel,
@@ -575,22 +636,22 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
             ),
           ),
           if (_phase == _PlanPhase.queryingVersions)
-            const ListTile(
-              leading: CircularProgressIndicator(),
-              title: Text("Reading installed versions..."),
+            ListTile(
+              leading: const CircularProgressIndicator(),
+              title: Text(FlutterI18n.translate(context, "ls_ota_reading_versions")),
             )
           else if (_phase == _PlanPhase.fetchingIndex)
-            const ListTile(
-              leading: CircularProgressIndicator(),
-              title: Text("Checking for updates..."),
+            ListTile(
+              leading: const CircularProgressIndicator(),
+              title: Text(FlutterI18n.translate(context, "ls_ota_checking")),
             )
           else if (_phase == _PlanPhase.upToDate)
             ListTile(
               leading: const Icon(Icons.check_circle_outline),
-              title: const Text("Everything is up to date"),
+              title: Text(FlutterI18n.translate(context, "ls_ota_up_to_date")),
               trailing: TextButton(
                 onPressed: _refreshing ? null : () => _refresh(),
-                child: const Text("Check again"),
+                child: Text(FlutterI18n.translate(context, "ls_ota_check_again")),
               ),
             )
           else if (_phase == _PlanPhase.ready && _plan != null)
@@ -599,11 +660,8 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const ListTile(title: Text("Downloading bundle...")),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: LinearProgressIndicator(value: _downloadProgress),
-                ),
+                ListTile(title: Text(FlutterI18n.translate(context, "ls_ota_downloading"))),
+                _progressBar(_downloadProgress),
               ],
             ),
           _transferStatus(),
@@ -614,16 +672,15 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
               trailing: _phase == _PlanPhase.error
                   ? TextButton(
                       onPressed: _refreshing ? null : () => _refresh(),
-                      child: const Text("Retry"),
+                      child: Text(FlutterI18n.translate(context, "ls_ota_retry")),
                     )
                   : null,
             ),
-          const Padding(
-            padding: EdgeInsets.all(16),
+          Padding(
+            padding: const EdgeInsets.all(16),
             child: Text(
-              "Keep the app in the foreground and the phone near the scooter during "
-              "the transfer. An interrupted transfer resumes where it left off.",
-              style: TextStyle(fontSize: 12),
+              FlutterI18n.translate(context, "ls_ota_footer"),
+              style: const TextStyle(fontSize: 12),
             ),
           ),
         ],

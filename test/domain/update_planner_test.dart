@@ -276,7 +276,7 @@ void main() {
       expect(plan.steps.length, 1);
       expect(plan.steps.first.component, OtaProtocol.componentMdb);
       expect(plan.steps.first.kind, StepKind.delta);
-      expect(plan.warnings.any((w) => w.contains("Dashboard version unknown")), true);
+      expect(plan.warnings.any((w) => w.key == "ls_ota_warn_dbc_unknown"), true);
     });
 
     test("cross-channel DBC gets a full image at MDB's version", () {
@@ -301,7 +301,7 @@ void main() {
       expect(plan.steps.length, 2);
       expect(plan.steps.every((s) => s.kind == StepKind.full), true);
       expect(plan.steps.every((s) => s.release.tagName == n3), true);
-      expect(plan.warnings.any((w) => w.contains("No delta path")), true);
+      expect(plan.warnings.any((w) => w.key == "ls_ota_warn_no_delta_path"), true);
     });
 
     test("newer full-only release without a delta yet", () {
