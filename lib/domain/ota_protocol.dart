@@ -69,6 +69,9 @@ class OtaProtocol {
   /// The largest chunk the scooter accepts (fits ATT MTU 247).
   static const int maxChunkSize = 240;
 
+  /// [bundleId] must match the scooter's charset rule (protocol.go
+  /// validBundleID: first char alphanumeric, rest `[A-Za-z0-9._-]`, max 64) —
+  /// anything else gets START_ACK badParams. UpdateStep.bundleId enforces it.
   static Uint8List encodeStart({
     required int component,
     required int chunkSize,

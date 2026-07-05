@@ -7,27 +7,14 @@ import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
-import 'domain/ota_protocol.dart';
+import 'domain/update_planner.dart';
 import 'scooter_service.dart';
+import 'service/ble_commands.dart';
 import 'service/ota_transfer_service.dart';
 
 final log = Logger('LsOtaScreen');
 
-/// A firmware bundle offered by the librescoot release index
-/// (`https://downloads.librescoot.org/releases/[channel].json`, same index
-/// update-service consumes).
-class OtaRelease {
-  final String tagName;
-  final String assetName;
-  final String url;
-  final int size;
-
-  OtaRelease({required this.tagName, required this.assetName, required this.url, required this.size});
-
-  /// The `.mender` basename without extension; the scooter derives the
-  /// displayed version from it.
-  String get bundleId => assetName.endsWith(".mender") ? assetName.substring(0, assetName.length - 7) : assetName;
-}
+enum _PlanPhase { idle, queryingVersions, fetchingIndex, ready, upToDate, error }
 
 class LsOtaScreen extends StatefulWidget {
   const LsOtaScreen({super.key});
@@ -38,22 +25,28 @@ class LsOtaScreen extends StatefulWidget {
 
 class _LsOtaScreenState extends State<LsOtaScreen> {
   static const _releasesBase = "https://downloads.librescoot.org/releases";
-  static const _channels = ["stable", "testing", "nightly"];
 
   final OtaTransferService _transfer = OtaTransferService();
 
+  _PlanPhase _phase = _PlanPhase.idle;
   String _channel = "stable";
-  OtaRelease? _latest;
-  bool _checking = false;
+  String? _inferredChannel;
+  bool _channelSwitch = false;
+  String? _mdbVersion;
+  String? _dbcVersion;
+  List<FirmwareRelease> _releases = [];
+  UpdatePlan? _plan;
+  UpdateStep? _activeStep;
   bool _downloading = false;
   double _downloadProgress = 0;
   String? _error;
+  bool _wasConnected = false;
 
   @override
   void initState() {
     super.initState();
     _transfer.addListener(_onTransferChanged);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _checkForUpdates());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refresh());
   }
 
   @override
@@ -66,12 +59,53 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
     if (mounted) setState(() {});
   }
 
-  Future<void> _checkForUpdates() async {
+  bool get _refreshing =>
+      _phase == _PlanPhase.queryingVersions || _phase == _PlanPhase.fetchingIndex;
+
+  /// Re-reads the installed versions over BLE, fetches the release index and
+  /// rebuilds the update plan.
+  Future<void> _refresh({bool channelSwitch = false}) async {
+    if (_refreshing || _transfer.busy) return;
+    final service = context.read<ScooterService>();
+
     setState(() {
-      _checking = true;
-      _latest = null;
+      _phase = _PlanPhase.queryingVersions;
+      _channelSwitch = channelSwitch;
+      _plan = null;
+      _activeStep = null;
       _error = null;
     });
+
+    // Installed versions via the extended command channel. Null (timeout /
+    // old firmware) degrades the plan to the newest full image.
+    String? mdb, dbc;
+    if (service.connected) {
+      final scooter = service.myScooter;
+      final repo = service.characteristicRepository;
+      try {
+        mdb = await getInstalledVersionCommand(scooter, repo, "mdb");
+      } catch (e) {
+        log.warning("MDB version query failed: $e");
+      }
+      try {
+        dbc = await getInstalledVersionCommand(scooter, repo, "dbc");
+      } catch (e) {
+        log.warning("DBC version query failed: $e");
+      }
+    }
+    if (!mounted) return;
+
+    setState(() {
+      _mdbVersion = mdb;
+      _dbcVersion = dbc;
+      _inferredChannel = UpdatePlanner.inferChannel(mdb);
+      // Follow the installed channel unless the user deliberately switched.
+      if (!channelSwitch && _inferredChannel != null) {
+        _channel = _inferredChannel!;
+      }
+      _phase = _PlanPhase.fetchingIndex;
+    });
+
     try {
       final resp = await http
           .get(Uri.parse("$_releasesBase/$_channel.json"))
@@ -79,37 +113,142 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
       if (resp.statusCode != 200) {
         throw "Release index unavailable (HTTP ${resp.statusCode})";
       }
-      final releases = jsonDecode(resp.body) as List<dynamic>;
-      for (final r in releases) {
-        final assets = (r["assets"] as List<dynamic>? ?? []);
-        for (final a in assets) {
-          final name = a["name"] as String? ?? "";
-          if (name.contains("mdb") && name.endsWith(".mender")) {
-            setState(() {
-              _latest = OtaRelease(
-                tagName: r["tag_name"] as String? ?? "unknown",
-                assetName: name,
-                url: a["url"] as String? ?? "",
-                size: (a["size"] as num?)?.toInt() ?? 0,
-              );
-            });
-            return;
-          }
-        }
-      }
-      setState(() => _error = "No MDB bundle found on the $_channel channel");
+      final releases = [
+        for (final r in jsonDecode(resp.body) as List<dynamic>)
+          FirmwareRelease.fromJson(r as Map<String, dynamic>)
+      ];
+      final plan = UpdatePlanner.buildPlan(
+        releases: releases,
+        channel: _channel,
+        mdbVersion: mdb,
+        dbcVersion: dbc,
+        channelSwitch: channelSwitch,
+      );
+      if (!mounted) return;
+      setState(() {
+        _releases = releases;
+        _plan = plan;
+        _phase = plan.upToDate ? _PlanPhase.upToDate : _PlanPhase.ready;
+      });
     } catch (e) {
       log.warning("Update check failed: $e");
-      setState(() => _error = "Update check failed: $e");
-    } finally {
-      setState(() => _checking = false);
+      if (!mounted) return;
+      setState(() {
+        _error = "Update check failed: $e";
+        _phase = _PlanPhase.error;
+      });
     }
   }
 
-  Future<File> _downloadBundle(OtaRelease release) async {
+  Future<void> _onChannelSelected(String selected) async {
+    if (selected == _channel && !_channelSwitch) return;
+    final isSwitch = _inferredChannel != null && selected != _inferredChannel;
+    if (isSwitch) {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text("Switch update channel?"),
+          content: Text(
+              "The scooter is on the ${_inferredChannel!} channel. Switching to "
+              "$selected requires downloading and transferring a full firmware "
+              "image for both boards, which takes a long time over Bluetooth."),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text("Switch to $selected"),
+            ),
+          ],
+        ),
+      );
+      if (ok != true || !mounted) return;
+    }
+    setState(() => _channel = selected);
+    _refresh(channelSwitch: isSwitch);
+  }
+
+  Future<void> _onInstallPressed(UpdateStep step) async {
+    if (step.isFullImage) {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text("Install full image?"),
+          content: Text(
+              "${step.asset.name} is a full firmware image "
+              "(${_formatBytes(step.asset.size)}). Transferring it over "
+              "Bluetooth can take a long time. Continue?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text("Install"),
+            ),
+          ],
+        ),
+      );
+      if (ok != true || !mounted) return;
+    }
+    await _executeStep(step);
+  }
+
+  Future<void> _executeStep(UpdateStep step) async {
+    final service = context.read<ScooterService>();
+    final scooter = service.myScooter;
+    if (scooter == null) return;
+    final repo = service.characteristicRepository;
+
+    setState(() {
+      _error = null;
+      _activeStep = step;
+    });
+    try {
+      final bundle = await _downloadBundle(step.asset);
+      await _transfer.transfer(
+        scooter,
+        repo,
+        bundle,
+        bundleId: step.bundleId,
+        component: step.component,
+      );
+    } catch (e) {
+      log.warning("OTA update failed: $e");
+      if (mounted) setState(() => _error = e.toString());
+    }
+  }
+
+  /// After a failed delta install (e.g. the scooter has no base image),
+  /// offers the same release as a full image.
+  Future<void> _tryFullImageInstead(UpdateStep deltaStep) async {
+    final variant = UpdatePlanner.variantFor(deltaStep.component);
+    var release = deltaStep.release;
+    var asset = release.menderAsset(variant);
+    if (asset == null) {
+      final latest = UpdatePlanner.latestFull(_releases, _channel, variant);
+      asset = latest?.menderAsset(variant);
+      if (latest == null || asset == null) {
+        setState(() => _error = "No full image available on the $_channel channel");
+        return;
+      }
+      release = latest;
+    }
+    await _onInstallPressed(UpdateStep(
+      component: deltaStep.component,
+      release: release,
+      asset: asset,
+      kind: StepKind.full,
+    ));
+  }
+
+  Future<File> _downloadBundle(FirmwareAsset asset) async {
     final dir = await getApplicationSupportDirectory();
-    final file = File("${dir.path}/ota/${release.assetName}");
-    if (await file.exists() && await file.length() == release.size) {
+    final file = File("${dir.path}/ota/${asset.name}");
+    if (await file.exists() && await file.length() == asset.size) {
       return file; // already downloaded
     }
     await file.parent.create(recursive: true);
@@ -119,12 +258,12 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
       _downloadProgress = 0;
     });
     try {
-      final req = http.Request("GET", Uri.parse(release.url));
+      final req = http.Request("GET", Uri.parse(asset.url));
       final resp = await http.Client().send(req);
       if (resp.statusCode != 200) {
         throw "Download failed (HTTP ${resp.statusCode})";
       }
-      final total = resp.contentLength ?? release.size;
+      final total = resp.contentLength ?? asset.size;
       final sink = file.openWrite();
       var received = 0;
       await for (final chunk in resp.stream) {
@@ -141,29 +280,6 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
     }
   }
 
-  Future<void> _startUpdate() async {
-    final service = context.read<ScooterService>();
-    final scooter = service.myScooter;
-    final repo = service.characteristicRepository;
-    final release = _latest;
-    if (scooter == null || release == null) return;
-
-    setState(() => _error = null);
-    try {
-      final bundle = await _downloadBundle(release);
-      await _transfer.transfer(
-        scooter,
-        repo,
-        bundle,
-        bundleId: release.bundleId,
-        component: OtaProtocol.componentMdb,
-      );
-    } catch (e) {
-      log.warning("OTA update failed: $e");
-      if (mounted) setState(() => _error = e.toString());
-    }
-  }
-
   String _formatBytes(num bytes) {
     if (bytes >= 1 << 20) return "${(bytes / (1 << 20)).toStringAsFixed(1)} MB";
     if (bytes >= 1 << 10) return "${(bytes / (1 << 10)).toStringAsFixed(0)} kB";
@@ -175,6 +291,60 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
     if (seconds >= 3600) return " — ~${(seconds / 3600).toStringAsFixed(1)} h left";
     if (seconds >= 90) return " — ~${(seconds / 60).round()} min left";
     return " — ~$seconds s left";
+  }
+
+  Widget _versionTile(String label, String? version, IconData icon) {
+    final known = UpdatePlanner.isKnownVersion(version);
+    return ListTile(
+      dense: true,
+      leading: Icon(icon),
+      title: Text(label),
+      subtitle: Text(known
+          ? version!
+          : version == "unknown"
+              ? "unknown — switch the scooter on so the dashboard boots"
+              : "unavailable (older firmware?)"),
+      trailing: known ? null : const Icon(Icons.warning_amber, color: Colors.amber),
+    );
+  }
+
+  Widget _planList(UpdatePlan plan, {required bool actionable}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final warning in plan.warnings)
+          ListTile(
+            dense: true,
+            leading: const Icon(Icons.info_outline),
+            title: Text(warning, style: const TextStyle(fontSize: 13)),
+          ),
+        for (var i = 0; i < plan.steps.length; i++)
+          ListTile(
+            leading: Icon(plan.steps[i].isFullImage
+                ? Icons.system_update_alt
+                : Icons.compress),
+            title: Text(
+                "Step ${i + 1}: ${plan.steps[i].componentLabel} → ${plan.steps[i].release.tagName}"),
+            subtitle: Text(
+                "${plan.steps[i].asset.name} (${_formatBytes(plan.steps[i].asset.size)})"
+                " — ${plan.steps[i].kindLabel}"),
+            trailing: i == 0
+                ? TextButton(
+                    onPressed: actionable ? () => _onInstallPressed(plan.steps[i]) : null,
+                    child: const Text("Install"),
+                  )
+                : const Icon(Icons.lock_outline, size: 18),
+          ),
+        if (plan.steps.length > 1)
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              "One update at a time — the plan refreshes after each step.",
+              style: TextStyle(fontSize: 12),
+            ),
+          ),
+      ],
+    );
   }
 
   Widget _transferStatus() {
@@ -192,7 +362,7 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ListTile(
-              title: const Text("Transferring to scooter"),
+              title: Text("Transferring to ${_activeStep?.componentLabel ?? 'scooter'}"),
               subtitle: Text(
                   "${_formatBytes(_transfer.ackedBytes)} of ${_formatBytes(_transfer.totalBytes)}"
                   " — ${_formatBytes(_transfer.throughput)}/s"
@@ -229,24 +399,59 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
           ],
         );
       case OtaTransferState.pendingReboot:
-        return const ListTile(
-          leading: Icon(Icons.lock_outline),
-          title: Text("Installed"),
-          subtitle: Text("Lock the scooter to reboot and finish the update."),
+        return Column(
+          children: [
+            const ListTile(
+              leading: Icon(Icons.lock_outline),
+              title: Text("Installed"),
+              subtitle: Text("Lock the scooter to reboot and finish the update."),
+            ),
+            ListTile(
+              leading: const Icon(Icons.refresh),
+              title: const Text("Check again"),
+              subtitle: const Text("Re-reads the installed versions and plans the next step."),
+              onTap: _refreshing ? null : () => _refresh(),
+            ),
+          ],
         );
       case OtaTransferState.success:
-        return const ListTile(
-          leading: Icon(Icons.check_circle_outline),
-          title: Text("Update installed"),
+        return Column(
+          children: [
+            const ListTile(
+              leading: Icon(Icons.check_circle_outline),
+              title: Text("Update installed"),
+            ),
+            ListTile(
+              leading: const Icon(Icons.refresh),
+              title: const Text("Check again"),
+              onTap: _refreshing ? null : () => _refresh(),
+            ),
+          ],
         );
       case OtaTransferState.failure:
-        return ListTile(
-          leading: const Icon(Icons.error_outline),
-          title: const Text("Update failed"),
-          subtitle: Text(_transfer.statusMessage),
-          trailing: _transfer.resumable
-              ? TextButton(onPressed: _startUpdate, child: const Text("Resume"))
-              : null,
+        final active = _activeStep;
+        return Column(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.error_outline),
+              title: const Text("Update failed"),
+              subtitle: Text(_transfer.statusMessage),
+              trailing: _transfer.resumable && active != null
+                  ? TextButton(
+                      onPressed: () => _executeStep(active),
+                      child: const Text("Resume"))
+                  : null,
+            ),
+            if (active != null && !active.isFullImage)
+              ListTile(
+                leading: const Icon(Icons.system_update_alt),
+                title: const Text("Try full image instead"),
+                subtitle: const Text(
+                    "Use this when the scooter can't apply the delta "
+                    "(e.g. no base image on the scooter)."),
+                onTap: () => _tryFullImageInstead(active),
+              ),
+          ],
         );
     }
   }
@@ -257,6 +462,19 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
     final connected = service.connected;
     // characteristicRepository is late-initialized during connect
     final otaAvailable = connected && service.characteristicRepository.otaAvailable;
+
+    // After the post-install reboot (MDB) the link drops and comes back:
+    // re-plan automatically so the user sees the next step.
+    if (connected != _wasConnected) {
+      _wasConnected = connected;
+      if (connected &&
+          (_transfer.state == OtaTransferState.pendingReboot ||
+              _transfer.state == OtaTransferState.success)) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _refresh());
+      }
+    }
+
+    final actionable = connected && otaAvailable && !_transfer.busy && !_downloading;
 
     return Scaffold(
       appBar: AppBar(title: const Text("Firmware update")),
@@ -273,41 +491,49 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
               title: Text("Wireless updates not supported"),
               subtitle: Text("The scooter's firmware does not expose the OTA service yet."),
             ),
+          _versionTile("Scooter (MDB)", _mdbVersion, Icons.memory),
+          _versionTile("Dashboard (DBC)", _dbcVersion, Icons.speed),
           ListTile(
             leading: const Icon(Icons.alt_route),
             title: const Text("Channel"),
+            subtitle: _channelSwitch
+                ? const Text("Channel switch: full images required",
+                    style: TextStyle(color: Colors.amber))
+                : null,
             trailing: DropdownButton<String>(
               value: _channel,
               items: [
-                for (final c in _channels) DropdownMenuItem(value: c, child: Text(c)),
+                for (final c in UpdatePlanner.channels)
+                  DropdownMenuItem(value: c, child: Text(c)),
               ],
-              onChanged: _transfer.busy
+              onChanged: (_transfer.busy || _refreshing)
                   ? null
                   : (v) {
-                      if (v != null) {
-                        setState(() => _channel = v);
-                        _checkForUpdates();
-                      }
+                      if (v != null) _onChannelSelected(v);
                     },
             ),
           ),
-          if (_checking)
+          if (_phase == _PlanPhase.queryingVersions)
+            const ListTile(
+              leading: CircularProgressIndicator(),
+              title: Text("Reading installed versions..."),
+            )
+          else if (_phase == _PlanPhase.fetchingIndex)
             const ListTile(
               leading: CircularProgressIndicator(),
               title: Text("Checking for updates..."),
             )
-          else if (_latest != null)
+          else if (_phase == _PlanPhase.upToDate)
             ListTile(
-              leading: const Icon(Icons.system_update_alt),
-              title: Text(_latest!.tagName),
-              subtitle: Text("${_latest!.assetName} (${_formatBytes(_latest!.size)})"),
+              leading: const Icon(Icons.check_circle_outline),
+              title: const Text("Everything is up to date"),
               trailing: TextButton(
-                onPressed: (connected && otaAvailable && !_transfer.busy && !_downloading)
-                    ? _startUpdate
-                    : null,
-                child: const Text("Install"),
+                onPressed: _refreshing ? null : () => _refresh(),
+                child: const Text("Check again"),
               ),
-            ),
+            )
+          else if (_phase == _PlanPhase.ready && _plan != null)
+            _planList(_plan!, actionable: actionable),
           if (_downloading)
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -324,6 +550,12 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
             ListTile(
               leading: const Icon(Icons.warning_amber),
               title: Text(_error!),
+              trailing: _phase == _PlanPhase.error
+                  ? TextButton(
+                      onPressed: _refreshing ? null : () => _refresh(),
+                      child: const Text("Retry"),
+                    )
+                  : null,
             ),
           const Padding(
             padding: EdgeInsets.all(16),

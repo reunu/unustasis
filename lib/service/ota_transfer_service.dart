@@ -88,10 +88,13 @@ class OtaTransferService extends ChangeNotifier {
     _abortRequested = true;
   }
 
-  /// Transfers [bundle] and installs it on the scooter. [bundleId] must be the
-  /// real `.mender` basename without extension (the scooter derives the
-  /// displayed version from the filename). Resumes automatically when the
-  /// scooter has a matching partial transfer.
+  /// Transfers [bundle] and installs it on the scooter. [bundleId] must be
+  /// the real asset basename: without the ".mender" extension for full images
+  /// (the scooter appends it when staging), WITH the ".delta" extension for
+  /// delta bundles (the scooter preserves it so update-service applies the
+  /// file as a delta). The scooter derives the installed version from the
+  /// filename. Resumes automatically when the scooter has a matching partial
+  /// transfer.
   Future<void> transfer(
     BluetoothDevice scooter,
     CharacteristicRepository repo,
