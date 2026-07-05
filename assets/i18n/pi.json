@@ -469,7 +469,7 @@
     "ls_ota_installing_percent": "Refittin'... {percent}%",
     "ls_ota_closable_note": "The haul be complete — ye may stow the app now. The refit carries on aboard, and this screen picks her up when ye return, arr.",
     "ls_ota_installed_title": "Refitted",
-    "ls_ota_installed_subtitle": "Lock the vessel to reboot her and finish the refit.",
+    "ls_ota_installed_subtitle": "The vessel reboots on her own once she's been idle in stand-by for 3 minutes, finishin' the refit, arr.",
     "ls_ota_success": "Refit complete",
     "ls_ota_failed": "Refit failed",
     "ls_ota_resume": "Resume the haul",

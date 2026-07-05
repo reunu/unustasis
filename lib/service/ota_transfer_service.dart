@@ -450,7 +450,7 @@ class OtaTransferService extends ChangeNotifier {
           _set(OtaTransferState.installing, "Installing... ${m.percent}%");
         case OtaProtocol.phasePendingReboot:
           _set(OtaTransferState.pendingReboot,
-              "Installed — lock the scooter to reboot and finish the update");
+              "Installed — the scooter reboots after 3 minutes in standby");
           return;
         case OtaProtocol.phaseSuccess:
           _set(OtaTransferState.success, "Update installed");
@@ -531,7 +531,7 @@ class OtaTransferService extends ChangeNotifier {
         _set(OtaTransferState.installing, "Installing... ${probe.percent}%");
       case OtaProtocol.phasePendingReboot:
         _set(OtaTransferState.pendingReboot,
-            "Installed — lock the scooter to reboot and finish the update");
+            "Installed — the scooter reboots after 3 minutes in standby");
       case OtaProtocol.phaseSuccess:
         _set(OtaTransferState.success, "Update installed");
       case OtaProtocol.phaseFailure:

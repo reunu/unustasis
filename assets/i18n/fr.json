@@ -488,7 +488,7 @@
     "ls_ota_installing_percent": "Installation... {percent}%",
     "ls_ota_closable_note": "Le transfert est terminé — vous pouvez fermer l'application. L'installation continue sur le scooter et cet écran la reprendra à votre retour.",
     "ls_ota_installed_title": "Installé",
-    "ls_ota_installed_subtitle": "Verrouillez le scooter pour redémarrer et terminer la mise à jour.",
+    "ls_ota_installed_subtitle": "Le scooter redémarrera de lui-même après 3 minutes en veille, ce qui terminera la mise à jour.",
     "ls_ota_success": "Mise à jour installée",
     "ls_ota_failed": "Échec de la mise à jour",
     "ls_ota_resume": "Reprendre",

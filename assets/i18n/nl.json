@@ -489,7 +489,7 @@
     "ls_ota_installing_percent": "Installeren... {percent}%",
     "ls_ota_closable_note": "De overdracht is voltooid — je kunt de app nu sluiten. De installatie gaat door op de scooter en dit scherm pikt hem weer op als je terugkomt.",
     "ls_ota_installed_title": "Geïnstalleerd",
-    "ls_ota_installed_subtitle": "Vergrendel de scooter om opnieuw te starten en de update te voltooien.",
+    "ls_ota_installed_subtitle": "De scooter herstart vanzelf zodra hij 3 minuten in stand-by staat en voltooit daarmee de update.",
     "ls_ota_success": "Update geïnstalleerd",
     "ls_ota_failed": "Update mislukt",
     "ls_ota_resume": "Hervatten",

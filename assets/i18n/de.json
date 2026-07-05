@@ -489,7 +489,7 @@
     "ls_ota_installing_percent": "Installiere... {percent}%",
     "ls_ota_closable_note": "Die Übertragung ist abgeschlossen — die App kann jetzt geschlossen werden. Die Installation läuft auf dem Scooter weiter, und dieser Bildschirm nimmt sie beim nächsten Öffnen wieder auf.",
     "ls_ota_installed_title": "Installiert",
-    "ls_ota_installed_subtitle": "Scooter abschließen, um neu zu starten und das Update abzuschließen.",
+    "ls_ota_installed_subtitle": "Der Scooter startet automatisch neu, sobald er 3 Minuten im Standby war, und schließt damit das Update ab.",
     "ls_ota_success": "Update installiert",
     "ls_ota_failed": "Update fehlgeschlagen",
     "ls_ota_resume": "Fortsetzen",
