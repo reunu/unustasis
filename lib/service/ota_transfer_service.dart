@@ -8,6 +8,7 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:logging/logging.dart';
 
 import '../domain/ota_protocol.dart';
+import '../domain/update_planner.dart';
 import '../infrastructure/characteristic_repository.dart';
 
 final log = Logger('OtaTransferService');
@@ -36,7 +37,16 @@ enum OtaTransferState {
 /// A BLE disconnect fails the attempt with [resumable] set; calling [transfer]
 /// again after reconnecting resumes from the scooter's persisted offset.
 class OtaTransferService extends ChangeNotifier {
+  /// Process-wide instance. A transfer must outlive the OTA screen — the
+  /// screen's State is disposed when the user navigates away, and a re-opened
+  /// screen re-attaches to this instance to pick up the running session.
+  static final OtaTransferService shared = OtaTransferService();
+
   OtaTransferState state = OtaTransferState.idle;
+
+  /// The update step being (or last) executed, set by the OTA screen so a
+  /// re-opened screen can restore what this transfer belongs to.
+  UpdateStep? activeStep;
 
   /// 0.0 .. 1.0 transfer progress (acknowledged bytes / total).
   double progress = 0;
@@ -86,6 +96,22 @@ class OtaTransferService extends ChangeNotifier {
   /// Requests a graceful abort of a running transfer.
   void abort() {
     _abortRequested = true;
+  }
+
+  /// Clears a finished transfer back to idle so a fresh planning pass starts
+  /// with a clean slate. No-op while a transfer or install is running.
+  void reset() {
+    if (busy) return;
+    state = OtaTransferState.idle;
+    statusMessage = "";
+    progress = 0;
+    installPercent = 0;
+    ackedBytes = 0;
+    totalBytes = 0;
+    throughput = 0;
+    resumable = false;
+    activeStep = null;
+    notifyListeners();
   }
 
   /// Transfers [bundle] and installs it on the scooter. [bundleId] must be

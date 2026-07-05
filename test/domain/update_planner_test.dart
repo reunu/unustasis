@@ -164,7 +164,7 @@ void main() {
   });
 
   group("buildPlan", () {
-    test("both boards one behind: DBC delta first, then MDB", () {
+    test("both boards one behind: MDB delta first, then DBC", () {
       final plan = UpdatePlanner.buildPlan(
         releases: nightlyIndex,
         channel: "nightly",
@@ -173,10 +173,10 @@ void main() {
       );
       expect(plan.upToDate, false);
       expect(plan.steps.length, 2);
-      expect(plan.steps[0].component, OtaProtocol.componentDbc);
+      expect(plan.steps[0].component, OtaProtocol.componentMdb);
       expect(plan.steps[0].kind, StepKind.delta);
       expect(plan.steps[0].release.tagName, n3);
-      expect(plan.steps[1].component, OtaProtocol.componentMdb);
+      expect(plan.steps[1].component, OtaProtocol.componentDbc);
       expect(plan.steps[1].kind, StepKind.delta);
     });
 
@@ -198,14 +198,15 @@ void main() {
         mdbVersion: n2,
         dbcVersion: n1,
       );
+      // Older DBC jumps the queue to converge on the MDB's version...
       expect(plan.steps.first.component, OtaProtocol.componentDbc);
       expect(plan.steps.first.kind, StepKind.convergeDelta);
       expect(plan.steps.first.release.tagName, n2);
-      // preview continues to latest for both boards
+      // ...then the preview continues to latest, MDB first.
       expect(plan.steps.length, 3);
-      expect(plan.steps[1].component, OtaProtocol.componentDbc);
+      expect(plan.steps[1].component, OtaProtocol.componentMdb);
       expect(plan.steps[1].release.tagName, n3);
-      expect(plan.steps[2].component, OtaProtocol.componentMdb);
+      expect(plan.steps[2].component, OtaProtocol.componentDbc);
       expect(plan.steps[2].release.tagName, n3);
     });
 
@@ -235,9 +236,9 @@ void main() {
       );
       expect(plan.warnings, isNotEmpty);
       expect(plan.steps.length, 2);
-      expect(plan.steps[0].component, OtaProtocol.componentDbc);
+      expect(plan.steps[0].component, OtaProtocol.componentMdb);
       expect(plan.steps[0].kind, StepKind.channelSwitchFull);
-      expect(plan.steps[1].component, OtaProtocol.componentMdb);
+      expect(plan.steps[1].component, OtaProtocol.componentDbc);
       expect(plan.steps[1].kind, StepKind.channelSwitchFull);
     });
 

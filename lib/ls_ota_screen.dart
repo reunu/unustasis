@@ -26,27 +26,39 @@ class LsOtaScreen extends StatefulWidget {
 class _LsOtaScreenState extends State<LsOtaScreen> {
   static const _releasesBase = "https://downloads.librescoot.org/releases";
 
-  final OtaTransferService _transfer = OtaTransferService();
+  final OtaTransferService _transfer = OtaTransferService.shared;
 
-  _PlanPhase _phase = _PlanPhase.idle;
-  String _channel = "stable";
-  String? _inferredChannel;
-  bool _channelSwitch = false;
-  String? _mdbVersion;
-  String? _dbcVersion;
-  List<FirmwareRelease> _releases = [];
-  UpdatePlan? _plan;
-  UpdateStep? _activeStep;
+  // Session state is static: the State is disposed when the user navigates
+  // away while a transfer/install keeps running on the shared service, and a
+  // re-opened screen must show the same plan, versions and progress instead
+  // of starting blank.
+  static _PlanPhase _phase = _PlanPhase.idle;
+  static String _channel = "stable";
+  static String? _inferredChannel;
+  static bool _channelSwitch = false;
+  static String? _mdbVersion;
+  static String? _dbcVersion;
+  static List<FirmwareRelease> _releases = [];
+  static UpdatePlan? _plan;
+
   bool _downloading = false;
   double _downloadProgress = 0;
   String? _error;
   bool _wasConnected = false;
 
+  UpdateStep? get _activeStep => _transfer.activeStep;
+
   @override
   void initState() {
     super.initState();
     _transfer.addListener(_onTransferChanged);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _refresh());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Only start a fresh planning pass when nothing is going on. When the
+      // screen is re-opened during a transfer/install (or on its outcome,
+      // e.g. "lock the scooter to reboot"), re-attach to that session
+      // instead of wiping it.
+      if (_transfer.state == OtaTransferState.idle) _refresh();
+    });
   }
 
   @override
@@ -68,11 +80,13 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
     if (_refreshing || _transfer.busy) return;
     final service = context.read<ScooterService>();
 
+    // A finished transfer's outcome tile is superseded by the fresh plan.
+    _transfer.reset();
+
     setState(() {
       _phase = _PlanPhase.queryingVersions;
       _channelSwitch = channelSwitch;
       _plan = null;
-      _activeStep = null;
       _error = null;
     });
 
@@ -203,10 +217,8 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
     if (scooter == null) return;
     final repo = service.characteristicRepository;
 
-    setState(() {
-      _error = null;
-      _activeStep = step;
-    });
+    setState(() => _error = null);
+    _transfer.activeStep = step;
     try {
       final bundle = await _downloadBundle(step.asset);
       await _transfer.transfer(
@@ -253,10 +265,14 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
     }
     await file.parent.create(recursive: true);
 
-    setState(() {
-      _downloading = true;
-      _downloadProgress = 0;
-    });
+    // The download keeps running if the user navigates away (this State gets
+    // disposed), so every UI update needs a mounted guard.
+    if (mounted) {
+      setState(() {
+        _downloading = true;
+        _downloadProgress = 0;
+      });
+    }
     try {
       final req = http.Request("GET", Uri.parse(asset.url));
       final resp = await http.Client().send(req);
@@ -269,14 +285,14 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
       await for (final chunk in resp.stream) {
         sink.add(chunk);
         received += chunk.length;
-        if (total > 0) {
+        if (total > 0 && mounted) {
           setState(() => _downloadProgress = received / total);
         }
       }
       await sink.close();
       return file;
     } finally {
-      setState(() => _downloading = false);
+      if (mounted) setState(() => _downloading = false);
     }
   }
 

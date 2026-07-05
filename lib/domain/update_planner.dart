@@ -310,7 +310,7 @@ class UpdatePlanner {
     if (effectiveSwitch) {
       warnings.add("Switching channels transfers full images for both boards — "
           "this takes a long time over Bluetooth.");
-      for (final component in [OtaProtocol.componentDbc, OtaProtocol.componentMdb]) {
+      for (final component in [OtaProtocol.componentMdb, OtaProtocol.componentDbc]) {
         final release = latestFull(releases, channel, variantFor(component));
         if (release == null) continue;
         steps.add(UpdateStep(
@@ -433,11 +433,14 @@ class UpdatePlanner {
       }
     }
 
-    // From the (assumed) converged version, the next delta per board.
-    // Dashboard first: the scooter board hosts the Bluetooth link, so its
-    // reboot always comes last.
-    _addBoardSteps(steps, warnings, releases, channel, OtaProtocol.componentDbc, converged);
+    // From the (assumed) converged version, the next delta per board. The
+    // scooter (MDB) is offered first; the dashboard only jumps the queue when
+    // it must converge to a newer scooter version (divergence handling
+    // above). Updates run one at a time, so after the MDB step completes and
+    // the scooter reboots, the app reconnects, re-plans and then offers the
+    // dashboard step.
     _addBoardSteps(steps, warnings, releases, channel, OtaProtocol.componentMdb, converged);
+    _addBoardSteps(steps, warnings, releases, channel, OtaProtocol.componentDbc, converged);
 
     return UpdatePlan(
       steps: steps,
