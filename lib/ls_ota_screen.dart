@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -165,6 +166,7 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
         _plan = plan;
         _phase = plan.upToDate ? _PlanPhase.upToDate : _PlanPhase.ready;
       });
+      unawaited(_pruneDownloads(plan));
     } catch (e) {
       log.warning("Update check failed: $e");
       if (!mounted) return;
@@ -278,6 +280,28 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
       asset: asset,
       kind: StepKind.full,
     ));
+  }
+
+  /// Deletes downloaded bundles the fresh plan no longer references.
+  /// Downloads are only kept as a resume cache ("Resume", "Try full image");
+  /// once the plan moves past a release its bundle is dead weight — full
+  /// images are hundreds of MB of app storage (backed up on iOS). Runs only
+  /// on the fresh-plan path, so nothing is downloading or transferring.
+  Future<void> _pruneDownloads(UpdatePlan plan) async {
+    try {
+      final dir = Directory("${(await getApplicationSupportDirectory()).path}/ota");
+      if (!await dir.exists()) return;
+      final keep = {for (final step in plan.steps) step.asset.name};
+      await for (final entry in dir.list()) {
+        if (entry is! File) continue;
+        final name = entry.uri.pathSegments.last;
+        if (keep.contains(name)) continue;
+        log.info("Pruning stale bundle: $name");
+        await entry.delete();
+      }
+    } catch (e) {
+      log.warning("Bundle cleanup failed: $e");
+    }
   }
 
   Future<File> _downloadBundle(FirmwareAsset asset) async {
