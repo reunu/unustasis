@@ -77,8 +77,25 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
   /// Re-reads the installed versions over BLE, fetches the release index and
   /// rebuilds the update plan.
   Future<void> _refresh({bool channelSwitch = false}) async {
-    if (_refreshing || _transfer.busy) return;
+    if (_refreshing || _transfer.active) return;
     final service = context.read<ScooterService>();
+
+    // Recover an installation that outlived the app: after a force-close the
+    // shared service is idle, but the scooter retains the session and
+    // answers STATUS_REQ with its phase and progress.
+    if (_transfer.state == OtaTransferState.idle &&
+        service.connected &&
+        service.characteristicRepository.otaAvailable) {
+      try {
+        if (await _transfer.syncFromScooter(
+            service.myScooter!, service.characteristicRepository)) {
+          if (mounted) setState(() {});
+          return;
+        }
+      } catch (e) {
+        log.warning("OTA status sync failed: $e");
+      }
+    }
 
     // A finished transfer's outcome tile is superseded by the fresh plan.
     _transfer.reset();
@@ -363,6 +380,21 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
     );
   }
 
+  /// Shown once the transfer itself is done: from here the scooter works on
+  /// its own and the app can be closed — the session is re-adopted via
+  /// STATUS_REQ when the screen is opened again.
+  Widget _closableNote() {
+    return const Padding(
+      padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Text(
+        "The transfer is complete — you can close the app now. The "
+        "installation continues on the scooter, and this screen picks it "
+        "up again when you come back.",
+        style: TextStyle(fontSize: 12),
+      ),
+    );
+  }
+
   Widget _transferStatus() {
     switch (_transfer.state) {
       case OtaTransferState.idle:
@@ -395,10 +427,16 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
           ],
         );
       case OtaTransferState.verifying:
-        return ListTile(
-          leading: const CircularProgressIndicator(),
-          title: const Text("Verifying transfer"),
-          subtitle: Text(_transfer.statusMessage),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ListTile(
+              leading: const CircularProgressIndicator(),
+              title: const Text("Verifying transfer"),
+              subtitle: Text(_transfer.statusMessage),
+            ),
+            _closableNote(),
+          ],
         );
       case OtaTransferState.installing:
         return Column(
@@ -412,6 +450,7 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: LinearProgressIndicator(value: _transfer.installPercent / 100),
             ),
+            _closableNote(),
           ],
         );
       case OtaTransferState.pendingReboot:
@@ -490,7 +529,7 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
       }
     }
 
-    final actionable = connected && otaAvailable && !_transfer.busy && !_downloading;
+    final actionable = connected && otaAvailable && !_transfer.active && !_downloading;
 
     return Scaffold(
       appBar: AppBar(title: const Text("Firmware update")),
@@ -507,8 +546,14 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
               title: Text("Wireless updates not supported"),
               subtitle: Text("The scooter's firmware does not expose the OTA service yet."),
             ),
-          _versionTile("Scooter (MDB)", _mdbVersion, Icons.memory),
-          _versionTile("Dashboard (DBC)", _dbcVersion, Icons.speed),
+          // After an app restart into a recovered session the versions were
+          // never queried — hide the tiles instead of showing bogus warnings.
+          if (_mdbVersion != null ||
+              _dbcVersion != null ||
+              _transfer.state == OtaTransferState.idle) ...[
+            _versionTile("Scooter (MDB)", _mdbVersion, Icons.memory),
+            _versionTile("Dashboard (DBC)", _dbcVersion, Icons.speed),
+          ],
           ListTile(
             leading: const Icon(Icons.alt_route),
             title: const Text("Channel"),
@@ -522,7 +567,7 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
                 for (final c in UpdatePlanner.channels)
                   DropdownMenuItem(value: c, child: Text(c)),
               ],
-              onChanged: (_transfer.busy || _refreshing)
+              onChanged: (_transfer.active || _refreshing)
                   ? null
                   : (v) {
                       if (v != null) _onChannelSelected(v);

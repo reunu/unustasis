@@ -80,6 +80,11 @@ class OtaTransferService extends ChangeNotifier {
       state != OtaTransferState.success &&
       state != OtaTransferState.failure;
 
+  /// Whether a transfer or install is actively running. [pendingReboot] is a
+  /// settled outcome — the bundle has been consumed by the scooter — so a
+  /// fresh planning pass or the next update step may proceed.
+  bool get active => busy && state != OtaTransferState.pendingReboot;
+
   bool _abortRequested = false;
 
   static const Duration _startAckTimeout = Duration(seconds: 5);
@@ -101,7 +106,7 @@ class OtaTransferService extends ChangeNotifier {
   /// Clears a finished transfer back to idle so a fresh planning pass starts
   /// with a clean slate. No-op while a transfer or install is running.
   void reset() {
-    if (busy) return;
+    if (active) return;
     state = OtaTransferState.idle;
     statusMessage = "";
     progress = 0;
@@ -128,7 +133,7 @@ class OtaTransferService extends ChangeNotifier {
     required String bundleId,
     int component = OtaProtocol.componentMdb,
   }) async {
-    if (busy) throw StateError("transfer already running");
+    if (active) throw StateError("transfer already running");
     final dataChar = repo.otaDataCharacteristic;
     final ctrlChar = repo.otaControlCharacteristic;
     final statusChar = repo.otaStatusCharacteristic;
@@ -417,6 +422,113 @@ class OtaTransferService extends ChangeNotifier {
     // continues on the scooter; report the state we know
     _set(OtaTransferState.installing,
         "Connection lost — installation continues on the scooter");
+  }
+
+  /// Recovers an installation that outlived the app. The scooter retains the
+  /// install phase/percent (even after it finished) and answers STATUS_REQ
+  /// with it, and keeps notifying INSTALL_PROGRESS while update-service
+  /// works — so after a force-close the app can re-adopt the session here.
+  ///
+  /// Adopts any non-idle phase into [state] and, for a still-running install,
+  /// keeps following progress notifications in the background until a
+  /// terminal phase or disconnect. Returns true when a session was adopted.
+  /// Only queries while [state] is idle.
+  Future<bool> syncFromScooter(
+    BluetoothDevice scooter,
+    CharacteristicRepository repo,
+  ) async {
+    if (state != OtaTransferState.idle) return false;
+    final ctrlChar = repo.otaControlCharacteristic;
+    final statusChar = repo.otaStatusCharacteristic;
+    if (ctrlChar == null || statusChar == null || scooter.isDisconnected) {
+      return false;
+    }
+
+    await statusChar.setNotifyValue(true);
+    final messages = StreamController<OtaStatusMessage>.broadcast();
+    final sub = statusChar.onValueReceived.listen((v) {
+      final m = OtaStatusMessage.parse(v);
+      if (m != null && !messages.isClosed) messages.add(m);
+    });
+
+    Future<void> release() async {
+      await sub.cancel();
+      await messages.close();
+      try {
+        if (scooter.isConnected) await statusChar.setNotifyValue(false);
+      } catch (_) {}
+    }
+
+    OtaInstallProgress? probe;
+    try {
+      final probeFuture = messages.stream
+          .where((m) => m is OtaInstallProgress)
+          .cast<OtaInstallProgress>()
+          .first
+          .timeout(const Duration(seconds: 4));
+      await ctrlChar.write(OtaProtocol.encodeStatusReq());
+      probe = await probeFuture;
+    } catch (e) {
+      log.warning("OTA status query failed: $e");
+    }
+
+    if (probe == null || probe.phase == OtaProtocol.phaseIdle) {
+      await release();
+      return false;
+    }
+
+    log.info("Adopting scooter OTA session: phase ${probe.phase} (${probe.percent}%)");
+    switch (probe.phase) {
+      case OtaProtocol.phaseVerifying:
+        _set(OtaTransferState.verifying, "Verifying on scooter...");
+      case OtaProtocol.phaseInstalling:
+      case OtaProtocol.phaseRebooting:
+        installPercent = probe.percent;
+        _set(OtaTransferState.installing, "Installing... ${probe.percent}%");
+      case OtaProtocol.phasePendingReboot:
+        _set(OtaTransferState.pendingReboot,
+            "Installed — lock the scooter to reboot and finish the update");
+      case OtaProtocol.phaseSuccess:
+        _set(OtaTransferState.success, "Update installed");
+      case OtaProtocol.phaseFailure:
+        resumable = false;
+        _set(OtaTransferState.failure,
+            probe.message.isNotEmpty ? probe.message : "Installation failed");
+    }
+
+    if (state == OtaTransferState.verifying || state == OtaTransferState.installing) {
+      unawaited(_followAdopted(scooter, messages, release));
+    } else {
+      // settled outcome: nothing more will arrive
+      await release();
+    }
+    return true;
+  }
+
+  /// Follows INSTALL_PROGRESS of an adopted session until a terminal phase or
+  /// disconnect, then releases the notification plumbing.
+  Future<void> _followAdopted(
+    BluetoothDevice scooter,
+    StreamController<OtaStatusMessage> messages,
+    Future<void> Function() release,
+  ) async {
+    StreamSubscription<BluetoothConnectionState>? connSub;
+    try {
+      connSub = scooter.connectionState.listen((s) {
+        if (s == BluetoothConnectionState.disconnected && !messages.isClosed) {
+          messages.addError("Connection to scooter lost");
+        }
+      });
+      await _followInstall(messages.stream);
+    } catch (e) {
+      // phaseFailure already set the failure state in _followInstall; a
+      // stream error (disconnect) keeps the last known state — the install
+      // continues on the scooter and can be re-adopted later.
+      log.warning("Adopted OTA session follow ended: $e");
+    } finally {
+      await connSub?.cancel();
+      await release();
+    }
   }
 }
 
