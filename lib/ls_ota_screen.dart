@@ -591,6 +591,13 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
                 subtitle: Text(FlutterI18n.translate(context, "ls_ota_try_full_subtitle")),
                 onTap: () => _tryFullImageInstead(active),
               ),
+            // always offer a way out of the failure state
+            ListTile(
+              leading: const Icon(Icons.refresh),
+              title: Text(FlutterI18n.translate(context, "ls_ota_check_again")),
+              subtitle: Text(FlutterI18n.translate(context, "ls_ota_check_again_subtitle")),
+              onTap: _refreshing ? null : () => _refresh(),
+            ),
           ],
         );
     }

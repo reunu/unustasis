@@ -473,10 +473,11 @@ class OtaTransferService extends ChangeNotifier {
   /// with it, and keeps notifying INSTALL_PROGRESS while update-service
   /// works — so after a force-close the app can re-adopt the session here.
   ///
-  /// Adopts any non-idle phase into [state] and, for a still-running install,
-  /// keeps following progress notifications in the background until a
-  /// terminal phase or disconnect. Returns true when a session was adopted.
-  /// Only queries while [state] is idle.
+  /// Adopts a running install (or a pending reboot) into [state] and, while
+  /// still running, keeps following progress notifications in the background
+  /// until a terminal phase or disconnect. Stale settled outcomes (success /
+  /// failure retained from an earlier session) are NOT adopted. Returns true
+  /// when a session was adopted. Only queries while [state] is idle.
   Future<bool> syncFromScooter(
     BluetoothDevice scooter,
     CharacteristicRepository repo,
@@ -516,7 +517,16 @@ class OtaTransferService extends ChangeNotifier {
       log.warning("OTA status query failed: $e");
     }
 
-    if (probe == null || probe.phase == OtaProtocol.phaseIdle) {
+    // The scooter retains the last phase indefinitely, so a stale success or
+    // failure from an earlier session would be re-adopted on every screen
+    // open, blocking the planning pass with a dead-end tile (the failure
+    // context — active step, resume — is gone after an app restart anyway).
+    // Only running installs and a pending reboot are worth re-attaching to;
+    // for settled outcomes the fresh plan re-offers the step instead.
+    if (probe == null ||
+        probe.phase == OtaProtocol.phaseIdle ||
+        probe.phase == OtaProtocol.phaseSuccess ||
+        probe.phase == OtaProtocol.phaseFailure) {
       await release();
       return false;
     }
@@ -532,18 +542,12 @@ class OtaTransferService extends ChangeNotifier {
       case OtaProtocol.phasePendingReboot:
         _set(OtaTransferState.pendingReboot,
             "Installed — the scooter reboots after 3 minutes in standby");
-      case OtaProtocol.phaseSuccess:
-        _set(OtaTransferState.success, "Update installed");
-      case OtaProtocol.phaseFailure:
-        resumable = false;
-        _set(OtaTransferState.failure,
-            probe.message.isNotEmpty ? probe.message : "Installation failed");
     }
 
     if (state == OtaTransferState.verifying || state == OtaTransferState.installing) {
       unawaited(_followAdopted(scooter, messages, release));
     } else {
-      // settled outcome: nothing more will arrive
+      // pending reboot: settled, nothing more will arrive
       await release();
     }
     return true;
