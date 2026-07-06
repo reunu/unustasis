@@ -344,8 +344,9 @@ class UpdatePlanner {
           steps: steps, warnings: warnings, upToDate: steps.isEmpty && warnings.length == 1);
     }
 
-    // Board divergence: bring the older board to the newer board's version
-    // before anything else, so both advance in lockstep from there.
+    // Board divergence: bring the older board up to the newer board's
+    // version before anything else — delta by delta whenever a delta path
+    // exists — so both advance in lockstep from there.
     if (dbcChannel != null && dbcChannel != channel) {
       // Cross-channel divergence: the scooter is the reference; the dashboard
       // needs a full image, deltas can't cross channels.
@@ -369,7 +370,8 @@ class UpdatePlanner {
     }
 
     final normDbc = normalizeVersion(dbcVersion!, channel);
-    var converged = normMdb;
+    var mdbAssumed = normMdb;
+    var dbcAssumed = normDbc;
 
     if (normMdb != normDbc) {
       final dbcOlder = compareTags(normDbc, normMdb, channel) < 0;
@@ -378,56 +380,80 @@ class UpdatePlanner {
       final newerNorm = dbcOlder ? normMdb : normDbc;
       final variant = variantFor(olderComponent);
 
-      final target = _releaseByTag(releases, channel, newerNorm);
-      if (target == null) {
-        // The newer board's version is no longer in the index; converge on
-        // the latest instead.
-        warnings.add(PlanWarning("ls_ota_warn_version_unpublished", {"version": newerNorm}));
-        final release = latestFull(releases, channel, variant);
-        if (release != null) {
+      final chain = deltaCandidates(releases, channel, variant);
+      final nd = nextDelta(chain, olderNorm, channel);
+      var olderAssumed = olderNorm;
+
+      if (nd.next != null) {
+        // Walk the older board up delta by delta until it reaches the newer
+        // board's version — never a full image while a delta path exists.
+        // Only the first hop is actionable; the plan is recomputed after
+        // each install, so the rest is preview.
+        final hops = <FirmwareRelease>[];
+        for (final r in chain) {
+          final tag = r.tagName.toLowerCase();
+          if (compareTags(tag, olderNorm, channel) <= 0) continue;
+          if (compareTags(tag, newerNorm, channel) > 0) break;
+          hops.add(r);
+        }
+        if (hops.isEmpty) {
+          // the next delta overshoots the newer board's version (that release
+          // carries no delta for this variant); the boards then converge one
+          // release later instead
+          hops.add(nd.next!);
+        }
+        for (final hop in hops) {
+          steps.add(UpdateStep(
+            component: olderComponent,
+            release: hop,
+            asset: hop.deltaAsset(variant)!,
+            kind: StepKind.convergeDelta,
+          ));
+        }
+        olderAssumed = hops.last.tagName.toLowerCase();
+      } else {
+        // No delta path for the older board (its version is not in the
+        // chain, or the chain ends below the newer board) — a full image is
+        // the only way to converge.
+        final target = _releaseByTag(releases, channel, newerNorm);
+        var release = (target != null && target.menderAsset(variant) != null) ? target : null;
+        if (release == null) {
+          if (target == null) {
+            warnings.add(PlanWarning("ls_ota_warn_version_unpublished", {"version": newerNorm}));
+          }
+          release = latestFull(releases, channel, variant);
+        }
+        if (release != null && compareTags(release.tagName, olderNorm, channel) > 0) {
+          warnings.add(PlanWarning("ls_ota_warn_no_delta_path",
+              {"version": olderNorm, "latest": release.tagName}));
           steps.add(UpdateStep(
             component: olderComponent,
             release: release,
             asset: release.menderAsset(variant)!,
             kind: StepKind.convergeFull,
           ));
-        }
-        converged = newerNorm;
-      } else {
-        final chain = deltaCandidates(releases, channel, variant);
-        final nd = nextDelta(chain, olderNorm, channel);
-        if (nd.next != null &&
-            nd.next!.tagName.toLowerCase() == newerNorm &&
-            target.deltaAsset(variant) != null) {
-          steps.add(UpdateStep(
-            component: olderComponent,
-            release: target,
-            asset: target.deltaAsset(variant)!,
-            kind: StepKind.convergeDelta,
-          ));
-        } else if (target.menderAsset(variant) != null) {
-          steps.add(UpdateStep(
-            component: olderComponent,
-            release: target,
-            asset: target.menderAsset(variant)!,
-            kind: StepKind.convergeFull,
-          ));
-        } else {
+          olderAssumed = release.tagName.toLowerCase();
+        } else if (release == null) {
           warnings.add(PlanWarning("ls_ota_warn_no_image_for",
               {"board": dbcOlder ? "DBC" : "MDB", "version": newerNorm}));
         }
-        converged = newerNorm;
+      }
+
+      if (dbcOlder) {
+        dbcAssumed = olderAssumed;
+      } else {
+        mdbAssumed = olderAssumed;
       }
     }
 
-    // From the (assumed) converged version, the next delta per board. The
-    // scooter (MDB) is offered first; the dashboard only jumps the queue when
-    // it must converge to a newer scooter version (divergence handling
+    // From each board's (assumed) version, the next regular step. The
+    // scooter (MDB) is offered first; the dashboard only jumps the queue
+    // when it must converge to a newer scooter version (divergence handling
     // above). Updates run one at a time, so after the MDB step completes and
     // the scooter reboots, the app reconnects, re-plans and then offers the
     // dashboard step.
-    _addBoardSteps(steps, warnings, releases, channel, OtaProtocol.componentMdb, converged);
-    _addBoardSteps(steps, warnings, releases, channel, OtaProtocol.componentDbc, converged);
+    _addBoardSteps(steps, warnings, releases, channel, OtaProtocol.componentMdb, mdbAssumed);
+    _addBoardSteps(steps, warnings, releases, channel, OtaProtocol.componentDbc, dbcAssumed);
 
     return UpdatePlan(
       steps: steps,

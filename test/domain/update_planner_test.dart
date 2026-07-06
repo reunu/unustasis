@@ -210,16 +210,60 @@ void main() {
       expect(plan.steps[2].release.tagName, n3);
     });
 
-    test("diverged boards: older MDB converges via full when gap > one delta", () {
+    test("diverged boards: older MDB walks up delta by delta when gap > one delta", () {
       final plan = UpdatePlanner.buildPlan(
         releases: nightlyIndex,
         channel: "nightly",
         mdbVersion: n1,
         dbcVersion: n3,
       );
-      expect(plan.steps.first.component, OtaProtocol.componentMdb);
+      expect(plan.steps.length, 2);
+      expect(plan.steps.every((s) => s.component == OtaProtocol.componentMdb), true);
+      expect(plan.steps.every((s) => s.kind == StepKind.convergeDelta), true);
+      expect(plan.steps[0].release.tagName, n2);
+      expect(plan.steps[1].release.tagName, n3);
+    });
+
+    test("diverged boards: full image only when the older board has no delta path", () {
+      final plan = UpdatePlanner.buildPlan(
+        releases: nightlyIndex,
+        channel: "nightly",
+        mdbVersion: n2,
+        dbcVersion: "nightly-20251201T000000", // predates the chain
+      );
+      expect(plan.steps.first.component, OtaProtocol.componentDbc);
       expect(plan.steps.first.kind, StepKind.convergeFull);
+      expect(plan.steps.first.release.tagName, n2);
+      expect(plan.warnings.any((w) => w.key == "ls_ota_warn_no_delta_path"), true);
+      // preview continues to latest, MDB first
+      expect(plan.steps[1].component, OtaProtocol.componentMdb);
+      expect(plan.steps[1].release.tagName, n3);
+      expect(plan.steps[2].component, OtaProtocol.componentDbc);
+      expect(plan.steps[2].release.tagName, n3);
+    });
+
+    test("diverged boards: overshoot hop when the newer board's release has no delta", () {
+      // n2 carries no delta for the MDB, so the older MDB's next delta is n3:
+      // it overshoots the DBC at n2 and the boards converge at n3 instead.
+      final index = parseIndex([
+        release(n3),
+        release(n2, variants: ["unu-dbc"]),
+        release(n2, variants: ["unu-mdb"], delta: false),
+        release(n1),
+      ]);
+      final plan = UpdatePlanner.buildPlan(
+        releases: index,
+        channel: "nightly",
+        mdbVersion: n1,
+        dbcVersion: n2,
+      );
+      expect(plan.steps.first.component, OtaProtocol.componentMdb);
+      expect(plan.steps.first.kind, StepKind.convergeDelta);
       expect(plan.steps.first.release.tagName, n3);
+      // DBC preview continues from its own version to latest
+      expect(plan.steps[1].component, OtaProtocol.componentDbc);
+      expect(plan.steps[1].kind, StepKind.delta);
+      expect(plan.steps[1].release.tagName, n3);
     });
 
     test("channel switch forces full images for both boards", () {
