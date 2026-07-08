@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
@@ -15,10 +16,12 @@ import 'package:shared_preferences/util/legacy_to_async_migration_util.dart';
 
 import '../background/bg_service.dart';
 import '../domain/log_helper.dart';
+import '../features.dart';
 import '../flutter/blue_plus_mockable.dart';
 import '../home_screen.dart';
 import '../scooter_service.dart';
 import '../service/sharing_handler.dart';
+import '../services/image_cache_service.dart';
 import '../background/widget_handler.dart';
 
 void main() async {
@@ -91,6 +94,8 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 class _MyAppState extends State<MyApp> {
   SharingHandler? _sharingHandler;
+  StreamSubscription? _linkSubscription;
+  final log = Logger('MyApp');
 
   @override
   void initState() {
@@ -112,6 +117,45 @@ class _MyAppState extends State<MyApp> {
         scooterId: scooterService.myScooter?.remoteId.toString(),
       );
     });
+    _initDeepLinks();
+    _initImageCache();
+  }
+
+  void _initImageCache() async {
+    if (!await Features.isCloudConnectivityEnabled) return;
+    try {
+      await ImageCacheService().initialize();
+    } catch (e, stack) {
+      log.severe('Failed to initialize image cache service', e, stack);
+    }
+  }
+
+  void _initDeepLinks() async {
+    try {
+      final appLinks = AppLinks();
+
+      final initialLink = await appLinks.getInitialLink();
+      if (initialLink != null) {
+        _handleDeepLink(initialLink);
+      }
+
+      _linkSubscription = appLinks.uriLinkStream.listen(
+        _handleDeepLink,
+        onError: (err) => log.severe('Deep link error: $err'),
+      );
+    } catch (e, stack) {
+      log.severe('Failed to initialize deep links', e, stack);
+    }
+  }
+
+  void _handleDeepLink(Uri uri) {
+    log.info('Received deep link: $uri');
+    if (!mounted) return;
+    if (uri.scheme == 'unustasis' && uri.host == 'oauth' && uri.path == '/callback') {
+      Provider.of<ScooterService>(context, listen: false).cloudService.handleOAuthCallback(uri).then((success) {
+        log.info(success ? 'OAuth callback handled successfully' : 'OAuth callback failed');
+      });
+    }
   }
 
   @override
@@ -193,6 +237,7 @@ class _MyAppState extends State<MyApp> {
   @override
   void dispose() {
     _sharingHandler?.dispose();
+    _linkSubscription?.cancel();
     super.dispose();
   }
 }

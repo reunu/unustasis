@@ -454,5 +454,17 @@
     "nav_empty_title": "Keine gespeicherten Ziele",
     "nav_empty_subtitle": "Zum Aktualisieren nach unten ziehen.",
     "ls_keycard_ios_unsupported": "Karte nicht erkannt? Stelle sicher, dass sie von iOS unterstützt wird (MIFARE, ISO 7816, ISO 15693).",
-    "ls_keycard_add_success": "Keycard erfolgreich hinzugefügt!"
+    "ls_keycard_add_success": "Keycard erfolgreich hinzugefügt!",
+    "cloud_settings_title": "Cloud-Verbindung",
+    "cloud_connectivity_enable": "Cloud-Verbindung aktivieren",
+    "cloud_connectivity_description": "Steuere deinen Roller über die Sunshine-Cloud, wenn Bluetooth außer Reichweite ist",
+    "cloud_connect": "Mit Cloud verbinden",
+    "cloud_connect_description": "Beim Sunshine-Cloud-Dienst anmelden",
+    "cloud_connected": "Mit Cloud verbunden",
+    "cloud_auth_failed": "Verbindung zum Cloud-Dienst fehlgeschlagen",
+    "cloud_dashboard": "Cloud-Dashboard öffnen",
+    "cloud_dashboard_description": "Deine Roller im Sunshine-Dashboard ansehen",
+    "cloud_dashboard_failed": "Cloud-Dashboard konnte nicht geöffnet werden",
+    "cloud_logout": "Von Cloud trennen",
+    "cloud_logout_description": "Tippen, um dieses Gerät von der Cloud zu trennen"
 }

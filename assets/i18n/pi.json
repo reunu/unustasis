@@ -434,5 +434,17 @@
     "nav_empty_title": "No saved destinations",
     "nav_empty_subtitle": "Pull down to search the seas.",
     "ls_keycard_ios_unsupported": "Couldn't detect yer card, matey? Make sure it be plunderable by iOS (MIFARE, ISO 7816, ISO 15693).",
-    "ls_keycard_add_success": "Keycard added to yer crew, arrr!"
+    "ls_keycard_add_success": "Keycard added to yer crew, arrr!",
+    "cloud_settings_title": "Message-in-a-Bottle Connectivity",
+    "cloud_connectivity_enable": "Enable message-in-a-bottle connectivity",
+    "cloud_connectivity_description": "Command yer ship from the Sunshine cloud when she be out of BLE range",
+    "cloud_connect": "Connect to the cloud",
+    "cloud_connect_description": "Sign the ship's articles with the Sunshine cloud service",
+    "cloud_connected": "Connected to the cloud",
+    "cloud_auth_failed": "Failed to connect to the cloud service, arrr",
+    "cloud_dashboard": "Open cloud dashboard",
+    "cloud_dashboard_description": "View yer fleet on the Sunshine dashboard",
+    "cloud_dashboard_failed": "Couldn't open the cloud dashboard",
+    "cloud_logout": "Cut ties with the cloud",
+    "cloud_logout_description": "Tap to cut this device loose from the cloud"
 }

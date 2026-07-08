@@ -454,5 +454,17 @@
     "nav_empty_title": "Geen opgeslagen bestemmingen",
     "nav_empty_subtitle": "Veeg omlaag om te vernieuwen.",
     "ls_keycard_ios_unsupported": "Kaart niet gedetecteerd? Zorg ervoor dat deze wordt ondersteund door iOS (MIFARE, ISO 7816, ISO 15693).",
-    "ls_keycard_add_success": "Keycard succesvol toegevoegd!"
+    "ls_keycard_add_success": "Keycard succesvol toegevoegd!",
+    "cloud_settings_title": "Cloudverbinding",
+    "cloud_connectivity_enable": "Cloudverbinding inschakelen",
+    "cloud_connectivity_description": "Bedien je scooter op afstand via de Sunshine-cloud wanneer Bluetooth buiten bereik is",
+    "cloud_connect": "Verbinden met cloud",
+    "cloud_connect_description": "Log in bij de Sunshine-clouddienst",
+    "cloud_connected": "Verbonden met cloud",
+    "cloud_auth_failed": "Verbinden met clouddienst mislukt",
+    "cloud_dashboard": "Clouddashboard openen",
+    "cloud_dashboard_description": "Bekijk je scooters op het Sunshine-dashboard",
+    "cloud_dashboard_failed": "Clouddashboard kon niet worden geopend",
+    "cloud_logout": "Verbinding met cloud verbreken",
+    "cloud_logout_description": "Tik om dit apparaat los te koppelen van de cloud"
 }

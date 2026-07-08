@@ -454,5 +454,17 @@
     "nav_empty_title": "No saved destinations",
     "nav_empty_subtitle": "Pull down to refresh.",
     "ls_keycard_ios_unsupported": "Couldn't detect your card? Make sure it is supported by iOS (MIFARE, ISO 7816, ISO 15693).",
-    "ls_keycard_add_success": "Keycard added successfully!"
+    "ls_keycard_add_success": "Keycard added successfully!",
+    "cloud_settings_title": "Cloud connectivity",
+    "cloud_connectivity_enable": "Enable cloud connectivity",
+    "cloud_connectivity_description": "Control your scooter remotely through the Sunshine cloud when Bluetooth is out of range",
+    "cloud_connect": "Connect to cloud",
+    "cloud_connect_description": "Sign in to the Sunshine cloud service",
+    "cloud_connected": "Connected to cloud",
+    "cloud_auth_failed": "Failed to connect to the cloud service",
+    "cloud_dashboard": "Open cloud dashboard",
+    "cloud_dashboard_description": "View your scooters on the Sunshine dashboard",
+    "cloud_dashboard_failed": "Failed to open the cloud dashboard",
+    "cloud_logout": "Disconnect from cloud",
+    "cloud_logout_description": "Tap to disconnect this device from the cloud"
 }
