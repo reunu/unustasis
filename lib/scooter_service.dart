@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:latlong2/latlong.dart';
@@ -13,6 +14,7 @@ import 'package:pausable_timer/pausable_timer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../background/widget_handler.dart';
+import '../domain/connection_status.dart';
 import '../domain/statistics_helper.dart';
 import '../domain/scooter_battery.dart';
 import '../domain/nav_destination.dart';
@@ -30,6 +32,10 @@ import '../service/scooter_storage.dart';
 import '../service/ble_commands.dart' as commands;
 import '../service/ble_scanner.dart';
 import '../service/user_settings.dart';
+import 'cloud_command_service.dart';
+import 'cloud_service.dart';
+import 'command_service.dart';
+import 'features.dart';
 
 const bootingTimeSeconds = 25;
 const keylessCooldownSeconds = 60;
@@ -64,6 +70,15 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   late CharacteristicRepository characteristicRepository;
   late bool isInBackgroundService;
   final FlutterBluePlusMockable flutterBluePlus;
+
+  // Cloud connectivity (all lazily initialized, only matters once a scooter is cloud-linked)
+  CloudService? _cloudService;
+  CloudCommandService? _cloudCommandService;
+  bool _cloudServicesInitialized = false;
+  bool _isCloudOnline = false;
+  bool _isCloudConnecting = false;
+  Timer? _cloudStatusTimer;
+  SavedScooter? _cachedMostRecentScooter;
 
   // Passthrough for optionalAuth (used by home_screen for biometrics)
   bool get optionalAuth => settings.optionalAuth;
@@ -163,6 +178,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   Future<void> _seedStreamsWithCache() async {
     SavedScooter? mostRecentScooter = await getMostRecentScooter();
     log.info("Most recent scooter: $mostRecentScooter");
+    _cachedMostRecentScooter = mostRecentScooter;
     // assume this is the one we'll connect to, and seed the streams
     identity.lastPing = mostRecentScooter?.lastPing;
     battery.primarySOC = mostRecentScooter?.lastPrimarySOC;
@@ -340,6 +356,307 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     notifyListeners();
   }
 
+  // CLOUD CONNECTIVITY
+
+  /// The scooter we're currently interacting with: the connected BLE device if
+  /// there is one, otherwise the most recently used saved scooter. Used to
+  /// resolve cloud commands even when there's no active BLE connection.
+  SavedScooter? get currentScooter {
+    if (myScooter != null) {
+      return savedScooters[myScooter!.remoteId.toString()] ?? _cachedMostRecentScooter;
+    }
+    return _cachedMostRecentScooter;
+  }
+
+  void _ensureCloudServicesInitialized() {
+    if (_cloudServicesInitialized) return;
+    _cloudService = CloudService(this);
+    _cloudCommandService = CloudCommandService(_cloudService!, () async => currentScooter?.cloudScooterId);
+    _cloudServicesInitialized = true;
+  }
+
+  CloudService get cloudService {
+    _ensureCloudServicesInitialized();
+    return _cloudService!;
+  }
+
+  /// Combined BLE + cloud connection status for the current scooter.
+  ConnectionStatus get connectionStatus {
+    final scooter = currentScooter;
+    if (scooter == null) return ConnectionStatus.none;
+    bool bleConnected = connected && myScooter?.remoteId.toString() == scooter.id;
+    bool cloudAvailable = scooter.cloudScooterId != null && _isCloudOnline;
+    if (bleConnected && cloudAvailable) return ConnectionStatus.both;
+    if (bleConnected) return ConnectionStatus.ble;
+    if (cloudAvailable) return ConnectionStatus.cloud;
+    return ConnectionStatus.offline;
+  }
+
+  bool get isCloudOnline => _isCloudOnline;
+  bool get isCloudConnecting => _isCloudConnecting;
+
+  bool _bleSupportsCommand(CommandType command) {
+    switch (command) {
+      case CommandType.honk:
+      case CommandType.alarm:
+      case CommandType.locate:
+      case CommandType.ping:
+      case CommandType.getState:
+        return false; // no BLE equivalent, cloud-only
+      default:
+        return true;
+    }
+  }
+
+  bool _isCommandSupportedInCloud(CommandType command) {
+    switch (command) {
+      case CommandType.wakeUp:
+        return false; // not supported by the cloud API
+      default:
+        return true;
+    }
+  }
+
+  /// Whether [command] can currently be sent, via BLE or cloud.
+  bool isCommandAvailableCached(CommandType command) {
+    bool bleAvailable = _bleSupportsCommand(command) && _bleReady;
+    final scooter = currentScooter;
+    bool cloudAvailable = scooter?.cloudScooterId != null && _isCloudOnline && _isCommandSupportedInCloud(command);
+    return bleAvailable || cloudAvailable;
+  }
+
+  /// Executes [command] via the cloud. Used both as a fallback when BLE is
+  /// unavailable, and directly for cloud-only commands that have no BLE
+  /// equivalent (honk, alarm, locate, ping, getState).
+  Future<bool> _executeCommand(CommandType command, {BuildContext? context}) async {
+    _ensureCloudServicesInitialized();
+
+    if (!await _cloudCommandService!.isAvailable(command)) {
+      log.warning("Command $command not available via cloud");
+      return false;
+    }
+
+    if (await _cloudCommandService!.needsConfirmation(command)) {
+      if (context == null || !context.mounted) {
+        log.warning("Cloud command $command requires confirmation but no context was provided");
+        return false;
+      }
+      bool confirmed = await _showCloudCommandConfirmation(context, command);
+      if (!confirmed) {
+        log.info("Cloud command $command cancelled by user");
+        return false;
+      }
+    }
+
+    return await _cloudCommandService!.execute(command);
+  }
+
+  Future<bool> _showCloudCommandConfirmation(BuildContext context, CommandType command) async {
+    String commandName = _getCommandDisplayName(context, command);
+    String title = FlutterI18n.translate(context, "cloud_command_confirm_title");
+    String message = FlutterI18n.translate(
+      context,
+      "cloud_command_confirm_message",
+      translationParams: {"command": commandName},
+    );
+
+    return await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) {
+            return AlertDialog(
+              title: Text(title),
+              content: Text(message),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: Text(FlutterI18n.translate(context, "cancel")),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: Text(FlutterI18n.translate(context, "confirm")),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
+  }
+
+  String _getCommandDisplayName(BuildContext context, CommandType command) {
+    switch (command) {
+      case CommandType.lock:
+        return FlutterI18n.translate(context, "controls_lock");
+      case CommandType.unlock:
+        return FlutterI18n.translate(context, "controls_unlock");
+      case CommandType.wakeUp:
+        return FlutterI18n.translate(context, "controls_wake_up");
+      case CommandType.hibernate:
+        return FlutterI18n.translate(context, "controls_hibernate");
+      case CommandType.openSeat:
+        return FlutterI18n.translate(context, "home_seat_button_closed");
+      case CommandType.honk:
+        return FlutterI18n.translate(context, "cloud_command_honk");
+      case CommandType.alarm:
+        return FlutterI18n.translate(context, "cloud_command_alarm");
+      case CommandType.blinkerLeft:
+        return FlutterI18n.translate(context, "controls_blink_left");
+      case CommandType.blinkerRight:
+        return FlutterI18n.translate(context, "controls_blink_right");
+      case CommandType.blinkerBoth:
+        return FlutterI18n.translate(context, "controls_blink_hazard");
+      case CommandType.blinkerOff:
+        return FlutterI18n.translate(context, "controls_blink_off");
+      case CommandType.locate:
+        return FlutterI18n.translate(context, "controls_locate");
+      case CommandType.ping:
+        return FlutterI18n.translate(context, "controls_ping");
+      case CommandType.getState:
+        return FlutterI18n.translate(context, "controls_get_state");
+    }
+  }
+
+  /// Refreshes whether the current scooter is reachable in the cloud, and if
+  /// so, folds its reported state into our own streams. Cloud data is only
+  /// allowed to drive visible state while there's no live BLE connection, so
+  /// it never fights with fresher BLE telemetry.
+  Future<void> _refreshCloudOnlineStatus() async {
+    final scooter = currentScooter;
+    if (scooter?.cloudScooterId == null) {
+      _isCloudOnline = false;
+      _isCloudConnecting = false;
+      return;
+    }
+
+    try {
+      _isCloudConnecting = true;
+      notifyListeners();
+      _ensureCloudServicesInitialized();
+      final data = await _cloudService!.getScooter(scooter!.cloudScooterId!);
+      if (data == null) {
+        _isCloudOnline = false;
+        return;
+      }
+
+      _isCloudOnline = data['online'] == true;
+
+      if (_isCloudOnline && !connected) {
+        if (data['state'] != null) {
+          state = _convertCloudStateToScooterState(data['state']);
+        }
+        if (data['seatbox'] != null) {
+          vehicle.seatClosed = data['seatbox'] == 'closed';
+        }
+        _applyCloudBatteryData(data['batteries'], scooter);
+        if (data['last_seen_at'] != null) {
+          try {
+            identity.lastPing = DateTime.parse(data['last_seen_at'].toString());
+            scooter.lastPing = identity.lastPing!;
+          } catch (_) {
+            // ignore unparseable timestamps
+          }
+        }
+      }
+    } catch (e, stack) {
+      log.warning("Failed to refresh cloud online status", e, stack);
+      _isCloudOnline = false;
+    } finally {
+      _isCloudConnecting = false;
+      notifyListeners();
+    }
+  }
+
+  void _applyCloudBatteryData(dynamic batteries, SavedScooter scooter) {
+    if (batteries is! Map) return;
+
+    int? parseLevel(dynamic level) {
+      if (level == null) return null;
+      return int.tryParse(level.toString().split('.').first);
+    }
+
+    final battery0 = batteries['battery0'];
+    if (battery0 is Map && battery0['present'] == true) {
+      final level = parseLevel(battery0['level']);
+      if (level != null) {
+        battery.primarySOC = level;
+        scooter.lastPrimarySOC = level;
+      }
+    }
+
+    final battery1 = batteries['battery1'];
+    if (battery1 is Map) {
+      if (battery1['present'] == true) {
+        final level = parseLevel(battery1['level']);
+        if (level != null) {
+          battery.secondarySOC = level;
+          scooter.lastSecondarySOC = level;
+        }
+      } else {
+        battery.secondarySOC = -1;
+        scooter.lastSecondarySOC = -1;
+      }
+    }
+
+    final aux = batteries['aux'];
+    if (aux is Map) {
+      final level = parseLevel(aux['level']);
+      if (level != null) {
+        battery.auxSOC = level;
+        scooter.lastAuxSOC = level;
+      }
+    }
+
+    final cbb = batteries['cbb'];
+    if (cbb is Map) {
+      final level = parseLevel(cbb['level']);
+      if (level != null) {
+        battery.cbbSOC = level;
+        scooter.lastCbbSOC = level;
+      }
+    }
+  }
+
+  ScooterState _convertCloudStateToScooterState(String cloudState) {
+    switch (cloudState) {
+      case 'stand-by':
+        return ScooterState.standby;
+      case 'parked':
+        return ScooterState.parked;
+      case 'ready-to-drive':
+        return ScooterState.ready;
+      case 'shutting-down':
+        return ScooterState.shuttingDown;
+      case 'updating':
+        return ScooterState.updating;
+      case 'waiting-hibernation-confirm':
+        return ScooterState.waitingHibernationConfirm;
+      case 'waiting-hibernation':
+        return ScooterState.waitingHibernation;
+      case 'hibernating':
+        return ScooterState.hibernating;
+      default:
+        log.warning("Unknown cloud state: $cloudState");
+        return ScooterState.cloudConnected;
+    }
+  }
+
+  /// Kicks off a cloud status check for the current scooter, if it's cloud-linked.
+  /// Fire-and-forget: runs alongside the BLE connection attempt, never blocks it.
+  void _maybeRefreshCloudStatus() {
+    if (!_cloudServicesInitialized && currentScooter?.cloudScooterId == null) return;
+    Features.isCloudConnectivityEnabled.then((enabled) {
+      if (enabled && currentScooter?.cloudScooterId != null) {
+        _ensureCloudServicesInitialized();
+        _refreshCloudOnlineStatus();
+        _cloudStatusTimer ??= Timer.periodic(const Duration(seconds: 30), (_) {
+          if (currentScooter?.cloudScooterId != null) {
+            _refreshCloudOnlineStatus();
+          }
+        });
+      }
+    });
+  }
+
   // MAIN FUNCTIONS
 
   Future<BluetoothDevice?> findEligibleScooter({
@@ -459,6 +776,10 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     if (myScooter != null) {
       myScooter!.disconnect();
     }
+
+    // Check cloud reachability for cloud-linked scooters alongside the BLE scan below,
+    // never blocking on it.
+    _maybeRefreshCloudStatus();
 
     // SCAN
     try {
@@ -700,31 +1021,44 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
 
   // SCOOTER ACTIONS
 
+  // Real BLE connections report isConnected==true; demo mode's fake
+  // BluetoothDevice never does, so fall back to our own _connected flag
+  // (which addDemoData sets directly) to keep demo mode working.
+  bool get _bleReady => myScooter != null && (myScooter!.isConnected || _connected);
+
   Future<void> unlock({
     bool checkHandlebars = true,
     EventSource source = EventSource.app,
+    BuildContext? context,
   }) async {
-    await commands.unlockScooter(
-      myScooter,
-      characteristicRepository,
-      primarySOC: battery.primarySOC,
-      secondarySOC: battery.secondarySOC,
-      source: source,
-    );
+    bool viaBLE = _bleReady;
+    if (viaBLE) {
+      await commands.unlockScooter(
+        myScooter,
+        characteristicRepository,
+        primarySOC: battery.primarySOC,
+        secondarySOC: battery.secondarySOC,
+        source: source,
+      );
+    } else if (!await _executeCommand(CommandType.unlock, context: context)) {
+      throw Exception("Failed to unlock scooter");
+    }
 
     if (settings.openSeatOnUnlock) {
       await Future.delayed(const Duration(seconds: 1), () {
-        openSeat(source: EventSource.auto);
+        if (context != null && !context.mounted) return;
+        openSeat(source: EventSource.auto, context: context);
       });
     }
 
     if (settings.hazardLocking) {
       await Future.delayed(const Duration(seconds: 2), () {
-        hazard(times: 2);
+        if (context != null && !context.mounted) return;
+        hazard(times: 2, context: context);
       });
     }
 
-    if (checkHandlebars) {
+    if (checkHandlebars && viaBLE) {
       await Future.delayed(const Duration(seconds: handlebarCheckSeconds), () {
         if (vehicle.handlebarsLocked == true) {
           log.warning("Handlebars didn't unlock, sending warning");
@@ -734,43 +1068,51 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     }
   }
 
-  Future<void> wakeUpAndUnlock({EventSource? source}) async {
-    wakeUp();
+  Future<void> wakeUpAndUnlock({EventSource? source, BuildContext? context}) async {
+    wakeUp(context: context);
 
     await _waitForScooterState(
       ScooterState.standby,
       const Duration(seconds: bootingTimeSeconds + 5),
     );
 
+    if (context != null && !context.mounted) return;
     if (_state == ScooterState.standby) {
-      unlock();
+      unlock(context: context);
     }
   }
 
   Future<void> lock({
     bool checkHandlebars = true,
     EventSource source = EventSource.app,
+    BuildContext? context,
   }) async {
     if (vehicle.seatClosed == false) {
       log.warning("Locking with open seatbox!");
     }
 
-    await commands.lockScooter(
-      myScooter,
-      characteristicRepository,
-      primarySOC: battery.primarySOC,
-      secondarySOC: battery.secondarySOC,
-      source: source,
-      lastLocation: lastLocation,
-    );
+    bool viaBLE = _bleReady;
+    if (viaBLE) {
+      await commands.lockScooter(
+        myScooter,
+        characteristicRepository,
+        primarySOC: battery.primarySOC,
+        secondarySOC: battery.secondarySOC,
+        source: source,
+        lastLocation: lastLocation,
+      );
+    } else if (!await _executeCommand(CommandType.lock, context: context)) {
+      throw Exception("Failed to lock scooter");
+    }
 
     if (settings.hazardLocking) {
       Future.delayed(const Duration(seconds: 1), () {
-        hazard(times: 1);
+        if (context != null && !context.mounted) return;
+        hazard(times: 1, context: context);
       });
     }
 
-    if (checkHandlebars) {
+    if (checkHandlebars && viaBLE) {
       await Future.delayed(const Duration(seconds: handlebarCheckSeconds), () {
         if (vehicle.handlebarsLocked == false && settings.warnOfUnlockedHandlebars) {
           log.warning("Handlebars didn't lock, sending warning");
@@ -795,32 +1137,90 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     });
   }
 
-  Future<void> openSeat({EventSource source = EventSource.app}) async {
-    await commands.openSeatCommand(
-      myScooter,
-      characteristicRepository,
-      primarySOC: battery.primarySOC,
-      secondarySOC: battery.secondarySOC,
-      source: source,
-    );
+  Future<void> openSeat({EventSource source = EventSource.app, BuildContext? context}) async {
+    if (_bleReady) {
+      await commands.openSeatCommand(
+        myScooter,
+        characteristicRepository,
+        primarySOC: battery.primarySOC,
+        secondarySOC: battery.secondarySOC,
+        source: source,
+      );
+    } else if (!await _executeCommand(CommandType.openSeat, context: context)) {
+      throw Exception("Failed to open seat");
+    }
   }
 
-  Future<void> blink({required bool left, required bool right}) async {
-    await commands.blinkCommand(myScooter, characteristicRepository, left: left, right: right);
+  Future<void> blink({required bool left, required bool right, BuildContext? context}) async {
+    if (_bleReady) {
+      await commands.blinkCommand(myScooter, characteristicRepository, left: left, right: right);
+      return;
+    }
+    CommandType commandType;
+    if (left && !right) {
+      commandType = CommandType.blinkerLeft;
+    } else if (!left && right) {
+      commandType = CommandType.blinkerRight;
+    } else if (left && right) {
+      commandType = CommandType.blinkerBoth;
+    } else {
+      commandType = CommandType.blinkerOff;
+    }
+    await _executeCommand(commandType, context: context);
   }
 
-  Future<void> hazard({int times = 1}) async {
-    blink(left: true, right: true);
+  Future<void> hazard({int times = 1, BuildContext? context}) async {
+    await blink(left: true, right: true, context: context);
     await Future.delayed(Duration(milliseconds: (600 * times)));
-    blink(left: false, right: false);
+    if (context != null && !context.mounted) return;
+    await blink(left: false, right: false, context: context);
   }
 
-  Future<void> wakeUp() async {
-    await commands.wakeUpCommand(myScooter, characteristicRepository);
+  Future<void> wakeUp({BuildContext? context}) async {
+    if (_bleReady) {
+      await commands.wakeUpCommand(myScooter, characteristicRepository);
+    } else if (!await _executeCommand(CommandType.wakeUp, context: context)) {
+      throw Exception("Failed to wake up scooter");
+    }
   }
 
-  Future<void> hibernate() async {
-    await commands.hibernateCommand(myScooter, characteristicRepository);
+  Future<void> hibernate({BuildContext? context}) async {
+    if (_bleReady) {
+      await commands.hibernateCommand(myScooter, characteristicRepository);
+    } else if (!await _executeCommand(CommandType.hibernate, context: context)) {
+      throw Exception("Failed to hibernate scooter");
+    }
+  }
+
+  // Cloud-only actions: no BLE equivalent exists for these.
+  Future<void> honk({BuildContext? context}) async {
+    if (!await _executeCommand(CommandType.honk, context: context)) {
+      throw Exception("Failed to honk");
+    }
+  }
+
+  Future<void> alarm({BuildContext? context}) async {
+    if (!await _executeCommand(CommandType.alarm, context: context)) {
+      throw Exception("Failed to activate alarm");
+    }
+  }
+
+  Future<void> locate({BuildContext? context}) async {
+    if (!await _executeCommand(CommandType.locate, context: context)) {
+      throw Exception("Failed to locate scooter");
+    }
+  }
+
+  Future<void> pingScooter({BuildContext? context}) async {
+    if (!await _executeCommand(CommandType.ping, context: context)) {
+      throw Exception("Failed to ping scooter");
+    }
+  }
+
+  Future<void> getState({BuildContext? context}) async {
+    if (!await _executeCommand(CommandType.getState, context: context)) {
+      throw Exception("Failed to get scooter state");
+    }
   }
 
   /// Hibernates the scooter with a wake timer (librescoot pm capability).
@@ -850,6 +1250,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   Future<bool> attemptLatestAutoConnection() async {
     SavedScooter? latestScooter = await getMostRecentScooter();
     if (latestScooter != null) {
+      _maybeRefreshCloudStatus();
       try {
         await connectToScooterId(latestScooter.id);
         if (BluetoothDevice.fromId(latestScooter.id).isConnected) {
@@ -898,6 +1299,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     if (!connected) {
       // update the most recent scooter and streams
       SavedScooter? mostRecentScooter = await getMostRecentScooter();
+      _cachedMostRecentScooter = mostRecentScooter;
       if (mostRecentScooter != null) {
         identity.lastPing = mostRecentScooter.lastPing;
         battery.primarySOC = mostRecentScooter.lastPrimarySOC;
@@ -1018,6 +1420,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     _locationTimer.cancel();
     rssiTimer.cancel();
     _manualRefreshTimer.cancel();
+    _cloudStatusTimer?.cancel();
 
     // Unregister lifecycle observer
     if (!isInBackgroundService) {
