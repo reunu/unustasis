@@ -340,6 +340,11 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     updateBackgroundService({"scooterColor": value});
   }
 
+  // Passthrough getters for cloud-provided color/image data
+  String? get scooterColorHex => currentScooter?.colorHex;
+  String? get scooterCloudImageUrl => currentScooter?.cloudImageFront;
+  bool get scooterHasCustomColor => currentScooter?.hasCustomColor ?? false;
+
   LatLng? get lastLocation => identity.lastLocation;
 
   int? get rssi => identity.rssi;

@@ -7,9 +7,11 @@ import 'package:maps_launcher/maps_launcher.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../features.dart';
 import '../home_screen.dart';
 import '../infrastructure/utils.dart';
 import '../onboarding_screen.dart';
+import '../domain/color_utils.dart';
 import '../domain/saved_scooter.dart';
 import '../domain/scooter_state.dart';
 import '../geo_helper.dart';
@@ -221,6 +223,143 @@ class SavedScooterCard extends StatelessWidget {
     if (context.mounted) context.read<ScooterService>().scooterColor = newColor;
   }
 
+  Future<void> _linkToCloudScooter(BuildContext context) async {
+    final cloudService = context.read<ScooterService>().cloudService;
+
+    try {
+      final cloudScooters = await cloudService.getScooters();
+      if (cloudScooters.isEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(FlutterI18n.translate(context, "cloud_no_scooters")),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+        return;
+      }
+
+      // Auto-match by BLE MAC address, if the cloud scooter reports one
+      final localId = savedScooter.id.toLowerCase();
+      Map<String, dynamic>? matchingScooter;
+      for (final scooter in cloudScooters) {
+        final bleMac = (scooter['ble_mac'] as String?)?.toLowerCase();
+        if (bleMac != null && bleMac == localId) {
+          matchingScooter = scooter;
+          break;
+        }
+      }
+
+      if (matchingScooter != null && context.mounted) {
+        final shouldAutoLink = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(FlutterI18n.translate(context, "cloud_auto_match_title")),
+            content: Text(FlutterI18n.translate(
+              context,
+              "cloud_auto_match_message",
+              translationParams: {
+                "cloudName": matchingScooter?['name'] ?? 'Unknown',
+                "localName": savedScooter.name,
+              },
+            )),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text(FlutterI18n.translate(context, "cloud_manual_select")),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text(FlutterI18n.translate(context, "cloud_auto_link")),
+              ),
+            ],
+          ),
+        );
+
+        if (shouldAutoLink == true) {
+          if (context.mounted) await _linkScooter(context, matchingScooter);
+          return;
+        } else if (shouldAutoLink == null) {
+          return; // user dismissed the dialog
+        }
+        // else: fall through to manual selection below
+      }
+
+      if (context.mounted) {
+        final selectedScooter = await showDialog<Map<String, dynamic>>(
+          context: context,
+          builder: (context) => _CloudScooterSelectionDialog(cloudScooters: cloudScooters),
+        );
+        if (selectedScooter != null && context.mounted) {
+          await _linkScooter(context, selectedScooter);
+        }
+      }
+    } catch (e, stack) {
+      log.severe('Failed to link cloud scooter', e, stack);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(FlutterI18n.translate(context, "cloud_link_failed")),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _linkScooter(BuildContext context, Map<String, dynamic> selectedScooter) async {
+    final cloudService = context.read<ScooterService>().cloudService;
+    // Adopt the cloud scooter's name and color as the source of truth on link.
+    savedScooter.updateFromCloudData(selectedScooter);
+    await cloudService.assignScooterToDevice(
+      selectedScooter['id'],
+      savedScooter.id,
+      cloudScooterName: selectedScooter['name'],
+    );
+    rebuild();
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(FlutterI18n.translate(
+            context,
+            "cloud_scooter_linked",
+            translationParams: {"name": selectedScooter['name'] ?? 'Unknown'},
+          )),
+          backgroundColor: Theme.of(context).colorScheme.primary,
+        ),
+      );
+    }
+  }
+
+  Future<void> _unlinkCloudScooter(BuildContext context) async {
+    final cloudService = context.read<ScooterService>().cloudService;
+    try {
+      await cloudService.unassignScooterFromDevice(savedScooter.id);
+      savedScooter.cloudImages = null;
+      rebuild();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(FlutterI18n.translate(context, "cloud_scooter_unlinked")),
+            backgroundColor: Theme.of(context).colorScheme.primary,
+          ),
+        );
+      }
+    } catch (e, stack) {
+      log.severe('Failed to unlink cloud scooter', e, stack);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(FlutterI18n.translate(context, "cloud_unlink_failed")),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -398,6 +537,39 @@ class SavedScooterCard extends StatelessWidget {
                     savedScooter.id,
                     overflow: TextOverflow.ellipsis,
                   ),
+                ),
+                FutureBuilder<bool>(
+                  future: Features.isCloudConnectivityEnabled,
+                  builder: (context, snapshot) {
+                    if (snapshot.data != true) return const SizedBox.shrink();
+                    bool linked = savedScooter.cloudScooterId != null;
+                    return Column(
+                      children: [
+                        Divider(
+                          indent: 16,
+                          endIndent: 16,
+                          height: 0,
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+                        ),
+                        ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                          leading: Icon(linked ? Icons.cloud_done_outlined : Icons.cloud_off_outlined),
+                          title: Text(FlutterI18n.translate(
+                            context,
+                            linked ? "cloud_linked_to" : "cloud_not_linked",
+                          )),
+                          subtitle: linked ? Text(savedScooter.cloudScooterName ?? '') : null,
+                          trailing: TextButton(
+                            onPressed: () => linked ? _unlinkCloudScooter(context) : _linkToCloudScooter(context),
+                            child: Text(FlutterI18n.translate(
+                              context,
+                              linked ? "cloud_unlink_button" : "cloud_link_button",
+                            )),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
                 Divider(
                   indent: 16,
@@ -906,6 +1078,93 @@ class SavedScooterListItem extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+class _CloudScooterSelectionDialog extends StatelessWidget {
+  final List<Map<String, dynamic>> cloudScooters;
+
+  const _CloudScooterSelectionDialog({required this.cloudScooters});
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(FlutterI18n.translate(context, "cloud_select_scooter")),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: ListView.builder(
+          shrinkWrap: true,
+          itemCount: cloudScooters.length,
+          itemBuilder: (context, index) {
+            final scooter = cloudScooters[index];
+            final name = scooter['name'] ?? 'Unknown';
+            final vin = scooter['vin'];
+            final isOnline = scooter['online'] == true;
+            final images = scooter['images'] as Map<String, dynamic>?;
+            final sideImageUrl = images?['right'] ?? images?['left'];
+            final swatchColor = ColorUtils.parseHexColor(scooter['color_hex']) ?? Colors.grey.shade300;
+
+            return ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              leading: Stack(
+                alignment: Alignment.center,
+                children: [
+                  SizedBox(
+                    width: 64,
+                    height: 64,
+                    child: sideImageUrl != null
+                        ? Image.network(
+                            sideImageUrl,
+                            width: 64,
+                            height: 64,
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) => _colorSwatch(swatchColor),
+                          )
+                        : _colorSwatch(swatchColor),
+                  ),
+                  if (isOnline)
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      child: Container(
+                        width: 16,
+                        height: 16,
+                        decoration: const BoxDecoration(
+                          color: Colors.green,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.wifi, size: 10, color: Colors.white),
+                      ),
+                    ),
+                ],
+              ),
+              title: Text(name),
+              subtitle: vin != null ? Text(vin) : null,
+              onTap: () => Navigator.of(context).pop(scooter),
+            );
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(FlutterI18n.translate(context, "stats_rename_cancel")),
+        ),
+      ],
+    );
+  }
+
+  Widget _colorSwatch(Color color) {
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.grey.shade400),
+      ),
+      child: const Icon(Icons.electric_scooter, size: 20),
     );
   }
 }

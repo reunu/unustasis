@@ -3,7 +3,10 @@ import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 
+import '../command_service.dart';
+import '../domain/connection_status.dart';
 import '../domain/scooter_state.dart';
+import '../features.dart';
 import '../helper_widgets/header.dart';
 import '../hibernate_sheet.dart';
 import '../scooter_service.dart';
@@ -54,9 +57,9 @@ class _ControlSheetState extends State<ControlSheet> with TickerProviderStateMix
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // listen to connection state and close if disconnected
+          // listen to connection state and close if disconnected, via BLE or cloud
           Selector<ScooterService, bool>(
-            selector: (context, s) => s.connected,
+            selector: (context, s) => s.connected || s.connectionStatus.isConnected,
             shouldRebuild: (prev, next) => !_disconnectedHandled && prev != next,
             builder: (context, connected, _) {
               if (!connected && !_disconnectedHandled) {
@@ -135,9 +138,9 @@ class _ControlSheetState extends State<ControlSheet> with TickerProviderStateMix
                     foregroundColor: Theme.of(context).colorScheme.surface,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  onPressed: () {
+                  onPressed: () async {
                     try {
-                      context.read<ScooterService>().unlock();
+                      await context.read<ScooterService>().unlock(context: context);
                     } catch (e) {
                       Fluttertoast.showToast(msg: e.toString());
                     }
@@ -154,9 +157,9 @@ class _ControlSheetState extends State<ControlSheet> with TickerProviderStateMix
                     foregroundColor: Theme.of(context).colorScheme.surface,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  onPressed: () {
+                  onPressed: () async {
                     try {
-                      context.read<ScooterService>().lock();
+                      await context.read<ScooterService>().lock(context: context);
                     } catch (e) {
                       Fluttertoast.showToast(msg: e.toString());
                     }
@@ -177,9 +180,10 @@ class _ControlSheetState extends State<ControlSheet> with TickerProviderStateMix
                     foregroundColor: Theme.of(context).colorScheme.surface,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  onPressed: () {
+                  onPressed: () async {
                     try {
-                      context.read<ScooterService>().wakeUp();
+                      await context.read<ScooterService>().wakeUp(context: context);
+                      if (!context.mounted) return;
                       Navigator.of(context).pop();
                     } catch (e) {
                       Fluttertoast.showToast(msg: e.toString());
@@ -210,12 +214,13 @@ class _ControlSheetState extends State<ControlSheet> with TickerProviderStateMix
                       // also close if the scooter disconnected while the sheet
                       // was open: the disconnect listener above will have
                       // popped the sheet instead of this control sheet
-                      if (done == true || !service.connected) {
+                      if (done == true || !(service.connected || service.connectionStatus.isConnected)) {
                         Navigator.of(context).pop();
                       }
                     } else {
                       try {
-                        service.hibernate();
+                        await service.hibernate(context: context);
+                        if (!context.mounted) return;
                         Navigator.of(context).pop();
                       } catch (e) {
                         Fluttertoast.showToast(msg: e.toString());
@@ -296,9 +301,132 @@ class _ControlSheetState extends State<ControlSheet> with TickerProviderStateMix
               );
             },
           ),
+          FutureBuilder<bool>(
+            future: Features.isCloudConnectivityEnabled,
+            builder: (context, snapshot) {
+              if (snapshot.data != true) return const SizedBox.shrink();
+              return Selector<ScooterService, Map<CommandType, bool>>(
+                selector: (context, s) => {
+                  for (final c in const [
+                    CommandType.locate,
+                    CommandType.honk,
+                    CommandType.alarm,
+                    CommandType.ping,
+                    CommandType.getState,
+                  ])
+                    c: s.isCommandAvailableCached(c),
+                },
+                builder: (context, available, _) {
+                  if (!available.values.any((v) => v)) return const SizedBox.shrink();
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 16),
+                      Center(child: Header(FlutterI18n.translate(context, "controls_alerts_title"))),
+                      Row(
+                        children: [
+                          if (available[CommandType.locate] == true)
+                            Expanded(
+                              child: _CloudActionButton(
+                                labelKey: "controls_locate",
+                                icon: Icons.location_searching_rounded,
+                                onPressed: (context) => context.read<ScooterService>().locate(context: context),
+                              ),
+                            ),
+                          if (available[CommandType.locate] == true && available[CommandType.honk] == true)
+                            const SizedBox(width: 16),
+                          if (available[CommandType.honk] == true)
+                            Expanded(
+                              child: _CloudActionButton(
+                                labelKey: "cloud_command_honk",
+                                icon: Icons.campaign_outlined,
+                                onPressed: (context) => context.read<ScooterService>().honk(context: context),
+                              ),
+                            ),
+                        ],
+                      ),
+                      if (available[CommandType.alarm] == true) ...[
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _CloudActionButton(
+                                labelKey: "cloud_command_alarm",
+                                icon: Icons.notifications_active_outlined,
+                                onPressed: (context) => context.read<ScooterService>().alarm(context: context),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      if (available[CommandType.ping] == true || available[CommandType.getState] == true) ...[
+                        const SizedBox(height: 16),
+                        Center(child: Header(FlutterI18n.translate(context, "controls_diagnostics_title"))),
+                        Row(
+                          children: [
+                            if (available[CommandType.ping] == true)
+                              Expanded(
+                                child: _CloudActionButton(
+                                  labelKey: "controls_ping",
+                                  icon: Icons.network_ping_outlined,
+                                  onPressed: (context) => context.read<ScooterService>().pingScooter(context: context),
+                                ),
+                              ),
+                            if (available[CommandType.ping] == true && available[CommandType.getState] == true)
+                              const SizedBox(width: 16),
+                            if (available[CommandType.getState] == true)
+                              Expanded(
+                                child: _CloudActionButton(
+                                  labelKey: "controls_get_state",
+                                  icon: Icons.info_outline_rounded,
+                                  onPressed: (context) => context.read<ScooterService>().getState(context: context),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  );
+                },
+              );
+            },
+          ),
           SizedBox(height: 64),
         ],
       ),
+    );
+  }
+}
+
+/// A cloud-only control button, styled to match the rest of the sheet.
+class _CloudActionButton extends StatelessWidget {
+  final String labelKey;
+  final IconData icon;
+  final Future<void> Function(BuildContext context) onPressed;
+
+  const _CloudActionButton({
+    required this.labelKey,
+    required this.icon,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton.icon(
+      style: TextButton.styleFrom(
+        backgroundColor: Theme.of(context).colorScheme.onSurface,
+        foregroundColor: Theme.of(context).colorScheme.surface,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+      ),
+      onPressed: () async {
+        try {
+          await onPressed(context);
+        } catch (e) {
+          Fluttertoast.showToast(msg: e.toString());
+        }
+      },
+      label: Text(FlutterI18n.translate(context, labelKey)),
+      icon: Icon(icon),
     );
   }
 }
