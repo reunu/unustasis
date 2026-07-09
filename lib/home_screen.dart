@@ -17,6 +17,9 @@ import '../helper_widgets/leaves.dart';
 import '../helper_widgets/scooter_action_button.dart';
 import '../helper_widgets/onboarding_popups.dart';
 import '../handlebar_warning.dart';
+import '../command_service.dart';
+import '../domain/connection_status.dart';
+import '../features.dart';
 import '../domain/icomoon.dart';
 import '../domain/theme_helper.dart';
 import '../onboarding_screen.dart';
@@ -265,6 +268,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                           const StatusText(),
+                          const Padding(
+                            padding: EdgeInsets.only(top: 4),
+                            child: ConnectionStatusText(),
+                          ),
                           if (context.select<ScooterService, String?>(
                                     (service) => service.identity.name,
                                   ) !=
@@ -352,6 +359,12 @@ class _HomeScreenState extends State<HomeScreen> {
                               winter: _snowing,
                               aprilFools: _forceHover,
                               halloween: _fall && context.isDarkMode,
+                              cloudImageUrl: context.select<ScooterService, String?>(
+                                (service) => service.scooterCloudImageUrl,
+                              ),
+                              hasCustomColor: context.select<ScooterService, bool>(
+                                (service) => service.scooterHasCustomColor,
+                              ),
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -421,7 +434,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                   }
                                                   try {
                                                     if (!context.mounted) return;
-                                                    await context.read<ScooterService>().lock();
+                                                    await context.read<ScooterService>().lock(context: context);
                                                     if (!context.mounted) return;
                                                     if (context.read<ScooterService>().hazardLocking) {
                                                       _flashHazards(1);
@@ -447,7 +460,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                               : (state == ScooterState.standby
                                                   ? () async {
                                                       try {
-                                                        await context.read<ScooterService>().unlock();
+                                                        await context.read<ScooterService>().unlock(context: context);
                                                         if (context.mounted &&
                                                             context.read<ScooterService>().hazardLocking) {
                                                           _flashHazards(2);
@@ -463,7 +476,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                     }
                                                   : (state == ScooterState.standby
                                                       ? () {
-                                                          context.read<ScooterService>().unlock();
+                                                          context.read<ScooterService>().unlock(context: context);
                                                           // TODO: Flash hazards in visual
                                                         }
                                                       : context.read<ScooterService>().wakeUpAndUnlock)))
@@ -482,17 +495,19 @@ class _HomeScreenState extends State<HomeScreen> {
                                   );
                                 },
                               ),
-                              Selector<ScooterService, ({bool scanning, bool connected})>(
+                              Selector<ScooterService, ({bool scanning, bool connected, ConnectionStatus connectionStatus})>(
                                 selector: (context, service) => (
                                   scanning: service.scanning,
                                   connected: service.connected,
+                                  connectionStatus: service.connectionStatus,
                                 ),
                                 builder: (context, state, _) {
+                                  bool anyConnection = state.connected || state.connectionStatus.isConnected;
                                   return Expanded(
                                     child: ScooterActionButton(
                                       onPressed: !state.scanning
                                           ? () {
-                                              if (!state.connected) {
+                                              if (!anyConnection) {
                                                 log.info(
                                                   "Manually reconnecting...",
                                                 );
@@ -517,8 +532,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                               }
                                             }
                                           : null,
-                                      icon: !state.connected ? Icons.refresh_rounded : Icons.more_vert_rounded,
-                                      label: !state.connected
+                                      icon: !anyConnection ? Icons.refresh_rounded : Icons.more_vert_rounded,
+                                      label: !anyConnection
                                           ? FlutterI18n.translate(
                                               context,
                                               "home_reconnect_button",
@@ -634,7 +649,9 @@ class SeatButton extends StatelessWidget {
       builder: (context, data, _) {
         return Expanded(
           child: ScooterActionButton(
-            onPressed: context.select((ScooterService service) => service.connected) &&
+            onPressed: context.select(
+                      (ScooterService service) => service.isCommandAvailableCached(CommandType.openSeat),
+                    ) &&
                     data.state != null &&
                     data.seatClosed == true &&
                     context.select(
@@ -642,7 +659,7 @@ class SeatButton extends StatelessWidget {
                         ) ==
                         false &&
                     data.state!.isReadyForSeatOpen == true
-                ? context.read<ScooterService>().openSeat
+                ? () => context.read<ScooterService>().openSeat(context: context)
                 : null,
             label: data.seatClosed == false
                 ? FlutterI18n.translate(context, "home_seat_button_open")
@@ -784,6 +801,106 @@ class StatusText extends StatelessWidget {
           style: Theme.of(context).textTheme.titleMedium,
         );
       },
+    );
+  }
+}
+
+/// Shows a small BLE/cloud indicator pair, pulsing while (re)connecting.
+class ConnectionStatusText extends StatefulWidget {
+  const ConnectionStatusText({super.key});
+
+  @override
+  State<ConnectionStatusText> createState() => _ConnectionStatusTextState();
+}
+
+class _ConnectionStatusTextState extends State<ConnectionStatusText> with SingleTickerProviderStateMixin {
+  late final AnimationController _animationController;
+  late final Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+    _pulseAnimation = Tween<double>(begin: 0.4, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: Features.isCloudConnectivityEnabled,
+      builder: (context, snapshot) {
+        if (snapshot.data != true) return const SizedBox.shrink();
+        return Selector<ScooterService, ({ConnectionStatus connectionStatus, bool scanning, bool cloudConnecting, int? cloudScooterId})>(
+          selector: (context, service) => (
+            connectionStatus: service.connectionStatus,
+            scanning: service.scanning,
+            cloudConnecting: service.isCloudConnecting,
+            cloudScooterId: service.currentScooter?.cloudScooterId,
+          ),
+          builder: (context, data, _) {
+            if (data.cloudScooterId == null || data.connectionStatus == ConnectionStatus.none) {
+              // no scooter linked to the cloud, nothing interesting to show
+              return const SizedBox.shrink();
+            }
+            return _buildIndicator(context, data);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildIndicator(
+    BuildContext context,
+    ({ConnectionStatus connectionStatus, bool scanning, bool cloudConnecting, int? cloudScooterId}) data,
+  ) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final disabledColor = Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4);
+
+    bool bleConnected = data.connectionStatus.hasBLE;
+    bool cloudConnected = data.connectionStatus.hasCloud;
+    bool bleConnecting = data.scanning;
+    bool cloudConnecting = data.cloudConnecting;
+
+    bool shouldAnimate = bleConnecting || cloudConnecting;
+    if (shouldAnimate && !_animationController.isAnimating) {
+      _animationController.repeat(reverse: true);
+    } else if (!shouldAnimate && _animationController.isAnimating) {
+      _animationController.stop();
+      _animationController.reset();
+    }
+
+    Widget statusIcon(IconData icon, bool connected, bool connecting) {
+      if (!connecting) {
+        return Icon(icon, size: 16, color: connected ? primaryColor : disabledColor);
+      }
+      return AnimatedBuilder(
+        animation: _pulseAnimation,
+        builder: (context, child) => Icon(
+          icon,
+          size: 16,
+          color: connected ? primaryColor : disabledColor.withValues(alpha: _pulseAnimation.value),
+        ),
+      );
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        statusIcon(Icons.bluetooth, bleConnected, bleConnecting),
+        const SizedBox(width: 8),
+        statusIcon(Icons.cloud, cloudConnected, cloudConnecting),
+      ],
     );
   }
 }
