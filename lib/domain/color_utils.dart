@@ -18,6 +18,23 @@ class ColorUtils {
     9: 'Hover',
   };
 
+  /// Color ID to the lowercase name the Sunshine cloud backend expects for
+  /// its `color` field. Index is 1:1 with [colorNames], but three names
+  /// differ from the app's own labels (green/gray/orange -> pine/stone/coral),
+  /// so this must not be derived from [colorNames] or [simpleName].
+  static const Map<int, String> apiColorNames = {
+    0: 'black',
+    1: 'white',
+    2: 'pine',
+    3: 'stone',
+    4: 'coral',
+    5: 'red',
+    6: 'blue',
+    7: 'eclipse',
+    8: 'idioteque',
+    9: 'hover',
+  };
+
   /// Color ID to Flutter Color mapping for scooters
   static const Map<int, Color> colorValues = {
     0: Colors.black,
@@ -63,6 +80,13 @@ class ColorUtils {
   /// Gets the color name for a given color ID
   static String getColorName(int colorId) {
     return colorNames[colorId] ?? 'Unknown';
+  }
+
+  /// Gets the Sunshine cloud API's color name for a given predefined color
+  /// ID, or null for an unrecognized ID (callers should omit the field
+  /// rather than send a value the backend doesn't recognize).
+  static String? getApiColorName(int colorId) {
+    return apiColorNames[colorId];
   }
 
   /// Gets the Flutter Color for a given color ID

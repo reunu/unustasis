@@ -471,5 +471,13 @@
     "cloud_auto_match_title": "A match on the horizon!",
     "cloud_auto_match_message": "Found cloud ship '{cloudName}' matchin' yer local ship '{localName}' by Bluetooth address. Tie the knot automatically?",
     "cloud_manual_select": "Pick meself",
-    "cloud_auto_link": "Aye, tie it automatically"
+    "cloud_auto_link": "Aye, tie it automatically",
+    "cloud_sync_data_title": "Reconcile the ship's log",
+    "cloud_sync_data_message": "Yer local ship and the cloud ship carry different tales. How be ye wantin' to reconcile 'em?",
+    "cloud_sync_name_diff": "Name be different:",
+    "cloud_sync_color_diff": "Colors be different:",
+    "cloud_sync_no_sync": "Tie the knot, leave it be",
+    "cloud_sync_from_cloud": "Take the cloud's word",
+    "cloud_sync_to_cloud": "Take the local word",
+    "cloud_sync_failed": "Reconcilin' failed, arrr"
 }

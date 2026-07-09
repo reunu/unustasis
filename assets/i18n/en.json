@@ -491,5 +491,13 @@
     "cloud_auto_match_title": "Match found",
     "cloud_auto_match_message": "Found cloud scooter '{cloudName}' matching your local scooter '{localName}' by Bluetooth address. Link automatically?",
     "cloud_manual_select": "Choose manually",
-    "cloud_auto_link": "Link automatically"
+    "cloud_auto_link": "Link automatically",
+    "cloud_sync_data_title": "Sync scooter data",
+    "cloud_sync_data_message": "The local and cloud scooter have different data. How would you like to sync?",
+    "cloud_sync_name_diff": "Name difference:",
+    "cloud_sync_color_diff": "Color difference:",
+    "cloud_sync_no_sync": "Link without syncing",
+    "cloud_sync_from_cloud": "Use cloud data",
+    "cloud_sync_to_cloud": "Use local data",
+    "cloud_sync_failed": "Failed to sync data"
 }

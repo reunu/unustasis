@@ -491,5 +491,13 @@
     "cloud_auto_match_title": "Overeenkomst gevonden",
     "cloud_auto_match_message": "Cloudscooter '{cloudName}' komt overeen met je lokale scooter '{localName}' op basis van Bluetooth-adres. Automatisch koppelen?",
     "cloud_manual_select": "Handmatig kiezen",
-    "cloud_auto_link": "Automatisch koppelen"
+    "cloud_auto_link": "Automatisch koppelen",
+    "cloud_sync_data_title": "Scootergegevens synchroniseren",
+    "cloud_sync_data_message": "De lokale en cloudscooter hebben verschillende gegevens. Hoe wil je synchroniseren?",
+    "cloud_sync_name_diff": "Naamverschil:",
+    "cloud_sync_color_diff": "Kleurverschil:",
+    "cloud_sync_no_sync": "Koppelen zonder synchroniseren",
+    "cloud_sync_from_cloud": "Cloudgegevens gebruiken",
+    "cloud_sync_to_cloud": "Lokale gegevens gebruiken",
+    "cloud_sync_failed": "Synchroniseren mislukt"
 }

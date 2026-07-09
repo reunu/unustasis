@@ -310,8 +310,96 @@ class SavedScooterCard extends StatelessWidget {
 
   Future<void> _linkScooter(BuildContext context, Map<String, dynamic> selectedScooter) async {
     final cloudService = context.read<ScooterService>().cloudService;
-    // Adopt the cloud scooter's name and color as the source of truth on link.
-    savedScooter.updateFromCloudData(selectedScooter);
+
+    final cloudName = selectedScooter['name'] as String?;
+    final cloudColorName = _getCloudColorName(selectedScooter);
+    final localName = savedScooter.name;
+    final localColorName = _getLocalColorName(savedScooter);
+
+    bool nameDiffers = cloudName != null && cloudName != localName;
+    bool colorDiffers = cloudColorName != localColorName;
+    bool needsSync = nameDiffers || colorDiffers;
+
+    if (needsSync) {
+      final syncChoice = await showDialog<String>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(FlutterI18n.translate(context, "cloud_sync_data_title")),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(FlutterI18n.translate(context, "cloud_sync_data_message")),
+              const SizedBox(height: 16),
+              if (nameDiffers) ...[
+                Text(FlutterI18n.translate(context, "cloud_sync_name_diff")),
+                Text('Local: $localName'),
+                Text('Cloud: $cloudName'),
+                const SizedBox(height: 8),
+              ],
+              if (colorDiffers) ...[
+                Text(FlutterI18n.translate(context, "cloud_sync_color_diff")),
+                Text('Local: $localColorName'),
+                Text('Cloud: $cloudColorName'),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop('no_sync'),
+              child: Text(FlutterI18n.translate(context, "cloud_sync_no_sync")),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop('from_cloud'),
+              child: Text(FlutterI18n.translate(context, "cloud_sync_from_cloud")),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop('to_cloud'),
+              child: Text(FlutterI18n.translate(context, "cloud_sync_to_cloud")),
+            ),
+          ],
+        ),
+      );
+
+      if (syncChoice == null) return; // dialog dismissed, abort linking entirely
+
+      if (syncChoice == 'from_cloud') {
+        savedScooter.updateFromCloudData(selectedScooter);
+      } else if (syncChoice == 'to_cloud') {
+        try {
+          final success = await cloudService.updateScooter(
+            selectedScooter['id'],
+            name: savedScooter.name,
+            color: savedScooter.hasCustomColor ? 'custom' : ColorUtils.getApiColorName(savedScooter.color),
+            customColor: savedScooter.hasCustomColor ? savedScooter.colorHex : null,
+          );
+          if (!success && context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(FlutterI18n.translate(context, "cloud_sync_failed")),
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+            );
+          }
+        } catch (e, stack) {
+          log.severe('Failed to sync local data to cloud', e, stack);
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(FlutterI18n.translate(context, "cloud_sync_failed")),
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+            );
+          }
+        }
+      }
+      // 'no_sync': link only, leave both sides as they are
+      if (!context.mounted) return;
+    } else {
+      // Name and color already match: adopt cloud data (images etc.) silently, no dialog needed.
+      savedScooter.updateFromCloudData(selectedScooter);
+    }
+
     await cloudService.assignScooterToDevice(
       selectedScooter['id'],
       savedScooter.id,
@@ -331,6 +419,23 @@ class SavedScooterCard extends StatelessWidget {
         ),
       );
     }
+  }
+
+  /// Human-readable color description for a cloud scooter payload.
+  String _getCloudColorName(Map<String, dynamic> cloudData) {
+    final cloudColor = cloudData['color'] as String?;
+    if (cloudColor == 'custom') {
+      return (cloudData['color_hex'] as String?) ?? 'Custom color';
+    }
+    return ColorUtils.getColorName(cloudData['color_id'] as int? ?? 1);
+  }
+
+  /// Human-readable color description for the local saved scooter.
+  String _getLocalColorName(SavedScooter scooter) {
+    if (scooter.hasCustomColor) {
+      return scooter.colorHex ?? 'Custom color';
+    }
+    return ColorUtils.getColorName(scooter.color);
   }
 
   Future<void> _unlinkCloudScooter(BuildContext context) async {
