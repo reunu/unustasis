@@ -348,7 +348,7 @@ class UpdatePlanner {
     // version before anything else — delta by delta whenever a delta path
     // exists — so both advance in lockstep from there.
     if (dbcChannel != null && dbcChannel != channel) {
-      // Cross-channel divergence: the scooter is the reference; the dashboard
+      // Cross-channel divergence: the MDB is the reference; the DBC
       // needs a full image, deltas can't cross channels.
       warnings.add(PlanWarning("ls_ota_warn_dbc_channel", {"channel": dbcChannel}));
       final target = _releaseByTag(releases, channel, normMdb);
