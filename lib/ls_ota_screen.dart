@@ -333,14 +333,17 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
       final total = resp.contentLength ?? asset.size;
       final sink = file.openWrite();
       var received = 0;
-      await for (final chunk in resp.stream) {
-        sink.add(chunk);
-        received += chunk.length;
-        if (total > 0 && mounted) {
-          setState(() => _downloadProgress = received / total);
+      try {
+        await for (final chunk in resp.stream) {
+          sink.add(chunk);
+          received += chunk.length;
+          if (total > 0 && mounted) {
+            setState(() => _downloadProgress = received / total);
+          }
         }
+      } finally {
+        await sink.close();
       }
-      await sink.close();
       return file;
     } finally {
       if (mounted) setState(() => _downloading = false);
