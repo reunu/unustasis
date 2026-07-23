@@ -29,6 +29,7 @@ class _LsKeycardScreenState extends State<LsKeycardScreen> {
   static const Map<String, String> _demoAliases = {
     '04A2B7C1D9': 'Alex',
     '1F8E3D4C': 'Sam',
+    'A0B1C2D3E4': 'Backup',
   };
 
   List<String> keycards = [];

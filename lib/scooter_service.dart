@@ -198,7 +198,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     flutterBluePlus.stopScan();
     savedScooters = {
       "12345": SavedScooter(
-        name: "Demo Scooter",
+        name: "Scooter Pro",
         id: "12345",
         color: 0,
         lastPing: DateTime.now(),
@@ -240,7 +240,8 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     vehicle.handlebarsLocked = false;
     vehicle.navigationActive = false;
     identity.lastPing = DateTime.now();
-    identity.name = "Demo Scooter";
+    identity.name = "Scooter Pro";
+    identity.color = 1;
 
     store.save();
     updateBackgroundService({"updateSavedScooters": true});
@@ -385,8 +386,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
         // automatically and does not expose a priority request.
         try {
           await attemptedScooter.requestMtu(247);
-          await attemptedScooter.requestConnectionPriority(
-              connectionPriorityRequest: ConnectionPriority.high);
+          await attemptedScooter.requestConnectionPriority(connectionPriorityRequest: ConnectionPriority.high);
         } catch (e) {
           log.warning("MTU/priority negotiation failed (continuing): $e");
         }
