@@ -186,6 +186,17 @@ class _HomeScreenState extends State<HomeScreen> {
                             builder: (context) => const SupportScreen(),
                           ),
                         ),
+                        // In demo mode, long-press opens the navigation screen
+                        // (with demo data) for app store screenshots.
+                        onLongPress: context.read<ScooterService>().demoMode
+                            ? () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    settings: const RouteSettings(name: 'navigation'),
+                                    builder: (context) => const NavigationScreen(demo: true),
+                                  ),
+                                )
+                            : null,
                       ),
                     ),
                     Positioned(
@@ -199,6 +210,16 @@ class _HomeScreenState extends State<HomeScreen> {
                             builder: (context) => const SettingsScreen(),
                           ),
                         ),
+                        // In demo mode, long-press opens the librescoot settings
+                        // screen (with demo data) for app store screenshots.
+                        onLongPress: context.read<ScooterService>().demoMode
+                            ? () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const LsSettingsScreen(demo: true),
+                                  ),
+                                )
+                            : null,
                       ),
                     ),
                     Padding(
@@ -220,14 +241,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 ),
                                 // // Hidden for stable release, but useful for various debugging
-                                // onLongPress: () {
-                                //   Navigator.push(
-                                //     context,
-                                //     MaterialPageRoute(
-                                //       builder: (context) => const LsKeycardScreen(),
-                                //     ),
-                                //   );
-                                // },
+                                onLongPress: () {
+                                  context.read<ScooterService>().addDemoData();
+                                },
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   mainAxisSize: MainAxisSize.min,
@@ -355,11 +371,16 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          Selector<ScooterService, ({bool connected, bool? isLibrescoot})>(
-                            selector: (context, service) =>
-                                (connected: service.connected, isLibrescoot: service.identity.isLibrescoot),
+                          Selector<ScooterService, ({bool connected, bool? isLibrescoot, bool demoMode})>(
+                            selector: (context, service) => (
+                              connected: service.connected,
+                              isLibrescoot: service.identity.isLibrescoot,
+                              demoMode: service.demoMode,
+                            ),
                             builder: (context, value, child) => Visibility(
-                                visible: value.isLibrescoot == true,
+                                // Hide all librescoot data in demo mode; those
+                                // screens are reached via long-press instead.
+                                visible: value.isLibrescoot == true && !value.demoMode,
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                   children: [

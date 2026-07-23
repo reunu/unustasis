@@ -18,7 +18,11 @@ import '../service/ble_commands.dart';
 
 class NavigationScreen extends StatefulWidget {
   final NavDestination? initialDestination;
-  const NavigationScreen({this.initialDestination, super.key});
+
+  /// When true, shows fake saved destinations for app store screenshots
+  /// instead of reading real destinations from the scooter.
+  final bool demo;
+  const NavigationScreen({this.initialDestination, this.demo = false, super.key});
 
   @override
   State<NavigationScreen> createState() => _NavigationScreenState();
@@ -41,6 +45,11 @@ class _NavigationScreenState extends State<NavigationScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.demo) {
+      _destinations = _demoDestinations();
+      _initialLoad = false;
+      return;
+    }
     _loadOsmConsent();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final service = context.read<ScooterService>();
@@ -54,6 +63,36 @@ class _NavigationScreenState extends State<NavigationScreen> {
       }
     });
   }
+
+  List<NavDestination> _demoDestinations() => [
+        NavDestination(
+          location: LatLng(52.5200, 13.4050),
+          name: 'Home',
+          id: 'demo-home',
+          type: SpecialDestinationType.home,
+        ),
+        NavDestination(
+          location: LatLng(52.4996, 13.4193),
+          name: 'Work',
+          id: 'demo-work',
+          type: SpecialDestinationType.work,
+        ),
+        NavDestination(
+          location: LatLng(52.5145, 13.3501),
+          name: 'Brandenburg Gate',
+          id: 'demo-1',
+        ),
+        NavDestination(
+          location: LatLng(52.5163, 13.3777),
+          name: 'Tiergarten',
+          id: 'demo-2',
+        ),
+        NavDestination(
+          location: LatLng(52.5079, 13.3904),
+          name: 'Potsdamer Platz',
+          id: 'demo-3',
+        ),
+      ];
 
   Future<void> _loadOsmConsent() async {
     final prefs = SharedPreferencesAsync();
@@ -89,6 +128,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
   }
 
   Future<void> _fetchDestinations() async {
+    if (widget.demo) return;
     final service = context.read<ScooterService>();
     if (!service.connected) return;
 

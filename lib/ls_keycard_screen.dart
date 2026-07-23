@@ -15,13 +15,22 @@ import 'service/ble_commands.dart';
 import 'scooter_service.dart';
 
 class LsKeycardScreen extends StatefulWidget {
-  const LsKeycardScreen({super.key});
+  /// When true, shows fake keycards for app store screenshots instead of
+  /// reading real keycards from the scooter.
+  final bool demo;
+  const LsKeycardScreen({this.demo = false, super.key});
 
   @override
   State<LsKeycardScreen> createState() => _LsKeycardScreenState();
 }
 
 class _LsKeycardScreenState extends State<LsKeycardScreen> {
+  static const List<String> _demoKeycards = ['04A2B7C1D9', '1F8E3D4C', 'A0B1C2D3E4'];
+  static const Map<String, String> _demoAliases = {
+    '04A2B7C1D9': 'Alex',
+    '1F8E3D4C': 'Sam',
+  };
+
   List<String> keycards = [];
   Map<String, String> _aliases = {};
   bool _isLoadingKeycards = false;
@@ -32,6 +41,11 @@ class _LsKeycardScreenState extends State<LsKeycardScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.demo) {
+      keycards = List.of(_demoKeycards);
+      _aliases = Map.of(_demoAliases);
+      return;
+    }
     _loadAliases();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshIndicatorKey.currentState?.show();
@@ -77,6 +91,7 @@ class _LsKeycardScreenState extends State<LsKeycardScreen> {
   }
 
   Future<void> _loadKeycards() async {
+    if (widget.demo) return;
     if (_isLoadingKeycards) return;
 
     setState(() {

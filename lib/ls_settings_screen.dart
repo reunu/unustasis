@@ -10,7 +10,10 @@ import 'service/ble_commands.dart';
 import 'state/vehicle_status.dart';
 
 class LsSettingsScreen extends StatefulWidget {
-  const LsSettingsScreen({super.key});
+  /// When true, shows fake settings values for app store screenshots instead
+  /// of reading real data from the scooter.
+  final bool demo;
+  const LsSettingsScreen({this.demo = false, super.key});
 
   @override
   State<LsSettingsScreen> createState() => _LsSettingsScreenState();
@@ -28,6 +31,12 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.demo) {
+      _autoLockDuration = 300;
+      _autoHibernateDuration = 604800;
+      _keycardCount = 2;
+      return;
+    }
     // Defer until after the first frame so that we have a valid context with
     // the ScooterService available via Provider.
     WidgetsBinding.instance.addPostFrameCallback((_) => _getKeycardCount());
@@ -296,10 +305,11 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
               : FlutterI18n.translate(context, "ls_settings_keycards_loading")),
           trailing: Icon(Icons.chevron_right),
           onTap: () {
-            Navigator.push(context, MaterialPageRoute(builder: (context) => LsKeycardScreen()));
+            Navigator.push(context, MaterialPageRoute(builder: (context) => LsKeycardScreen(demo: widget.demo)));
           },
         ),
-        if (context.read<ScooterService>().connected &&
+        if (!widget.demo &&
+            context.read<ScooterService>().connected &&
             context.read<ScooterService>().characteristicRepository.otaAvailable)
           ListTile(
             leading: Icon(Icons.system_update_alt_outlined),

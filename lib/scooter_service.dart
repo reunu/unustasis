@@ -54,6 +54,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   BluetoothDevice? myScooter; // reserved for a connected scooter!
   NavDestination? _pendingNavigation;
   bool _foundSth = false; // whether we've found a scooter yet
+  bool demoMode = false; // whether we're showing fake data for app store screenshots
   bool _autoRestarting = false;
   String? _targetScooterId; // specific scooter ID to connect to during auto-restart
   bool _autoUnlockCooldown = false;
@@ -193,6 +194,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   void addDemoData() {
     _autoRestarting = false;
     _foundSth = true;
+    demoMode = true;
     flutterBluePlus.stopScan();
     savedScooters = {
       "12345": SavedScooter(
