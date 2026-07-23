@@ -131,7 +131,7 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       navigatorKey: navigatorKey,
-      title: 'unustasis',
+      title: 'stasis for unu',
       theme: ThemeData(
         appBarTheme: const AppBarTheme(
           centerTitle: true,
