@@ -173,6 +173,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     identity.color = mostRecentScooter?.color;
     identity.lastLocation = mostRecentScooter?.lastLocation;
     identity.isLibrescoot = mostRecentScooter?.isLibrescoot;
+    identity.supportsHibernateFor = mostRecentScooter?.supportsHibernateFor;
     vehicle.handlebarsLocked = mostRecentScooter?.handlebarsLocked;
 
     // Load pending navigation from persistent storage
@@ -393,6 +394,9 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       // Set up this scooter as ours
       myScooter = attemptedScooter;
       identity.resetLsCapabilities();
+      // fall back to the cached capability until the probe resolves again
+      identity.supportsHibernateFor =
+          savedScooters[attemptedScooter.remoteId.toString()]?.supportsHibernateFor;
       _lsProbeGeneration++;
       addSavedScooter(myScooter!.remoteId.toString());
 
@@ -670,6 +674,11 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     }
     if (generation != _lsProbeGeneration) return;
     identity.supportsHibernateFor = supportsHibernateFor;
+    // cache the capability so the next session doesn't wait for the probe
+    final probedScooterId = myScooter?.remoteId.toString();
+    if (probedScooterId != null && savedScooters.containsKey(probedScooterId)) {
+      savedScooters[probedScooterId]!.supportsHibernateFor = supportsHibernateFor;
+    }
     notifyListeners();
 
     bool? supportsScheduledHibernation;

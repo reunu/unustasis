@@ -191,39 +191,64 @@ class _ControlSheetState extends State<ControlSheet> with TickerProviderStateMix
               ),
               SizedBox(width: 16),
               Expanded(
-                child: TextButton.icon(
-                  style: TextButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.onSurface,
-                    foregroundColor: Theme.of(context).colorScheme.surface,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  onPressed: () async {
-                    final service = context.read<ScooterService>();
-                    if (service.identity.supportsHibernateFor == true) {
-                      final done = await showModalBottomSheet<bool>(
-                        context: context,
-                        showDragHandle: true,
-                        isScrollControlled: true,
-                        builder: (context) => const HibernateSheet(),
-                      );
-                      if (!context.mounted) return;
-                      // also close if the scooter disconnected while the sheet
-                      // was open: the disconnect listener above will have
-                      // popped the sheet instead of this control sheet
-                      if (done == true || !service.connected) {
-                        Navigator.of(context).pop();
-                      }
-                    } else {
-                      try {
-                        service.hibernate();
-                        Navigator.of(context).pop();
-                      } catch (e) {
-                        Fluttertoast.showToast(msg: e.toString());
-                      }
-                    }
+                child: Selector<ScooterService, bool?>(
+                  selector: (context, s) => s.identity.supportsHibernateFor,
+                  builder: (context, supportsHibernateFor, _) {
+                    // capability not probed yet: block the button so an
+                    // instant hibernate can't slip through before we know
+                    // whether a wake timer can be scheduled
+                    final probing = supportsHibernateFor == null;
+                    return TextButton.icon(
+                      style: TextButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.onSurface,
+                        foregroundColor: Theme.of(context).colorScheme.surface,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      onPressed: probing
+                          ? null
+                          : () async {
+                              final service = context.read<ScooterService>();
+                              if (supportsHibernateFor == true) {
+                                final done = await showModalBottomSheet<bool>(
+                                  context: context,
+                                  showDragHandle: true,
+                                  isScrollControlled: true,
+                                  builder: (context) => const HibernateSheet(),
+                                );
+                                if (!context.mounted) return;
+                                // also close if the scooter disconnected while the sheet
+                                // was open: the disconnect listener above will have
+                                // popped the sheet instead of this control sheet
+                                if (done == true || !service.connected) {
+                                  Navigator.of(context).pop();
+                                }
+                              } else {
+                                try {
+                                  service.hibernate();
+                                  Navigator.of(context).pop();
+                                } catch (e) {
+                                  Fluttertoast.showToast(msg: e.toString());
+                                }
+                              }
+                            },
+                      label: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(FlutterI18n.translate(context, "controls_hibernate")),
+                          if (probing) ...[
+                            const SizedBox(width: 8),
+                            const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ],
+                        ],
+                      ),
+                      icon: const Icon(Icons.nightlight_outlined),
+                    );
                   },
-                  label: Text(FlutterI18n.translate(context, "controls_hibernate")),
-                  icon: const Icon(Icons.nightlight_outlined),
                 ),
               ),
             ],
