@@ -133,6 +133,26 @@ Future<String?> _sendLsExtendedCommandUnguarded(
   }
 }
 
+/// Queries the installed OS version of [component] ("mdb" or "dbc") via the
+/// extended channel (`status:version:<component>`). Returns the raw version
+/// string — "unknown" when the scooter has no record (e.g. the dashboard
+/// never booted) — or null on timeout, unexpected replies, or firmware that
+/// predates the command.
+Future<String?> getInstalledVersionCommand(
+  BluetoothDevice? scooter,
+  CharacteristicRepository repo,
+  String component,
+) async {
+  final response = await sendLsExtendedCommand(scooter, repo, "status:version:$component");
+  if (response == null) return null;
+  final prefix = "status:version:$component:";
+  if (!response.startsWith(prefix)) {
+    log.warning("Unexpected version response for $component: $response");
+    return null;
+  }
+  return response.substring(prefix.length);
+}
+
 /// Sends a power command to a scooter by ID, connecting first if needed.
 Future<void> sendStaticPowerCommand(String id, String command) async {
   BluetoothDevice scooter = BluetoothDevice.fromId(id);

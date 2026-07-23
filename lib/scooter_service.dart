@@ -377,6 +377,18 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
         await attemptedScooter.createBond(timeout: 30);
         log.info("Bond established");
       }
+      if (Platform.isAndroid) {
+        // higher MTU and connection priority: required for reasonable OTA
+        // transfer throughput, harmless otherwise. iOS negotiates its MTU
+        // automatically and does not expose a priority request.
+        try {
+          await attemptedScooter.requestMtu(247);
+          await attemptedScooter.requestConnectionPriority(
+              connectionPriorityRequest: ConnectionPriority.high);
+        } catch (e) {
+          log.warning("MTU/priority negotiation failed (continuing): $e");
+        }
+      }
       log.info("Connected to ${attemptedScooter.remoteId}");
       // Set up this scooter as ours
       myScooter = attemptedScooter;
