@@ -8,7 +8,7 @@
 			<string>de.freal.unustasis.background</string>
 		</array>
 		<key>CADisableMinimumFrameDurationOnPhone</key>
-		<true />
+		<true/>
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>
@@ -30,7 +30,7 @@
 		<key>CFBundleVersion</key>
 		<string>$(FLUTTER_BUILD_NUMBER)</string>
 		<key>ITSAppUsesNonExemptEncryption</key>
-		<false />
+		<false/>
 		<key>LSApplicationQueriesSchemes</key>
 		<array>
 			<string>com.unumotors.app</string>
@@ -49,7 +49,7 @@
 			</dict>
 		</array>
 		<key>LSRequiresIPhoneOS</key>
-		<true />
+		<true/>
 		<key>NFCReaderUsageDescription</key>
 		<string>NFC is required to read data from batteries directly</string>
 		<key>NSBluetoothAlwaysUsageDescription</key>
@@ -67,10 +67,9 @@
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>Location is required to remember where your scooter was last seen</string>
 		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-		<string>Location is required to remember where your scooter was last seen and to provide
-			location-based features in the background</string>
+		<string>Location is required to remember where your scooter was last seen and to provide location-based features in the background</string>
 		<key>UIApplicationSupportsIndirectInputEvents</key>
-		<true />
+		<true/>
 		<key>UIBackgroundModes</key>
 		<array>
 			<string>fetch</string>
@@ -83,7 +82,7 @@
 		<key>UIMainStoryboardFile</key>
 		<string>Main</string>
 		<key>UIStatusBarHidden</key>
-		<false />
+		<false/>
 		<key>UISupportedInterfaceOrientations</key>
 		<array>
 			<string>UIInterfaceOrientationPortrait</string>
