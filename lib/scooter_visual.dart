@@ -33,6 +33,11 @@ class ScooterVisual extends StatefulWidget {
   State<ScooterVisual> createState() => _ScooterVisualState();
 }
 
+// All scooter layers (base, light ring, beam, seasonal overlays) share these
+// dimensions. Pinning the stack to this ratio keeps every layer at its final
+// size from the first frame, instead of growing in as each asset decodes.
+const double _scooterAspectRatio = 866 / 1800;
+
 class _ScooterVisualState extends State<ScooterVisual> {
   // controls whether the light ring is flickering:
   // when true the ring is considered hidden (flickering), when false it's visible
@@ -192,68 +197,72 @@ class _ScooterVisualState extends State<ScooterVisual> {
           padding: const EdgeInsets.all(16.0),
           child: SizedBox(
             width: MediaQuery.of(context).size.width * 0.55,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                AnimatedCrossFade(
-                  duration: const Duration(milliseconds: 500),
-                  firstChild: Shimmer.fromColors(
-                    baseColor: context.isDarkMode ? Colors.black : Colors.black45,
-                    highlightColor: widget.scanning
-                        ? Colors.transparent
-                        : context.isDarkMode
-                            ? Colors.black
-                            : Colors.black45,
-                    enabled: widget.scanning,
-                    direction: ShimmerDirection.ltr,
-                    period: const Duration(seconds: 2),
-                    child: const Image(
-                      image: AssetImage("images/scooter/disconnected.webp"),
+            child: AspectRatio(
+              aspectRatio: _scooterAspectRatio,
+              child: Stack(
+                alignment: Alignment.center,
+                fit: StackFit.expand,
+                children: [
+                  AnimatedCrossFade(
+                    duration: const Duration(milliseconds: 500),
+                    firstChild: Shimmer.fromColors(
+                      baseColor: context.isDarkMode ? Colors.black : Colors.black45,
+                      highlightColor: widget.scanning
+                          ? Colors.transparent
+                          : context.isDarkMode
+                              ? Colors.black
+                              : Colors.black45,
+                      enabled: widget.scanning,
+                      direction: ShimmerDirection.ltr,
+                      period: const Duration(seconds: 2),
+                      child: const Image(
+                        image: AssetImage("images/scooter/disconnected.webp"),
+                      ),
                     ),
-                  ),
-                  secondChild: Opacity(
-                    opacity: 1,
-                    child: Image(
+                    secondChild: Image(
+                      // keep showing the previous scooter while the new color decodes
+                      gaplessPlayback: true,
                       image: AssetImage(
                         "images/scooter/base_${widget.aprilFools ? 9 : widget.color ?? 1}.webp",
                       ),
                     ),
-                  ),
-                  crossFadeState:
-                      widget.state == ScooterState.disconnected ? CrossFadeState.showFirst : CrossFadeState.showSecond,
-                ),
-                if (widget.winter && widget.state != ScooterState.disconnected)
-                  AnimatedCrossFade(
-                    duration: const Duration(milliseconds: 500),
-                    firstChild: const Image(
-                      image: AssetImage(
-                        "images/scooter/seasonal/winter_on.webp",
-                      ),
-                    ),
-                    secondChild: const Image(
-                      image: AssetImage(
-                        "images/scooter/seasonal/winter_off.webp",
-                      ),
-                    ),
-                    crossFadeState: widget.state != null && widget.state!.isOn
+                    crossFadeState: widget.state == ScooterState.disconnected
                         ? CrossFadeState.showFirst
                         : CrossFadeState.showSecond,
                   ),
-                AnimatedOpacity(
-                  opacity: (widget.state != null && widget.state!.isOn) ? (_ringFlickering ? 0.5 : 1.0) : 0.0,
-                  duration: _ringOpacityDuration,
-                  child: const Image(
-                    image: AssetImage("images/scooter/light_ring.webp"),
+                  if (widget.winter && widget.state != ScooterState.disconnected)
+                    AnimatedCrossFade(
+                      duration: const Duration(milliseconds: 500),
+                      firstChild: const Image(
+                        image: AssetImage(
+                          "images/scooter/seasonal/winter_on.webp",
+                        ),
+                      ),
+                      secondChild: const Image(
+                        image: AssetImage(
+                          "images/scooter/seasonal/winter_off.webp",
+                        ),
+                      ),
+                      crossFadeState: widget.state != null && widget.state!.isOn
+                          ? CrossFadeState.showFirst
+                          : CrossFadeState.showSecond,
+                    ),
+                  AnimatedOpacity(
+                    opacity: (widget.state != null && widget.state!.isOn) ? (_ringFlickering ? 0.5 : 1.0) : 0.0,
+                    duration: _ringOpacityDuration,
+                    child: const Image(
+                      image: AssetImage("images/scooter/light_ring.webp"),
+                    ),
                   ),
-                ),
-                AnimatedOpacity(
-                  opacity: widget.state == ScooterState.ready ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 1000),
-                  child: const Image(
-                    image: AssetImage("images/scooter/light_beam.webp"),
+                  AnimatedOpacity(
+                    opacity: widget.state == ScooterState.ready ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 1000),
+                    child: const Image(
+                      image: AssetImage("images/scooter/light_beam.webp"),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
