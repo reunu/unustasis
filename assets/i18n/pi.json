@@ -472,6 +472,7 @@
     "connection_status_desc_both": "Connected by BLE and message in a bottle",
     "cloud_linked_to": "Tied to the cloud",
     "cloud_not_linked": "Not tied to the cloud",
+    "cloud_link_hint": "Bind this vessel to yer fleet to command her from afar",
     "cloud_link_button": "Tie the knot",
     "cloud_unlink_button": "Cut loose",
     "cloud_no_scooters": "No ships available in the cloud fleet",

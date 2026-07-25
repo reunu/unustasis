@@ -491,6 +491,7 @@
     "connection_status_desc_both": "Connecté via Bluetooth et le cloud",
     "cloud_linked_to": "Lié au cloud",
     "cloud_not_linked": "Non lié au cloud",
+    "cloud_link_hint": "Associez ce scooter pour le contrôler sans Bluetooth",
     "cloud_link_button": "Lier",
     "cloud_unlink_button": "Délier",
     "cloud_no_scooters": "Aucun scooter cloud disponible",

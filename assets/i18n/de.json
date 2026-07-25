@@ -492,6 +492,7 @@
     "connection_status_desc_both": "Über Bluetooth und Cloud verbunden",
     "cloud_linked_to": "Mit Cloud verknüpft",
     "cloud_not_linked": "Nicht mit Cloud verknüpft",
+    "cloud_link_hint": "Verknüpfe diesen Roller, um ihn ohne Bluetooth zu steuern",
     "cloud_link_button": "Verknüpfen",
     "cloud_unlink_button": "Trennen",
     "cloud_no_scooters": "Keine Cloud-Roller verfügbar",

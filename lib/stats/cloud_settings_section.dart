@@ -3,9 +3,11 @@ import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 
+import '../domain/saved_scooter.dart';
 import '../features.dart';
 import '../helper_widgets/header.dart';
 import '../scooter_service.dart';
+import 'scooter_screen.dart';
 
 class CloudSettingsSection extends StatefulWidget {
   const CloudSettingsSection({super.key});
@@ -114,6 +116,11 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
     }
   }
 
+  Future<SavedScooter?> _scooterToLink() async {
+    final service = context.read<ScooterService>();
+    return service.currentScooter ?? await service.getMostRecentScooter();
+  }
+
   Future<void> _openCloudDashboard() async {
     try {
       final cloudService = context.read<ScooterService>().cloudService;
@@ -188,6 +195,29 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
                     subtitle: Text(FlutterI18n.translate(context, "cloud_dashboard_description")),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: _openCloudDashboard,
+                  ),
+                  // Signing in is only half the setup, and nothing else says so.
+                  FutureBuilder<SavedScooter?>(
+                    future: _scooterToLink(),
+                    builder: (context, snapshot) {
+                      final scooter = snapshot.data;
+                      if (scooter == null) return const SizedBox.shrink();
+                      final linked = scooter.cloudScooterId != null;
+                      return ListTile(
+                        leading: Icon(linked ? Icons.cloud_done_outlined : Icons.cloud_off_outlined),
+                        title: Text(FlutterI18n.translate(context, linked ? "cloud_linked_to" : "cloud_not_linked")),
+                        subtitle: Text(
+                          linked
+                              ? (scooter.cloudScooterName ?? scooter.name)
+                              : FlutterI18n.translate(context, "cloud_link_hint"),
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const ScooterScreen()),
+                        ),
+                      );
+                    },
                   ),
                 ],
               );
