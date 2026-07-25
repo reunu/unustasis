@@ -27,7 +27,7 @@ void main() {
 
     test('power state wins when the iMX6 is not usable', () {
       // sunshine reports the vehicle state it last saw, which is stale while
-      // the scooter is hibernating — the power state is what matters
+      // the scooter is hibernating, so the power state is what matters
       expect(
         scooterStateFromCloudData(payload(vehicleState: 'stand-by', powerState: 'hibernating')),
         ScooterState.hibernating,
