@@ -1146,7 +1146,11 @@ Add the method next to `setPendingNavigation`:
     }
   }
 
-  /// Clears the scooter's navigation target over whichever channel is up.
+  /// Clears the scooter's active navigation target over whichever channel is up.
+  ///
+  /// Only for a target the scooter is actually navigating to. A destination
+  /// still queued on our side is dropped with setPendingNavigation(null) by the
+  /// caller, which needs no channel at all.
   Future<void> cancelNavigation() async {
     _ensureCloudServicesInitialized();
     final scooter = currentScooter;
@@ -1165,7 +1169,9 @@ Add the method next to `setPendingNavigation`:
           throw Exception("Failed to clear destination via cloud");
         }
       case NavChannel.pending:
-        await setPendingNavigation(null);
+        // Nothing to send the cancel over. The scooter keeps its target until a
+        // channel comes back, which matches the old BLE-only behaviour.
+        log.warning("No channel available to cancel navigation");
     }
   }
 ```
@@ -1215,19 +1221,48 @@ Replace the body of `_navigateToFav`:
   }
 ```
 
-- [ ] **Step 5: Verify**
+- [ ] **Step 5: Route the two cancel call sites through it**
+
+`_navigationStatusCard` in `lib/navigation_screen.dart` calls `cancelNavigationCommand` directly in two places, once in `onDismissed` and once in the trailing close button's `onPressed`. Both read:
+
+```dart
+                if (isNavigating) {
+                  cancelNavigationCommand(
+                    service.myScooter,
+                    service.characteristicRepository,
+                  );
+                } else {
+                  service.setPendingNavigation(null);
+                }
+```
+
+Replace both occurrences with:
+
+```dart
+                if (isNavigating) {
+                  service.cancelNavigation();
+                } else {
+                  service.setPendingNavigation(null);
+                }
+```
+
+Keep the `isNavigating` branch. `cancelNavigation()` picks a channel; it does not know whether the destination is live on the scooter or still queued here, and dropping a queued one needs no channel.
+
+Note the indentation differs between the two sites (the `onDismissed` copy is two levels shallower). Match the surrounding code at each.
+
+- [ ] **Step 6: Verify**
 
 Run: `cd /home/teal/src/reunu/unustasis-cloud && flutter analyze`
-Expected: `2 issues found`.
+Expected: `2 issues found`. In particular, `cancelNavigationCommand` should no longer be referenced in `navigation_screen.dart`; if the import of `ble_commands.dart` becomes unused, remove it.
 
 Run: `flutter test`
 Expected: All tests passed.
 
-- [ ] **Step 6: Manual verification**
+- [ ] **Step 7: Manual verification**
 
 With a cloud-linked scooter, Bluetooth off, and the scooter online in sunshine: pick a destination in the navigation screen. Expected: the destination reaches the scooter without waiting for a BLE connection, and the log shows `Cloud destination set for scooter <id>`. With both Bluetooth and cloud unavailable, it still queues as pending and dispatches on the next BLE connection, as before.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
 cd /home/teal/src/reunu/unustasis-cloud
