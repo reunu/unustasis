@@ -455,6 +455,62 @@ class CloudService {
     }
   }
 
+  /// Sets the scooter's navigation target. Sunshine forwards it as a `navigate`
+  /// command, so this reaches the scooter the same way a BLE `nav:dest` does.
+  Future<bool> setDestination(int scooterId, double latitude, double longitude, {String? name}) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final body = <String, dynamic>{
+        'latitude': latitude,
+        'longitude': longitude,
+        if (name != null && name.isNotEmpty) 'address': name,
+      };
+
+      final response = await http.put(
+        Uri.parse('$_baseUrl/scooters/$scooterId/destination'),
+        headers: headers,
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200) {
+        log.info('Cloud destination set for scooter $scooterId');
+        return true;
+      } else if (response.statusCode == 401) {
+        await logout();
+        throw Exception('Authentication expired');
+      }
+      log.warning('Failed to set cloud destination: ${response.statusCode} ${_errorMessage(response.body)}');
+      return false;
+    } catch (e, stack) {
+      log.severe('Failed to set cloud destination for scooter $scooterId', e, stack);
+      return false;
+    }
+  }
+
+  /// Clears the scooter's navigation target.
+  Future<bool> clearDestination(int scooterId) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final response = await http.delete(
+        Uri.parse('$_baseUrl/scooters/$scooterId/destination'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        log.info('Cloud destination cleared for scooter $scooterId');
+        return true;
+      } else if (response.statusCode == 401) {
+        await logout();
+        throw Exception('Authentication expired');
+      }
+      log.warning('Failed to clear cloud destination: ${response.statusCode} ${_errorMessage(response.body)}');
+      return false;
+    } catch (e, stack) {
+      log.severe('Failed to clear cloud destination for scooter $scooterId', e, stack);
+      return false;
+    }
+  }
+
   // Scooter Assignment Management
   Future<void> assignScooterToDevice(int cloudScooterId, String deviceId, {String? cloudScooterName}) async {
     final scooter = scooterService.savedScooters[deviceId];

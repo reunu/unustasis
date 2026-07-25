@@ -17,6 +17,7 @@ import '../background/widget_handler.dart';
 import '../domain/connection_status.dart';
 import '../domain/statistics_helper.dart';
 import '../domain/scooter_battery.dart';
+import '../domain/nav_channel.dart';
 import '../domain/nav_destination.dart';
 import '../domain/saved_scooter.dart';
 import '../domain/scooter_state.dart';
@@ -279,6 +280,73 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       await prefs.remove('pendingNavigation');
     }
     notifyListeners();
+  }
+
+  /// Sends [destination] to the scooter over whichever channel is up.
+  ///
+  /// [favouriteId] is the scooter-side favourite id, when the destination came
+  /// from the scooter's own favourites list. It only works over BLE: the
+  /// favourite lives on the scooter and sunshine has no verb for it. Every other
+  /// channel sends coordinates and a name, which is the only thing both systems
+  /// agree on.
+  Future<void> sendNavigation(NavDestination destination, {String? favouriteId}) async {
+    _ensureCloudServicesInitialized();
+    final scooter = currentScooter;
+    final channel = navChannelFor(
+      bleReady: _bleReady,
+      cloudLinked: scooter?.cloudScooterId != null,
+      cloudOnline: _isCloudOnline,
+    );
+
+    switch (channel) {
+      case NavChannel.ble:
+        if (favouriteId != null) {
+          await commands.navigateFavCommand(myScooter, characteristicRepository, favouriteId);
+        } else {
+          await commands.navigateCommand(myScooter, characteristicRepository, destination);
+        }
+      case NavChannel.cloud:
+        final ok = await _cloudService!.setDestination(
+          scooter!.cloudScooterId!,
+          destination.location.latitude,
+          destination.location.longitude,
+          name: destination.name,
+        );
+        if (!ok) {
+          throw Exception("Failed to send destination via cloud");
+        }
+      case NavChannel.pending:
+        await setPendingNavigation(destination);
+    }
+  }
+
+  /// Clears the scooter's active navigation target over whichever channel is up.
+  ///
+  /// Only for a target the scooter is actually navigating to. A destination
+  /// still queued on our side is dropped with setPendingNavigation(null) by the
+  /// caller, which needs no channel at all.
+  Future<void> cancelNavigation() async {
+    _ensureCloudServicesInitialized();
+    final scooter = currentScooter;
+    final channel = navChannelFor(
+      bleReady: _bleReady,
+      cloudLinked: scooter?.cloudScooterId != null,
+      cloudOnline: _isCloudOnline,
+    );
+
+    switch (channel) {
+      case NavChannel.ble:
+        await commands.cancelNavigationCommand(myScooter, characteristicRepository);
+      case NavChannel.cloud:
+        final ok = await _cloudService!.clearDestination(scooter!.cloudScooterId!);
+        if (!ok) {
+          throw Exception("Failed to clear destination via cloud");
+        }
+      case NavChannel.pending:
+        // Nothing to send the cancel over. The scooter keeps its target until a
+        // channel comes back, which matches the old BLE-only behaviour.
+        log.warning("No channel available to cancel navigation");
+    }
   }
 
   Future<void> _dispatchPendingNavigation() async {
