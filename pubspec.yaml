@@ -17,7 +17,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
 # this project uses Pride Versioning: https://pridever.org/
-version: 2.0.0-rc3+39
+version: 2.0.0+40
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
@@ -48,6 +48,7 @@ dependencies:
   flutter_nfc_kit: ^3.6.2
   package_info_plus: ^8.2.1
   http: ^1.2.1
+  crypto: ^3.0.3
   local_auth: ^2.2.0
   url_launcher: ^6.2.6
   maps_launcher: ^3.0.0
@@ -67,7 +68,6 @@ dependencies:
   pausable_timer: ^3.1.0+3
   flutter_secure_storage: ^9.2.2
   app_links: ^6.3.2
-  crypto: ^3.0.3
   workmanager:
     git:
       url: https://github.com/fluttercommunity/flutter_workmanager.git

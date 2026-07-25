@@ -172,7 +172,7 @@ struct ScooterWidgetSmallView: View {
         ZStack(alignment: .topLeading) {
             VStack(alignment: .leading, spacing: 6) {
                 // Scooter name and last ping
-                Text(entry.lastPingText ?? "unustasis")
+                Text(entry.lastPingText ?? "stasis for unu")
                     .font(.system(size: 12, weight: .regular))
                     .multilineTextAlignment(.leading)
                     .foregroundColor(Color.secondary)

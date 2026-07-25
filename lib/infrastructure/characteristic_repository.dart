@@ -35,6 +35,12 @@ class CharacteristicRepository {
   late BluetoothCharacteristic? extendedCommandCharacteristic;
   late BluetoothCharacteristic? extendedResponseCharacteristic;
 
+  // OTA firmware transfer (librescoot firmware with the 0x0500 service only);
+  // non-late so they are simply null on firmware without OTA support
+  BluetoothCharacteristic? otaDataCharacteristic;
+  BluetoothCharacteristic? otaControlCharacteristic;
+  BluetoothCharacteristic? otaStatusCharacteristic;
+
   CharacteristicRepository(this.scooter);
 
   Future<void> findAll({bool additionalLibrescootFeatures = false}) async {
@@ -92,9 +98,19 @@ class CharacteristicRepository {
           findCharacteristic(scooter, "9a590400-6e67-5d0d-aab9-ad9126b66f91", "9a590401-6e67-5d0d-aab9-ad9126b66f91");
       extendedResponseCharacteristic =
           findCharacteristic(scooter, "9a590400-6e67-5d0d-aab9-ad9126b66f91", "9a590402-6e67-5d0d-aab9-ad9126b66f91");
+      otaDataCharacteristic =
+          findCharacteristic(scooter, "9a590500-6e67-5d0d-aab9-ad9126b66f91", "9a590501-6e67-5d0d-aab9-ad9126b66f91");
+      otaControlCharacteristic =
+          findCharacteristic(scooter, "9a590500-6e67-5d0d-aab9-ad9126b66f91", "9a590502-6e67-5d0d-aab9-ad9126b66f91");
+      otaStatusCharacteristic =
+          findCharacteristic(scooter, "9a590500-6e67-5d0d-aab9-ad9126b66f91", "9a590503-6e67-5d0d-aab9-ad9126b66f91");
     }
     return;
   }
+
+  /// Whether the connected firmware exposes the OTA transfer service.
+  bool get otaAvailable =>
+      otaDataCharacteristic != null && otaControlCharacteristic != null && otaStatusCharacteristic != null;
 
   bool anyAreNull() {
     return stateCharacteristic == null ||

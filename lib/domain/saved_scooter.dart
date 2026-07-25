@@ -25,6 +25,7 @@ class SavedScooter {
   String? _lastAddress;
   bool? _handlebarsLocked;
   bool? _isLibrescoot;
+  bool? _supportsHibernateFor;
   List<NavDestination>? _cachedDestinations;
   int? _cloudScooterId;
   String? _cloudScooterName;
@@ -45,6 +46,7 @@ class SavedScooter {
     String? lastAddress,
     bool? handlebarsLocked,
     bool? isLibrescoot,
+    bool? supportsHibernateFor,
     List<NavDestination>? cachedDestinations,
     int? cloudScooterId,
     String? cloudScooterName,
@@ -63,6 +65,7 @@ class SavedScooter {
         _lastAddress = lastAddress,
         _handlebarsLocked = handlebarsLocked,
         _isLibrescoot = isLibrescoot,
+        _supportsHibernateFor = supportsHibernateFor,
         _cachedDestinations = cachedDestinations,
         _cloudScooterId = cloudScooterId,
         _cloudScooterName = cloudScooterName;
@@ -140,6 +143,11 @@ class SavedScooter {
     updateSharedPreferences();
   }
 
+  set supportsHibernateFor(bool? supportsHibernateFor) {
+    _supportsHibernateFor = supportsHibernateFor;
+    updateSharedPreferences();
+  }
+
   set cachedDestinations(List<NavDestination>? cachedDestinations) {
     _cachedDestinations = cachedDestinations;
     updateSharedPreferences();
@@ -179,6 +187,7 @@ class SavedScooter {
   String? get lastAddress => _lastAddress;
   bool? get handlebarsLocked => _handlebarsLocked;
   bool? get isLibrescoot => _isLibrescoot;
+  bool? get supportsHibernateFor => _supportsHibernateFor;
   List<NavDestination>? get cachedDestinations => _cachedDestinations;
   int? get cloudScooterId => _cloudScooterId;
   String? get cloudScooterName => _cloudScooterName;
@@ -211,6 +220,7 @@ class SavedScooter {
         'lastAddress': _lastAddress,
         'handlebarsLocked': _handlebarsLocked,
         'isLibrescoot': _isLibrescoot,
+        'supportsHibernateFor': _supportsHibernateFor,
         'cachedDestinations': _cachedDestinations?.map((d) => d.toJson()).toList(),
         'cloudScooterId': _cloudScooterId,
         'cloudScooterName': _cloudScooterName,
@@ -236,6 +246,7 @@ class SavedScooter {
       lastAuxSOC: map['lastAuxSOC'],
       handlebarsLocked: map['handlebarsLocked'],
       isLibrescoot: map['isLibrescoot'],
+      supportsHibernateFor: map['supportsHibernateFor'],
       cachedDestinations: (map['cachedDestinations'] as List<dynamic>?)
           ?.map((e) => NavDestination.fromJson(e as Map<String, dynamic>))
           .toList(),

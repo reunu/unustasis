@@ -3,6 +3,7 @@ import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:provider/provider.dart';
 
 import 'ls_keycard_screen.dart';
+import 'ls_ota_screen.dart';
 import 'ls_scheduled_hibernation_screen.dart';
 import 'scooter_service.dart';
 import 'service/ble_commands.dart';
@@ -298,6 +299,17 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
             Navigator.push(context, MaterialPageRoute(builder: (context) => LsKeycardScreen()));
           },
         ),
+        if (context.read<ScooterService>().connected &&
+            context.read<ScooterService>().characteristicRepository.otaAvailable)
+          ListTile(
+            leading: Icon(Icons.system_update_alt_outlined),
+            title: Text(FlutterI18n.translate(context, "ls_settings_ota_title")),
+            subtitle: Text(FlutterI18n.translate(context, "ls_settings_ota_subtitle")),
+            trailing: Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => LsOtaScreen()));
+            },
+          ),
         Container() // To force another divider after the last item
       ];
 

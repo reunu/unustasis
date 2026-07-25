@@ -176,7 +176,7 @@ class _SupportScreenState extends State<SupportScreen> {
               onTap: () {
                 showLicensePage(
                   context: context,
-                  applicationName: packageInfo.hasData ? packageInfo.data!.appName : "unustasis",
+                  applicationName: packageInfo.hasData ? packageInfo.data!.appName : "stasis for unu",
                   applicationVersion: packageInfo.hasData ? packageInfo.data!.version : "?.?.?",
                 );
               },

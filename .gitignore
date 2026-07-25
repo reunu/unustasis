@@ -49,3 +49,6 @@ app.*.map.json
 *.mocks.dart
 
 scripts/
+
+# FVM Version Cache
+.fvm/
