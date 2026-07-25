@@ -212,12 +212,19 @@ thinking about cloud setup, not a move.
 `scooterStateFromCloudData` established the pattern on this branch: pure functions
 over payload maps, tested without plugins. The same applies to the new logic:
 
-- `alarmActionsFor(alarmState)`, deciding which action a given state offers.
-- The availability predicate, once it no longer performs I/O.
-- Channel selection for navigation, given `_bleReady` and cloud-online inputs.
+- `alarmActionFor(alarmState)`, deciding which action a given state offers, and
+  `alarmStateI18nKey(alarmState)` for its label.
+- `navChannelFor(bleReady:, cloudLinked:, cloudOnline:)`, choosing the channel a
+  navigation destination travels over.
 
 The HTTP methods on `CloudService` stay untested, consistent with the rest of the
 file.
+
+The availability change in section 1 gets no unit test. It is a refactor whose
+only observable effect is fewer requests, and nothing in `CloudService` takes an
+injectable HTTP client, so there is no seam to assert against without building
+one. It is verified by the existing suite staying green and by reading the
+request log once, which the plan spells out as a manual step.
 
 ## Out of scope
 
