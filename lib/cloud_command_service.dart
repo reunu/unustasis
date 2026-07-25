@@ -80,6 +80,13 @@ class CloudCommandService implements CommandService {
       case CommandType.alarm:
       case CommandType.locate:
         return true;
+      // Disarming leaves the scooter unprotected, so it asks. Arming and
+      // silencing a siren are both safe to do straight away.
+      case CommandType.alarmDisarm:
+        return true;
+      case CommandType.alarmArm:
+      case CommandType.alarmStop:
+        return false;
       case CommandType.hibernate:
       case CommandType.blinkerLeft:
       case CommandType.blinkerRight:
@@ -115,6 +122,12 @@ class CloudCommandService implements CommandService {
         return 'honk';
       case CommandType.alarm:
         return 'alarm';
+      case CommandType.alarmArm:
+        return 'alarm_arm';
+      case CommandType.alarmDisarm:
+        return 'alarm_disarm';
+      case CommandType.alarmStop:
+        return 'alarm_stop';
       case CommandType.locate:
         return 'locate';
       case CommandType.ping:
@@ -153,6 +166,9 @@ class CloudCommandService implements CommandService {
       case CommandType.blinkerOff:
       case CommandType.honk:
       case CommandType.alarm:
+      case CommandType.alarmArm:
+      case CommandType.alarmDisarm:
+      case CommandType.alarmStop:
       case CommandType.locate:
       case CommandType.ping:
       case CommandType.getState:

@@ -409,6 +409,9 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     switch (command) {
       case CommandType.honk:
       case CommandType.alarm:
+      case CommandType.alarmArm:
+      case CommandType.alarmDisarm:
+      case CommandType.alarmStop:
       case CommandType.locate:
       case CommandType.ping:
       case CommandType.getState:
@@ -509,6 +512,12 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
         return FlutterI18n.translate(context, "cloud_command_honk");
       case CommandType.alarm:
         return FlutterI18n.translate(context, "cloud_command_alarm");
+      case CommandType.alarmArm:
+        return FlutterI18n.translate(context, "controls_alarm_arm");
+      case CommandType.alarmDisarm:
+        return FlutterI18n.translate(context, "controls_alarm_disarm");
+      case CommandType.alarmStop:
+        return FlutterI18n.translate(context, "controls_alarm_stop");
       case CommandType.blinkerLeft:
         return FlutterI18n.translate(context, "controls_blink_left");
       case CommandType.blinkerRight:
@@ -1205,6 +1214,24 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   Future<void> honk({BuildContext? context}) async {
     if (!await _executeCommand(CommandType.honk, context: context)) {
       throw Exception("Failed to honk");
+    }
+  }
+
+  Future<void> alarmArm({BuildContext? context}) async {
+    if (!await _executeCommand(CommandType.alarmArm, context: context)) {
+      throw Exception("Failed to arm alarm");
+    }
+  }
+
+  Future<void> alarmDisarm({BuildContext? context}) async {
+    if (!await _executeCommand(CommandType.alarmDisarm, context: context)) {
+      throw Exception("Failed to disarm alarm");
+    }
+  }
+
+  Future<void> alarmStop({BuildContext? context}) async {
+    if (!await _executeCommand(CommandType.alarmStop, context: context)) {
+      throw Exception("Failed to stop alarm");
     }
   }
 
