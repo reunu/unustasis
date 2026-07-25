@@ -78,6 +78,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   bool _cloudServicesInitialized = false;
   bool _isCloudOnline = false;
   bool _isCloudConnecting = false;
+  bool _isCloudAuthenticated = false;
   String? _cloudAlarmState;
   bool _cloudAlarmTriggered = false;
   Timer? _cloudStatusTimer;
@@ -474,6 +475,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
 
   bool get isCloudOnline => _isCloudOnline;
   bool get isCloudConnecting => _isCloudConnecting;
+  bool get isCloudAuthenticated => _isCloudAuthenticated;
   String? get cloudAlarmState => _cloudAlarmState;
   bool get cloudAlarmTriggered => _cloudAlarmTriggered;
 
@@ -714,6 +716,31 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
         scooter.lastCbbSOC = level;
       }
     }
+  }
+
+  /// Re-reads whether we hold a usable cloud token, and tells the UI.
+  Future<void> refreshCloudAuthState() async {
+    if (!await Features.isCloudConnectivityEnabled) {
+      _isCloudAuthenticated = false;
+      notifyListeners();
+      return;
+    }
+    _ensureCloudServicesInitialized();
+    _isCloudAuthenticated = await _cloudService!.isAuthenticated;
+    notifyListeners();
+  }
+
+  /// Completes the OAuth flow and republishes the auth state, so the settings
+  /// screen updates as soon as the browser hands control back instead of
+  /// waiting for the widget tree to be rebuilt from scratch.
+  Future<bool> handleOAuthCallback(Uri uri) async {
+    _ensureCloudServicesInitialized();
+    final success = await _cloudService!.handleOAuthCallback(uri);
+    await refreshCloudAuthState();
+    if (success) {
+      _maybeRefreshCloudStatus();
+    }
+    return success;
   }
 
   /// Kicks off a cloud status check for the current scooter, if it's cloud-linked.

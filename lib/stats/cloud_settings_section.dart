@@ -17,7 +17,6 @@ class CloudSettingsSection extends StatefulWidget {
 class _CloudSettingsSectionState extends State<CloudSettingsSection> {
   final log = Logger('CloudSettingsSection');
   bool _isCloudEnabled = false;
-  bool _isAuthenticated = false;
   bool _isLoading = false;
 
   @override
@@ -42,18 +41,13 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
 
     try {
       final cloudEnabled = await Features.isCloudConnectivityEnabled;
+      if (!mounted) return;
       setState(() {
         _isCloudEnabled = cloudEnabled;
       });
-
-      if (cloudEnabled && mounted) {
-        final cloudService = context.read<ScooterService>().cloudService;
-        final authenticated = await cloudService.isAuthenticated;
-        setState(() {
-          _isAuthenticated = authenticated;
-        });
-
-      }
+      // Auth state lives on ScooterService so the OAuth deep link can publish
+      // it; this widget reads it through a Selector in build().
+      await context.read<ScooterService>().refreshCloudAuthState();
     } catch (e, stack) {
       log.severe('Failed to load cloud status', e, stack);
     } finally {
@@ -106,9 +100,9 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
     });
 
     try {
-      final cloudService = context.read<ScooterService>().cloudService;
-      await cloudService.logout();
-      await _loadCloudStatus();
+      final service = context.read<ScooterService>();
+      await service.cloudService.logout();
+      await service.refreshCloudAuthState();
     } catch (e, stack) {
       log.severe('Failed to logout from cloud', e, stack);
     } finally {
@@ -165,29 +159,40 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
             height: 24,
             color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
           ),
-          if (!_isAuthenticated) ...[
-            ListTile(
-              leading: const Icon(Icons.login),
-              title: Text(FlutterI18n.translate(context, "cloud_connect")),
-              subtitle: Text(FlutterI18n.translate(context, "cloud_connect_description")),
-              onTap: _authenticateWithCloud,
-            ),
-          ] else ...[
-            ListTile(
-              leading: const Icon(Icons.cloud_done, color: Colors.green),
-              title: Text(FlutterI18n.translate(context, "cloud_connected")),
-              subtitle: Text(FlutterI18n.translate(context, "cloud_logout_description")),
-              trailing: const Icon(Icons.logout, color: Colors.red),
-              onTap: _logout,
-            ),
-            ListTile(
-              leading: const Icon(Icons.open_in_browser),
-              title: Text(FlutterI18n.translate(context, "cloud_dashboard")),
-              subtitle: Text(FlutterI18n.translate(context, "cloud_dashboard_description")),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: _openCloudDashboard,
-            ),
-          ],
+          // Auth state lives on ScooterService so the OAuth deep link can push it
+          // here without this widget being rebuilt from scratch.
+          Selector<ScooterService, bool>(
+            selector: (context, s) => s.isCloudAuthenticated,
+            builder: (context, isAuthenticated, _) {
+              if (!isAuthenticated) {
+                return ListTile(
+                  leading: const Icon(Icons.login),
+                  title: Text(FlutterI18n.translate(context, "cloud_connect")),
+                  subtitle: Text(FlutterI18n.translate(context, "cloud_connect_description")),
+                  onTap: _authenticateWithCloud,
+                );
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.cloud_done, color: Colors.green),
+                    title: Text(FlutterI18n.translate(context, "cloud_connected")),
+                    subtitle: Text(FlutterI18n.translate(context, "cloud_logout_description")),
+                    trailing: const Icon(Icons.logout, color: Colors.red),
+                    onTap: _logout,
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.open_in_browser),
+                    title: Text(FlutterI18n.translate(context, "cloud_dashboard")),
+                    subtitle: Text(FlutterI18n.translate(context, "cloud_dashboard_description")),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: _openCloudDashboard,
+                  ),
+                ],
+              );
+            },
+          ),
         ],
       ],
     );

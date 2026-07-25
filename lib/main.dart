@@ -152,7 +152,7 @@ class _MyAppState extends State<MyApp> {
     log.info('Received deep link: $uri');
     if (!mounted) return;
     if (uri.scheme == 'unustasis' && uri.host == 'oauth' && uri.path == '/callback') {
-      Provider.of<ScooterService>(context, listen: false).cloudService.handleOAuthCallback(uri).then((success) {
+      Provider.of<ScooterService>(context, listen: false).handleOAuthCallback(uri).then((success) {
         log.info(success ? 'OAuth callback handled successfully' : 'OAuth callback failed');
       });
     }

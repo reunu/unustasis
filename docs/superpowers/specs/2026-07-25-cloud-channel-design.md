@@ -201,7 +201,8 @@ explanation.
 
 Change: `CloudSettingsSection` gains a row, shown only once authenticated, giving
 the link state of `ScooterService.currentScooter`, falling back to
-`getMostRecentScooter()` when none is connected, with an action to link it. That
+`getMostRecentScooter()` when none is connected, with an action that opens the
+scooter screen where the linking control lives. That
 is the same resolution `navigation_screen._getCurrentSavedScooter` uses. The row
 is hidden when the user has no saved scooters at all. The per-scooter control
 stays where it is. This is a second entry point at the moment the user is
