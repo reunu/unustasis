@@ -58,6 +58,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   String? _targetScooterId; // specific scooter ID to connect to during auto-restart
   bool _autoUnlockCooldown = false;
   AppLifecycleState? _lastLifecycleState;
+  bool _wasBackgrounded = false;
 
   late Timer _locationTimer, _manualRefreshTimer;
   late PausableTimer rssiTimer;
@@ -1054,12 +1055,16 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
 
     log.info("App lifecycle state changed: $_lastLifecycleState -> $state");
 
-    // Check if app is returning to foreground from background
-    if (_lastLifecycleState != null &&
-        (_lastLifecycleState == AppLifecycleState.paused ||
-            _lastLifecycleState == AppLifecycleState.inactive ||
-            _lastLifecycleState == AppLifecycleState.hidden) &&
-        state == AppLifecycleState.resumed) {
+    // Only paused/hidden count as leaving the app. `inactive -> resumed` also
+    // happens without backgrounding (iOS cold start, biometric prompt, system
+    // dialogs) and used to fire a second start() that raced the initial
+    // connection attempt, leaving a redundant scan running for seconds.
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
+      _wasBackgrounded = true;
+    }
+
+    if (_wasBackgrounded && state == AppLifecycleState.resumed) {
+      _wasBackgrounded = false;
       log.info("App resumed from background - checking connection status");
       _handleAppResumedFromBackground();
     }
@@ -1067,14 +1072,24 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     _lastLifecycleState = state;
   }
 
+  bool get _connectionAttemptInFlight => scanning || _state == ScooterState.linking;
+
   void _handleAppResumedFromBackground() async {
-    // Only attempt reconnection if we have saved scooters and are not currently connected
-    if (savedScooters.isNotEmpty && !connected && !scanning) {
+    // Only attempt reconnection if we have saved scooters and no connection
+    // exists or is being established right now
+    if (savedScooters.isNotEmpty && !connected && !_connectionAttemptInFlight) {
       log.info("App resumed: attempting automatic reconnection");
 
       try {
         // Small delay to let the app settle
         await Future.delayed(const Duration(milliseconds: 500));
+
+        // Conditions may have changed while settling (e.g. an in-flight
+        // attempt from startup finished connecting in the meantime)
+        if (connected || _connectionAttemptInFlight) {
+          log.info("App resumed: connection (attempt) appeared while settling, not restarting");
+          return;
+        }
 
         // Try to reconnect to the last known scooter
         start();
