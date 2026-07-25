@@ -6,7 +6,41 @@ import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'domain/scooter_power_state.dart';
+import 'domain/scooter_state.dart';
+import 'domain/scooter_vehicle_state.dart';
 import 'scooter_service.dart';
+
+/// Derives an aggregate [ScooterState] from a Sunshine scooter payload.
+///
+/// Sunshine keeps the vehicle state and the power manager state apart, same as
+/// BLE does: hibernation only ever shows up in the power state, never in the
+/// vehicle state. Prefer the nested telemetry block, which carries both, and
+/// fall back to the flat legacy `state` field when telemetry is absent.
+ScooterState? scooterStateFromCloudData(Map<String, dynamic> data) {
+  final telemetry = data['telemetry'];
+  if (telemetry is Map) {
+    final vehicleState = telemetry['vehicle_state'];
+    final power = telemetry['power'];
+    final combined = ScooterState.fromVehicleAndPowerState(
+      ScooterVehicleState.fromString(vehicleState is Map ? vehicleState['state'] as String? : null),
+      ScooterPowerState.fromString(power is Map ? power['state'] as String? : null),
+    );
+    if (combined != null) return combined;
+  }
+
+  final legacy = data['state'];
+  if (legacy is String) {
+    // no power state to go on, so assume the iMX6 is up: that's the only way
+    // the scooter could have reported a vehicle state in the first place
+    return ScooterState.fromVehicleAndPowerState(
+      ScooterVehicleState.fromString(legacy),
+      ScooterPowerState.running,
+    );
+  }
+
+  return null;
+}
 
 /// Cloud service for Sunshine scooter management with OAuth 2.0 + PKCE authentication
 /// 
@@ -224,12 +258,30 @@ class CloudService {
     await _secureStorage.deleteAll();
   }
 
+  /// Pulls the human-readable part out of a Sunshine error response, which
+  /// wraps everything as {"error": {"code": ..., "message": ...}}. Falls back
+  /// to the raw body for anything that doesn't fit the envelope.
+  String _errorMessage(String body) {
+    try {
+      final decoded = jsonDecode(body);
+      final error = decoded is Map ? decoded['error'] : null;
+      if (error is Map) {
+        final message = error['message'];
+        final code = error['code'];
+        if (message != null) return code != null ? '$message ($code)' : '$message';
+      }
+    } catch (_) {
+      // not JSON, fall through to the raw body
+    }
+    return body;
+  }
+
   Future<Map<String, String>> _getAuthHeaders() async {
     final token = await _getValidAccessToken();
     if (token == null) {
       throw Exception('Not authenticated');
     }
-    
+
     return {
       'Authorization': 'Bearer $token',
       'Content-Type': 'application/json',
@@ -260,7 +312,7 @@ class CloudService {
         await logout();
         throw Exception('Authentication expired');
       } else {
-        throw Exception('Failed to fetch scooters: ${response.statusCode} ${response.body}');
+        throw Exception('Failed to fetch scooters: ${response.statusCode} ${_errorMessage(response.body)}');
       }
     } catch (e, stack) {
       log.severe('Failed to get cloud scooters', e, stack);
@@ -284,7 +336,7 @@ class CloudService {
       } else if (response.statusCode == 404) {
         return null;
       } else {
-        throw Exception('Failed to fetch scooter: ${response.body}');
+        throw Exception('Failed to fetch scooter: ${response.statusCode} ${_errorMessage(response.body)}');
       }
     } catch (e, stack) {
       log.severe('Failed to get cloud scooter $scooterId', e, stack);
@@ -321,7 +373,7 @@ class CloudService {
         await logout();
         throw Exception('Authentication expired');
       } else {
-        log.warning('Failed to update cloud scooter $scooterId: ${response.statusCode} ${response.body}');
+        log.warning('Failed to update cloud scooter $scooterId: ${response.statusCode} ${_errorMessage(response.body)}');
         return false;
       }
     } catch (e, stack) {
@@ -338,19 +390,21 @@ class CloudService {
         return false;
       }
       
-      // Check if the scooter has an 'online' field or determine based on last_seen
+      // Check if the scooter has an 'online' field or determine based on last_seen_at
       if (scooterData.containsKey('online')) {
         return scooterData['online'] == true;
       }
-      
-      // If no explicit online field, check if last_seen is recent (within 5 minutes)
-      if (scooterData.containsKey('last_seen') && scooterData['last_seen'] != null) {
-        final lastSeen = DateTime.parse(scooterData['last_seen']);
-        final now = DateTime.now();
-        final difference = now.difference(lastSeen);
-        return difference.inMinutes <= 5;
+
+      // If no explicit online field, check if last_seen_at is recent (within 5 minutes)
+      final lastSeenAt = scooterData['last_seen_at'];
+      if (lastSeenAt != null) {
+        final lastSeen = DateTime.tryParse(lastSeenAt.toString());
+        if (lastSeen != null) {
+          return DateTime.now().difference(lastSeen).inMinutes <= 5;
+        }
       }
-      
+
+
       // If no online status info is available, assume offline
       return false;
     } catch (e, stack) {
@@ -382,18 +436,17 @@ class CloudService {
           log.info('Cloud command $command sent successfully to scooter $scooterId');
           return true;
         } else {
-          log.warning('Cloud command failed: ${responseData['message']}');
+          log.warning('Cloud command failed: ${_errorMessage(response.body)}');
           return false;
         }
       } else if (response.statusCode == 401) {
         await logout();
         throw Exception('Authentication expired');
-      } else if (response.statusCode == 422) {
-        final responseData = jsonDecode(response.body);
-        log.warning('Cloud command failed: ${responseData['message']}');
+      } else if (response.statusCode == 422 || response.statusCode == 403) {
+        log.warning('Cloud command failed: ${_errorMessage(response.body)}');
         return false;
       } else {
-        log.warning('Cloud command failed with status ${response.statusCode}: ${response.body}');
+        log.warning('Cloud command failed with status ${response.statusCode}: ${_errorMessage(response.body)}');
         return false;
       }
     } catch (e, stack) {

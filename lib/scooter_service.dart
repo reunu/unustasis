@@ -547,8 +547,9 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       _isCloudOnline = data['online'] == true;
 
       if (_isCloudOnline && !connected) {
-        if (data['state'] != null) {
-          state = _convertCloudStateToScooterState(data['state']);
+        final cloudState = scooterStateFromCloudData(data);
+        if (cloudState != null) {
+          state = cloudState;
         }
         if (data['seatbox'] != null) {
           vehicle.seatClosed = data['seatbox'] == 'closed';
@@ -619,30 +620,6 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
         battery.cbbSOC = level;
         scooter.lastCbbSOC = level;
       }
-    }
-  }
-
-  ScooterState _convertCloudStateToScooterState(String cloudState) {
-    switch (cloudState) {
-      case 'stand-by':
-        return ScooterState.standby;
-      case 'parked':
-        return ScooterState.parked;
-      case 'ready-to-drive':
-        return ScooterState.ready;
-      case 'shutting-down':
-        return ScooterState.shuttingDown;
-      case 'updating':
-        return ScooterState.updating;
-      case 'waiting-hibernation-confirm':
-        return ScooterState.waitingHibernationConfirm;
-      case 'waiting-hibernation':
-        return ScooterState.waitingHibernation;
-      case 'hibernating':
-        return ScooterState.hibernating;
-      default:
-        log.warning("Unknown cloud state: $cloudState");
-        return ScooterState.cloudConnected;
     }
   }
 
