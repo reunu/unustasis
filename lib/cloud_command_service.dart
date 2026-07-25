@@ -7,49 +7,38 @@ import 'features.dart';
 class CloudCommandService implements CommandService {
   final CloudService cloudService;
   final Future<int?> Function() getCurrentCloudScooterId;
+  final bool Function() isCloudOnline;
   final log = Logger('CloudCommandService');
 
-  CloudCommandService(this.cloudService, this.getCurrentCloudScooterId);
+  CloudCommandService(this.cloudService, this.getCurrentCloudScooterId, this.isCloudOnline);
 
   @override
   Future<bool> isAvailable(CommandType command) async {
-    // Check if command is supported in cloud
+    // Guards are ordered cheapest first and short-circuit deliberately:
+    // cloudService.isAuthenticated can trigger a token refresh, so it must not
+    // run when the feature is off or the command has no cloud equivalent.
     if (!_isCommandSupportedInCloud(command)) {
       return false;
     }
-
-    // Check if cloud connectivity is enabled via feature flag
     if (!await Features.isCloudConnectivityEnabled) {
       return false;
     }
-
-    // Check if cloud service is authenticated and available
     if (!await cloudService.isAuthenticated) {
       return false;
     }
-
-    // Check if we have a current cloud scooter assigned
-    final cloudScooterId = await getCurrentCloudScooterId();
-    if (cloudScooterId == null) {
+    if (await getCurrentCloudScooterId() == null) {
       return false;
     }
-
-    // Check if cloud service is reachable
-    if (!await cloudService.isServiceAvailable()) {
-      return false;
-    }
-
-    // Check if the scooter is online in the cloud
-    return await cloudService.isScooterOnline(cloudScooterId);
+    // Read the flag the 30s poll maintains rather than probing. Availability
+    // gates the UI; the command's own response says whether it landed.
+    return isCloudOnline();
   }
 
   @override
   Future<bool> execute(CommandType command) async {
-    if (!await isAvailable(command)) {
-      log.warning('Cloud command $command not available');
-      return false;
-    }
-
+    // Callers check isAvailable() first. Re-checking here bought nothing: the
+    // confirmation dialog sits between the check and the send, so the answer is
+    // stale by the time the request goes out either way.
     final cloudScooterId = await getCurrentCloudScooterId();
     if (cloudScooterId == null) {
       log.warning('No cloud scooter ID available for command $command');

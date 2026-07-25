@@ -481,25 +481,6 @@ class CloudService {
     return scooter?.cloudScooterId;
   }
 
-  // Check if cloud service is available
-  Future<bool> isServiceAvailable() async {
-    if (!await isAuthenticated) {
-      return false;
-    }
-
-    try {
-      // Use the scooters endpoint to check service availability
-      final headers = await _getAuthHeaders();
-      final response = await http.get(
-        Uri.parse('$_baseUrl/scooters'),
-        headers: headers,
-      );
-      return response.statusCode == 200;
-    } catch (e) {
-      return false;
-    }
-  }
-
   // Open cloud dashboard in browser
   Future<void> openCloudDashboard() async {
     final dashboardUrl = Uri.parse('https://sunshine.rescoot.org/dashboard');

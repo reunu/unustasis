@@ -377,7 +377,11 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   void _ensureCloudServicesInitialized() {
     if (_cloudServicesInitialized) return;
     _cloudService = CloudService(this);
-    _cloudCommandService = CloudCommandService(_cloudService!, () async => currentScooter?.cloudScooterId);
+    _cloudCommandService = CloudCommandService(
+      _cloudService!,
+      () async => currentScooter?.cloudScooterId,
+      () => _isCloudOnline,
+    );
     _cloudServicesInitialized = true;
   }
 
