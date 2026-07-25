@@ -765,12 +765,6 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       FlutterNativeSplash.remove();
     });
 
-    // If Bluetooth is already on, don't wait for another "on" transition event.
-    final BluetoothAdapterState adapterStateNow = await flutterBluePlus.adapterState.first;
-    if (adapterStateNow != BluetoothAdapterState.on) {
-      await FlutterBluePlus.adapterState.where((val) => val == BluetoothAdapterState.on).first;
-    }
-
     // CLEANUP
     _foundSth = false;
     connected = false;
@@ -779,9 +773,17 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       myScooter!.disconnect();
     }
 
-    // Check cloud reachability for cloud-linked scooters alongside the BLE scan below,
-    // never blocking on it.
+    // Cloud reachability does not depend on the Bluetooth adapter, and it is the
+    // only channel left when the adapter is off, so check it before waiting on
+    // one. Cleanup has to stay above this: it clears `connected`, which
+    // _refreshCloudOnlineStatus reads before it writes state.
     _maybeRefreshCloudStatus();
+
+    // If Bluetooth is already on, don't wait for another "on" transition event.
+    final BluetoothAdapterState adapterStateNow = await flutterBluePlus.adapterState.first;
+    if (adapterStateNow != BluetoothAdapterState.on) {
+      await FlutterBluePlus.adapterState.where((val) => val == BluetoothAdapterState.on).first;
+    }
 
     // SCAN
     try {
