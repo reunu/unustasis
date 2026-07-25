@@ -77,6 +77,8 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   bool _cloudServicesInitialized = false;
   bool _isCloudOnline = false;
   bool _isCloudConnecting = false;
+  String? _cloudAlarmState;
+  bool _cloudAlarmTriggered = false;
   Timer? _cloudStatusTimer;
   SavedScooter? _cachedMostRecentScooter;
 
@@ -404,6 +406,8 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
 
   bool get isCloudOnline => _isCloudOnline;
   bool get isCloudConnecting => _isCloudConnecting;
+  String? get cloudAlarmState => _cloudAlarmState;
+  bool get cloudAlarmTriggered => _cloudAlarmTriggered;
 
   bool _bleSupportsCommand(CommandType command) {
     switch (command) {
@@ -544,6 +548,8 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     if (scooter?.cloudScooterId == null) {
       _isCloudOnline = false;
       _isCloudConnecting = false;
+      _cloudAlarmState = null;
+      _cloudAlarmTriggered = false;
       return;
     }
 
@@ -558,6 +564,12 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       }
 
       _isCloudOnline = data['online'] == true;
+
+      // Alarm state comes off the payload we already fetched, whether or not
+      // BLE is connected: it has no BLE equivalent, so nothing fresher exists.
+      final alarmState = data['alarm_state'];
+      _cloudAlarmState = alarmState is String ? alarmState : null;
+      _cloudAlarmTriggered = data['alarm_triggered'] == true;
 
       if (_isCloudOnline && !connected) {
         final cloudState = scooterStateFromCloudData(data);
