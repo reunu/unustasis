@@ -4,6 +4,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 
 import '../command_service.dart';
+import '../domain/alarm_state.dart';
 import '../domain/connection_status.dart';
 import '../domain/scooter_state.dart';
 import '../features.dart';
@@ -336,6 +337,9 @@ class _ControlSheetState extends State<ControlSheet> with TickerProviderStateMix
                     CommandType.locate,
                     CommandType.honk,
                     CommandType.alarm,
+                    CommandType.alarmArm,
+                    CommandType.alarmDisarm,
+                    CommandType.alarmStop,
                     CommandType.ping,
                     CommandType.getState,
                   ])
@@ -384,6 +388,59 @@ class _ControlSheetState extends State<ControlSheet> with TickerProviderStateMix
                           ],
                         ),
                       ],
+                      Selector<ScooterService, String?>(
+                        selector: (context, s) => s.cloudAlarmState,
+                        builder: (context, alarmState, _) {
+                          final action = alarmActionFor(alarmState);
+                          if (action == null) return const SizedBox.shrink();
+                          final command = switch (action) {
+                            AlarmAction.arm => CommandType.alarmArm,
+                            AlarmAction.disarm => CommandType.alarmDisarm,
+                            AlarmAction.stop => CommandType.alarmStop,
+                          };
+                          if (available[command] != true) return const SizedBox.shrink();
+                          final (labelKey, icon) = switch (action) {
+                            AlarmAction.arm => ("controls_alarm_arm", Icons.lock_outline),
+                            AlarmAction.disarm => ("controls_alarm_disarm", Icons.lock_open_outlined),
+                            AlarmAction.stop => ("controls_alarm_stop", Icons.notifications_off_outlined),
+                          };
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              const SizedBox(height: 16),
+                              Center(
+                                child: Text(
+                                  FlutterI18n.translate(
+                                    context,
+                                    "controls_alarm_status",
+                                    translationParams: {
+                                      "state": FlutterI18n.translate(context, alarmStateI18nKey(alarmState)),
+                                    },
+                                  ),
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _CloudActionButton(
+                                      labelKey: labelKey,
+                                      icon: icon,
+                                      onPressed: (context) => switch (action) {
+                                        AlarmAction.arm => context.read<ScooterService>().alarmArm(context: context),
+                                        AlarmAction.disarm =>
+                                          context.read<ScooterService>().alarmDisarm(context: context),
+                                        AlarmAction.stop => context.read<ScooterService>().alarmStop(context: context),
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          );
+                        },
+                      ),
                       if (available[CommandType.ping] == true || available[CommandType.getState] == true) ...[
                         const SizedBox(height: 16),
                         Center(child: Header(FlutterI18n.translate(context, "controls_diagnostics_title"))),
