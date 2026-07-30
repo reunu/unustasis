@@ -55,7 +55,11 @@ class ExtendedResponseListener {
     _subscription = source.listen(
       (value) {
         if (value.isEmpty || _buffer.isClosed) return;
-        _buffer.add(ascii.decode(value).replaceAll('\x00', ''));
+        // The protocol is ASCII, but user-supplied content (a destination name
+        // set from another app, say) arrives as UTF-8. UTF-8 is a superset of
+        // ASCII, and allowMalformed keeps one bad byte from killing the whole
+        // response, which used to throw and take the subscription with it.
+        _buffer.add(utf8.decode(value, allowMalformed: true).replaceAll('\x00', ''));
       },
       onError: (Object e, StackTrace s) {
         if (!_buffer.isClosed) _buffer.addError(e, s);

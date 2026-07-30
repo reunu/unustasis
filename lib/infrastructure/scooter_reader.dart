@@ -13,7 +13,9 @@ final _log = Logger('ScooterSubscriptions');
 
 String _bytesToString(List<int> value) {
   var withoutZeros = value.where((element) => element != 0).toList();
-  return ascii.decode(withoutZeros).trim();
+  // UTF-8 is a superset of the ASCII the protocol uses; allowMalformed keeps a
+  // stray byte from throwing and killing the subscription.
+  return utf8.decode(withoutZeros, allowMalformed: true).trim();
 }
 
 int? _bytesToUint32(List<int> data) {
