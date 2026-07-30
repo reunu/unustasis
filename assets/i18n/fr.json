@@ -471,6 +471,7 @@
     "cloud_settings_title": "Connectivité cloud",
     "cloud_connectivity_enable": "Activer la connectivité cloud",
     "cloud_connectivity_description": "Contrôlez votre scooter à distance via le cloud Sunshine quand le Bluetooth est hors de portée",
+    "cloud_connectivity_learn_more": "En savoir plus",
     "cloud_connect": "Se connecter au cloud",
     "cloud_connect_description": "Connectez-vous au service cloud Sunshine",
     "cloud_connected": "Connecté au cloud",

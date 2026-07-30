@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../domain/saved_scooter.dart';
 import '../features.dart';
@@ -36,7 +37,7 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
 
   Future<void> _loadCloudStatus() async {
     if (!mounted) return;
-    
+
     setState(() {
       _isLoading = true;
     });
@@ -60,7 +61,6 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
       }
     }
   }
-
 
   Future<void> _toggleCloudConnectivity() async {
     final newValue = !_isCloudEnabled;
@@ -138,7 +138,6 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -152,6 +151,12 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Header(FlutterI18n.translate(context, "cloud_settings_title")),
+        Divider(
+          indent: 16,
+          endIndent: 16,
+          height: 24,
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+        ),
         SwitchListTile(
           secondary: const Icon(Icons.cloud_outlined),
           title: Text(FlutterI18n.translate(context, "cloud_connectivity_enable")),
@@ -224,6 +229,18 @@ class _CloudSettingsSectionState extends State<CloudSettingsSection> {
             },
           ),
         ],
+        Divider(
+          indent: 16,
+          endIndent: 16,
+          height: 24,
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
+        ),
+        ListTile(
+          leading: const Icon(Icons.help_outline),
+          title: Text(FlutterI18n.translate(context, "cloud_connectivity_learn_more")),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => launchUrl(Uri.parse('https://sunshine.rescoot.org/')),
+        ),
       ],
     );
   }

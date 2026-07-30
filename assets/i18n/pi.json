@@ -452,6 +452,7 @@
     "cloud_settings_title": "Message-in-a-Bottle Connectivity",
     "cloud_connectivity_enable": "Enable message-in-a-bottle connectivity",
     "cloud_connectivity_description": "Command yer ship from the Sunshine cloud when she be out of BLE range",
+    "cloud_connectivity_learn_more": "Learn more, matey",
     "cloud_connect": "Connect to the cloud",
     "cloud_connect_description": "Sign the ship's articles with the Sunshine cloud service",
     "cloud_connected": "Connected to the cloud",
