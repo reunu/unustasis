@@ -21,7 +21,8 @@ enum ScooterState {
   booting,
   unknown,
   linking,
-  disconnected;
+  disconnected,
+  cloudConnected;
 
   static ScooterState? fromString(String? state) {
     final log = Logger("ScooterState.fromStateString");
@@ -127,6 +128,9 @@ extension StateExtension on ScooterState {
       case ScooterState.waitingHibernationConfirm:
         // scooter is awake and ready to party!
         return Theme.of(context).colorScheme.primary;
+      case ScooterState.cloudConnected:
+        // scooter is connected via cloud only
+        return Theme.of(context).colorScheme.primary.withValues(alpha: 0.7);
       case ScooterState.unknown:
       case ScooterState.disconnected:
       default:
@@ -168,6 +172,8 @@ extension StateExtension on ScooterState {
         return FlutterI18n.translate(context, "state_name_disconnected");
       case ScooterState.linking:
         return FlutterI18n.translate(context, "state_name_linking");
+      case ScooterState.cloudConnected:
+        return FlutterI18n.translate(context, "state_name_cloud_connected");
     }
   }
 
@@ -204,6 +210,8 @@ extension StateExtension on ScooterState {
         return FlutterI18n.translate(context, "state_desc_disconnected");
       case ScooterState.linking:
         return FlutterI18n.translate(context, "state_desc_linking");
+      case ScooterState.cloudConnected:
+        return FlutterI18n.translate(context, "state_desc_cloud_connected");
     }
   }
 
@@ -216,6 +224,7 @@ extension StateExtension on ScooterState {
       case ScooterState.waitingHibernationAdvanced:
       case ScooterState.waitingHibernationSeatbox:
       case ScooterState.waitingHibernationConfirm:
+      case ScooterState.cloudConnected:
         return true;
       default:
         return false;
@@ -236,6 +245,7 @@ extension StateExtension on ScooterState {
       case ScooterState.waitingHibernationAdvanced:
       case ScooterState.waitingHibernationSeatbox:
       case ScooterState.waitingHibernationConfirm:
+      case ScooterState.cloudConnected:
         return true;
       default:
         return false;
@@ -248,6 +258,8 @@ extension StateExtension on ScooterState {
       case ScooterState.hibernatingImminent:
       case ScooterState.booting:
         return false;
+      case ScooterState.cloudConnected:
+        return true;
       default:
         return true;
     }

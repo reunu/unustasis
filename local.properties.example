@@ -1,0 +1,16 @@
+# Example local.properties file
+# Copy this to local.properties and customize as needed
+
+# Flutter SDK path (usually set automatically)
+# flutter.sdk=/path/to/flutter
+
+# OAuth Configuration
+# Set your OAuth client ID here for development/testing
+# Production builds should use environment variables or CI/CD secrets
+oauth.clientId=Q20PF36dOaO1FDw0NEzkP1jNtPT12w_onMuwr5nS5I0
+
+# Keystore configuration for release builds
+# keyAlias=your_key_alias
+# keyPassword=your_key_password
+# storeFile=your_keystore_file.jks
+# storePassword=your_store_password

@@ -17,6 +17,7 @@ import '../domain/theme_helper.dart';
 import '../domain/scooter_keyless_distance.dart';
 import '../scooter_service.dart';
 import '../helper_widgets/header.dart';
+import 'cloud_settings_section.dart';
 import 'log_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -441,6 +442,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               });
             },
           ),
+        const CloudSettingsSection(),
         Container(), // to force another divider at the end
       ];
 

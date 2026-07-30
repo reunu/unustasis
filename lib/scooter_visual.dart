@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -6,6 +7,7 @@ import 'package:shimmer/shimmer.dart';
 
 import '../domain/scooter_state.dart';
 import '../domain/theme_helper.dart';
+import '../services/image_cache_service.dart';
 
 class ScooterVisual extends StatefulWidget {
   final ScooterState? state;
@@ -16,6 +18,8 @@ class ScooterVisual extends StatefulWidget {
   final bool winter;
   final bool aprilFools;
   final bool halloween;
+  final String? cloudImageUrl;
+  final bool hasCustomColor;
 
   const ScooterVisual({
     required this.state,
@@ -26,6 +30,8 @@ class ScooterVisual extends StatefulWidget {
     this.aprilFools = false,
     this.halloween = false,
     this.color,
+    this.cloudImageUrl,
+    this.hasCustomColor = false,
     super.key,
   });
 
@@ -225,13 +231,7 @@ class _ScooterVisualState extends State<ScooterVisual> {
                         image: AssetImage("images/scooter/disconnected.webp"),
                       ),
                     ),
-                    secondChild: Image(
-                      // keep showing the previous scooter while the new color decodes
-                      gaplessPlayback: true,
-                      image: AssetImage(
-                        "images/scooter/base_${widget.aprilFools ? 9 : widget.color ?? 1}.webp",
-                      ),
-                    ),
+                    secondChild: _scooterImage(),
                     crossFadeState: widget.state == ScooterState.disconnected
                         ? CrossFadeState.showFirst
                         : CrossFadeState.showSecond,
@@ -277,6 +277,18 @@ class _ScooterVisualState extends State<ScooterVisual> {
     //BlinkerWidget(blinkerLeft: blinkerLeft, blinkerRight: blinkerRight),
   }
 
+  Widget _scooterImage() {
+    final defaultAsset = Image(
+      // keep showing the previous scooter while the new color decodes
+      gaplessPlayback: true,
+      image: AssetImage("images/scooter/base_${widget.aprilFools ? 9 : widget.color ?? 1}.webp"),
+    );
+    if (!widget.hasCustomColor || widget.cloudImageUrl == null) {
+      return defaultAsset;
+    }
+    return _CloudScooterImage(url: widget.cloudImageUrl!, fallback: defaultAsset);
+  }
+
   IconData stateIcon() {
     if (widget.scanning) {
       return Icons.wifi_tethering;
@@ -297,6 +309,28 @@ class _ScooterVisualState extends State<ScooterVisual> {
       default:
         return Icons.error;
     }
+  }
+}
+
+/// Displays a cloud-hosted scooter image, cached to disk. Falls back to
+/// [fallback] while loading or if the download fails.
+class _CloudScooterImage extends StatelessWidget {
+  final String url;
+  final Widget fallback;
+
+  const _CloudScooterImage({required this.url, required this.fallback});
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<File?>(
+      future: ImageCacheService().getImage(url),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.done && snapshot.data != null) {
+          return Image.file(snapshot.data!, errorBuilder: (_, __, ___) => fallback);
+        }
+        return fallback;
+      },
+    );
   }
 }
 

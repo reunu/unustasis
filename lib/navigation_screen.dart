@@ -203,17 +203,10 @@ class _NavigationScreenState extends State<NavigationScreen> {
     if (!await _confirmIfFarAway(destination.location)) return;
     if (!mounted) return;
     final service = context.read<ScooterService>();
-    if (!service.connected) {
-      // Queue for when a librescoot connects
-      await service.setPendingNavigation(destination);
-      return;
-    }
     try {
-      await navigateFavCommand(
-        service.myScooter!,
-        service.characteristicRepository,
-        destination.id!,
-      );
+      // The favourite id only resolves on the scooter, so it goes along for the
+      // BLE path only. Over cloud this travels as coordinates and a name.
+      await service.sendNavigation(destination, favouriteId: destination.id);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -273,16 +266,8 @@ class _NavigationScreenState extends State<NavigationScreen> {
     if (!await _confirmIfFarAway(dest.location)) return;
     if (!mounted) return;
     final service = context.read<ScooterService>();
-    if (!service.connected) {
-      await service.setPendingNavigation(dest);
-      return;
-    }
     try {
-      await navigateCommand(
-        service.myScooter!,
-        service.characteristicRepository,
-        dest,
-      );
+      await service.sendNavigation(dest);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -781,10 +766,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
       direction: DismissDirection.horizontal,
       onDismissed: (_) {
         if (isNavigating) {
-          cancelNavigationCommand(
-            service.myScooter,
-            service.characteristicRepository,
-          );
+          service.cancelNavigation();
         } else {
           service.setPendingNavigation(null);
         }
@@ -813,10 +795,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
             tooltip: FlutterI18n.translate(context, "cancel"),
             onPressed: () {
               if (isNavigating) {
-                cancelNavigationCommand(
-                  service.myScooter,
-                  service.characteristicRepository,
-                );
+                service.cancelNavigation();
               } else {
                 service.setPendingNavigation(null);
               }
