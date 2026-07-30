@@ -58,6 +58,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   String? _targetScooterId; // specific scooter ID to connect to during auto-restart
   bool _autoUnlockCooldown = false;
   AppLifecycleState? _lastLifecycleState;
+  bool _wasBackgrounded = false;
 
   late Timer _locationTimer, _manualRefreshTimer;
   late PausableTimer rssiTimer;
@@ -384,8 +385,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
         // automatically and does not expose a priority request.
         try {
           await attemptedScooter.requestMtu(247);
-          await attemptedScooter.requestConnectionPriority(
-              connectionPriorityRequest: ConnectionPriority.high);
+          await attemptedScooter.requestConnectionPriority(connectionPriorityRequest: ConnectionPriority.high);
         } catch (e) {
           log.warning("MTU/priority negotiation failed (continuing): $e");
         }
@@ -395,8 +395,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       myScooter = attemptedScooter;
       identity.resetLsCapabilities();
       // fall back to the cached capability until the probe resolves again
-      identity.supportsHibernateFor =
-          savedScooters[attemptedScooter.remoteId.toString()]?.supportsHibernateFor;
+      identity.supportsHibernateFor = savedScooters[attemptedScooter.remoteId.toString()]?.supportsHibernateFor;
       _lsProbeGeneration++;
       addSavedScooter(myScooter!.remoteId.toString());
 
@@ -1054,12 +1053,16 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
 
     log.info("App lifecycle state changed: $_lastLifecycleState -> $state");
 
-    // Check if app is returning to foreground from background
-    if (_lastLifecycleState != null &&
-        (_lastLifecycleState == AppLifecycleState.paused ||
-            _lastLifecycleState == AppLifecycleState.inactive ||
-            _lastLifecycleState == AppLifecycleState.hidden) &&
-        state == AppLifecycleState.resumed) {
+    // Only paused/hidden count as leaving the app. `inactive -> resumed` also
+    // happens without backgrounding (iOS cold start, biometric prompt, system
+    // dialogs) and used to fire a second start() that raced the initial
+    // connection attempt, leaving a redundant scan running for seconds.
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
+      _wasBackgrounded = true;
+    }
+
+    if (_wasBackgrounded && state == AppLifecycleState.resumed) {
+      _wasBackgrounded = false;
       log.info("App resumed from background - checking connection status");
       _handleAppResumedFromBackground();
     }
@@ -1067,27 +1070,53 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     _lastLifecycleState = state;
   }
 
+  bool get _connectionAttemptInFlight => scanning || _state == ScooterState.linking;
+
   void _handleAppResumedFromBackground() async {
-    // Only attempt reconnection if we have saved scooters and are not currently connected
-    if (savedScooters.isNotEmpty && !connected && !scanning) {
-      log.info("App resumed: attempting automatic reconnection");
+    if (savedScooters.isEmpty) return;
 
-      try {
-        // Small delay to let the app settle
-        await Future.delayed(const Duration(milliseconds: 500));
+    try {
+      // Small delay so the platform can deliver events that were queued
+      // while the app was suspended (disconnects, scan stops) before we
+      // judge any cached state
+      await Future.delayed(const Duration(milliseconds: 500));
 
+      // iOS kills an active scan during suspension without a final
+      // isScanning event, leaving `scanning` stuck true — which disables
+      // the manual reconnect button and blocks every automatic reconnect
+      // path until the app is restarted.
+      if (scanning != flutterBluePlus.isScanningNow) {
+        log.info("App resumed: resync scanning flag (cached: $scanning, platform: $flutterBluePlus.isScanningNow)");
+        scanning = flutterBluePlus.isScanningNow;
+      }
+
+      // The BLE link can also die during suspension without a disconnect
+      // event ever reaching us, so probe the link instead of trusting the
+      // cached connected flag.
+      if (connected && myScooter != null) {
+        try {
+          await myScooter!.readRssi();
+        } catch (e, stack) {
+          log.info("App resumed: connection is stale, marking as disconnected", e, stack);
+          connected = false;
+          state = ScooterState.disconnected;
+        }
+      }
+
+      if (!connected && !_connectionAttemptInFlight) {
+        log.info("App resumed: attempting automatic reconnection");
         // Try to reconnect to the last known scooter
         start();
-      } catch (e, stack) {
-        log.warning(
-          "Error during automatic reconnection on app resume",
-          e,
-          stack,
+      } else {
+        log.info(
+          "App resumed: no reconnection needed (connected: $connected, scanning: $scanning, saved scooters: ${savedScooters.length})",
         );
       }
-    } else {
-      log.info(
-        "App resumed: no reconnection needed (connected: $connected, scanning: $scanning, saved scooters: ${savedScooters.length})",
+    } catch (e, stack) {
+      log.warning(
+        "Error during automatic reconnection on app resume",
+        e,
+        stack,
       );
     }
   }
