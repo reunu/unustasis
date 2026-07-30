@@ -201,8 +201,14 @@ class _ScooterVisualState extends State<ScooterVisual> {
           ),
         Padding(
           padding: const EdgeInsets.all(16.0),
-          child: SizedBox(
-            width: MediaQuery.of(context).size.width * 0.55,
+          child: ConstrainedBox(
+            // max-width instead of a tight width: when the available height is
+            // the limiting factor, AspectRatio must be free to shrink the width
+            // too, or the box gets squashed and the AnimatedCrossFade layers
+            // (which align topStart, unlike plain Images) drift off-center.
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.55,
+            ),
             child: AspectRatio(
               aspectRatio: _scooterAspectRatio,
               child: Stack(
