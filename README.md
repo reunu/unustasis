@@ -23,6 +23,19 @@ Run the following command in the root of this project to install and start the d
 flutter run
 ```
 
+### Wear OS companion app
+
+There is a small native Wear OS app in [`android/wear`](android/wear) that mirrors the Android home screen widget on your watch: scooter state, battery levels, and lock/unlock/open-seat, as both an app and a tile. It talks to the phone app over the Wearable Data Layer rather than to the scooter directly, so your watch does not need to be paired with the scooter.
+
+It ships as a separate APK and is not built by `flutter build apk`:
+
+```
+flutter build apk --release
+cd android && ./gradlew :wear:assembleRelease
+```
+
+See [`android/wear/README.md`](android/wear/README.md) for how it works, and for the signing requirements the Data Layer imposes.
+
 ### Contributing
 
 Interested in contributing? Join the [Unu Community Discord](https://discord.gg/fa63HJYaP4) or create an issue right here on GitHub!

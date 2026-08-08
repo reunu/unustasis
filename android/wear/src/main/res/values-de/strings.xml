@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tile_label">Roller</string>
+    <string name="tile_description">Sperre, entsperre und öffne den Sitz deines unu Rollers.</string>
+
+    <string name="action_lock">Sperren</string>
+    <string name="action_unlock">Entsperren</string>
+    <string name="action_seat">Sitz</string>
+    <string name="action_connect">Verbinden</string>
+
+    <string name="seat_open">Sitz offen</string>
+    <string name="phone_unreachable">Handy nicht erreichbar</string>
+    <string name="no_data">Öffne die App auf deinem Handy</string>
+    <string name="sending">Wird gesendet…</string>
+
+    <string name="battery_primary">Akku 1</string>
+    <string name="battery_secondary">Akku 2</string>
+</resources>

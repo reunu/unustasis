@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">stasis</string>
+
+    <string name="tile_label">Scooter</string>
+    <string name="tile_description">Lock, unlock and open the seat of your unu scooter.</string>
+
+    <!-- Scooter state text ("Parked", "Ready to drive", …) is not translated here: the phone
+         sends it already localized, exactly as it does for the home screen widget. -->
+    <string name="action_lock">Lock</string>
+    <string name="action_unlock">Unlock</string>
+    <string name="action_seat">Seat</string>
+    <string name="action_connect">Connect</string>
+
+    <string name="seat_open">Seat open</string>
+    <string name="phone_unreachable">Phone not reachable</string>
+    <string name="no_data">Open the app on your phone</string>
+    <string name="sending">Sending…</string>
+
+    <string name="battery_primary">Battery 1</string>
+    <string name="battery_secondary">Battery 2</string>
+    <string name="soc_percent">%1$d%%</string>
+</resources>

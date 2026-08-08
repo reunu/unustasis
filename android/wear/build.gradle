@@ -1,0 +1,110 @@
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    id "org.jetbrains.kotlin.plugin.compose"
+}
+
+// Keep the watch app's version in lockstep with the phone app, which takes its version from
+// pubspec.yaml via local.properties.
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader ->
+        localProperties.load(reader)
+    }
+}
+
+def flutterVersionCode = localProperties.getProperty('flutter.versionCode') ?: '1'
+def flutterVersionName = localProperties.getProperty('flutter.versionName') ?: '1.0'
+
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+android {
+    namespace "de.freal.unustasis.wear"
+    compileSdk 36
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+
+    kotlinOptions {
+        jvmTarget = "11"
+    }
+
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
+    }
+
+    defaultConfig {
+        // MUST match the phone app: the Wearable Data Layer only routes between apps that
+        // share an application ID *and* a signing certificate.
+        applicationId "de.freal.unustasis"
+        minSdkVersion 30 // Wear OS 3
+        targetSdkVersion 34
+        versionCode flutterVersionCode.toInteger()
+        versionName flutterVersionName
+    }
+
+    signingConfigs {
+        release {
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+            storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
+            storePassword keystoreProperties['storePassword']
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled false
+        }
+        debug {
+            // Mirrors the phone app's debug suffix, otherwise debug builds of the two apps
+            // can't see each other over the Data Layer.
+            applicationIdSuffix ".debug"
+            versionNameSuffix "-debug"
+        }
+    }
+
+    buildFeatures {
+        compose true
+    }
+
+    lint {
+        // Scooter state text arrives from the phone already localized, so the watch only owns a
+        // few strings; the translations here intentionally cover just those.
+        disable 'MissingTranslation'
+    }
+}
+
+dependencies {
+    implementation platform('androidx.compose:compose-bom:2024.12.01')
+
+    implementation 'androidx.core:core-ktx:1.15.0'
+    implementation 'androidx.activity:activity-compose:1.9.3'
+    implementation 'androidx.lifecycle:lifecycle-runtime-compose:2.8.7'
+
+    implementation 'androidx.compose.ui:ui'
+    implementation 'androidx.compose.ui:ui-tooling-preview'
+    debugImplementation 'androidx.compose.ui:ui-tooling'
+
+    implementation 'androidx.wear.compose:compose-material:1.4.1'
+    implementation 'androidx.wear.compose:compose-foundation:1.4.1'
+
+    // Tile
+    implementation 'androidx.wear.tiles:tiles:1.4.1'
+    implementation 'androidx.wear.protolayout:protolayout:1.2.1'
+    implementation 'androidx.wear.protolayout:protolayout-material:1.2.1'
+    implementation 'androidx.wear.protolayout:protolayout-expression:1.2.1'
+    implementation 'androidx.concurrent:concurrent-futures-ktx:1.2.0'
+
+    // Data Layer
+    implementation 'com.google.android.gms:play-services-wearable:19.0.0'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1'
+}

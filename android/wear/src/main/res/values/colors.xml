@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Matches the phone app's dark theme (lib/main.dart darkTheme colorScheme), since
+         Wear OS is always dark. -->
+    <color name="unu_primary">#FF3DCC9D</color>
+    <color name="unu_on_primary">#FF002019</color>
+    <color name="unu_background">#FF000000</color>
+    <color name="unu_surface">#FF141414</color>
+    <color name="unu_surface_variant">#FF212121</color>
+    <color name="unu_on_surface">#FFFFFFFF</color>
+    <color name="unu_on_surface_variant">#FF9E9E9E</color>
+    <color name="unu_seat_open">#FFE5484D</color>
+</resources>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tile_label">Scooter</string>
+    <string name="tile_description">Vergrendel, ontgrendel en open de zitting van je unu scooter.</string>
+
+    <string name="action_lock">Vergrendelen</string>
+    <string name="action_unlock">Ontgrendelen</string>
+    <string name="action_seat">Zitting</string>
+    <string name="action_connect">Verbinden</string>
+
+    <string name="seat_open">Zitting open</string>
+    <string name="phone_unreachable">Telefoon niet bereikbaar</string>
+    <string name="no_data">Open de app op je telefoon</string>
+    <string name="sending">Verzenden…</string>
+
+    <string name="battery_primary">Accu 1</string>
+    <string name="battery_secondary">Accu 2</string>
+</resources>

@@ -25,3 +25,5 @@ plugins {
 }
 
 include ":app"
+// Wear OS companion app. Not built by `flutter build`; see android/wear/README.md.
+include ":wear"
