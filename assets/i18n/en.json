@@ -531,5 +531,7 @@
     "ls_ota_warn_no_dbc_image": "No DBC image found on the {channel} channel.",
     "ls_ota_warn_version_unpublished": "The newer board's version ({version}) is no longer published — updating both boards to the latest instead.",
     "ls_ota_warn_no_image_for": "No {board} image found for {version}.",
-    "ls_ota_warn_no_delta_path": "No delta path from {version} — a full image is needed ({latest})."
+    "ls_ota_warn_no_delta_path": "No delta path from {version} — a full image is needed ({latest}).",
+    "ls_settings_apn_clear": "Reset to default",
+    "ls_settings_apn_cleared": "APN cleared, using the SIM operator's default"
 }

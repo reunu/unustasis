@@ -686,9 +686,9 @@ ApnProblem? checkApn(String apn) {
 
 /// Sets the APN the scooter's modem attaches with.
 ///
-/// Surrounding whitespace is trimmed. An empty APN is rejected rather than
-/// sent on: the firmware reads it as "fall back to the SIM operator's
-/// defaults", which shouldn't happen because someone cleared a text field.
+/// Surrounding whitespace is trimmed. An empty APN is rejected here rather than
+/// sent on, so that emptying the text field cannot silently drop the scooter
+/// onto operator defaults. Use [clearCellularApnCommand] to do that on purpose.
 Future<void> setCellularApnCommand(
   BluetoothDevice? scooter,
   CharacteristicRepository repo,
@@ -704,6 +704,26 @@ Future<void> setCellularApnCommand(
   if (response != "config:ok") {
     log.severe("Failed to set APN, response: $response");
     throw "Failed to set APN, response: $response";
+  }
+  return;
+}
+
+/// Clears the configured APN so the modem falls back to whatever the SIM
+/// operator hands out.
+///
+/// Sends the prefix and nothing after it. The trailing space in
+/// [_apnCommandPrefix] is load-bearing: the firmware splits the payload on the
+/// first space and answers `config:error:missing value` when there is no second
+/// field, so `config:apn ` sets an empty value where `config:apn` would fail.
+/// Only the value gets trimmed on the way in, never the command.
+Future<void> clearCellularApnCommand(
+  BluetoothDevice? scooter,
+  CharacteristicRepository repo,
+) async {
+  final response = await sendLsExtendedCommand(scooter, repo, _apnCommandPrefix);
+  if (response != "config:ok") {
+    log.severe("Failed to clear APN, response: $response");
+    throw "Failed to clear APN, response: $response";
   }
   return;
 }

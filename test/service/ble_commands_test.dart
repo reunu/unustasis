@@ -191,5 +191,14 @@ void main() {
       // budget, so the cap can't be the 100 octets 3GPP allows for an APN.
       expect('config:apn ${'a' * maxApnLength}'.length, lessThanOrEqualTo(100));
     });
+
+    test('the command prefix keeps its trailing space', () {
+      // clearCellularApnCommand sends the bare prefix to set an empty value.
+      // The firmware splits the payload on the first space and answers
+      // config:error:missing value when there is no second field, so dropping
+      // that space would turn "clear" into an error with nothing to show for
+      // it. maxApnLength is derived from the prefix length, which pins it.
+      expect(100 - maxApnLength, 'config:apn '.length);
+    });
   });
 }

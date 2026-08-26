@@ -531,5 +531,7 @@
     "ls_ota_warn_no_dbc_image": "Aucune image DBC trouvée sur le canal {channel}.",
     "ls_ota_warn_version_unpublished": "La version de la carte la plus récente ({version}) n'est plus publiée — les deux cartes seront mises à jour vers la dernière version.",
     "ls_ota_warn_no_image_for": "Aucune image {board} trouvée pour {version}.",
-    "ls_ota_warn_no_delta_path": "Pas de chemin delta depuis {version} — une image complète est nécessaire ({latest})."
+    "ls_ota_warn_no_delta_path": "Pas de chemin delta depuis {version} — une image complète est nécessaire ({latest}).",
+    "ls_settings_apn_clear": "Réinitialiser",
+    "ls_settings_apn_cleared": "APN effacé, les réglages de l'opérateur SIM sont utilisés"
 }

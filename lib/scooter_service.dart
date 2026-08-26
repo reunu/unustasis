@@ -938,6 +938,10 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     await commands.setCellularApnCommand(myScooter, characteristicRepository, apn);
   }
 
+  Future<void> clearCellularApn() async {
+    await commands.clearCellularApnCommand(myScooter, characteristicRepository);
+  }
+
   Future<void> reboot() async {
     await commands.rebootCommand(myScooter, characteristicRepository);
   }

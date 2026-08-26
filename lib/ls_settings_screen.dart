@@ -95,7 +95,7 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
 
   Future<void> _editApn() async {
     final controller = TextEditingController(text: _apn ?? "");
-    final String? picked = await showDialog<String>(
+    final ({bool clear, String value})? picked = await showDialog<({bool clear, String value})>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setDialogState) {
@@ -124,7 +124,9 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
                   ),
                   onChanged: (_) => setDialogState(() {}),
                   onSubmitted: (_) {
-                    if (problem == null) Navigator.of(dialogContext).pop(trimmed);
+                    if (problem == null) {
+                      Navigator.of(dialogContext).pop((clear: false, value: trimmed));
+                    }
                   },
                 ),
               ],
@@ -134,12 +136,22 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
                 child: Text(FlutterI18n.translate(dialogContext, "cancel")),
                 onPressed: () => Navigator.of(dialogContext).pop(),
               ),
+              if (_apn != null && _apn!.isNotEmpty)
+                TextButton(
+                  style: TextButton.styleFrom(
+                    foregroundColor: Theme.of(dialogContext).colorScheme.error,
+                  ),
+                  onPressed: () => Navigator.of(dialogContext).pop((clear: true, value: "")),
+                  child: Text(FlutterI18n.translate(dialogContext, "ls_settings_apn_clear")),
+                ),
               FilledButton(
                 style: FilledButton.styleFrom(
                   backgroundColor: Theme.of(dialogContext).colorScheme.onSurface,
                   foregroundColor: Theme.of(dialogContext).colorScheme.surface,
                 ),
-                onPressed: problem == null ? () => Navigator.of(dialogContext).pop(trimmed) : null,
+                onPressed: problem == null
+                    ? () => Navigator.of(dialogContext).pop((clear: false, value: trimmed))
+                    : null,
                 child: Text(FlutterI18n.translate(dialogContext, "ls_settings_apn_save")),
               ),
             ],
@@ -152,11 +164,21 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
 
     setState(() => _isSendingApn = true);
     try {
-      await context.read<ScooterService>().setCellularApn(picked);
+      final service = context.read<ScooterService>();
+      if (picked.clear) {
+        await service.clearCellularApn();
+      } else {
+        await service.setCellularApn(picked.value);
+      }
       if (!mounted) return;
-      setState(() => _apn = picked);
+      setState(() => _apn = picked.value);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(FlutterI18n.translate(context, "ls_settings_apn_success"))),
+        SnackBar(
+          content: Text(FlutterI18n.translate(
+            context,
+            picked.clear ? "ls_settings_apn_cleared" : "ls_settings_apn_success",
+          )),
+        ),
       );
     } catch (e) {
       if (!mounted) return;
