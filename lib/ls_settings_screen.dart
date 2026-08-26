@@ -24,13 +24,19 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
   bool _isSendingAutoHibernate = false;
   int? _autoHibernateDuration;
   int? _keycardCount;
+  bool _isSendingApn = false;
+  bool _apnLoaded = false;
+  String? _apn;
 
   @override
   void initState() {
     super.initState();
     // Defer until after the first frame so that we have a valid context with
     // the ScooterService available via Provider.
-    WidgetsBinding.instance.addPostFrameCallback((_) => _getKeycardCount());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _getKeycardCount();
+      _getApn();
+    });
   }
 
   void _getKeycardCount() async {
@@ -42,6 +48,127 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
     setState(() {
       _keycardCount = count;
     });
+  }
+
+  Future<void> _getApn() async {
+    if (!mounted) return;
+    String? apn;
+    try {
+      apn = await context.read<ScooterService>().getCellularApn();
+    } catch (e) {
+      apn = null;
+    }
+    if (!mounted) return;
+    setState(() {
+      _apn = apn;
+      _apnLoaded = true;
+    });
+  }
+
+  String _apnSubtitle(BuildContext context) {
+    if (!_apnLoaded) {
+      return FlutterI18n.translate(context, "ls_settings_apn_loading");
+    }
+    if (_apn == null) {
+      return FlutterI18n.translate(context, "ls_settings_apn_unknown");
+    }
+    if (_apn!.isEmpty) {
+      return FlutterI18n.translate(context, "ls_settings_apn_unset");
+    }
+    return _apn!;
+  }
+
+  String? _apnErrorText(BuildContext context, ApnProblem? problem) {
+    switch (problem) {
+      // An empty field is the starting state, so it only disables Save
+      // instead of also complaining at the user.
+      case null:
+      case ApnProblem.empty:
+        return null;
+      case ApnProblem.invalidCharacters:
+        return FlutterI18n.translate(context, "ls_settings_apn_invalid_chars");
+      case ApnProblem.tooLong:
+        return FlutterI18n.translate(context, "ls_settings_apn_invalid_length",
+            translationParams: {"max": maxApnLength.toString()});
+    }
+  }
+
+  Future<void> _editApn() async {
+    final controller = TextEditingController(text: _apn ?? "");
+    final String? picked = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) {
+          final trimmed = controller.text.trim();
+          final problem = checkApn(trimmed);
+          return AlertDialog(
+            title: Text(FlutterI18n.translate(dialogContext, "ls_settings_apn_dialog_title")),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(FlutterI18n.translate(dialogContext, "ls_settings_apn_dialog_body")),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: controller,
+                  autofocus: true,
+                  autocorrect: false,
+                  enableSuggestions: false,
+                  keyboardType: TextInputType.url,
+                  textCapitalization: TextCapitalization.none,
+                  maxLength: maxApnLength,
+                  decoration: InputDecoration(
+                    hintText: FlutterI18n.translate(dialogContext, "ls_settings_apn_hint"),
+                    border: const OutlineInputBorder(),
+                    errorText: _apnErrorText(dialogContext, problem),
+                  ),
+                  onChanged: (_) => setDialogState(() {}),
+                  onSubmitted: (_) {
+                    if (problem == null) Navigator.of(dialogContext).pop(trimmed);
+                  },
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                child: Text(FlutterI18n.translate(dialogContext, "cancel")),
+                onPressed: () => Navigator.of(dialogContext).pop(),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Theme.of(dialogContext).colorScheme.onSurface,
+                  foregroundColor: Theme.of(dialogContext).colorScheme.surface,
+                ),
+                onPressed: problem == null ? () => Navigator.of(dialogContext).pop(trimmed) : null,
+                child: Text(FlutterI18n.translate(dialogContext, "ls_settings_apn_save")),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    controller.dispose();
+    if (picked == null || !mounted) return;
+
+    setState(() => _isSendingApn = true);
+    try {
+      await context.read<ScooterService>().setCellularApn(picked);
+      if (!mounted) return;
+      setState(() => _apn = picked);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(FlutterI18n.translate(context, "ls_settings_apn_success"))),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(FlutterI18n.translate(context, "ls_settings_apn_error",
+              translationParams: {"error": e.toString()})),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isSendingApn = false);
+    }
   }
 
   List<Widget> settingsItems() => [
@@ -238,6 +365,20 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
               Navigator.push(
                   context, MaterialPageRoute(builder: (context) => LsScheduledHibernationScreen()));
             },
+          ),
+        if (context.watch<ScooterService>().identity.supportsApnConfig == true)
+          ListTile(
+            leading: Icon(Icons.cell_tower_outlined),
+            title: Text(FlutterI18n.translate(context, "ls_settings_apn_title")),
+            subtitle: Text(_apnSubtitle(context)),
+            trailing: _isSendingApn
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Icon(Icons.chevron_right),
+            onTap: _isSendingApn ? null : _editApn,
           ),
         ListTile(
           leading: Icon(Icons.usb_outlined),
