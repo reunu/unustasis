@@ -716,6 +716,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
           identity.supportsHibernateFor = false;
           identity.supportsScheduledHibernation = false;
           identity.supportsApnConfig = false;
+          identity.supportsBondForget = false;
         }
         notifyListeners();
       },
@@ -778,6 +779,22 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     if (probedScooterId != null && savedScooters.containsKey(probedScooterId)) {
       savedScooters[probedScooterId]!.supportsApnConfig = supportsApnConfig;
     }
+    notifyListeners();
+
+    bool? supportsBondForget;
+    try {
+      final caps = await commands.getLsCapabilitiesCommand(myScooter, characteristicRepository, "ble");
+      supportsBondForget = caps.contains("forget");
+    } catch (e, stack) {
+      log.warning("ble capability probe failed", e, stack);
+      supportsBondForget = false;
+    }
+    if (generation != _lsProbeGeneration) return;
+    // Not cached on the SavedScooter, unlike the two above. Nothing renders it,
+    // so there is no flicker to avoid, and the answer depends on the nRF
+    // firmware rather than the app: a cache would go stale the moment the
+    // scooter takes a firmware update.
+    identity.supportsBondForget = supportsBondForget;
     notifyListeners();
   }
 
@@ -1049,10 +1066,65 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     return store.getIds(onlyAutoConnect: onlyAutoConnect);
   }
 
+  /// Asks the connected scooter to forget this phone, so forgetting clears both
+  /// halves of the bond rather than leaving the scooter holding a peer entry
+  /// for a phone that no longer knows it. Those entries accumulate against a
+  /// whitelist with far fewer slots than the peer store has room for.
+  ///
+  /// Best effort, and deliberately so: a scooter running older firmware, or one
+  /// that never answers, still gets forgotten locally. The user asked for that,
+  /// and the alternative is a scooter the app can neither use nor get rid of.
+  ///
+  /// Returns whether the scooter agreed.
+  Future<bool> _clearScooterSideBond() async {
+    if (myScooter == null || identity.isLibrescoot != true) return false;
+    // Only skip on a probe that came back negative. A probe still in flight, or
+    // one that failed, is not a reason to leave the bond behind: the command
+    // answers for itself, and the cost of asking is one error reply.
+    if (identity.supportsBondForget == false) {
+      log.info("Scooter cannot clear its own bond, forgetting the phone side only");
+      return false;
+    }
+    final scooter = myScooter!;
+    try {
+      await commands.forgetBondCommand(scooter, characteristicRepository);
+    } catch (e, stack) {
+      log.warning("Scooter did not clear its bond, forgetting the phone side only", e, stack);
+      return false;
+    }
+
+    // The scooter acknowledges first and then drops the link to carry the
+    // delete out, because its peer manager cannot delete a peer that is still
+    // connected. So the disconnect is the confirmation, and tearing the link
+    // down from this side before it happens is not merely early: the firmware
+    // resolves the peer from the live connection, finds nothing connected, and
+    // leaves the bond exactly where it was.
+    try {
+      await scooter.connectionState
+          .firstWhere((state) => state == BluetoothConnectionState.disconnected)
+          .timeout(const Duration(seconds: 5));
+      log.info("Scooter forgot this phone and dropped the link");
+      return true;
+    } on TimeoutException {
+      log.warning("Scooter acknowledged the forget but never dropped the link; its bond may remain");
+      return false;
+    }
+  }
+
   Future<void> forgetSavedScooter(String id) async {
     if (myScooter?.remoteId.toString() == id) {
       // this is the currently connected scooter
+      //
+      // stopAutoRestart first: clearing the scooter's bond makes it drop the
+      // link, and an auto-restart racing that would reconnect to a scooter we
+      // are in the middle of forgetting.
       stopAutoRestart();
+      // Before removeBond(), not after. The command only travels over the
+      // authenticated link, so once the phone drops its bond there is nothing
+      // left to send it over. This returns with the link already down when the
+      // scooter agreed; the disconnect below is then a no-op that also covers
+      // the scooters that did not.
+      await _clearScooterSideBond();
       await myScooter?.disconnect();
       myScooter?.removeBond();
       myScooter = null;
