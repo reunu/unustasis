@@ -15,6 +15,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../background/widget_handler.dart';
 import '../domain/statistics_helper.dart';
 import '../domain/scooter_battery.dart';
+import '../domain/scooter_candidate.dart';
 import '../domain/nav_destination.dart';
 import '../domain/saved_scooter.dart';
 import '../domain/scooter_state.dart';
@@ -359,6 +360,30 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       getIds: getSavedScooterIds,
       excludedScooterIds: excludedScooterIds,
       includeSystemScooters: includeSystemScooters,
+    );
+  }
+
+  /// Live list of scooters the user could pick from, growing while the scan
+  /// runs. Unlike [findEligibleScooter] this reports everything it finds and
+  /// leaves the choice to the caller, and it includes scooters this phone has
+  /// already bonded, which a scan on its own cannot see.
+  Stream<List<ScooterCandidate>> discoverScooters({
+    List<String> excludedScooterIds = const [],
+    Duration timeout = const Duration(seconds: 30),
+    bool androidCheckLocationServices = true,
+  }) {
+    try {
+      stopAutoRestart();
+      log.fine("Auto-restart stopped");
+    } catch (e) {
+      log.info("Didn't stop auto-restart, might not have been running yet");
+    }
+
+    return scanner.discoverScooters(
+      getIds: getSavedScooterIds,
+      excludedScooterIds: excludedScooterIds,
+      timeout: timeout,
+      androidCheckLocationServices: androidCheckLocationServices,
     );
   }
 
