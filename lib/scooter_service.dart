@@ -501,11 +501,13 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
 
       // A working link is what this is trying to reach in the first place.
       // Dropping it here meant every spurious call cost a full
-      // disconnect/scan/reconnect cycle.
-      if (myScooter != null && myScooter!.isConnected) {
+      // disconnect/scan/reconnect cycle. Both flags have to agree: the
+      // platform's cached state alone can outlive a link that died while the
+      // app was suspended, and the resume handler clears `connected` for
+      // exactly that case before it gets here.
+      if (connected && myScooter != null && myScooter!.isConnected) {
         log.info("Already connected to ${myScooter!.remoteId}, keeping the link");
         _foundSth = true;
-        connected = true;
         if (restart) {
           startAutoRestart();
         }
