@@ -82,6 +82,12 @@ class ScooterCandidate {
     );
   }
 
+  /// Whether anything actually places this scooter here and now. A bond on its
+  /// own does not: a phone remembers every scooter it has ever paired with, and
+  /// a silent bond could be on the other side of the city. An advertisement
+  /// means it is in radio range, and a live link means it is definitely here.
+  bool get isPresent => rssi != null || systemConnected;
+
   /// Scooters the phone has no bond with come first, since adding one of those
   /// is the point of this screen. Then whatever the phone is already talking
   /// to, then the back catalogue of old bonds, which gets long on a phone that

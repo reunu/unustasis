@@ -175,7 +175,10 @@ class BleScanner {
       coalesceTimer?.cancel();
       coalesceTimer = null;
       if (!controller.isClosed) {
-        controller.add(ScooterCandidate.sorted(candidates.values));
+        // Old bonds that are neither advertising nor connected stay out of the
+        // list. There is nothing to say they are anywhere near, and on a phone
+        // that has paired with a lot of scooters they bury the ones that are.
+        controller.add(ScooterCandidate.sorted(candidates.values.where((c) => c.isPresent)));
       }
     }
 

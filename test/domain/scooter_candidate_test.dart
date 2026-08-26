@@ -63,6 +63,14 @@ void main() {
     });
   });
 
+  group('isPresent', () {
+    test('an advertisement or a live link places a scooter, a bond alone does not', () {
+      expect(candidate("advertising", rssi: -70).isPresent, isTrue);
+      expect(candidate("linked", bonded: true, systemConnected: true).isPresent, isTrue);
+      expect(candidate("old-bond", bonded: true).isPresent, isFalse);
+    });
+  });
+
   group('sorted', () {
     test('puts scooters we have no bond with first, then connected, then old bonds', () {
       final List<ScooterCandidate> sorted = ScooterCandidate.sorted([
