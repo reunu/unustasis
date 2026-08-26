@@ -461,13 +461,17 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       // listen for disconnects, replacing the previous connection's listener
       // rather than piling another one on top of it
       await _connectionStateSubscription?.cancel();
+      // Captured, not read back off myScooter: this listener belongs to one
+      // scooter, and myScooter is null by the time the disconnect arrives when
+      // the link drops during a forget or a rolled-back connect.
+      final String listeningTo = myScooter!.remoteId.toString();
       _connectionStateSubscription = myScooter!.connectionState.listen((BluetoothConnectionState state) async {
         if (state == BluetoothConnectionState.disconnected) {
           connected = false;
           this.state = ScooterState.disconnected;
           log.info("Lost connection to scooter! :(");
           // update the ping again
-          updateScooterPing(myScooter!.remoteId.toString());
+          updateScooterPing(listeningTo);
           // Restart the process if we're not already doing so
           // start(); // this leads to some conflicts right now if the phone auto-connects, so we're not doing it
         }
