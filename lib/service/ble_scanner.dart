@@ -333,7 +333,8 @@ class BleScanner {
       }
     }
 
-    _log.info("Found ${found.length} scooter(s) the OS already knows about");
+    _log.info("Found ${found.length} scooter(s) the OS already knows about"
+        "${found.isEmpty ? "" : ": ${found.values.map((c) => c.toString()).join("; ")}"}");
     return found.values.toList();
   }
 
