@@ -379,10 +379,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
 
   StreamSubscription<BluetoothConnectionState>? _connectionStateSubscription;
 
-  Future<void> connectToScooterId(
-    String id, {
-    bool initialConnect = false,
-  }) async {
+  Future<void> connectToScooterId(String id) async {
     log.info("Connecting to scooter with ID: $id");
     _foundSth = true;
     state = ScooterState.linking;
@@ -392,10 +389,14 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       // wait for the connection to be established
       log.info("Connecting to ${attemptedScooter.remoteId}");
       await attemptedScooter.connect(timeout: const Duration(seconds: 30));
-      if (initialConnect && Platform.isAndroid) {
-        // Adding a scooter the phone is already paired with is a normal thing
-        // to do (app reinstalled, data cleared), and asking to bond again just
-        // costs a round trip.
+      if (Platform.isAndroid) {
+        // Bond on any connect, not just when adding a scooter. Until nRF
+        // v2.8.0-ls-2 the scooter sent an SMP Security Request on every
+        // connection and Android started bonding off the back of it, so this
+        // only had to cover the first pairing. That request is gone now, so a
+        // saved scooter whose bond went missing (forgotten in Android's
+        // settings, app data restored onto another phone) would connect and
+        // then fail its first encrypted read instead.
         final BluetoothBondState bondState = await attemptedScooter.bondState.first;
         if (bondState == BluetoothBondState.bonded) {
           log.info("Already bonded with ${attemptedScooter.remoteId}, no pairing request needed");
@@ -460,13 +461,17 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       // listen for disconnects, replacing the previous connection's listener
       // rather than piling another one on top of it
       await _connectionStateSubscription?.cancel();
+      // Captured, not read back off myScooter: this listener belongs to one
+      // scooter, and myScooter is null by the time the disconnect arrives when
+      // the link drops during a forget or a rolled-back connect.
+      final String listeningTo = myScooter!.remoteId.toString();
       _connectionStateSubscription = myScooter!.connectionState.listen((BluetoothConnectionState state) async {
         if (state == BluetoothConnectionState.disconnected) {
           connected = false;
           this.state = ScooterState.disconnected;
           log.info("Lost connection to scooter! :(");
           // update the ping again
-          updateScooterPing(myScooter!.remoteId.toString());
+          updateScooterPing(listeningTo);
           // Restart the process if we're not already doing so
           // start(); // this leads to some conflicts right now if the phone auto-connects, so we're not doing it
         }
