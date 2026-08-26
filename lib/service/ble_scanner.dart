@@ -168,6 +168,7 @@ class BleScanner {
     final Map<String, ScooterCandidate> candidates = {};
     final List<StreamSubscription<dynamic>> subscriptions = [];
     Timer? coalesceTimer;
+    Timer? watchdog;
     late StreamController<List<ScooterCandidate>> controller;
 
     void emit() {
@@ -233,6 +234,17 @@ class BleScanner {
         }),
       );
 
+      // The scan-stopped event does go missing, most reliably when the app is
+      // suspended mid-scan. Without a backstop the caller waits on a stream
+      // that never completes and the UI keeps claiming it is searching.
+      watchdog = Timer(timeout + const Duration(seconds: 5), () {
+        if (!controller.isClosed) {
+          _log.warning("Scan didn't report that it stopped, closing discovery anyway");
+          emit();
+          controller.close();
+        }
+      });
+
       try {
         // Filters are OR'ed, so a bonded scooter that reports an unexpected
         // name still shows up by remote ID once it starts advertising again.
@@ -257,6 +269,7 @@ class BleScanner {
       if (cleanedUp) return;
       cleanedUp = true;
       coalesceTimer?.cancel();
+      watchdog?.cancel();
       for (final StreamSubscription<dynamic> subscription in subscriptions) {
         await subscription.cancel();
       }
