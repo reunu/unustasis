@@ -532,6 +532,6 @@
     "ls_ota_warn_version_unpublished": "De versie van het nieuwere board ({version}) is niet meer beschikbaar — beide boards worden in plaats daarvan naar de nieuwste versie bijgewerkt.",
     "ls_ota_warn_no_image_for": "Geen {board}-image gevonden voor {version}.",
     "ls_ota_warn_no_delta_path": "Geen delta-pad vanaf {version} — een volledige image is nodig ({latest}).",
-    "ls_settings_apn_clear": "Standaard herstellen",
+    "ls_settings_apn_clear": "Wissen",
     "ls_settings_apn_cleared": "APN gewist, de standaard van de SIM-provider wordt gebruikt"
 }

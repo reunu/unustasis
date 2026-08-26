@@ -140,25 +140,17 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
                     }
                   },
                 ),
-                // Sits here rather than beside Cancel and Save: three actions
-                // overflow the dialog and stack, and resetting is a side path
-                // rather than a peer of the primary pair.
-                if (_apn != null && _apn!.isNotEmpty)
-                  Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: TextButton.icon(
-                      style: TextButton.styleFrom(
-                        foregroundColor: Theme.of(dialogContext).colorScheme.error,
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                      ),
-                      icon: const Icon(Icons.settings_backup_restore, size: 18),
-                      onPressed: () => Navigator.of(dialogContext).pop((clear: true, value: "")),
-                      label: Text(FlutterI18n.translate(dialogContext, "ls_settings_apn_clear")),
-                    ),
-                  ),
               ],
             ),
             actions: [
+              if (_apn != null && _apn!.isNotEmpty)
+                TextButton(
+                  style: TextButton.styleFrom(
+                    foregroundColor: Theme.of(dialogContext).colorScheme.error,
+                  ),
+                  onPressed: () => Navigator.of(dialogContext).pop((clear: true, value: "")),
+                  child: Text(FlutterI18n.translate(dialogContext, "ls_settings_apn_clear")),
+                ),
               TextButton(
                 child: Text(FlutterI18n.translate(dialogContext, "cancel")),
                 onPressed: () => Navigator.of(dialogContext).pop(),
