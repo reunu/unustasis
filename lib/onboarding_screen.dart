@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
@@ -41,6 +42,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
   List<ScooterCandidate> _candidates = [];
   StreamSubscription<List<ScooterCandidate>>? _discoverySub;
   bool _searching = false;
+  bool? _scanNeedsLocation;
   late AnimationController _scanningController;
   late AnimationController _pairingController;
   int _pendingColor = 0;
@@ -265,6 +267,29 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
     );
   }
 
+  /// Whether a BLE scan on this device still needs location.
+  ///
+  /// Android 12 dropped that requirement for apps that declare BLUETOOTH_SCAN
+  /// with neverForLocation, which this one does, so from API 31 on a scan works
+  /// with location permission denied and location services switched off.
+  /// Refusing to scan without it locked out anyone who had turned location off.
+  /// flutter_blue_plus asks for BLUETOOTH_SCAN and BLUETOOTH_CONNECT itself
+  /// when the scan starts, so there is nothing else to request here.
+  Future<bool> _scanRequiresLocation() async {
+    if (_scanNeedsLocation != null) return _scanNeedsLocation!;
+    bool needed = true;
+    if (Platform.isAndroid) {
+      try {
+        final AndroidDeviceInfo info = await DeviceInfoPlugin().androidInfo;
+        needed = info.version.sdkInt < 31;
+      } catch (e, stack) {
+        log.warning("Couldn't read the Android version, assuming location is needed", e, stack);
+      }
+    }
+    _scanNeedsLocation = needed;
+    return needed;
+  }
+
   Future<bool> _checkAndRequestPermissions() async {
     // Check if location services are enabled
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -278,7 +303,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
       return false;
     }
 
-    // Check location permission (required for Bluetooth scanning on Android)
+    // Check location permission (required for Bluetooth scanning before Android 12)
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
@@ -307,8 +332,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
   }
 
   void _startSearch() async {
-    // Check and request permissions before scanning
-    if (!await _checkAndRequestPermissions()) {
+    final bool needsLocation = await _scanRequiresLocation();
+    if (needsLocation && !await _checkAndRequestPermissions()) {
       log.warning("Permissions not granted, cannot start scanning");
       _stopSearching();
       return;
@@ -328,7 +353,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
 
     _discoverySub = context
         .read<ScooterService>()
-        .discoverScooters(excludedScooterIds: widget.excludedScooterIds ?? const [])
+        .discoverScooters(
+          excludedScooterIds: widget.excludedScooterIds ?? const [],
+          androidCheckLocationServices: needsLocation,
+        )
         .listen(
           (List<ScooterCandidate> candidates) {
             if (mounted) setState(() => _candidates = candidates);
