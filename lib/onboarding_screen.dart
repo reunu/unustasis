@@ -393,7 +393,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
       // Awaited on purpose. Firing this off and moving to step 4 anyway left
       // the screen on "Connecting..." forever whenever the attempt failed,
       // because the rejected future never reached the catch below.
-      await service.connectToScooterId(candidate.id, initialConnect: true);
+      await service.connectToScooterId(candidate.id);
     } catch (e, stack) {
       log.severe("Error connecting to scooter!", e, stack);
       if (!mounted) return;
