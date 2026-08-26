@@ -88,6 +88,30 @@ void main() {
     });
   });
 
+  group('parseCapabilityEntry', () {
+    test('pulls the command name out of an entry', () {
+      expect(parseCapabilityEntry('pm', 'cap:pm:hibernate-cancel'), 'hibernate-cancel');
+      expect(parseCapabilityEntry('ble', 'cap:ble:forget'), 'forget');
+    });
+
+    test('drops the argument placeholder', () {
+      expect(parseCapabilityEntry('pm', 'cap:pm:hibernate-for <duration>'), 'hibernate-for');
+    });
+
+    test('keeps colons inside a command name', () {
+      expect(parseCapabilityEntry('nav', 'cap:nav:fav:add'), 'fav:add');
+    });
+
+    test('ignores entries for another category', () {
+      expect(parseCapabilityEntry('ble', 'cap:pm:hibernate-cancel'), isNull);
+      expect(parseCapabilityEntry('ble', 'ble:forget:ok'), isNull);
+    });
+
+    test('ignores an entry with nothing after the prefix', () {
+      expect(parseCapabilityEntry('ble', 'cap:ble:'), isNull);
+    });
+  });
+
   group('ExtendedResponseListener', () {
     test('delivers responses emitted before the caller starts reading', () async {
       final source = StreamController<List<int>>.broadcast();

@@ -767,6 +767,19 @@ Future<void> hibernateCancelCommand(
   }
 }
 
+/// Pulls the command name out of one `cap:<category>:<command>[ <args>]` entry.
+///
+/// The count header is consumed by [readExtendedList] before this sees
+/// anything, so every message reaching here should be an entry. Returns null
+/// for one that isn't for [category], which [readExtendedList] then skips.
+@visibleForTesting
+String? parseCapabilityEntry(String category, String msg) {
+  final prefix = "cap:$category:";
+  if (!msg.startsWith(prefix)) return null;
+  final name = msg.substring(prefix.length).split(" ").first;
+  return name.isNotEmpty ? name : null;
+}
+
 /// Queries the scooter's power-management capabilities (e.g. "hibernate-for",
 /// "hibernate-cancel").
 Future<Set<String>> getPmCapabilitiesCommand(
@@ -798,13 +811,7 @@ Future<Set<String>> getLsCapabilitiesCommand(
   try {
     await sendCommand(scooter, repo, "cap:$category", characteristic: cmd);
     final stream = listener.responses.timeout(const Duration(seconds: 10));
-    // format: cap:<category>:count:<n>, then cap:<category>:<command>[ <args>].
-    final prefix = "cap:$category:";
-    final entries = await readExtendedList(stream, (msg) {
-      if (!msg.startsWith(prefix)) return null;
-      final name = msg.substring(prefix.length).split(" ").first;
-      return name.isNotEmpty ? name : null;
-    });
+    final entries = await readExtendedList(stream, (msg) => parseCapabilityEntry(category, msg));
     return entries.toSet();
   } on TimeoutException {
     log.info("getLsCapabilitiesCommand: timeout, assuming no $category capabilities");
@@ -818,6 +825,32 @@ Future<Set<String>> getLsCapabilitiesCommand(
     await listener.cancel();
   }
 });
+
+/// Asks the scooter to forget this phone, clearing the scooter's half of the
+/// bond. Only the caller's own bond can be dropped this way: the scooter
+/// resolves the peer from the live connection, so there is nothing to pass and
+/// no way to reach anyone else's bond.
+///
+/// Send this while still connected and before dropping the phone's own bond.
+/// The command only travels over the authenticated link, and the scooter
+/// disconnects to carry the delete out, so there is no second chance.
+///
+/// The reply means the command was accepted, not that the bond is gone: nothing
+/// on the vehicle exposes a peer list. The scooter dropping the link afterwards
+/// is the observable part, so callers should wait for it.
+///
+/// Throws if the scooter refuses or never answers. Needs librescoot 1.3 with
+/// nRF firmware v2.8.0-ls or later; probe `cap:ble` for "forget" first.
+Future<void> forgetBondCommand(
+  BluetoothDevice? scooter,
+  CharacteristicRepository repo,
+) async {
+  final response = await sendLsExtendedCommand(scooter, repo, "ble:forget");
+  if (response != "ble:forget:ok") {
+    log.warning("Scooter would not forget this phone, response: $response");
+    throw "Failed to forget the scooter side of the bond, response: $response";
+  }
+}
 
 /// Reads a librescoot settings key via the generic get command. Returns null
 /// if the key or the get command itself is unsupported (or on timeout), and
