@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
@@ -24,12 +25,12 @@ int? _bytesToUint32(List<int> data) {
 
 /// Subscribes to a BLE characteristic that sends ASCII string values.
 /// Calls [onChanged] with the decoded string whenever the value updates.
-void subscribeToStringValue(
+StreamSubscription<List<int>> subscribeToStringValue(
   BluetoothCharacteristic characteristic,
   String label,
   void Function(String value) onChanged,
 ) {
-  subscribeCharacteristic(characteristic, (data) {
+  return subscribeCharacteristic(characteristic, (data) {
     String value = _bytesToString(data);
     //_log.info("$label received: $value");
     onChanged(value);
@@ -40,13 +41,13 @@ void subscribeToStringValue(
 
 /// Subscribes to a BLE characteristic that sends an integer value.
 /// If [singleByte] is true, reads only the first byte; otherwise parses as uint32.
-void subscribeToIntValue(
+StreamSubscription<List<int>> subscribeToIntValue(
   BluetoothCharacteristic characteristic,
   String label,
   void Function(int value) onChanged, {
   bool singleByte = false,
 }) {
-  subscribeCharacteristic(characteristic, (data) {
+  return subscribeCharacteristic(characteristic, (data) {
     int? value;
     if (singleByte && data.isNotEmpty) {
       value = data[0];
@@ -64,11 +65,11 @@ void subscribeToIntValue(
 
 /// Subscribes to a CBB charging characteristic.
 /// Calls [onChanged] with true for "charging", false for "not-charging".
-void subscribeToCbbCharging(
+StreamSubscription<List<int>> subscribeToCbbCharging(
   BluetoothCharacteristic characteristic,
   void Function(bool charging) onChanged,
 ) {
-  subscribeToStringValue(characteristic, "CBB charging", (value) {
+  return subscribeToStringValue(characteristic, "CBB charging", (value) {
     if (value == "charging") {
       onChanged(true);
     } else if (value == "not-charging") {
@@ -79,11 +80,11 @@ void subscribeToCbbCharging(
 
 /// Subscribes to an AUX charging characteristic.
 /// Calls [onChanged] with the parsed [AUXChargingState].
-void subscribeToAuxCharging(
+StreamSubscription<List<int>> subscribeToAuxCharging(
   BluetoothCharacteristic characteristic,
   void Function(AUXChargingState charging) onChanged,
 ) {
-  subscribeToStringValue(characteristic, "AUX charging", (value) {
+  return subscribeToStringValue(characteristic, "AUX charging", (value) {
     switch (value) {
       case "float-charge":
         onChanged(AUXChargingState.floatCharge);

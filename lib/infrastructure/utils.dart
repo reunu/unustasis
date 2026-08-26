@@ -1,11 +1,23 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 
-void subscribeCharacteristic(BluetoothCharacteristic characteristic, Function(List<int>) onData) async {
+/// Subscribes to a characteristic's values and hands back the subscription.
+///
+/// Cancel it when the connection goes away. lastValueStream is derived from a
+/// global platform stream that never closes, so a listener left behind
+/// outlives the disconnect and every reconnect stacks another copy of the
+/// handler on top of it.
+StreamSubscription<List<int>> subscribeCharacteristic(
+  BluetoothCharacteristic characteristic,
+  Function(List<int>) onData,
+) {
   characteristic.setNotifyValue(true);
-  characteristic.lastValueStream.listen(onData);
+  final StreamSubscription<List<int>> subscription = characteristic.lastValueStream.listen(onData);
   characteristic.read();
+  return subscription;
 }
 
 extension DateTimeExtension on DateTime {

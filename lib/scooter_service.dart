@@ -377,6 +377,8 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     );
   }
 
+  StreamSubscription<BluetoothConnectionState>? _connectionStateSubscription;
+
   Future<void> connectToScooterId(
     String id, {
     bool initialConnect = false,
@@ -454,8 +456,10 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
         "scooterColor": scooterColor,
         "lastPingInt": DateTime.now().millisecondsSinceEpoch,
       });
-      // listen for disconnects
-      myScooter!.connectionState.listen((BluetoothConnectionState state) async {
+      // listen for disconnects, replacing the previous connection's listener
+      // rather than piling another one on top of it
+      await _connectionStateSubscription?.cancel();
+      _connectionStateSubscription = myScooter!.connectionState.listen((BluetoothConnectionState state) async {
         if (state == BluetoothConnectionState.disconnected) {
           connected = false;
           this.state = ScooterState.disconnected;
@@ -1097,6 +1101,10 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     _locationTimer.cancel();
     rssiTimer.cancel();
     _manualRefreshTimer.cancel();
+    _connectionStateSubscription?.cancel();
+    _autoRestartSubscription?.cancel();
+    vehicle.cancelSubscriptions();
+    battery.cancelSubscriptions();
 
     // Unregister lifecycle observer
     if (!isInBackgroundService) {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
 
@@ -26,6 +28,19 @@ class VehicleStatus {
     return ScooterState.fromVehicleAndPowerState(vehicleState, powerState);
   }
 
+  final List<StreamSubscription<List<int>>> _subscriptions = [];
+
+  /// Drops every characteristic listener from the previous connection. Without
+  /// this each reconnect leaves the old handlers attached and they all keep
+  /// firing, since the underlying stream is global and never closes.
+  void cancelSubscriptions() {
+    final List<StreamSubscription<List<int>>> previous = List.of(_subscriptions);
+    _subscriptions.clear();
+    for (final StreamSubscription<List<int>> subscription in previous) {
+      subscription.cancel();
+    }
+  }
+
   void wireSubscriptions(
     CharacteristicRepository chars, {
     required VoidCallback onStateUpdate,
@@ -35,36 +50,37 @@ class VehicleStatus {
     required void Function(bool?) onHandlebarsChanged,
   }) {
     log.info('Wiring vehicle status subscriptions');
+    cancelSubscriptions();
 
     // Vehicle state
-    subscribeToStringValue(chars.stateCharacteristic!, 'State', (value) {
+    _subscriptions.add(subscribeToStringValue(chars.stateCharacteristic!, 'State', (value) {
       vehicleState = ScooterVehicleState.fromString(value);
       onStateUpdate();
-    });
+    }));
 
     // Power state (only available in newer firmware)
     if (chars.powerStateCharacteristic != null) {
-      subscribeToStringValue(chars.powerStateCharacteristic!, 'Power State', (value) {
+      _subscriptions.add(subscribeToStringValue(chars.powerStateCharacteristic!, 'Power State', (value) {
         powerState = ScooterPowerState.fromString(value);
         onStateUpdate();
-      });
+      }));
     }
 
     // Seat
-    subscribeToStringValue(chars.seatCharacteristic!, 'Seat', (value) {
+    _subscriptions.add(subscribeToStringValue(chars.seatCharacteristic!, 'Seat', (value) {
       seatClosed = value != 'open';
       onSeatUpdate();
-    });
+    }));
 
     // Handlebars
-    subscribeToStringValue(chars.handlebarCharacteristic!, 'Handlebars', (value) {
+    _subscriptions.add(subscribeToStringValue(chars.handlebarCharacteristic!, 'Handlebars', (value) {
       handlebarsLocked = value != 'unlocked';
       onHandlebarsChanged(handlebarsLocked);
-    });
+    }));
 
     // USB status
     try {
-      subscribeToIntValue(
+      _subscriptions.add(subscribeToIntValue(
         chars.umsStatusCharacteristic!,
         'USB Status',
         singleByte: true,
@@ -80,14 +96,14 @@ class VehicleStatus {
           }
           onUsbModeChanged();
         },
-      );
+      ));
     } catch (e) {
       log.info('UMS status characteristic not available, skipping subscription');
     }
 
     // Navigation
     try {
-      subscribeToIntValue(
+      _subscriptions.add(subscribeToIntValue(
         chars.navigationActiveCharacteristic!,
         'Navigation',
         singleByte: true,
@@ -95,7 +111,7 @@ class VehicleStatus {
           navigationActive = (value == 1);
           onNavigationChanged();
         },
-      );
+      ));
     } catch (e) {
       log.info('Navigation characteristic not available, skipping subscription');
     }
