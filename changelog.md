@@ -3,3 +3,8 @@
 - Bluetooth updating of librescoot scooters
 - Disabling "hibernate for" feature for unsupported scooters
 - Fixing a visual glitch in home screen and onboarding
+- Scooters your phone has already paired with now turn up when you add a scooter, instead of staying invisible
+- Adding a scooter now shows a list to pick from, with signal strength and whether you are already paired
+- Forgetting a scooter sticks, rather than the scooter reappearing moments later
+- Umlauts and other non-ASCII characters in destination names no longer break the connection
+- Quicker, more reliable replies for keycards, saved destinations and scooter settings
