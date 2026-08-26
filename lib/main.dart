@@ -91,40 +91,44 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 class _MyAppState extends State<MyApp> {
   SharingHandler? _sharingHandler;
-
-  @override
-  void initState() {
-    super.initState();
-    // SharingHandler is initialized in didChangeDependencies
-    // where the Provider context is available
-    scooterService.addListener(() async {
-      passToWidget(
-        connected: scooterService.connected,
-        lastPing: scooterService.identity.lastPing,
-        scooterState: scooterService.state,
-        primarySOC: scooterService.battery.primarySOC,
-        secondarySOC: scooterService.battery.secondarySOC,
-        scooterName: scooterService.identity.name,
-        scooterColor: scooterService.identity.color,
-        lastLocation: scooterService.identity.lastLocation,
-        seatClosed: scooterService.vehicle.seatClosed,
-        scooterLocked: scooterService.vehicle.handlebarsLocked,
-        scooterId: scooterService.myScooter?.remoteId.toString(),
-      );
-    });
-  }
+  ScooterService? _scooterService;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_sharingHandler == null) {
+      // Bind to the Provider's ScooterService, not the background service's
+      // global. Touching that global from the foreground isolate constructs a
+      // second ScooterService here (top-level fields are lazily initialized
+      // per isolate), with its own location, RSSI and refresh timers, and it
+      // then reports state the UI never drives.
       final service = Provider.of<ScooterService>(context, listen: false);
+      _scooterService = service;
       _sharingHandler = SharingHandler(
         navigatorKey: navigatorKey,
         service: service,
       );
       _sharingHandler!.init();
+      service.addListener(_pushStateToWidget);
     }
+  }
+
+  void _pushStateToWidget() {
+    final service = _scooterService;
+    if (service == null) return;
+    passToWidget(
+      connected: service.connected,
+      lastPing: service.identity.lastPing,
+      scooterState: service.state,
+      primarySOC: service.battery.primarySOC,
+      secondarySOC: service.battery.secondarySOC,
+      scooterName: service.identity.name,
+      scooterColor: service.identity.color,
+      lastLocation: service.identity.lastLocation,
+      seatClosed: service.vehicle.seatClosed,
+      scooterLocked: service.vehicle.handlebarsLocked,
+      scooterId: service.myScooter?.remoteId.toString(),
+    );
   }
 
   @override
@@ -192,6 +196,7 @@ class _MyAppState extends State<MyApp> {
 
   @override
   void dispose() {
+    _scooterService?.removeListener(_pushStateToWidget);
     _sharingHandler?.dispose();
     super.dispose();
   }
