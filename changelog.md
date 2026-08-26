@@ -8,3 +8,5 @@
 - Forgetting a scooter sticks, rather than the scooter reappearing moments later
 - Umlauts and other non-ASCII characters in destination names no longer break the connection
 - Quicker, more reliable replies for keycards, saved destinations and scooter settings
+- The scooter picker now speaks French and Dutch as well
+- Set the mobile APN for your scooter's SIM from the Librescoot settings (librescoot-only)
