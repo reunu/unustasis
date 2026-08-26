@@ -421,6 +421,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       identity.resetLsCapabilities();
       // fall back to the cached capability until the probe resolves again
       identity.supportsHibernateFor = savedScooters[attemptedScooter.remoteId.toString()]?.supportsHibernateFor;
+      identity.supportsApnConfig = savedScooters[attemptedScooter.remoteId.toString()]?.supportsApnConfig;
       _lsProbeGeneration++;
       addSavedScooter(myScooter!.remoteId.toString());
 
@@ -772,6 +773,11 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     }
     if (generation != _lsProbeGeneration) return;
     identity.supportsApnConfig = supportsApnConfig;
+    // cached like the pm capability, so the APN tile does not vanish and
+    // reappear every time the probe re-runs on a reconnect
+    if (probedScooterId != null && savedScooters.containsKey(probedScooterId)) {
+      savedScooters[probedScooterId]!.supportsApnConfig = supportsApnConfig;
+    }
     notifyListeners();
   }
 

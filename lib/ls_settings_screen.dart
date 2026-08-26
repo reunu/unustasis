@@ -28,6 +28,17 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
   bool _apnLoaded = false;
   String? _apn;
 
+  // Owned here rather than per-dialog. showDialog's future completes on pop,
+  // while the route is still animating out with the TextField attached, so a
+  // controller disposed right after the await is torn down under a live field.
+  final TextEditingController _apnController = TextEditingController();
+
+  @override
+  void dispose() {
+    _apnController.dispose();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -94,7 +105,7 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
   }
 
   Future<void> _editApn() async {
-    final controller = TextEditingController(text: _apn ?? "");
+    final controller = _apnController..text = _apn ?? "";
     final ({bool clear, String value})? picked = await showDialog<({bool clear, String value})>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
@@ -159,7 +170,6 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
         },
       ),
     );
-    controller.dispose();
     if (picked == null || !mounted) return;
 
     setState(() => _isSendingApn = true);
