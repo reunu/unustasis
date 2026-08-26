@@ -391,18 +391,26 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       log.info("Connecting to ${attemptedScooter.remoteId}");
       await attemptedScooter.connect(timeout: const Duration(seconds: 30));
       if (initialConnect && Platform.isAndroid) {
-        await attemptedScooter.createBond(timeout: 30);
-        log.info("Bond established");
+        // Adding a scooter the phone is already paired with is a normal thing
+        // to do (app reinstalled, data cleared), and asking to bond again just
+        // costs a round trip.
+        final BluetoothBondState bondState = await attemptedScooter.bondState.first;
+        if (bondState == BluetoothBondState.bonded) {
+          log.info("Already bonded with ${attemptedScooter.remoteId}, no pairing request needed");
+        } else {
+          await attemptedScooter.createBond(timeout: 30);
+          log.info("Bond established");
+        }
       }
       if (Platform.isAndroid) {
-        // higher MTU and connection priority: required for reasonable OTA
-        // transfer throughput, harmless otherwise. iOS negotiates its MTU
-        // automatically and does not expose a priority request.
+        // connect() already asks for the largest MTU it can get, so there is
+        // nothing left to negotiate here. Connection priority is separate:
+        // high priority is what makes OTA transfer throughput bearable, and it
+        // is harmless otherwise. iOS exposes neither.
         try {
-          await attemptedScooter.requestMtu(247);
           await attemptedScooter.requestConnectionPriority(connectionPriorityRequest: ConnectionPriority.high);
         } catch (e) {
-          log.warning("MTU/priority negotiation failed (continuing): $e");
+          log.warning("Connection priority request failed (continuing): $e");
         }
       }
       log.info("Connected to ${attemptedScooter.remoteId}");
