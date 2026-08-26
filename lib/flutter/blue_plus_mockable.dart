@@ -18,6 +18,7 @@ class FlutterBluePlusMockable {
     bool oneByOne = false,
     AndroidScanMode androidScanMode = AndroidScanMode.lowLatency,
     bool androidUsesFineLocation = false,
+    bool androidCheckLocationServices = true,
   }) {
     return FlutterBluePlus.startScan(
         withServices: withServices,
@@ -32,7 +33,8 @@ class FlutterBluePlusMockable {
         continuousDivisor: continuousDivisor,
         oneByOne: oneByOne,
         androidScanMode: androidScanMode,
-        androidUsesFineLocation: androidUsesFineLocation);
+        androidUsesFineLocation: androidUsesFineLocation,
+        androidCheckLocationServices: androidCheckLocationServices);
   }
 
   Stream<BluetoothAdapterState> get adapterState {

@@ -491,14 +491,17 @@ class SavedScooterCard extends StatelessWidget {
                             bool? forget = await showForgetDialog(context);
                             if (forget == true && context.mounted) {
                               String name = savedScooter.name;
-                              context.read<ScooterService>().forgetSavedScooter(savedScooter.id);
-                              rebuild();
-                              Fluttertoast.showToast(
-                                  msg: FlutterI18n.translate(
+                              // Wait for the removal to land before rebuilding,
+                              // otherwise the list redraws from the old state
+                              // and the scooter looks like it is still there.
+                              final String message = FlutterI18n.translate(
                                 context,
                                 "forget_alert_success",
                                 translationParams: {"name": name},
-                              ));
+                              );
+                              await context.read<ScooterService>().forgetSavedScooter(savedScooter.id);
+                              rebuild();
+                              Fluttertoast.showToast(msg: message);
                             }
                           },
                           icon: Icon(

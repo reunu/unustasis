@@ -15,6 +15,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../background/widget_handler.dart';
 import '../domain/statistics_helper.dart';
 import '../domain/scooter_battery.dart';
+import '../domain/scooter_candidate.dart';
 import '../domain/nav_destination.dart';
 import '../domain/saved_scooter.dart';
 import '../domain/scooter_state.dart';
@@ -348,12 +349,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     List<String> excludedScooterIds = const [],
     bool includeSystemScooters = true,
   }) async {
-    try {
-      stopAutoRestart();
-      log.fine("Auto-restart stopped");
-    } catch (e) {
-      log.info("Didn't stop auto-restart, might not have been running yet");
-    }
+    stopAutoRestart();
 
     return scanner.findEligibleScooter(
       getIds: getSavedScooterIds,
@@ -361,6 +357,27 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       includeSystemScooters: includeSystemScooters,
     );
   }
+
+  /// Live list of scooters the user could pick from, growing while the scan
+  /// runs. Unlike [findEligibleScooter] this reports everything it finds and
+  /// leaves the choice to the caller, and it includes scooters this phone has
+  /// already bonded, which a scan on its own cannot see.
+  Stream<List<ScooterCandidate>> discoverScooters({
+    List<String> excludedScooterIds = const [],
+    Duration timeout = const Duration(seconds: 30),
+    bool androidCheckLocationServices = true,
+  }) {
+    stopAutoRestart();
+
+    return scanner.discoverScooters(
+      getIds: getSavedScooterIds,
+      excludedScooterIds: excludedScooterIds,
+      timeout: timeout,
+      androidCheckLocationServices: androidCheckLocationServices,
+    );
+  }
+
+  StreamSubscription<BluetoothConnectionState>? _connectionStateSubscription;
 
   Future<void> connectToScooterId(
     String id, {
@@ -376,18 +393,26 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       log.info("Connecting to ${attemptedScooter.remoteId}");
       await attemptedScooter.connect(timeout: const Duration(seconds: 30));
       if (initialConnect && Platform.isAndroid) {
-        await attemptedScooter.createBond(timeout: 30);
-        log.info("Bond established");
+        // Adding a scooter the phone is already paired with is a normal thing
+        // to do (app reinstalled, data cleared), and asking to bond again just
+        // costs a round trip.
+        final BluetoothBondState bondState = await attemptedScooter.bondState.first;
+        if (bondState == BluetoothBondState.bonded) {
+          log.info("Already bonded with ${attemptedScooter.remoteId}, no pairing request needed");
+        } else {
+          await attemptedScooter.createBond(timeout: 30);
+          log.info("Bond established");
+        }
       }
       if (Platform.isAndroid) {
-        // higher MTU and connection priority: required for reasonable OTA
-        // transfer throughput, harmless otherwise. iOS negotiates its MTU
-        // automatically and does not expose a priority request.
+        // connect() already asks for the largest MTU it can get, so there is
+        // nothing left to negotiate here. Connection priority is separate:
+        // high priority is what makes OTA transfer throughput bearable, and it
+        // is harmless otherwise. iOS exposes neither.
         try {
-          await attemptedScooter.requestMtu(247);
           await attemptedScooter.requestConnectionPriority(connectionPriorityRequest: ConnectionPriority.high);
         } catch (e) {
-          log.warning("MTU/priority negotiation failed (continuing): $e");
+          log.warning("Connection priority request failed (continuing): $e");
         }
       }
       log.info("Connected to ${attemptedScooter.remoteId}");
@@ -431,8 +456,10 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
         "scooterColor": scooterColor,
         "lastPingInt": DateTime.now().millisecondsSinceEpoch,
       });
-      // listen for disconnects
-      myScooter!.connectionState.listen((BluetoothConnectionState state) async {
+      // listen for disconnects, replacing the previous connection's listener
+      // rather than piling another one on top of it
+      await _connectionStateSubscription?.cancel();
+      _connectionStateSubscription = myScooter!.connectionState.listen((BluetoothConnectionState state) async {
         if (state == BluetoothConnectionState.disconnected) {
           connected = false;
           this.state = ScooterState.disconnected;
@@ -452,71 +479,108 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     }
   }
 
+  bool _starting = false;
+
   // spins up the whole connection process, and connects/bonds with the nearest scooter
   void start({bool restart = true}) async {
+    // There are several entry points into this: startup, auto-restart, and
+    // every app resume. Two overlapping runs used to fight each other, because
+    // the second one tears down the link the first has just established.
+    if (_starting) {
+      log.info("START called while already starting, skipping the duplicate");
+      return;
+    }
+    _starting = true;
     log.info("START called on service");
-    // GETTING READY
-    // Remove the splash screen
-    Future.delayed(const Duration(milliseconds: 1500), () {
-      FlutterNativeSplash.remove();
-    });
-
-    // If Bluetooth is already on, don't wait for another "on" transition event.
-    final BluetoothAdapterState adapterStateNow = await flutterBluePlus.adapterState.first;
-    if (adapterStateNow != BluetoothAdapterState.on) {
-      await FlutterBluePlus.adapterState.where((val) => val == BluetoothAdapterState.on).first;
-    }
-
-    // CLEANUP
-    _foundSth = false;
-    connected = false;
-    state = ScooterState.disconnected;
-    if (myScooter != null) {
-      myScooter!.disconnect();
-    }
-
-    // SCAN
     try {
-      BluetoothDevice? eligibleScooter = await findEligibleScooter();
-      if (eligibleScooter != null) {
-        await connectToScooterId(eligibleScooter.remoteId.toString());
-      } else {
-        log.info("No eligible scooters found during start()");
-      }
-    } catch (e, stack) {
-      log.warning("Error during search or connect!", e, stack);
-      // fail quietly, there can be benign reasons like race conditions for this
-    }
+      // GETTING READY
+      // Remove the splash screen
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        FlutterNativeSplash.remove();
+      });
 
-    if (restart) {
-      startAutoRestart();
+      // A working link is what this is trying to reach in the first place.
+      // Dropping it here meant every spurious call cost a full
+      // disconnect/scan/reconnect cycle. Both flags have to agree: the
+      // platform's cached state alone can outlive a link that died while the
+      // app was suspended, and the resume handler clears `connected` for
+      // exactly that case before it gets here.
+      if (connected && myScooter != null && myScooter!.isConnected) {
+        log.info("Already connected to ${myScooter!.remoteId}, keeping the link");
+        _foundSth = true;
+        if (restart) {
+          startAutoRestart();
+        }
+        return;
+      }
+
+      // If Bluetooth is already on, don't wait for another "on" transition event.
+      final BluetoothAdapterState adapterStateNow = await flutterBluePlus.adapterState.first;
+      if (adapterStateNow != BluetoothAdapterState.on) {
+        await FlutterBluePlus.adapterState.where((val) => val == BluetoothAdapterState.on).first;
+      }
+
+      // CLEANUP
+      _foundSth = false;
+      connected = false;
+      state = ScooterState.disconnected;
+      if (myScooter != null) {
+        myScooter!.disconnect();
+      }
+
+      // SCAN
+      try {
+        BluetoothDevice? eligibleScooter = await findEligibleScooter();
+        if (eligibleScooter != null) {
+          await connectToScooterId(eligibleScooter.remoteId.toString());
+        } else {
+          log.info("No eligible scooters found during start()");
+        }
+      } catch (e, stack) {
+        log.warning("Error during search or connect!", e, stack);
+        // fail quietly, there can be benign reasons like race conditions for this
+      }
+
+      if (restart) {
+        startAutoRestart();
+      }
+    } finally {
+      _starting = false;
     }
   }
 
-  late StreamSubscription<bool> _autoRestartSubscription;
+  StreamSubscription<bool>? _autoRestartSubscription;
   void startAutoRestart({String? targetScooterId}) async {
-    if (!_autoRestarting) {
-      _autoRestarting = true;
-      _targetScooterId = targetScooterId;
-      log.info("Starting auto-restart${targetScooterId != null ? " for scooter $targetScooterId" : ""}");
-      _autoRestartSubscription = flutterBluePlus.isScanning.listen((
-        scanState,
-      ) async {
-        // retry if we stop scanning without having found anything
-        if (scanState == false && !_foundSth) {
-          await _attemptAutoRestart();
-        }
-      });
-
-      // If scan already ended before this listener was attached, trigger the same check.
-      if (!_foundSth && !flutterBluePlus.isScanningNow) {
-        await _attemptAutoRestart();
-      }
-    } else {
+    if (_autoRestarting) {
       log.info("Auto-restart already running, avoiding duplicate");
       if (targetScooterId != null) {
         _targetScooterId = targetScooterId;
       }
+      return;
+    }
+
+    _autoRestarting = true;
+    _targetScooterId = targetScooterId;
+    log.info("Starting auto-restart${targetScooterId != null ? " for scooter $targetScooterId" : ""}");
+
+    // _autoRestarting flips back to false inside start(), by way of
+    // findEligibleScooter calling stopAutoRestart, so this can be reached
+    // again while a listener is still attached. Cancel it first: an orphaned
+    // isScanning listener keeps firing _attemptAutoRestart forever, and
+    // stopAutoRestart can only ever cancel the one it is holding.
+    await _autoRestartSubscription?.cancel();
+    _autoRestartSubscription = flutterBluePlus.isScanning.listen((
+      scanState,
+    ) async {
+      // retry if we stop scanning without having found anything
+      if (scanState == false && !_foundSth) {
+        await _attemptAutoRestart();
+      }
+    });
+
+    // If scan already ended before this listener was attached, trigger the same check.
+    if (!_foundSth && !flutterBluePlus.isScanningNow) {
+      await _attemptAutoRestart();
     }
   }
 
@@ -542,7 +606,8 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   void stopAutoRestart() {
     _autoRestarting = false;
     _targetScooterId = null;
-    _autoRestartSubscription.cancel();
+    _autoRestartSubscription?.cancel();
+    _autoRestartSubscription = null;
     log.fine("Auto-restart stopped.");
   }
 
@@ -949,7 +1014,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     return store.getIds(onlyAutoConnect: onlyAutoConnect);
   }
 
-  void forgetSavedScooter(String id) async {
+  Future<void> forgetSavedScooter(String id) async {
     if (myScooter?.remoteId.toString() == id) {
       // this is the currently connected scooter
       stopAutoRestart();
@@ -971,7 +1036,11 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     }
     updateBackgroundService({"updateSavedScooters": true});
     connected = false;
-    notifyListeners();
+    // The background isolate is told to refetch, but this one was left holding
+    // the forgotten scooter's name and battery levels, so the home screen went
+    // on showing a scooter that no longer exists. refetchSavedScooters resets
+    // the streams when nothing is saved, and notifies for us.
+    await refetchSavedScooters();
   }
 
   void renameSavedScooter({String? id, required String name}) async {
@@ -1038,6 +1107,10 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     _locationTimer.cancel();
     rssiTimer.cancel();
     _manualRefreshTimer.cancel();
+    _connectionStateSubscription?.cancel();
+    _autoRestartSubscription?.cancel();
+    vehicle.cancelSubscriptions();
+    battery.cancelSubscriptions();
 
     // Unregister lifecycle observer
     if (!isInBackgroundService) {

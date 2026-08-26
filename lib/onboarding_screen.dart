@@ -1,8 +1,9 @@
+import 'dart:async';
 import 'dart:io';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geolocator/geolocator.dart';
@@ -11,8 +12,10 @@ import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:appcheck/appcheck.dart';
 
+import '../domain/scooter_candidate.dart';
 import '../domain/scooter_colors.dart';
 import '../domain/theme_helper.dart';
+import '../helper_widgets/scooter_picker.dart';
 import '../home_screen.dart';
 import '../scooter_service.dart';
 import '../domain/scooter_state.dart';
@@ -34,17 +37,19 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen> with TickerProviderStateMixin {
   final log = Logger('OnboardingScreen');
-  bool _scanning = false;
   int _step = 0;
-  BluetoothDevice? _foundScooter;
+  ScooterCandidate? _selectedScooter;
+  List<ScooterCandidate> _candidates = [];
+  StreamSubscription<List<ScooterCandidate>>? _discoverySub;
+  bool _searching = false;
+  bool? _scanNeedsLocation;
   late AnimationController _scanningController;
   late AnimationController _pairingController;
   int _pendingColor = 0;
   late TextEditingController _nameController;
   // Step 0: Welcome
   // Step 1: Explain visibility
-  // Step 2: Scanning (or nothing found, retry)
-  // Step 3: Found scooter, explain pairing
+  // Step 2: Scanning, and picking one of the scooters found (or nothing found, retry)
   // Step 4: Waiting for pairing
   // Step 5: Connected, all done!
   // Step 6: Personalize (name + color)
@@ -74,15 +79,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
     context.read<ScooterService>().addListener(() {
       if (mounted) {
         ScooterService service = context.read<ScooterService>();
-        setState(() {
-          _scanning = service.scanning;
-        });
-        if (service.scanning) {
+        if (service.scanning || _searching) {
           _scanningController.repeat();
-        } else if (!service.scanning) {
+        } else {
           _scanningController.stop();
         }
-        if (service.connected && (_step == 4 || _step == 3)) {
+        if (service.connected && _step == 4) {
           setState(() {
             _step = 5;
           });
@@ -160,45 +162,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
             });
 
       case 2:
-        if (_scanning) {
-          return _onboardingStep(
-            heading: FlutterI18n.translate(context, "onboarding_step2_heading"),
-            text: FlutterI18n.translate(context, "onboarding_step2_body"),
-          );
-        } else {
-          return _onboardingStep(
-              heading: FlutterI18n.translate(context, "onboarding_step2_heading_error"),
-              text: FlutterI18n.translate(context, "onboarding_step2_body_error"),
-              btnText: FlutterI18n.translate(context, "onboarding_step2_button_error"),
-              onPressed: () {
-                _startSearch();
-              });
-        }
-      case 3:
-        _pairingController.reset();
-        return _onboardingStep(
-            heading: FlutterI18n.translate(context, "onboarding_step3_heading"),
-            text: FlutterI18n.translate(context, "onboarding_step3_body",
-                translationParams: {"address": _foundScooter!.remoteId.toString()}),
-            btnText: FlutterI18n.translate(context, "onboarding_step3_button"),
-            onPressed: () {
-              try {
-                context.read<ScooterService>().connectToScooterId(
-                      _foundScooter!.remoteId.toString(),
-                      initialConnect: true,
-                    );
-              } catch (e, stack) {
-                log.severe("Error connecting to scooter!", e, stack);
-                Fluttertoast.showToast(
-                    msg: FlutterI18n.translate(context, "onboarding_step4_error"), toastLength: Toast.LENGTH_LONG);
-                setState(() {
-                  _step = 2;
-                });
-              }
-              setState(() {
-                _step = 4;
-              });
-            });
+        return _pickerStep();
       case 4:
         _pairingController.repeat();
         return _onboardingStep(
@@ -303,6 +267,29 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
     );
   }
 
+  /// Whether a BLE scan on this device still needs location.
+  ///
+  /// Android 12 dropped that requirement for apps that declare BLUETOOTH_SCAN
+  /// with neverForLocation, which this one does, so from API 31 on a scan works
+  /// with location permission denied and location services switched off.
+  /// Refusing to scan without it locked out anyone who had turned location off.
+  /// flutter_blue_plus asks for BLUETOOTH_SCAN and BLUETOOTH_CONNECT itself
+  /// when the scan starts, so there is nothing else to request here.
+  Future<bool> _scanRequiresLocation() async {
+    if (_scanNeedsLocation != null) return _scanNeedsLocation!;
+    bool needed = true;
+    if (Platform.isAndroid) {
+      try {
+        final AndroidDeviceInfo info = await DeviceInfoPlugin().androidInfo;
+        needed = info.version.sdkInt < 31;
+      } catch (e, stack) {
+        log.warning("Couldn't read the Android version, assuming location is needed", e, stack);
+      }
+    }
+    _scanNeedsLocation = needed;
+    return needed;
+  }
+
   Future<bool> _checkAndRequestPermissions() async {
     // Check if location services are enabled
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -316,7 +303,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
       return false;
     }
 
-    // Check location permission (required for Bluetooth scanning on Android)
+    // Check location permission (required for Bluetooth scanning before Android 12)
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
@@ -345,29 +332,143 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
   }
 
   void _startSearch() async {
-    // Check and request permissions before scanning
-    bool hasPermissions = await _checkAndRequestPermissions();
-    if (!hasPermissions) {
+    final bool needsLocation = await _scanRequiresLocation();
+    if (needsLocation && !await _checkAndRequestPermissions()) {
       log.warning("Permissions not granted, cannot start scanning");
+      _stopSearching();
       return;
     }
 
     if (!mounted) return;
 
-    try {
-      _foundScooter = await context.read<ScooterService>().findEligibleScooter(
-          excludedScooterIds: widget.excludedScooterIds ?? [],
-          // exclude system scooters if we're adding an additional scooter
-          includeSystemScooters: !widget.skipWelcome);
+    await _discoverySub?.cancel();
+    _discoverySub = null;
 
-      if (_foundScooter != null && mounted) {
-        setState(() {
-          _step = 3;
-        });
-      }
+    if (!mounted) return;
+    setState(() {
+      _candidates = [];
+      _searching = true;
+    });
+    _scanningController.repeat();
+
+    _discoverySub = context
+        .read<ScooterService>()
+        .discoverScooters(
+          excludedScooterIds: widget.excludedScooterIds ?? const [],
+          androidCheckLocationServices: needsLocation,
+        )
+        .listen(
+          (List<ScooterCandidate> candidates) {
+            if (mounted) setState(() => _candidates = candidates);
+          },
+          onError: (Object e, StackTrace stack) {
+            log.severe("Error finding scooters!", e, stack);
+            _stopSearching();
+          },
+          onDone: _stopSearching,
+          cancelOnError: true,
+        );
+  }
+
+  void _stopSearching() {
+    if (!mounted) return;
+    _scanningController.stop();
+    setState(() => _searching = false);
+  }
+
+  Future<void> _connectTo(ScooterCandidate candidate) async {
+    await _discoverySub?.cancel();
+    _discoverySub = null;
+    if (!mounted) return;
+
+    final ScooterService service = context.read<ScooterService>();
+    _pairingController.reset();
+    setState(() {
+      _selectedScooter = candidate;
+      _searching = false;
+      _step = 4;
+    });
+
+    try {
+      // Awaited on purpose. Firing this off and moving to step 4 anyway left
+      // the screen on "Connecting..." forever whenever the attempt failed,
+      // because the rejected future never reached the catch below.
+      await service.connectToScooterId(candidate.id, initialConnect: true);
     } catch (e, stack) {
-      log.severe("Error finding scooters!", e, stack);
+      log.severe("Error connecting to scooter!", e, stack);
+      if (!mounted) return;
+      Fluttertoast.showToast(
+        msg: FlutterI18n.translate(context, "onboarding_step4_error"),
+        toastLength: Toast.LENGTH_LONG,
+      );
+      setState(() {
+        _selectedScooter = null;
+        _step = 2;
+      });
+      _startSearch();
     }
+  }
+
+  List<Widget> _pickerStep() {
+    final bool hasCandidates = _candidates.isNotEmpty;
+    final String heading = hasCandidates
+        ? FlutterI18n.translate(context, "onboarding_picker_heading")
+        : FlutterI18n.translate(context, _searching ? "onboarding_step2_heading" : "onboarding_step2_heading_error");
+    final String body = hasCandidates
+        ? FlutterI18n.translate(context, "onboarding_picker_body")
+        : FlutterI18n.translate(context, _searching ? "onboarding_step2_body" : "onboarding_step2_body_error");
+
+    return [
+      Text(
+        heading,
+        style: Theme.of(context).textTheme.headlineLarge,
+        textAlign: TextAlign.center,
+      ),
+      const SizedBox(height: 16),
+      Text(
+        body,
+        style: Theme.of(context).textTheme.titleMedium,
+        textAlign: TextAlign.center,
+      ),
+      if (hasCandidates) ...[
+        const SizedBox(height: 24),
+        ScooterPicker(
+          candidates: _candidates,
+          onSelected: _connectTo,
+          // the list shares the screen with the animation above it, so cap it
+          // by screen height rather than by a number that only fits tall phones
+          maxHeight: (MediaQuery.of(context).size.height * 0.32).clamp(140.0, 280.0),
+        ),
+      ],
+      if (hasCandidates && _searching) ...[
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              FlutterI18n.translate(context, "onboarding_picker_still_searching"),
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
+      ],
+      if (!_searching) ...[
+        const SizedBox(height: 32),
+        _primaryButton(
+          text: FlutterI18n.translate(
+            context,
+            hasCandidates ? "onboarding_picker_search_again" : "onboarding_step2_button_error",
+          ),
+          onPressed: _startSearch,
+        ),
+      ],
+    ];
   }
 
   Widget _onboardingVisual({required int step}) {
@@ -382,7 +483,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
       case 1:
       case 2:
         return Lottie.asset("assets/anim/scanning.json", controller: _scanningController);
-      case 3:
       case 4:
         return Lottie.asset(
           "assets/anim/found.json",
@@ -499,10 +599,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
         ),
         onPressed: () {
           final service = context.read<ScooterService>();
-          final scooterId = _foundScooter!.remoteId.toString();
-          final name = _nameController.text.trim().isEmpty ? "Scooter Pro" : _nameController.text.trim();
-          service.renameSavedScooter(id: scooterId, name: name);
-          service.recolorSavedScooter(id: scooterId, color: _pendingColor);
+          final scooterId = _selectedScooter?.id ?? service.myScooter?.remoteId.toString();
+          if (scooterId != null) {
+            final name = _nameController.text.trim().isEmpty ? "Scooter Pro" : _nameController.text.trim();
+            service.renameSavedScooter(id: scooterId, name: name);
+            service.recolorSavedScooter(id: scooterId, color: _pendingColor);
+          }
           Navigator.of(context).pushReplacement(MaterialPageRoute(
             builder: (context) => const HomeScreen(),
           ));
@@ -539,30 +641,34 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
         textAlign: TextAlign.center,
       ),
       const SizedBox(height: 40),
-      if (btnText != null && onPressed != null)
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            minimumSize: const Size.fromHeight(
-              60,
-            ), // fromHeight use double.infinity as width and 40 is the height
-            backgroundColor: Theme.of(context).colorScheme.onSurface,
-          ),
-          onPressed: onPressed,
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Text(
-              btnText,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onTertiary,
-              ),
-            ),
+      if (btnText != null && onPressed != null) _primaryButton(text: btnText, onPressed: onPressed),
+    ];
+  }
+
+  Widget _primaryButton({required String text, required void Function() onPressed}) {
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        minimumSize: const Size.fromHeight(
+          60,
+        ), // fromHeight use double.infinity as width and 40 is the height
+        backgroundColor: Theme.of(context).colorScheme.onSurface,
+      ),
+      onPressed: onPressed,
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onTertiary,
           ),
         ),
-    ];
+      ),
+    );
   }
 
   @override
   void dispose() {
+    _discoverySub?.cancel();
     _scanningController.dispose();
     _pairingController.dispose();
     _nameController.dispose();

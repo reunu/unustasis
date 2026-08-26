@@ -197,6 +197,12 @@ class SavedScooter {
     SharedPreferencesAsync prefs = SharedPreferencesAsync();
     Map<String, dynamic> savedScooters =
         jsonDecode(await prefs.getString("savedScooters") ?? "{}") as Map<String, dynamic>;
+    // A forgotten scooter must not write itself back. Instances outlive the
+    // removal: the background isolate holds its own copy and keeps setting
+    // lastPing, which resurrected the entry moments after the user forgot it.
+    // Adding goes through ScooterStorage.save(), which writes the whole map, so
+    // a genuinely new scooter is never lost to this check.
+    if (!savedScooters.containsKey(_id)) return;
     savedScooters[_id] = toJson();
     await prefs.setString("savedScooters", jsonEncode(savedScooters));
   }
