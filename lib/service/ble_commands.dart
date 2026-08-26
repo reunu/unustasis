@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:latlong2/latlong.dart';
@@ -28,12 +29,61 @@ Future<T> _withExtendedChannel<T>(Future<T> Function() action) {
   return result;
 }
 
+/// Thrown when the scooter's reply to an extended command doesn't have the
+/// shape we expect, so an error reply can be told apart from a valid one.
+class ExtendedResponseFormatException implements Exception {
+  final String message;
+  const ExtendedResponseFormatException(this.message);
+
+  @override
+  String toString() => "ExtendedResponseFormatException: $message";
+}
+
+/// Buffers the extended response characteristic's notifications.
+///
+/// `onValueReceived` is a broadcast stream, so anything emitted while nobody
+/// is subscribed is dropped. Constructing this before writing the command
+/// closes the window between the write and the read: responses that land in
+/// it are queued on a single-subscription controller and delivered as soon as
+/// the caller starts reading, instead of being lost to a 10 second timeout.
+@visibleForTesting
+class ExtendedResponseListener {
+  final StreamController<String> _buffer = StreamController<String>();
+  late final StreamSubscription<List<int>> _subscription;
+
+  ExtendedResponseListener(Stream<List<int>> source) {
+    _subscription = source.listen(
+      (value) {
+        if (value.isEmpty || _buffer.isClosed) return;
+        _buffer.add(ascii.decode(value).replaceAll('\x00', ''));
+      },
+      onError: (Object e, StackTrace s) {
+        if (!_buffer.isClosed) _buffer.addError(e, s);
+      },
+    );
+  }
+
+  /// Decoded responses, oldest first.
+  Stream<String> get responses => _buffer.stream;
+
+  Future<void> cancel() async {
+    await _subscription.cancel();
+    // Deliberately not awaited: closing a single-subscription controller that
+    // was never listened to (e.g. the command write threw) never completes.
+    if (!_buffer.isClosed) unawaited(_buffer.close());
+  }
+}
+
 /// Reads a counted list from an extended response [stream].
 ///
 /// Expects the first message to carry the count as its last colon-separated
 /// segment (e.g. `keycard:count:3`), followed by that many entry messages.
 /// [parseEntry] converts each entry message to [T]; returning null skips it.
-Future<List<T>> _readExtendedList<T>(
+///
+/// Throws [ExtendedResponseFormatException] when the first message carries no
+/// parseable count, so an error reply can't pass itself off as an empty list.
+@visibleForTesting
+Future<List<T>> readExtendedList<T>(
   Stream<String> stream,
   T? Function(String msg) parseEntry,
 ) async {
@@ -41,7 +91,11 @@ Future<List<T>> _readExtendedList<T>(
   int? count;
   await for (final msg in stream) {
     if (count == null) {
-      count = int.tryParse(msg.split(':').last) ?? 0;
+      final parsed = int.tryParse(msg.split(':').last);
+      if (parsed == null) {
+        throw ExtendedResponseFormatException("expected a count, got '$msg'");
+      }
+      count = parsed;
       if (count == 0) break;
     } else {
       final entry = parseEntry(msg);
@@ -50,6 +104,18 @@ Future<List<T>> _readExtendedList<T>(
     }
   }
   return results;
+}
+
+/// Turns notifications on for the extended response characteristic unless
+/// they're already on.
+///
+/// `isNotifying` is derived from the cached CCCD value, which flutter_blue_plus
+/// clears on disconnect, so the subscription lives for exactly one connection.
+/// Toggling it per command cost two extra CCCD writes each time and dropped
+/// any response that arrived while notify was off.
+Future<void> _ensureExtendedNotify(BluetoothCharacteristic resp) async {
+  if (resp.isNotifying) return;
+  await resp.setNotifyValue(true);
 }
 
 // Maximum payload for the extended command characteristic. The basic command
@@ -117,19 +183,16 @@ Future<String?> _sendLsExtendedCommandUnguarded(
     throw "Extended command characteristics not available";
   }
 
-  await resp.setNotifyValue(true);
+  await _ensureExtendedNotify(resp);
+  final listener = ExtendedResponseListener(resp.onValueReceived);
   try {
     await sendCommand(scooter, repo, command, characteristic: cmd, allowLongWrite: true);
-    return await resp.onValueReceived
-        .where((v) => v.isNotEmpty)
-        .map((v) => ascii.decode(v).replaceAll('\x00', ''))
-        .timeout(const Duration(seconds: 10), onTimeout: (sink) => sink.close())
-        .first;
-  } on StateError {
+    return await listener.responses.first.timeout(const Duration(seconds: 10));
+  } on TimeoutException {
     log.warning("sendLsExtendedCommand: timeout waiting for response to '$command'");
     return null;
   } finally {
-    await resp.setNotifyValue(false);
+    await listener.cancel();
   }
 }
 
@@ -406,14 +469,12 @@ Future<List<NavDestination>> listFavDestinationsCommand(
     throw "Extended command characteristics not available";
   }
 
-  await resp.setNotifyValue(true);
+  await _ensureExtendedNotify(resp);
+  final listener = ExtendedResponseListener(resp.onValueReceived);
   try {
     await sendCommand(scooter, repo, "nav:fav:list", characteristic: cmd);
-    final stream = resp.onValueReceived
-        .where((v) => v.isNotEmpty)
-        .map((v) => ascii.decode(v).replaceAll('\x00', ''))
-        .timeout(const Duration(seconds: 10));
-    return await _readExtendedList(stream, (msg) {
+    final stream = listener.responses.timeout(const Duration(seconds: 10));
+    return await readExtendedList(stream, (msg) {
       // format: nav:fav:<id>:lat,lon[,name]
       final parts = msg.split(":");
       if (parts.length < 4) return null;
@@ -430,7 +491,7 @@ Future<List<NavDestination>> listFavDestinationsCommand(
       );
     });
   } finally {
-    await resp.setNotifyValue(false);
+    await listener.cancel();
   }
 });
 
@@ -486,7 +547,7 @@ Future<int?> countKeycardsCommand(
 }
 
 /// Lists keycards registered on the scooter.
-/// Expects: keycard:count:<n>, then one keycard:card:<uid> message per entry.
+/// Expects: `keycard:count:<n>`, then one `keycard:card:<uid>` message per entry.
 Future<List<String>> listKeycardsCommand(
   BluetoothDevice? scooter,
   CharacteristicRepository repo,
@@ -501,14 +562,12 @@ Future<List<String>> listKeycardsCommand(
     throw "Extended command characteristics not available";
   }
 
-  await resp.setNotifyValue(true);
+  await _ensureExtendedNotify(resp);
+  final listener = ExtendedResponseListener(resp.onValueReceived);
   try {
     await sendCommand(scooter, repo, "keycard:list", characteristic: cmd);
-    final stream = resp.onValueReceived
-        .where((v) => v.isNotEmpty)
-        .map((v) => ascii.decode(v).replaceAll('\x00', ''))
-        .timeout(const Duration(seconds: 10));
-    return await _readExtendedList(stream, (msg) {
+    final stream = listener.responses.timeout(const Duration(seconds: 10));
+    return await readExtendedList(stream, (msg) {
       // format: keycard:card:<uid>
       final parts = msg.split(":");
       if (parts.length >= 3 && parts[0] == "keycard" && parts[1] == "card") {
@@ -519,7 +578,7 @@ Future<List<String>> listKeycardsCommand(
       return null;
     });
   } finally {
-    await resp.setNotifyValue(false);
+    await listener.cancel();
   }
 });
 
@@ -651,16 +710,13 @@ Future<Set<String>> getPmCapabilitiesCommand(
     throw "Extended command characteristics not available";
   }
 
-  await resp.setNotifyValue(true);
+  await _ensureExtendedNotify(resp);
+  final listener = ExtendedResponseListener(resp.onValueReceived);
   try {
     await sendCommand(scooter, repo, "cap:pm", characteristic: cmd);
-    final stream = resp.onValueReceived
-        .where((v) => v.isNotEmpty)
-        .map((v) => ascii.decode(v).replaceAll('\x00', ''))
-        .timeout(const Duration(seconds: 10));
+    final stream = listener.responses.timeout(const Duration(seconds: 10));
     // format: cap:pm:count:<n>, then cap:pm:<command>[ <args>] per entry.
-    // Error responses fail the count parse and yield an empty list.
-    final entries = await _readExtendedList(stream, (msg) {
+    final entries = await readExtendedList(stream, (msg) {
       if (!msg.startsWith("cap:pm:")) return null;
       final name = msg.substring("cap:pm:".length).split(" ").first;
       return name.isNotEmpty ? name : null;
@@ -669,8 +725,13 @@ Future<Set<String>> getPmCapabilitiesCommand(
   } on TimeoutException {
     log.info("getPmCapabilitiesCommand: timeout, assuming no pm capabilities");
     return <String>{};
+  } on ExtendedResponseFormatException catch (e) {
+    // Firmware without the capability query answers with an error string
+    // rather than a count. Treat that as "no capabilities", but log it.
+    log.info("getPmCapabilitiesCommand: unparseable reply, assuming no pm capabilities ($e)");
+    return <String>{};
   } finally {
-    await resp.setNotifyValue(false);
+    await listener.cancel();
   }
 });
 
