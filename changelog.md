@@ -11,3 +11,4 @@
 - The scooter picker now speaks French and Dutch as well
 - Set the mobile APN for your scooter's SIM from the Librescoot settings (librescoot-only)
 - Forgetting a scooter now tells the scooter to forget your phone as well, instead of leaving it paired at that end (librescoot-only)
+- Scooters that stopped reconnecting now ask you to pair again, instead of retrying silently
