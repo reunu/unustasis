@@ -1036,7 +1036,11 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     }
     updateBackgroundService({"updateSavedScooters": true});
     connected = false;
-    notifyListeners();
+    // The background isolate is told to refetch, but this one was left holding
+    // the forgotten scooter's name and battery levels, so the home screen went
+    // on showing a scooter that no longer exists. refetchSavedScooters resets
+    // the streams when nothing is saved, and notifies for us.
+    await refetchSavedScooters();
   }
 
   void renameSavedScooter({String? id, required String name}) async {

@@ -89,6 +89,14 @@ class BleScanner {
     // the user might still want to search for new scooters. The logic below
     // will handle scanning appropriately based on preferSavedScooters.
 
+    if (preferSavedScooters && autoConnectScooterIds.isEmpty) {
+      // Auto-connect has nothing to aim at. Scanning for any scooter here would
+      // adopt whatever happens to be in range, which is how a scooter the user
+      // just forgot found its way straight back into the list.
+      _log.info("No saved scooters to auto-connect to, not scanning");
+      return;
+    }
+
     if (autoConnectScooterIds.isNotEmpty && preferSavedScooters) {
       _log.info("Looking for our scooters (saved IDs: $autoConnectScooterIds)");
       try {
