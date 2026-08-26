@@ -349,12 +349,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     List<String> excludedScooterIds = const [],
     bool includeSystemScooters = true,
   }) async {
-    try {
-      stopAutoRestart();
-      log.fine("Auto-restart stopped");
-    } catch (e) {
-      log.info("Didn't stop auto-restart, might not have been running yet");
-    }
+    stopAutoRestart();
 
     return scanner.findEligibleScooter(
       getIds: getSavedScooterIds,
@@ -372,12 +367,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     Duration timeout = const Duration(seconds: 30),
     bool androidCheckLocationServices = true,
   }) {
-    try {
-      stopAutoRestart();
-      log.fine("Auto-restart stopped");
-    } catch (e) {
-      log.info("Didn't stop auto-restart, might not have been running yet");
-    }
+    stopAutoRestart();
 
     return scanner.discoverScooters(
       getIds: getSavedScooterIds,
@@ -477,71 +467,106 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     }
   }
 
+  bool _starting = false;
+
   // spins up the whole connection process, and connects/bonds with the nearest scooter
   void start({bool restart = true}) async {
+    // There are several entry points into this: startup, auto-restart, and
+    // every app resume. Two overlapping runs used to fight each other, because
+    // the second one tears down the link the first has just established.
+    if (_starting) {
+      log.info("START called while already starting, skipping the duplicate");
+      return;
+    }
+    _starting = true;
     log.info("START called on service");
-    // GETTING READY
-    // Remove the splash screen
-    Future.delayed(const Duration(milliseconds: 1500), () {
-      FlutterNativeSplash.remove();
-    });
-
-    // If Bluetooth is already on, don't wait for another "on" transition event.
-    final BluetoothAdapterState adapterStateNow = await flutterBluePlus.adapterState.first;
-    if (adapterStateNow != BluetoothAdapterState.on) {
-      await FlutterBluePlus.adapterState.where((val) => val == BluetoothAdapterState.on).first;
-    }
-
-    // CLEANUP
-    _foundSth = false;
-    connected = false;
-    state = ScooterState.disconnected;
-    if (myScooter != null) {
-      myScooter!.disconnect();
-    }
-
-    // SCAN
     try {
-      BluetoothDevice? eligibleScooter = await findEligibleScooter();
-      if (eligibleScooter != null) {
-        await connectToScooterId(eligibleScooter.remoteId.toString());
-      } else {
-        log.info("No eligible scooters found during start()");
-      }
-    } catch (e, stack) {
-      log.warning("Error during search or connect!", e, stack);
-      // fail quietly, there can be benign reasons like race conditions for this
-    }
+      // GETTING READY
+      // Remove the splash screen
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        FlutterNativeSplash.remove();
+      });
 
-    if (restart) {
-      startAutoRestart();
+      // A working link is what this is trying to reach in the first place.
+      // Dropping it here meant every spurious call cost a full
+      // disconnect/scan/reconnect cycle.
+      if (myScooter != null && myScooter!.isConnected) {
+        log.info("Already connected to ${myScooter!.remoteId}, keeping the link");
+        _foundSth = true;
+        connected = true;
+        if (restart) {
+          startAutoRestart();
+        }
+        return;
+      }
+
+      // If Bluetooth is already on, don't wait for another "on" transition event.
+      final BluetoothAdapterState adapterStateNow = await flutterBluePlus.adapterState.first;
+      if (adapterStateNow != BluetoothAdapterState.on) {
+        await FlutterBluePlus.adapterState.where((val) => val == BluetoothAdapterState.on).first;
+      }
+
+      // CLEANUP
+      _foundSth = false;
+      connected = false;
+      state = ScooterState.disconnected;
+      if (myScooter != null) {
+        myScooter!.disconnect();
+      }
+
+      // SCAN
+      try {
+        BluetoothDevice? eligibleScooter = await findEligibleScooter();
+        if (eligibleScooter != null) {
+          await connectToScooterId(eligibleScooter.remoteId.toString());
+        } else {
+          log.info("No eligible scooters found during start()");
+        }
+      } catch (e, stack) {
+        log.warning("Error during search or connect!", e, stack);
+        // fail quietly, there can be benign reasons like race conditions for this
+      }
+
+      if (restart) {
+        startAutoRestart();
+      }
+    } finally {
+      _starting = false;
     }
   }
 
-  late StreamSubscription<bool> _autoRestartSubscription;
+  StreamSubscription<bool>? _autoRestartSubscription;
   void startAutoRestart({String? targetScooterId}) async {
-    if (!_autoRestarting) {
-      _autoRestarting = true;
-      _targetScooterId = targetScooterId;
-      log.info("Starting auto-restart${targetScooterId != null ? " for scooter $targetScooterId" : ""}");
-      _autoRestartSubscription = flutterBluePlus.isScanning.listen((
-        scanState,
-      ) async {
-        // retry if we stop scanning without having found anything
-        if (scanState == false && !_foundSth) {
-          await _attemptAutoRestart();
-        }
-      });
-
-      // If scan already ended before this listener was attached, trigger the same check.
-      if (!_foundSth && !flutterBluePlus.isScanningNow) {
-        await _attemptAutoRestart();
-      }
-    } else {
+    if (_autoRestarting) {
       log.info("Auto-restart already running, avoiding duplicate");
       if (targetScooterId != null) {
         _targetScooterId = targetScooterId;
       }
+      return;
+    }
+
+    _autoRestarting = true;
+    _targetScooterId = targetScooterId;
+    log.info("Starting auto-restart${targetScooterId != null ? " for scooter $targetScooterId" : ""}");
+
+    // _autoRestarting flips back to false inside start(), by way of
+    // findEligibleScooter calling stopAutoRestart, so this can be reached
+    // again while a listener is still attached. Cancel it first: an orphaned
+    // isScanning listener keeps firing _attemptAutoRestart forever, and
+    // stopAutoRestart can only ever cancel the one it is holding.
+    await _autoRestartSubscription?.cancel();
+    _autoRestartSubscription = flutterBluePlus.isScanning.listen((
+      scanState,
+    ) async {
+      // retry if we stop scanning without having found anything
+      if (scanState == false && !_foundSth) {
+        await _attemptAutoRestart();
+      }
+    });
+
+    // If scan already ended before this listener was attached, trigger the same check.
+    if (!_foundSth && !flutterBluePlus.isScanningNow) {
+      await _attemptAutoRestart();
     }
   }
 
@@ -567,7 +592,8 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   void stopAutoRestart() {
     _autoRestarting = false;
     _targetScooterId = null;
-    _autoRestartSubscription.cancel();
+    _autoRestartSubscription?.cancel();
+    _autoRestartSubscription = null;
     log.fine("Auto-restart stopped.");
   }
 
