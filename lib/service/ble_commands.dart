@@ -18,6 +18,10 @@ const String lsKeyScheduledHibernateEnabled = "pm.scheduled-hibernate-enabled";
 const String lsKeyScheduledHibernateCron = "pm.scheduled-hibernate-cron";
 const String lsKeyScheduledHibernateDuration = "pm.scheduled-hibernate-duration";
 
+/// Librescoot settings key holding the APN the modem attaches with. An empty
+/// value means the modem falls back to the SIM operator's defaults.
+const String lsKeyCellularApn = "cellular.apn";
+
 Future<void> _extendedChannelQueue = Future.value();
 
 /// Serializes access to the extended command/response characteristics so that
@@ -658,6 +662,72 @@ Future<void> setAutoHibernateTimeCommand(BluetoothDevice? scooter, Characteristi
   return;
 }
 
+/// Why a user-entered APN can't be sent to the scooter.
+enum ApnProblem { empty, invalidCharacters, tooLong }
+
+const String _apnCommandPrefix = "config:apn ";
+
+/// Longest APN that still fits into a single extended command.
+const int maxApnLength = _extendedCommandMaxBytes - _apnCommandPrefix.length;
+
+// APNs are DNS-style labels, so anything outside printable ASCII (a space
+// included) would be rejected by the modem anyway, and the command
+// characteristic only carries ASCII.
+final RegExp _apnAllowedChars = RegExp(r'^[\x21-\x7E]+$');
+
+/// Checks an already-trimmed APN against what the command channel and the
+/// modem accept. Returns null when [apn] is usable.
+ApnProblem? checkApn(String apn) {
+  if (apn.isEmpty) return ApnProblem.empty;
+  if (!_apnAllowedChars.hasMatch(apn)) return ApnProblem.invalidCharacters;
+  if (apn.length > maxApnLength) return ApnProblem.tooLong;
+  return null;
+}
+
+/// Sets the APN the scooter's modem attaches with.
+///
+/// Surrounding whitespace is trimmed. An empty APN is rejected here rather than
+/// sent on, so that emptying the text field cannot silently drop the scooter
+/// onto operator defaults. Use [clearCellularApnCommand] to do that on purpose.
+Future<void> setCellularApnCommand(
+  BluetoothDevice? scooter,
+  CharacteristicRepository repo,
+  String apn,
+) async {
+  final trimmed = apn.trim();
+  final problem = checkApn(trimmed);
+  if (problem != null) {
+    log.warning("Refusing to send APN '$apn': ${problem.name}");
+    throw "Invalid APN (${problem.name})";
+  }
+  final response = await sendLsExtendedCommand(scooter, repo, "$_apnCommandPrefix$trimmed");
+  if (response != "config:ok") {
+    log.severe("Failed to set APN, response: $response");
+    throw "Failed to set APN, response: $response";
+  }
+  return;
+}
+
+/// Clears the configured APN so the modem falls back to whatever the SIM
+/// operator hands out.
+///
+/// Sends the prefix and nothing after it. The trailing space in
+/// [_apnCommandPrefix] is load-bearing: the firmware splits the payload on the
+/// first space and answers `config:error:missing value` when there is no second
+/// field, so `config:apn ` sets an empty value where `config:apn` would fail.
+/// Only the value gets trimmed on the way in, never the command.
+Future<void> clearCellularApnCommand(
+  BluetoothDevice? scooter,
+  CharacteristicRepository repo,
+) async {
+  final response = await sendLsExtendedCommand(scooter, repo, _apnCommandPrefix);
+  if (response != "config:ok") {
+    log.severe("Failed to clear APN, response: $response");
+    throw "Failed to clear APN, response: $response";
+  }
+  return;
+}
+
 /// Hibernates the scooter and arms a wake timer (librescoot pm capability).
 /// [wakeAfter] must be positive; firmware silently clamps to its configured
 /// maximum (7 days by default).
@@ -698,11 +768,20 @@ Future<void> hibernateCancelCommand(
 }
 
 /// Queries the scooter's power-management capabilities (e.g. "hibernate-for",
-/// "hibernate-cancel"). Returns an empty set on firmware that doesn't support
-/// the capability query (error response or timeout).
+/// "hibernate-cancel").
 Future<Set<String>> getPmCapabilitiesCommand(
   BluetoothDevice? scooter,
   CharacteristicRepository repo,
+) =>
+    getLsCapabilitiesCommand(scooter, repo, "pm");
+
+/// Queries which commands the scooter supports in [category] ("pm", "config",
+/// …). Returns an empty set on firmware that doesn't support the capability
+/// query (error response or timeout).
+Future<Set<String>> getLsCapabilitiesCommand(
+  BluetoothDevice? scooter,
+  CharacteristicRepository repo,
+  String category,
 ) =>
     _withExtendedChannel(() async {
   if (scooter == null || scooter.isDisconnected) {
@@ -717,22 +796,23 @@ Future<Set<String>> getPmCapabilitiesCommand(
   await _ensureExtendedNotify(resp);
   final listener = ExtendedResponseListener(resp.onValueReceived);
   try {
-    await sendCommand(scooter, repo, "cap:pm", characteristic: cmd);
+    await sendCommand(scooter, repo, "cap:$category", characteristic: cmd);
     final stream = listener.responses.timeout(const Duration(seconds: 10));
-    // format: cap:pm:count:<n>, then cap:pm:<command>[ <args>] per entry.
+    // format: cap:<category>:count:<n>, then cap:<category>:<command>[ <args>].
+    final prefix = "cap:$category:";
     final entries = await readExtendedList(stream, (msg) {
-      if (!msg.startsWith("cap:pm:")) return null;
-      final name = msg.substring("cap:pm:".length).split(" ").first;
+      if (!msg.startsWith(prefix)) return null;
+      final name = msg.substring(prefix.length).split(" ").first;
       return name.isNotEmpty ? name : null;
     });
     return entries.toSet();
   } on TimeoutException {
-    log.info("getPmCapabilitiesCommand: timeout, assuming no pm capabilities");
+    log.info("getLsCapabilitiesCommand: timeout, assuming no $category capabilities");
     return <String>{};
   } on ExtendedResponseFormatException catch (e) {
     // Firmware without the capability query answers with an error string
     // rather than a count. Treat that as "no capabilities", but log it.
-    log.info("getPmCapabilitiesCommand: unparseable reply, assuming no pm capabilities ($e)");
+    log.info("getLsCapabilitiesCommand: unparseable reply, assuming no $category capabilities ($e)");
     return <String>{};
   } finally {
     await listener.cancel();

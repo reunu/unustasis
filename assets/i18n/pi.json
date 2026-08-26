@@ -362,6 +362,18 @@
     "weekday_short_4": "Thu",
     "weekday_short_5": "Fri",
     "weekday_short_6": "Sat",
+    "ls_settings_apn_title": "Signal beacon (APN)",
+    "ls_settings_apn_loading": "Searchin' the hold...",
+    "ls_settings_apn_unknown": "Current beacon unknown, arr!",
+    "ls_settings_apn_unset": "Sailin' by the SIM's own charts",
+    "ls_settings_apn_dialog_title": "Signal beacon (APN)",
+    "ls_settings_apn_dialog_body": "The port yer vessel's SIM signs into. Yer carrier will tell ye which name to hoist.",
+    "ls_settings_apn_hint": "e.g. internet",
+    "ls_settings_apn_save": "Save",
+    "ls_settings_apn_success": "Beacon hoisted, arr!",
+    "ls_settings_apn_error": "Failed to hoist the beacon: {error}",
+    "ls_settings_apn_invalid_chars": "A beacon name carries no spaces nor strange marks, matey.",
+    "ls_settings_apn_invalid_length": "A beacon name be {max} characters at most, arr!",
     "ls_settings_update_mode_title": "Update Mode",
     "ls_settings_update_mode_on_subtitle": "Yer scooter be in update mode. Toggle to return to port.",
     "ls_settings_update_mode_off_subtitle": "Puts the vessel into update mode for firmware updates via USB. Sail with caution, arr!",
@@ -499,5 +511,7 @@
     "ls_ota_warn_no_dbc_image": "No DBC cargo on the {channel} route.",
     "ls_ota_warn_version_unpublished": "The newer board's version ({version}) be gone from the chart — refittin' both boards to the latest instead.",
     "ls_ota_warn_no_image_for": "No {board} cargo found for {version}.",
-    "ls_ota_warn_no_delta_path": "No delta passage from {version} — full cargo be needed ({latest})."
+    "ls_ota_warn_no_delta_path": "No delta passage from {version} — full cargo be needed ({latest}).",
+    "ls_settings_apn_clear": "Strike it",
+    "ls_settings_apn_cleared": "Beacon struck, sailin' by the SIM's own charts"
 }

@@ -421,6 +421,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       identity.resetLsCapabilities();
       // fall back to the cached capability until the probe resolves again
       identity.supportsHibernateFor = savedScooters[attemptedScooter.remoteId.toString()]?.supportsHibernateFor;
+      identity.supportsApnConfig = savedScooters[attemptedScooter.remoteId.toString()]?.supportsApnConfig;
       _lsProbeGeneration++;
       addSavedScooter(myScooter!.remoteId.toString());
 
@@ -714,6 +715,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
         } else {
           identity.supportsHibernateFor = false;
           identity.supportsScheduledHibernation = false;
+          identity.supportsApnConfig = false;
         }
         notifyListeners();
       },
@@ -759,6 +761,23 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     }
     if (generation != _lsProbeGeneration) return;
     identity.supportsScheduledHibernation = supportsScheduledHibernation;
+    notifyListeners();
+
+    bool? supportsApnConfig;
+    try {
+      final caps = await commands.getLsCapabilitiesCommand(myScooter, characteristicRepository, "config");
+      supportsApnConfig = caps.contains("apn");
+    } catch (e, stack) {
+      log.warning("config capability probe failed", e, stack);
+      supportsApnConfig = false;
+    }
+    if (generation != _lsProbeGeneration) return;
+    identity.supportsApnConfig = supportsApnConfig;
+    // cached like the pm capability, so the APN tile does not vanish and
+    // reappear every time the probe re-runs on a reconnect
+    if (probedScooterId != null && savedScooters.containsKey(probedScooterId)) {
+      savedScooters[probedScooterId]!.supportsApnConfig = supportsApnConfig;
+    }
     notifyListeners();
   }
 
@@ -911,6 +930,22 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   /// Hibernates the scooter with a wake timer (librescoot pm capability).
   Future<void> hibernateFor(Duration wakeAfter) async {
     await commands.hibernateForCommand(myScooter, characteristicRepository, wakeAfter);
+  }
+
+  /// Reads the APN the scooter's modem is configured with. Returns "" when no
+  /// APN is set (the modem then uses the SIM operator's defaults), and null
+  /// when the firmware doesn't expose the setting.
+  Future<String?> getCellularApn() async {
+    return commands.getLsSettingCommand(myScooter, characteristicRepository, commands.lsKeyCellularApn);
+  }
+
+  /// Sets the APN the scooter's modem attaches with.
+  Future<void> setCellularApn(String apn) async {
+    await commands.setCellularApnCommand(myScooter, characteristicRepository, apn);
+  }
+
+  Future<void> clearCellularApn() async {
+    await commands.clearCellularApnCommand(myScooter, characteristicRepository);
   }
 
   Future<void> reboot() async {

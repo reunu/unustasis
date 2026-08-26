@@ -22,6 +22,7 @@ class SavedScooter {
   bool? _handlebarsLocked;
   bool? _isLibrescoot;
   bool? _supportsHibernateFor;
+  bool? _supportsApnConfig;
   List<NavDestination>? _cachedDestinations;
 
   SavedScooter({
@@ -39,6 +40,7 @@ class SavedScooter {
     bool? handlebarsLocked,
     bool? isLibrescoot,
     bool? supportsHibernateFor,
+    bool? supportsApnConfig,
     List<NavDestination>? cachedDestinations,
   })  : _name = name ?? "Scooter Pro",
         _id = id,
@@ -54,6 +56,7 @@ class SavedScooter {
         _handlebarsLocked = handlebarsLocked,
         _isLibrescoot = isLibrescoot,
         _supportsHibernateFor = supportsHibernateFor,
+        _supportsApnConfig = supportsApnConfig,
         _cachedDestinations = cachedDestinations;
 
   set name(String name) {
@@ -123,6 +126,11 @@ class SavedScooter {
     updateSharedPreferences();
   }
 
+  set supportsApnConfig(bool? supportsApnConfig) {
+    _supportsApnConfig = supportsApnConfig;
+    updateSharedPreferences();
+  }
+
   set cachedDestinations(List<NavDestination>? cachedDestinations) {
     _cachedDestinations = cachedDestinations;
     updateSharedPreferences();
@@ -142,6 +150,7 @@ class SavedScooter {
   bool? get handlebarsLocked => _handlebarsLocked;
   bool? get isLibrescoot => _isLibrescoot;
   bool? get supportsHibernateFor => _supportsHibernateFor;
+  bool? get supportsApnConfig => _supportsApnConfig;
   List<NavDestination>? get cachedDestinations => _cachedDestinations;
 
   BluetoothDevice get bluetoothDevice => BluetoothDevice.fromId(_id);
@@ -161,6 +170,7 @@ class SavedScooter {
         'handlebarsLocked': _handlebarsLocked,
         'isLibrescoot': _isLibrescoot,
         'supportsHibernateFor': _supportsHibernateFor,
+        'supportsApnConfig': _supportsApnConfig,
         'cachedDestinations': _cachedDestinations?.map((d) => d.toJson()).toList(),
       };
 
@@ -183,6 +193,7 @@ class SavedScooter {
       handlebarsLocked: map['handlebarsLocked'],
       isLibrescoot: map['isLibrescoot'],
       supportsHibernateFor: map['supportsHibernateFor'],
+      supportsApnConfig: map['supportsApnConfig'],
       cachedDestinations: (map['cachedDestinations'] as List<dynamic>?)
           ?.map((e) => NavDestination.fromJson(e as Map<String, dynamic>))
           .toList(),

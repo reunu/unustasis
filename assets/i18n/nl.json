@@ -382,6 +382,18 @@
     "weekday_short_4": "do",
     "weekday_short_5": "vr",
     "weekday_short_6": "za",
+    "ls_settings_apn_title": "Mobiele APN",
+    "ls_settings_apn_loading": "Laden...",
+    "ls_settings_apn_unknown": "Huidige APN niet beschikbaar",
+    "ls_settings_apn_unset": "Gebruikt de standaard van de SIM-provider",
+    "ls_settings_apn_dialog_title": "Mobiele APN",
+    "ls_settings_apn_dialog_body": "Het toegangspunt waarmee de simkaart van je scooter verbinding maakt. Je provider vertelt je welke waarde hier hoort.",
+    "ls_settings_apn_hint": "bijv. internet",
+    "ls_settings_apn_save": "Opslaan",
+    "ls_settings_apn_success": "APN bijgewerkt",
+    "ls_settings_apn_error": "APN kon niet worden bijgewerkt: {error}",
+    "ls_settings_apn_invalid_chars": "Een APN mag geen spaties of speciale tekens bevatten.",
+    "ls_settings_apn_invalid_length": "Een APN mag maximaal {max} tekens lang zijn.",
     "ls_settings_update_mode_title": "Updatemodus",
     "ls_settings_update_mode_on_subtitle": "Je scooter staat momenteel in de updatemodus. Schakel uit om terug te keren naar normaal.",
     "ls_settings_update_mode_off_subtitle": "Zet de scooter in de updatemodus voor firmware-updates via USB. Gebruik met voorzichtigheid!",
@@ -519,5 +531,7 @@
     "ls_ota_warn_no_dbc_image": "Geen DBC-image gevonden op het kanaal {channel}.",
     "ls_ota_warn_version_unpublished": "De versie van het nieuwere board ({version}) is niet meer beschikbaar — beide boards worden in plaats daarvan naar de nieuwste versie bijgewerkt.",
     "ls_ota_warn_no_image_for": "Geen {board}-image gevonden voor {version}.",
-    "ls_ota_warn_no_delta_path": "Geen delta-pad vanaf {version} — een volledige image is nodig ({latest})."
+    "ls_ota_warn_no_delta_path": "Geen delta-pad vanaf {version} — een volledige image is nodig ({latest}).",
+    "ls_settings_apn_clear": "Wissen",
+    "ls_settings_apn_cleared": "APN gewist, de standaard van de SIM-provider wordt gebruikt"
 }

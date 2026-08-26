@@ -382,6 +382,18 @@
     "weekday_short_4": "Thu",
     "weekday_short_5": "Fri",
     "weekday_short_6": "Sat",
+    "ls_settings_apn_title": "Cellular APN",
+    "ls_settings_apn_loading": "Loading...",
+    "ls_settings_apn_unknown": "Current APN unavailable",
+    "ls_settings_apn_unset": "Using the SIM operator's default",
+    "ls_settings_apn_dialog_title": "Cellular APN",
+    "ls_settings_apn_dialog_body": "The access point your scooter's SIM connects through. Your provider will tell you what to put here.",
+    "ls_settings_apn_hint": "e.g. internet",
+    "ls_settings_apn_save": "Save",
+    "ls_settings_apn_success": "APN updated",
+    "ls_settings_apn_error": "Failed to update APN: {error}",
+    "ls_settings_apn_invalid_chars": "An APN can't contain spaces or special characters.",
+    "ls_settings_apn_invalid_length": "An APN can be at most {max} characters long.",
     "ls_settings_update_mode_title": "Update mode",
     "ls_settings_update_mode_on_subtitle": "Your scooter is currently in update mode. Toggle to return to normal.",
     "ls_settings_update_mode_off_subtitle": "Puts the scooter into update mode, allowing firmware updates via USB. Use with caution!",
@@ -519,5 +531,7 @@
     "ls_ota_warn_no_dbc_image": "No DBC image found on the {channel} channel.",
     "ls_ota_warn_version_unpublished": "The newer board's version ({version}) is no longer published — updating both boards to the latest instead.",
     "ls_ota_warn_no_image_for": "No {board} image found for {version}.",
-    "ls_ota_warn_no_delta_path": "No delta path from {version} — a full image is needed ({latest})."
+    "ls_ota_warn_no_delta_path": "No delta path from {version} — a full image is needed ({latest}).",
+    "ls_settings_apn_clear": "Clear",
+    "ls_settings_apn_cleared": "APN cleared, using the SIM operator's default"
 }
