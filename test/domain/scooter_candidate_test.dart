@@ -64,15 +64,24 @@ void main() {
   });
 
   group('sorted', () {
-    test('puts a connected scooter first, then the strongest signal, then silent bonds', () {
+    test('puts scooters we have no bond with first, then connected, then old bonds', () {
       final List<ScooterCandidate> sorted = ScooterCandidate.sorted([
         candidate("bonded-only", bonded: true),
         candidate("far", rssi: -90),
         candidate("near", rssi: -50),
-        candidate("connected", systemConnected: true),
+        candidate("connected", bonded: true, systemConnected: true),
       ]);
 
-      expect(sorted.map((c) => c.id).toList(), ["connected", "near", "far", "bonded-only"]);
+      expect(sorted.map((c) => c.id).toList(), ["near", "far", "connected", "bonded-only"]);
+    });
+
+    test('orders old bonds that are answering above ones that are not', () {
+      final List<ScooterCandidate> sorted = ScooterCandidate.sorted([
+        candidate("silent", bonded: true),
+        candidate("audible", bonded: true, rssi: -70),
+      ]);
+
+      expect(sorted.map((c) => c.id).toList(), ["audible", "silent"]);
     });
   });
 }

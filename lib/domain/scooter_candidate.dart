@@ -82,12 +82,13 @@ class ScooterCandidate {
     );
   }
 
-  /// Connected first (definitely within arm's reach), then everything we can
-  /// hear by signal strength, then bonded scooters that are not answering,
-  /// which could be anywhere.
+  /// Scooters the phone has no bond with come first, since adding one of those
+  /// is the point of this screen. Then whatever the phone is already talking
+  /// to, then the back catalogue of old bonds, which gets long on a phone that
+  /// has been paired with a lot of scooters over the years.
   int get _rank {
-    if (systemConnected) return 0;
-    if (rssi != null) return 1;
+    if (!bonded && !systemConnected) return 0;
+    if (systemConnected) return 1;
     return 2;
   }
 
