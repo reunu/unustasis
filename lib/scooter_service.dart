@@ -1014,7 +1014,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     return store.getIds(onlyAutoConnect: onlyAutoConnect);
   }
 
-  void forgetSavedScooter(String id) async {
+  Future<void> forgetSavedScooter(String id) async {
     if (myScooter?.remoteId.toString() == id) {
       // this is the currently connected scooter
       stopAutoRestart();
