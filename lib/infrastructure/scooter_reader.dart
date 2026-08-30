@@ -23,7 +23,10 @@ int? _bytesToUint32(List<int> data) {
   return (data[3] << 24) + (data[2] << 16) + (data[1] << 8) + data[0];
 }
 
-int? parseOdometerMeters(List<int> data) => _bytesToUint32(data);
+int? parseOdometerMeters(List<int> data) {
+  if (data.length < 4) return null;
+  return _bytesToUint32(data.sublist(0, 4));
+}
 
 // -- String-based subscriptions --
 

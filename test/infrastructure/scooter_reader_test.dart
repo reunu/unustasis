@@ -7,10 +7,13 @@ void main() {
       expect(parseOdometerMeters([0x78, 0x56, 0x34, 0x12]), 0x12345678);
     });
 
-    test('rejects values that are not an unsigned 32-bit payload', () {
+    test('accepts a padded payload', () {
+      expect(parseOdometerMeters([0x78, 0x56, 0x34, 0x12, 0, 0, 0, 0]), 0x12345678);
+    });
+
+    test('rejects payloads shorter than four bytes', () {
       expect(parseOdometerMeters([]), isNull);
       expect(parseOdometerMeters([1, 2, 3]), isNull);
-      expect(parseOdometerMeters([1, 2, 3, 4, 5]), isNull);
     });
   });
 }
