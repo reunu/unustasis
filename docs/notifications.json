@@ -48,5 +48,49 @@
             "de": "OK",
             "fr": "OK"
         }
+    },
+    {
+        "id": "testflight-messy-version-order",
+        "timestamp": "2026-09-01T00:00:00Z",
+        "branch": "unustasis",
+        "platform": "ios",
+        "duration-days": 14,
+        "title": {
+            "en": "Please update",
+            "de": "Bitte aktualisieren",
+            "fr": "Veuillez mettre à jour"
+        },
+        "body": {
+            "en": "If you haven't yet, please update the app to the latest version 2.0.1 through TestFlight.",
+            "de": "Falls noch nicht geschehen, bitte aktualisiere die App auf die neueste Version 2.0.1 über TestFlight.",
+            "fr": "Si vous ne l'avez pas encore fait, veuillez mettre à jour l'application vers la dernière version 2.0.1 via TestFlight."
+        },
+        "dismiss-text": {
+            "en": "OK",
+            "de": "OK",
+            "fr": "OK"
+        }
+    },
+    {
+        "id": "testflight-messy-version-order-newname",
+        "timestamp": "2026-09-01T00:00:00Z",
+        "branch": "stasis for unu",
+        "platform": "ios",
+        "duration-days": 14,
+        "title": {
+            "en": "Please update",
+            "de": "Bitte aktualisieren",
+            "fr": "Veuillez mettre à jour"
+        },
+        "body": {
+            "en": "If you haven't yet, please update the app to the latest version 2.0.1 through TestFlight.",
+            "de": "Falls noch nicht geschehen, bitte aktualisiere die App auf die neueste Version 2.0.1 über TestFlight.",
+            "fr": "Si vous ne l'avez pas encore fait, veuillez mettre à jour l'application vers la dernière version 2.0.1 via TestFlight."
+        },
+        "dismiss-text": {
+            "en": "OK",
+            "de": "OK",
+            "fr": "OK"
+        }
     }
 ]

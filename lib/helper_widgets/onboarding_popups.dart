@@ -94,7 +94,7 @@ Future<void> showServerNotifications(BuildContext context) async {
     // check if this is meant for this branch of the app
     if (notification['branch'] != null && notification['branch'] != appName) {
       log.info(
-          "Notification ${notification['id']} is only meant for this branch: ${notification['branch']}. Skipping.");
+          "Notification ${notification['id']} is only meant for this branch: ${notification['branch']}. This is $appName. Skipping.");
       continue;
     }
     // check if this is meant for this platform
