@@ -92,6 +92,24 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 class _MyAppState extends State<MyApp> {
   SharingHandler? _sharingHandler;
   ScooterService? _scooterService;
+  late final FlutterI18nDelegate _localizationsDelegate;
+
+  @override
+  void initState() {
+    super.initState();
+    _localizationsDelegate = FlutterI18nDelegate(
+      translationLoader: FileTranslationLoader(
+        fallbackFile: 'en',
+        basePath: 'assets/i18n',
+        forcedLocale: widget.savedLocale,
+      ),
+      missingTranslationHandler: (key, locale) {
+        Logger("Main").warning(
+          "--- Missing Key: $key, languageCode: ${locale?.languageCode}",
+        );
+      },
+    );
+  }
 
   @override
   void didChangeDependencies() {
@@ -178,18 +196,7 @@ class _MyAppState extends State<MyApp> {
         ),
       ),
       themeMode: EasyDynamicTheme.of(context).themeMode,
-      localizationsDelegates: [
-        FlutterI18nDelegate(
-          translationLoader: FileTranslationLoader(
-            fallbackFile: 'en',
-            basePath: 'assets/i18n',
-            forcedLocale: widget.savedLocale,
-          ),
-          missingTranslationHandler: (key, locale) {
-            Logger("Main").warning("--- Missing Key: $key, languageCode: ${locale?.languageCode}");
-          },
-        ),
-      ],
+      localizationsDelegates: [_localizationsDelegate],
       home: const HomeScreen(),
     );
   }
