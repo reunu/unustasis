@@ -303,7 +303,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   bool? get handlebarsLocked => vehicle.handlebarsLocked;
   bool? get navigationActive => vehicle.navigationActive;
 
-  // Read-only total distance reported by LibreScoot, in metres.
+  // Read-only total distance reported by Librescoot, in metres.
   int? get odometerMeters => identity.odometerMeters;
 
   // Passthrough getters for battery state
