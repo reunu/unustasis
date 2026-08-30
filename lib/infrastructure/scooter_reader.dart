@@ -23,10 +23,6 @@ int? _bytesToUint32(List<int> data) {
   return (data[3] << 24) + (data[2] << 16) + (data[1] << 8) + data[0];
 }
 
-/// Decodes the Scooter Info odometer characteristic.
-///
-/// The Librescoot BLE protocol defines this as an unsigned 32-bit,
-/// little-endian integer measured in metres.
 int? parseOdometerMeters(List<int> data) => _bytesToUint32(data);
 
 // -- String-based subscriptions --
