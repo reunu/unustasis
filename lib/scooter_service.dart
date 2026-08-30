@@ -303,6 +303,9 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   bool? get handlebarsLocked => vehicle.handlebarsLocked;
   bool? get navigationActive => vehicle.navigationActive;
 
+  // Read-only total distance reported by LibreScoot, in metres.
+  int? get odometerMeters => identity.odometerMeters;
+
   // Passthrough getters for battery state
   int? get primarySOC => battery.primarySOC;
   int? get secondarySOC => battery.secondarySOC;
@@ -419,6 +422,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       log.info("Connected to ${attemptedScooter.remoteId}");
       // Set up this scooter as ours
       myScooter = attemptedScooter;
+      identity.odometerMeters = null;
       identity.resetLsCapabilities();
       // fall back to the cached capability until the probe resolves again
       identity.supportsHibernateFor = savedScooters[attemptedScooter.remoteId.toString()]?.supportsHibernateFor;
@@ -702,6 +706,8 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       },
       cacheSoc: _cacheSocForScooter,
     );
+
+    identity.wireOdometer(chars, onUpdate: notifyListeners);
 
     identity.wireNrfVersion(
       chars,

@@ -412,6 +412,16 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
                 : Icon(Icons.chevron_right),
             onTap: _isSendingApn ? null : _editApn,
           ),
+        if (context.watch<ScooterService>().odometerMeters case final meters?)
+          ListTile(
+            leading: const Icon(Icons.route_outlined),
+            title: Text(FlutterI18n.translate(context, "ls_settings_odometer_title")),
+            subtitle: Text(FlutterI18n.translate(
+              context,
+              "ls_settings_odometer_value",
+              translationParams: {"kilometres": (meters / 1000).toStringAsFixed(1)},
+            )),
+          ),
         ListTile(
           leading: Icon(Icons.usb_outlined),
           title: Text(FlutterI18n.translate(context, "ls_settings_update_mode_title")),

@@ -15,6 +15,7 @@ class ScooterIdentity {
   String? nrfVersion;
   bool? isLibrescoot;
   int? rssi;
+  int? odometerMeters;
 
   // librescoot capability flags, probed after each connection.
   // null = unknown / not yet probed.
@@ -28,6 +29,20 @@ class ScooterIdentity {
     supportsScheduledHibernation = null;
     supportsApnConfig = null;
     supportsBondForget = null;
+  }
+
+  void wireOdometer(
+    CharacteristicRepository chars, {
+    required VoidCallback onUpdate,
+  }) {
+    final characteristic = chars.odometerCharacteristic;
+    if (characteristic == null) return;
+
+    _log.info('Reading odometer');
+    readOdometer(characteristic, (meters) {
+      odometerMeters = meters;
+      onUpdate();
+    });
   }
 
   void wireNrfVersion(
