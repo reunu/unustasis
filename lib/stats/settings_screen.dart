@@ -44,6 +44,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _lsDataLoadStarted = false;
   bool _isSendingAutoLock = false;
   int? _autoLockDuration;
+  bool _timerDurationsLoaded = false;
   bool _isSendingAutoHibernate = false;
   int? _autoHibernateDuration;
   int? _keycardCount;
@@ -110,17 +111,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _getTimerDurations() async {
-    final service = context.read<ScooterService>();
-    final values = await Future.wait([
-      getLsSettingCommand(service.myScooter, service.characteristicRepository, lsKeyAutoStandbySeconds),
-      getLsSettingCommand(service.myScooter, service.characteristicRepository, lsKeyHibernateTimer),
-    ]);
-    if (!mounted) return;
-    setState(() {
-      _autoLockDuration = int.tryParse(values[0] ?? "");
-      _autoHibernateDuration = int.tryParse(values[1] ?? "");
-    });
+    try {
+      final service = context.read<ScooterService>();
+      final values = await Future.wait([
+        getLsSettingCommand(service.myScooter, service.characteristicRepository, lsKeyAutoStandbySeconds),
+        getLsSettingCommand(service.myScooter, service.characteristicRepository, lsKeyHibernateTimer),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _autoLockDuration = int.tryParse(values[0] ?? "");
+        _autoHibernateDuration = int.tryParse(values[1] ?? "");
+        _timerDurationsLoaded = true;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _timerDurationsLoaded = true);
+    }
   }
+
+  Widget _timerLoadingIndicator() => const SizedBox(
+        width: 18,
+        height: 18,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
 
   Future<void> _getApn() async {
     String? apn;
@@ -268,7 +280,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               isExpanded: true,
               menuWidth: 144,
               value: _autoLockDuration,
-              hint: Text(FlutterI18n.translate(context, "ls_settings_duration_hint")),
+              hint: _timerDurationsLoaded
+                  ? Text(FlutterI18n.translate(context, "ls_settings_duration_hint"))
+                  : _timerLoadingIndicator(),
               items: [
                 DropdownMenuItem(value: 0, child: Text(FlutterI18n.translate(context, "ls_settings_duration_never"))),
                 DropdownMenuItem(value: 180, child: Text(FlutterI18n.translate(context, "ls_settings_duration_3_min"))),
@@ -278,7 +292,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 DropdownMenuItem(
                     value: 900, child: Text(FlutterI18n.translate(context, "ls_settings_duration_15_min"))),
               ],
-              onChanged: _isSendingAutoLock
+              onChanged: !_timerDurationsLoaded || _isSendingAutoLock
                   ? null
                   : (value) async {
                       if (value == null) return;
@@ -322,7 +336,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               isExpanded: true,
               menuWidth: 144,
               value: _autoHibernateDuration,
-              hint: Text(FlutterI18n.translate(context, "ls_settings_duration_hint")),
+              hint: _timerDurationsLoaded
+                  ? Text(FlutterI18n.translate(context, "ls_settings_duration_hint"))
+                  : _timerLoadingIndicator(),
               items: [
                 DropdownMenuItem(value: 0, child: Text(FlutterI18n.translate(context, "ls_settings_duration_never"))),
                 DropdownMenuItem(
@@ -336,7 +352,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 DropdownMenuItem(
                     value: 1209600, child: Text(FlutterI18n.translate(context, "ls_settings_duration_14_days"))),
               ],
-              onChanged: _isSendingAutoHibernate
+              onChanged: !_timerDurationsLoaded || _isSendingAutoHibernate
                   ? null
                   : (value) async {
                       if (value == null) return;
