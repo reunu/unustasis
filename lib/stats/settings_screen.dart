@@ -857,7 +857,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         supportsApn: service.identity.supportsApnConfig == true,
         usbMode: service.vehicle.usbMode,
         connected: service.connected,
-        otaAvailable: service.characteristicRepository.otaAvailable,
+        otaAvailable: service.connected && service.characteristicRepository.otaAvailable,
       ),
     );
     _ensureLsDataLoaded(ls.isLibrescoot);
