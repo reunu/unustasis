@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:provider/provider.dart';
@@ -27,6 +29,7 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
   bool _isSendingApn = false;
   bool _apnLoaded = false;
   String? _apn;
+  Timer? _odometerRefreshTimer;
 
   // Owned here rather than per-dialog. showDialog's future completes on pop,
   // while the route is still animating out with the TextField attached, so a
@@ -35,6 +38,7 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
 
   @override
   void dispose() {
+    _odometerRefreshTimer?.cancel();
     _apnController.dispose();
     super.dispose();
   }
@@ -47,6 +51,11 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _getKeycardCount();
       _getApn();
+      context.read<ScooterService>().refreshOdometer();
+      _odometerRefreshTimer = Timer.periodic(
+        const Duration(seconds: 30),
+        (_) => context.read<ScooterService>().refreshOdometer(),
+      );
     });
   }
 

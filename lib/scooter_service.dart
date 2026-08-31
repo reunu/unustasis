@@ -306,6 +306,11 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   // Read-only total distance reported by Librescoot, in metres.
   int? get odometerMeters => identity.odometerMeters;
 
+  void refreshOdometer() {
+    if (!connected) return;
+    identity.refreshOdometer(characteristicRepository, onUpdate: notifyListeners);
+  }
+
   // Passthrough getters for battery state
   int? get primarySOC => battery.primarySOC;
   int? get secondarySOC => battery.secondarySOC;

@@ -35,6 +35,13 @@ class ScooterIdentity {
     CharacteristicRepository chars, {
     required VoidCallback onUpdate,
   }) {
+    refreshOdometer(chars, onUpdate: onUpdate);
+  }
+
+  void refreshOdometer(
+    CharacteristicRepository chars, {
+    required VoidCallback onUpdate,
+  }) {
     final characteristic = chars.odometerCharacteristic;
     if (characteristic == null) return;
 
