@@ -95,6 +95,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _lsDataLoadStarted = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _getKeycardCount();
+      _getTimerDurations();
       _getApn();
     });
   }
@@ -105,6 +106,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context.read<ScooterService>().characteristicRepository,
     );
     if (mounted) setState(() => _keycardCount = count);
+  }
+
+  Future<void> _getTimerDurations() async {
+    final service = context.read<ScooterService>();
+    final values = await Future.wait([
+      getLsSettingCommand(service.myScooter, service.characteristicRepository, lsKeyAutoStandbySeconds),
+      getLsSettingCommand(service.myScooter, service.characteristicRepository, lsKeyHibernateTimer),
+    ]);
+    if (!mounted) return;
+    setState(() {
+      _autoLockDuration = int.tryParse(values[0] ?? "");
+      _autoHibernateDuration = int.tryParse(values[1] ?? "");
+    });
   }
 
   Future<void> _getApn() async {
@@ -260,6 +274,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 DropdownMenuItem(value: 300, child: Text(FlutterI18n.translate(context, "ls_settings_duration_5_min"))),
                 DropdownMenuItem(
                     value: 600, child: Text(FlutterI18n.translate(context, "ls_settings_duration_10_min"))),
+                DropdownMenuItem(
+                    value: 900, child: Text(FlutterI18n.translate(context, "ls_settings_duration_15_min"))),
               ],
               onChanged: _isSendingAutoLock
                   ? null
@@ -307,6 +323,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               value: _autoHibernateDuration,
               hint: Text(FlutterI18n.translate(context, "ls_settings_duration_hint")),
               items: [
+                DropdownMenuItem(value: 0, child: Text(FlutterI18n.translate(context, "ls_settings_duration_never"))),
                 DropdownMenuItem(
                     value: 3600, child: Text(FlutterI18n.translate(context, "ls_settings_duration_1_hour"))),
                 DropdownMenuItem(
