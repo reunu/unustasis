@@ -253,12 +253,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
-                                    if (context.select<ScooterService, bool>(
-                                      (service) => service.identity.isLibrescoot == true,
-                                    )) ...[
-                                      const SizedBox(width: 6),
-                                      const Icon(Icons.local_fire_department_outlined, size: 20),
-                                    ],
                                     const SizedBox(width: 16),
                                     const Icon(
                                       Icons.arrow_forward_ios_rounded,
@@ -730,7 +724,8 @@ class StatusText extends StatelessWidget {
           bool scanning,
           ScooterState? state,
           ScooterVehicleState? vehicleState,
-          ScooterPowerState? powerState
+          ScooterPowerState? powerState,
+          bool isLibrescoot
         })>(
       selector: (context, service) => (
         state: service.state,
@@ -738,6 +733,7 @@ class StatusText extends StatelessWidget {
         connected: service.connected,
         vehicleState: service.vehicleState,
         powerState: service.powerState,
+        isLibrescoot: service.identity.isLibrescoot == true,
       ),
       builder: (context, data, _) {
         String stateText;
@@ -767,9 +763,18 @@ class StatusText extends StatelessWidget {
           stateText += FlutterI18n.translate(context, "home_unlocked");
         }
 
-        return Text(
-          stateText,
-          style: Theme.of(context).textTheme.titleMedium,
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              stateText,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            if (data.isLibrescoot) ...[
+              const SizedBox(width: 6),
+              const Icon(Icons.local_fire_department_outlined, size: 18),
+            ],
+          ],
         );
       },
     );
