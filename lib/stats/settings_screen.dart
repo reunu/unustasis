@@ -17,6 +17,7 @@ import '../domain/theme_helper.dart';
 import '../domain/scooter_keyless_distance.dart';
 import '../scooter_service.dart';
 import '../helper_widgets/header.dart';
+import '../ls_settings_screen.dart';
 import 'log_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -68,11 +69,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
     getInitialSettings();
   }
 
-  List<Widget> settingsItems() => [
+  List<Widget> settingsItems({required bool isLibrescoot}) => [
         Header(
           FlutterI18n.translate(context, "stats_settings_section_scooter"),
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
         ),
+        if (isLibrescoot)
+          ListTile(
+            leading: const Icon(Icons.local_fire_department_outlined),
+            title: Text(FlutterI18n.translate(context, "ls_settings_title")),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const LsSettingsScreen()),
+              );
+            },
+          ),
         SwitchListTile(
           secondary: const Icon(Icons.key_outlined),
           title: Text(FlutterI18n.translate(context, "settings_auto_unlock")),
@@ -446,6 +459,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isLibrescoot = context.select<ScooterService, bool>(
+      (service) => service.identity.isLibrescoot == true,
+    );
+    final items = settingsItems(isLibrescoot: isLibrescoot);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(FlutterI18n.translate(context, 'stats_title_settings')),
@@ -455,14 +473,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: ListView.separated(
           padding: const EdgeInsets.symmetric(vertical: 16),
           shrinkWrap: true,
-          itemCount: settingsItems().length,
+          itemCount: items.length,
           separatorBuilder: (context, index) => Divider(
             indent: 16,
             endIndent: 16,
             height: 24,
             color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.1),
           ),
-          itemBuilder: (context, index) => settingsItems()[index],
+          itemBuilder: (context, index) => items[index],
         ),
       ),
     );
