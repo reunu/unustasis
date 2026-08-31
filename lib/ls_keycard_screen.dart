@@ -89,6 +89,7 @@ class _LsKeycardScreenState extends State<LsKeycardScreen> {
         context.read<ScooterService>().characteristicRepository,
       );
       Logger('LsKeycardScreen').info('Loaded keycards: $loadedKeycards');
+      await GoogleFonts.pendingFonts([GoogleFonts.kodeMono()]);
       if (!mounted) return;
       setState(() {
         keycards = loadedKeycards;
