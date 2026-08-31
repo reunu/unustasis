@@ -322,7 +322,7 @@
     "share_parse_error": "Impossible d'extraire un lieu du texte partagé.",
     "ls_settings_title": "Paramètres Librescoot",
     "ls_settings_section_maintenance": "Maintenance Librescoot",
-    "ls_settings_clock_title": "Horloge du scooter",
+    "ls_settings_clock_title": "Régler l’horloge du scooter depuis le téléphone",
     "ls_settings_clock_subtitle": "Synchronise l'horloge interne du scooter avec l'heure actuelle de ce téléphone.",
     "ls_settings_clock_send": "Envoyer",
     "ls_settings_clock_success": "Heure du scooter mise à jour avec succès !",

@@ -322,7 +322,7 @@
     "share_parse_error": "Could not extract a location from the shared text.",
     "ls_settings_title": "Librescoot Settings",
     "ls_settings_section_maintenance": "Librescoot maintenance",
-    "ls_settings_clock_title": "Scooter clock",
+    "ls_settings_clock_title": "Set scooter clock from phone",
     "ls_settings_clock_subtitle": "Sets the scooter's internal clock to this phone's current time.",
     "ls_settings_clock_send": "Send",
     "ls_settings_clock_success": "Scooter time updated successfully!",

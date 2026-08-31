@@ -322,7 +322,7 @@
     "share_parse_error": "Kon geen locatie uit de gedeelde tekst halen.",
     "ls_settings_title": "Librescoot-instellingen",
     "ls_settings_section_maintenance": "Librescoot-onderhoud",
-    "ls_settings_clock_title": "Scooterklok",
+    "ls_settings_clock_title": "Scooterklok instellen vanaf telefoon",
     "ls_settings_clock_subtitle": "Stelt de interne klok van de scooter in op de huidige tijd van deze telefoon.",
     "ls_settings_clock_send": "Versturen",
     "ls_settings_clock_success": "Scootertijd succesvol bijgewerkt!",
