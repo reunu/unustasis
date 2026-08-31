@@ -265,7 +265,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             width: 144,
             child: DropdownButton<int>(
               isExpanded: true,
-              menuWidth: 144,
+              menuWidth: 160,
               value: _autoLockDuration,
               hint: Text(FlutterI18n.translate(context, "ls_settings_duration_hint")),
               items: [
@@ -319,7 +319,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             width: 144,
             child: DropdownButton<int>(
               isExpanded: true,
-              menuWidth: 144,
+              menuWidth: 160,
               value: _autoHibernateDuration,
               hint: Text(FlutterI18n.translate(context, "ls_settings_duration_hint")),
               items: [
