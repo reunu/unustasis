@@ -91,7 +91,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _ensureLsDataLoaded(bool isLibrescoot) {
-    if (!isLibrescoot || _lsDataLoadStarted) return;
+    final service = context.read<ScooterService>();
+    if (!isLibrescoot || !service.connected || _lsDataLoadStarted) return;
     _lsDataLoadStarted = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _getKeycardCount();
