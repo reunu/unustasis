@@ -416,6 +416,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required bool otaAvailable,
   }) =>
       [
+        if (connected && otaAvailable)
+          ListTile(
+            leading: const Icon(Icons.system_update_alt_outlined),
+            title: _lsTitle(FlutterI18n.translate(context, "ls_settings_ota_title")),
+            subtitle: Text(FlutterI18n.translate(context, "ls_settings_ota_subtitle")),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LsOtaScreen())),
+          ),
         ListTile(
           leading: const Icon(Icons.usb_outlined),
           title: _lsTitle(FlutterI18n.translate(context, "ls_settings_update_mode_title")),
@@ -460,14 +468,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   },
           ),
         ),
-        if (connected && otaAvailable)
-          ListTile(
-            leading: const Icon(Icons.system_update_alt_outlined),
-            title: _lsTitle(FlutterI18n.translate(context, "ls_settings_ota_title")),
-            subtitle: Text(FlutterI18n.translate(context, "ls_settings_ota_subtitle")),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LsOtaScreen())),
-          ),
         if (supportsApnConfig)
           ListTile(
             leading: const Icon(Icons.cell_tower_outlined),
