@@ -284,6 +284,10 @@ class SavedScooterCard extends StatelessWidget {
                             textAlign: TextAlign.center,
                           ),
                         ),
+                        if (savedScooter.isLibrescoot == true) ...[
+                          const SizedBox(width: 6),
+                          const Icon(Icons.local_fire_department_outlined, size: 20),
+                        ],
                         const SizedBox(width: 12),
                         const Icon(
                           Icons.edit_outlined,
@@ -731,11 +735,22 @@ class SavedScooterListItem extends StatelessWidget {
                                   rebuild();
                                 }
                               },
-                              child: Text(
-                                savedScooter.name,
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                      height: 1.1,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      savedScooter.name,
+                                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                            height: 1.1,
+                                          ),
                                     ),
+                                  ),
+                                  if (savedScooter.isLibrescoot == true) ...[
+                                    const SizedBox(width: 6),
+                                    const Icon(Icons.local_fire_department_outlined, size: 18),
+                                  ],
+                                ],
                               ),
                             ),
                           ),

@@ -321,6 +321,7 @@
     "share_no_librescoot_learn_more": "Mehr erfahren",
     "share_parse_error": "Es konnte kein Standort aus dem geteilten Text extrahiert werden.",
     "ls_settings_title": "Librescoot-Einstellungen",
+    "ls_settings_section_maintenance": "Librescoot-Wartung",
     "ls_settings_clock_title": "Roller-Uhr",
     "ls_settings_clock_subtitle": "Synchronisiert die interne Uhr des Rollers mit der aktuellen Uhrzeit dieses Handys.",
     "ls_settings_clock_send": "Senden",

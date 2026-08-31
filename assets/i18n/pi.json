@@ -301,6 +301,7 @@
     "share_no_librescoot_learn_more": "Learn more, matey",
     "share_parse_error": "Couldn't find no port in that there message, cap'n.",
     "ls_settings_title": "Librescoot",
+    "ls_settings_section_maintenance": "Librescoot Upkeep",
     "ls_settings_clock_title": "Ship's Chronometer",
     "ls_settings_clock_subtitle": "Sets the vessel's chronometer to this device's current time, arr!",
     "ls_settings_clock_send": "Send",

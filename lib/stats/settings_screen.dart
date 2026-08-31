@@ -18,8 +18,10 @@ import '../domain/scooter_keyless_distance.dart';
 import '../scooter_service.dart';
 import '../helper_widgets/header.dart';
 import '../ls_keycard_screen.dart';
+import '../ls_ota_screen.dart';
 import '../ls_scheduled_hibernation_screen.dart';
 import '../service/ble_commands.dart';
+import '../state/vehicle_status.dart';
 import 'log_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -46,6 +48,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   int? _autoHibernateDuration;
   int? _keycardCount;
   bool _isSendingApn = false;
+  bool _isUpdatingUsbMode = false;
   bool _apnLoaded = false;
   String? _apn;
   final TextEditingController _apnController = TextEditingController();
@@ -239,7 +242,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  List<Widget> _librescootSettingsItems() => [
+  List<Widget> _librescootScooterSettingsItems({required bool supportsScheduledHibernation}) => [
         ListTile(
           leading: const Icon(Icons.hourglass_bottom_rounded),
           title: _lsTitle(FlutterI18n.translate(context, "ls_settings_auto_lock_title")),
@@ -336,7 +339,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   },
           ),
         ),
-        if (context.watch<ScooterService>().identity.supportsScheduledHibernation == true)
+        if (supportsScheduledHibernation)
           ListTile(
             leading: const Icon(Icons.bedtime_outlined),
             title: _lsTitle(FlutterI18n.translate(context, "ls_scheduled_hibernation_title")),
@@ -346,16 +349,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               context,
               MaterialPageRoute(builder: (context) => const LsScheduledHibernationScreen()),
             ),
-          ),
-        if (context.watch<ScooterService>().identity.supportsApnConfig == true)
-          ListTile(
-            leading: const Icon(Icons.cell_tower_outlined),
-            title: _lsTitle(FlutterI18n.translate(context, "ls_settings_apn_title")),
-            subtitle: Text(_apnSubtitle(context)),
-            trailing: _isSendingApn
-                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Icon(Icons.chevron_right),
-            onTap: _isSendingApn ? null : _editApn,
           ),
         ListTile(
           leading: const Icon(Icons.vpn_key_outlined),
@@ -369,12 +362,92 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ];
 
-  List<Widget> settingsItems({required bool isLibrescoot}) => [
+  List<Widget> _librescootMaintenanceSettingsItems({
+    required bool supportsApnConfig,
+    required UsbMode? usbMode,
+    required bool connected,
+    required bool otaAvailable,
+  }) =>
+      [
+        if (supportsApnConfig)
+          ListTile(
+            leading: const Icon(Icons.cell_tower_outlined),
+            title: _lsTitle(FlutterI18n.translate(context, "ls_settings_apn_title")),
+            subtitle: Text(_apnSubtitle(context)),
+            trailing: _isSendingApn
+                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.chevron_right),
+            onTap: _isSendingApn ? null : _editApn,
+          ),
+        ListTile(
+          leading: const Icon(Icons.usb_outlined),
+          title: _lsTitle(FlutterI18n.translate(context, "ls_settings_update_mode_title")),
+          subtitle: Text(usbMode == UsbMode.massStorage
+              ? FlutterI18n.translate(context, "ls_settings_update_mode_on_subtitle")
+              : FlutterI18n.translate(context, "ls_settings_update_mode_off_subtitle")),
+          trailing: Switch(
+            value: usbMode == UsbMode.massStorage,
+            onChanged: _isUpdatingUsbMode
+                ? null
+                : (value) async {
+                    setState(() => _isUpdatingUsbMode = true);
+                    try {
+                      final service = context.read<ScooterService>();
+                      if (value) {
+                        await enterUMSModeCommand(service.myScooter, service.characteristicRepository);
+                      } else {
+                        await enterNormalUsbModeCommand(service.myScooter, service.characteristicRepository);
+                      }
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                            content: Text(FlutterI18n.translate(
+                          context,
+                          value ? "ls_settings_update_mode_enter_success" : "ls_settings_update_mode_exit_success",
+                        ))),
+                      );
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                              content: Text(FlutterI18n.translate(
+                            context,
+                            "ls_settings_update_mode_error",
+                            translationParams: {"error": e.toString()},
+                          ))),
+                        );
+                      }
+                    } finally {
+                      if (mounted) setState(() => _isUpdatingUsbMode = false);
+                    }
+                  },
+          ),
+        ),
+        if (connected && otaAvailable)
+          ListTile(
+            leading: const Icon(Icons.system_update_alt_outlined),
+            title: _lsTitle(FlutterI18n.translate(context, "ls_settings_ota_title")),
+            subtitle: Text(FlutterI18n.translate(context, "ls_settings_ota_subtitle")),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LsOtaScreen())),
+          ),
+      ];
+
+  List<Widget> settingsItems({
+    required bool isLibrescoot,
+    required bool supportsScheduledHibernation,
+    required bool supportsApnConfig,
+    required UsbMode? usbMode,
+    required bool connected,
+    required bool otaAvailable,
+  }) =>
+      [
         Header(
           FlutterI18n.translate(context, "stats_settings_section_scooter"),
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
         ),
-        if (isLibrescoot) ..._librescootSettingsItems(),
+        if (isLibrescoot)
+          ..._librescootScooterSettingsItems(supportsScheduledHibernation: supportsScheduledHibernation),
         SwitchListTile(
           secondary: const Icon(Icons.key_outlined),
           title: Text(FlutterI18n.translate(context, "settings_auto_unlock")),
@@ -511,6 +584,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
             leading: const Icon(Icons.history_outlined),
             trailing: const Icon(Icons.chevron_right),
           ),
+        if (isLibrescoot) ...[
+          Header(FlutterI18n.translate(context, "ls_settings_section_maintenance")),
+          ..._librescootMaintenanceSettingsItems(
+            supportsApnConfig: supportsApnConfig,
+            usbMode: usbMode,
+            connected: connected,
+            otaAvailable: otaAvailable,
+          ),
+        ],
         Header(FlutterI18n.translate(context, "stats_settings_section_app")),
         if (Platform.isAndroid)
           SwitchListTile(
@@ -748,11 +830,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isLibrescoot = context.select<ScooterService, bool>(
-      (service) => service.identity.isLibrescoot == true,
+    final ls = context.select<
+        ScooterService,
+        ({
+          bool isLibrescoot,
+          bool supportsScheduled,
+          bool supportsApn,
+          UsbMode? usbMode,
+          bool connected,
+          bool otaAvailable
+        })>(
+      (service) => (
+        isLibrescoot: service.identity.isLibrescoot == true,
+        supportsScheduled: service.identity.supportsScheduledHibernation == true,
+        supportsApn: service.identity.supportsApnConfig == true,
+        usbMode: service.vehicle.usbMode,
+        connected: service.connected,
+        otaAvailable: service.characteristicRepository.otaAvailable,
+      ),
     );
-    _ensureLsDataLoaded(isLibrescoot);
-    final items = settingsItems(isLibrescoot: isLibrescoot);
+    _ensureLsDataLoaded(ls.isLibrescoot);
+    final items = settingsItems(
+      isLibrescoot: ls.isLibrescoot,
+      supportsScheduledHibernation: ls.supportsScheduled,
+      supportsApnConfig: ls.supportsApn,
+      usbMode: ls.usbMode,
+      connected: ls.connected,
+      otaAvailable: ls.otaAvailable,
+    );
 
     return Scaffold(
       appBar: AppBar(
