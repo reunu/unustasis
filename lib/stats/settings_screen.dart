@@ -247,96 +247,107 @@ class _SettingsScreenState extends State<SettingsScreen> {
           leading: const Icon(Icons.hourglass_bottom_rounded),
           title: _lsTitle(FlutterI18n.translate(context, "ls_settings_auto_lock_title")),
           subtitle: Text(FlutterI18n.translate(context, "ls_settings_auto_lock_subtitle")),
-          trailing: DropdownButton<int>(
-            value: _autoLockDuration,
-            hint: Text(FlutterI18n.translate(context, "ls_settings_duration_hint")),
-            items: [
-              DropdownMenuItem(value: 0, child: Text(FlutterI18n.translate(context, "ls_settings_duration_never"))),
-              DropdownMenuItem(value: 180, child: Text(FlutterI18n.translate(context, "ls_settings_duration_3_min"))),
-              DropdownMenuItem(value: 300, child: Text(FlutterI18n.translate(context, "ls_settings_duration_5_min"))),
-              DropdownMenuItem(value: 600, child: Text(FlutterI18n.translate(context, "ls_settings_duration_10_min"))),
-            ],
-            onChanged: _isSendingAutoLock
-                ? null
-                : (value) async {
-                    if (value == null) return;
-                    setState(() => _isSendingAutoLock = true);
-                    try {
-                      await setAutoStandbyTimeCommand(
-                        context.read<ScooterService>().myScooter,
-                        context.read<ScooterService>().characteristicRepository,
-                        Duration(seconds: value),
-                      );
-                      if (!mounted) return;
-                      setState(() => _autoLockDuration = value);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(FlutterI18n.translate(context, "ls_settings_auto_lock_success"))),
-                      );
-                    } catch (e) {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                              content: Text(FlutterI18n.translate(
-                            context,
-                            "ls_settings_auto_lock_error",
-                            translationParams: {"error": e.toString()},
-                          ))),
+          trailing: SizedBox(
+            width: 200,
+            child: DropdownButton<int>(
+              isExpanded: true,
+              value: _autoLockDuration,
+              hint: Text(FlutterI18n.translate(context, "ls_settings_duration_hint")),
+              items: [
+                DropdownMenuItem(value: 0, child: Text(FlutterI18n.translate(context, "ls_settings_duration_never"))),
+                DropdownMenuItem(value: 180, child: Text(FlutterI18n.translate(context, "ls_settings_duration_3_min"))),
+                DropdownMenuItem(value: 300, child: Text(FlutterI18n.translate(context, "ls_settings_duration_5_min"))),
+                DropdownMenuItem(
+                    value: 600, child: Text(FlutterI18n.translate(context, "ls_settings_duration_10_min"))),
+              ],
+              onChanged: _isSendingAutoLock
+                  ? null
+                  : (value) async {
+                      if (value == null) return;
+                      setState(() => _isSendingAutoLock = true);
+                      try {
+                        await setAutoStandbyTimeCommand(
+                          context.read<ScooterService>().myScooter,
+                          context.read<ScooterService>().characteristicRepository,
+                          Duration(seconds: value),
                         );
+                        if (!mounted) return;
+                        setState(() => _autoLockDuration = value);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(FlutterI18n.translate(context, "ls_settings_auto_lock_success"))),
+                        );
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content: Text(FlutterI18n.translate(
+                              context,
+                              "ls_settings_auto_lock_error",
+                              translationParams: {"error": e.toString()},
+                            ))),
+                          );
+                        }
+                      } finally {
+                        if (mounted) setState(() => _isSendingAutoLock = false);
                       }
-                    } finally {
-                      if (mounted) setState(() => _isSendingAutoLock = false);
-                    }
-                  },
+                    },
+            ),
           ),
         ),
         ListTile(
           leading: const Icon(Icons.bedtime_outlined),
           title: _lsTitle(FlutterI18n.translate(context, "ls_settings_auto_hibernate_title")),
           subtitle: Text(FlutterI18n.translate(context, "ls_settings_auto_hibernate_subtitle")),
-          trailing: DropdownButton<int>(
-            value: _autoHibernateDuration,
-            hint: Text(FlutterI18n.translate(context, "ls_settings_duration_hint")),
-            items: [
-              DropdownMenuItem(value: 3600, child: Text(FlutterI18n.translate(context, "ls_settings_duration_1_hour"))),
-              DropdownMenuItem(value: 86400, child: Text(FlutterI18n.translate(context, "ls_settings_duration_1_day"))),
-              DropdownMenuItem(
-                  value: 259200, child: Text(FlutterI18n.translate(context, "ls_settings_duration_3_days"))),
-              DropdownMenuItem(
-                  value: 604800, child: Text(FlutterI18n.translate(context, "ls_settings_duration_7_days"))),
-              DropdownMenuItem(
-                  value: 1209600, child: Text(FlutterI18n.translate(context, "ls_settings_duration_14_days"))),
-            ],
-            onChanged: _isSendingAutoHibernate
-                ? null
-                : (value) async {
-                    if (value == null) return;
-                    setState(() => _isSendingAutoHibernate = true);
-                    try {
-                      await setAutoHibernateTimeCommand(
-                        context.read<ScooterService>().myScooter,
-                        context.read<ScooterService>().characteristicRepository,
-                        Duration(seconds: value),
-                      );
-                      if (!mounted) return;
-                      setState(() => _autoHibernateDuration = value);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(FlutterI18n.translate(context, "ls_settings_auto_hibernate_success"))),
-                      );
-                    } catch (e) {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                              content: Text(FlutterI18n.translate(
-                            context,
-                            "ls_settings_auto_hibernate_error",
-                            translationParams: {"error": e.toString()},
-                          ))),
+          trailing: SizedBox(
+            width: 200,
+            child: DropdownButton<int>(
+              isExpanded: true,
+              value: _autoHibernateDuration,
+              hint: Text(FlutterI18n.translate(context, "ls_settings_duration_hint")),
+              items: [
+                DropdownMenuItem(
+                    value: 3600, child: Text(FlutterI18n.translate(context, "ls_settings_duration_1_hour"))),
+                DropdownMenuItem(
+                    value: 86400, child: Text(FlutterI18n.translate(context, "ls_settings_duration_1_day"))),
+                DropdownMenuItem(
+                    value: 259200, child: Text(FlutterI18n.translate(context, "ls_settings_duration_3_days"))),
+                DropdownMenuItem(
+                    value: 604800, child: Text(FlutterI18n.translate(context, "ls_settings_duration_7_days"))),
+                DropdownMenuItem(
+                    value: 1209600, child: Text(FlutterI18n.translate(context, "ls_settings_duration_14_days"))),
+              ],
+              onChanged: _isSendingAutoHibernate
+                  ? null
+                  : (value) async {
+                      if (value == null) return;
+                      setState(() => _isSendingAutoHibernate = true);
+                      try {
+                        await setAutoHibernateTimeCommand(
+                          context.read<ScooterService>().myScooter,
+                          context.read<ScooterService>().characteristicRepository,
+                          Duration(seconds: value),
                         );
+                        if (!mounted) return;
+                        setState(() => _autoHibernateDuration = value);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(FlutterI18n.translate(context, "ls_settings_auto_hibernate_success"))),
+                        );
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content: Text(FlutterI18n.translate(
+                              context,
+                              "ls_settings_auto_hibernate_error",
+                              translationParams: {"error": e.toString()},
+                            ))),
+                          );
+                        }
+                      } finally {
+                        if (mounted) setState(() => _isSendingAutoHibernate = false);
                       }
-                    } finally {
-                      if (mounted) setState(() => _isSendingAutoHibernate = false);
-                    }
-                  },
+                    },
+            ),
           ),
         ),
         if (supportsScheduledHibernation)
