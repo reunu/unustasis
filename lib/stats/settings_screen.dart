@@ -263,10 +263,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           title: _lsTitle(FlutterI18n.translate(context, "ls_settings_auto_lock_title")),
           subtitle: Text(FlutterI18n.translate(context, "ls_settings_auto_lock_subtitle")),
           trailing: SizedBox(
-            width: 144,
+            width: 128,
             child: DropdownButton<int>(
               isExpanded: true,
-              menuWidth: 160,
+              menuWidth: 144,
               value: _autoLockDuration,
               hint: Text(FlutterI18n.translate(context, "ls_settings_duration_hint")),
               items: [
@@ -317,10 +317,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           title: _lsTitle(FlutterI18n.translate(context, "ls_settings_auto_hibernate_title")),
           subtitle: Text(FlutterI18n.translate(context, "ls_settings_auto_hibernate_subtitle")),
           trailing: SizedBox(
-            width: 144,
+            width: 128,
             child: DropdownButton<int>(
               isExpanded: true,
-              menuWidth: 160,
+              menuWidth: 144,
               value: _autoHibernateDuration,
               hint: Text(FlutterI18n.translate(context, "ls_settings_duration_hint")),
               items: [
