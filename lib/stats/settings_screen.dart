@@ -17,7 +17,9 @@ import '../domain/theme_helper.dart';
 import '../domain/scooter_keyless_distance.dart';
 import '../scooter_service.dart';
 import '../helper_widgets/header.dart';
-import '../ls_settings_screen.dart';
+import '../ls_keycard_screen.dart';
+import '../ls_scheduled_hibernation_screen.dart';
+import '../service/ble_commands.dart';
 import 'log_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -37,6 +39,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool openSeatOnUnlock = false;
   bool hazardLocking = false;
   bool osmConsent = true;
+  bool _lsDataLoadStarted = false;
+  bool _isSendingAutoLock = false;
+  int? _autoLockDuration;
+  bool _isSendingAutoHibernate = false;
+  int? _autoHibernateDuration;
+  int? _keycardCount;
+  bool _isSendingApn = false;
+  bool _apnLoaded = false;
+  String? _apn;
+  final TextEditingController _apnController = TextEditingController();
   final SharedPreferencesAsync prefs = SharedPreferencesAsync();
 
   void getInitialSettings() async {
@@ -69,23 +81,300 @@ class _SettingsScreenState extends State<SettingsScreen> {
     getInitialSettings();
   }
 
+  @override
+  void dispose() {
+    _apnController.dispose();
+    super.dispose();
+  }
+
+  void _ensureLsDataLoaded(bool isLibrescoot) {
+    if (!isLibrescoot || _lsDataLoadStarted) return;
+    _lsDataLoadStarted = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _getKeycardCount();
+      _getApn();
+    });
+  }
+
+  Future<void> _getKeycardCount() async {
+    final count = await countKeycardsCommand(
+      context.read<ScooterService>().myScooter,
+      context.read<ScooterService>().characteristicRepository,
+    );
+    if (mounted) setState(() => _keycardCount = count);
+  }
+
+  Future<void> _getApn() async {
+    String? apn;
+    try {
+      apn = await context.read<ScooterService>().getCellularApn();
+    } catch (_) {}
+    if (mounted) {
+      setState(() {
+        _apn = apn;
+        _apnLoaded = true;
+      });
+    }
+  }
+
+  Widget _lsTitle(String title) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(child: Text(title)),
+          const SizedBox(width: 6),
+          const Icon(Icons.local_fire_department_outlined, size: 16),
+        ],
+      );
+
+  String _apnSubtitle(BuildContext context) {
+    if (!_apnLoaded) return FlutterI18n.translate(context, "ls_settings_apn_loading");
+    if (_apn == null) return FlutterI18n.translate(context, "ls_settings_apn_unknown");
+    return _apn!.isEmpty ? FlutterI18n.translate(context, "ls_settings_apn_unset") : _apn!;
+  }
+
+  String? _apnErrorText(BuildContext context, ApnProblem? problem) {
+    switch (problem) {
+      case null:
+      case ApnProblem.empty:
+        return null;
+      case ApnProblem.invalidCharacters:
+        return FlutterI18n.translate(context, "ls_settings_apn_invalid_chars");
+      case ApnProblem.tooLong:
+        return FlutterI18n.translate(
+          context,
+          "ls_settings_apn_invalid_length",
+          translationParams: {"max": maxApnLength.toString()},
+        );
+    }
+  }
+
+  Future<void> _editApn() async {
+    final controller = _apnController..text = _apn ?? "";
+    final picked = await showDialog<({bool clear, String value})>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) {
+          final trimmed = controller.text.trim();
+          final problem = checkApn(trimmed);
+          return AlertDialog(
+            title: Text(FlutterI18n.translate(dialogContext, "ls_settings_apn_dialog_title")),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(FlutterI18n.translate(dialogContext, "ls_settings_apn_dialog_body")),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: controller,
+                  autofocus: true,
+                  autocorrect: false,
+                  enableSuggestions: false,
+                  keyboardType: TextInputType.url,
+                  textCapitalization: TextCapitalization.none,
+                  maxLength: maxApnLength,
+                  decoration: InputDecoration(
+                    hintText: FlutterI18n.translate(dialogContext, "ls_settings_apn_hint"),
+                    border: const OutlineInputBorder(),
+                    errorText: _apnErrorText(dialogContext, problem),
+                  ),
+                  onChanged: (_) => setDialogState(() {}),
+                  onSubmitted: (_) {
+                    if (problem == null) Navigator.of(dialogContext).pop((clear: false, value: trimmed));
+                  },
+                ),
+              ],
+            ),
+            actions: [
+              if (_apn != null && _apn!.isNotEmpty)
+                TextButton(
+                  style: TextButton.styleFrom(foregroundColor: Theme.of(dialogContext).colorScheme.error),
+                  onPressed: () => Navigator.of(dialogContext).pop((clear: true, value: "")),
+                  child: Text(FlutterI18n.translate(dialogContext, "ls_settings_apn_clear")),
+                ),
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: Text(FlutterI18n.translate(dialogContext, "cancel")),
+              ),
+              FilledButton(
+                onPressed:
+                    problem == null ? () => Navigator.of(dialogContext).pop((clear: false, value: trimmed)) : null,
+                child: Text(FlutterI18n.translate(dialogContext, "ls_settings_apn_save")),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    if (picked == null || !mounted) return;
+
+    setState(() => _isSendingApn = true);
+    try {
+      final service = context.read<ScooterService>();
+      if (picked.clear) {
+        await service.clearCellularApn();
+      } else {
+        await service.setCellularApn(picked.value);
+      }
+      if (!mounted) return;
+      setState(() => _apn = picked.value);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(FlutterI18n.translate(
+          context,
+          picked.clear ? "ls_settings_apn_cleared" : "ls_settings_apn_success",
+        ))),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(FlutterI18n.translate(
+          context,
+          "ls_settings_apn_error",
+          translationParams: {"error": e.toString()},
+        ))),
+      );
+    } finally {
+      if (mounted) setState(() => _isSendingApn = false);
+    }
+  }
+
+  List<Widget> _librescootSettingsItems() => [
+        ListTile(
+          leading: const Icon(Icons.hourglass_bottom_rounded),
+          title: _lsTitle(FlutterI18n.translate(context, "ls_settings_auto_lock_title")),
+          subtitle: Text(FlutterI18n.translate(context, "ls_settings_auto_lock_subtitle")),
+          trailing: DropdownButton<int>(
+            value: _autoLockDuration,
+            hint: Text(FlutterI18n.translate(context, "ls_settings_duration_hint")),
+            items: [
+              DropdownMenuItem(value: 0, child: Text(FlutterI18n.translate(context, "ls_settings_duration_never"))),
+              DropdownMenuItem(value: 180, child: Text(FlutterI18n.translate(context, "ls_settings_duration_3_min"))),
+              DropdownMenuItem(value: 300, child: Text(FlutterI18n.translate(context, "ls_settings_duration_5_min"))),
+              DropdownMenuItem(value: 600, child: Text(FlutterI18n.translate(context, "ls_settings_duration_10_min"))),
+            ],
+            onChanged: _isSendingAutoLock
+                ? null
+                : (value) async {
+                    if (value == null) return;
+                    setState(() => _isSendingAutoLock = true);
+                    try {
+                      await setAutoStandbyTimeCommand(
+                        context.read<ScooterService>().myScooter,
+                        context.read<ScooterService>().characteristicRepository,
+                        Duration(seconds: value),
+                      );
+                      if (!mounted) return;
+                      setState(() => _autoLockDuration = value);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(FlutterI18n.translate(context, "ls_settings_auto_lock_success"))),
+                      );
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                              content: Text(FlutterI18n.translate(
+                            context,
+                            "ls_settings_auto_lock_error",
+                            translationParams: {"error": e.toString()},
+                          ))),
+                        );
+                      }
+                    } finally {
+                      if (mounted) setState(() => _isSendingAutoLock = false);
+                    }
+                  },
+          ),
+        ),
+        ListTile(
+          leading: const Icon(Icons.bedtime_outlined),
+          title: _lsTitle(FlutterI18n.translate(context, "ls_settings_auto_hibernate_title")),
+          subtitle: Text(FlutterI18n.translate(context, "ls_settings_auto_hibernate_subtitle")),
+          trailing: DropdownButton<int>(
+            value: _autoHibernateDuration,
+            hint: Text(FlutterI18n.translate(context, "ls_settings_duration_hint")),
+            items: [
+              DropdownMenuItem(value: 3600, child: Text(FlutterI18n.translate(context, "ls_settings_duration_1_hour"))),
+              DropdownMenuItem(value: 86400, child: Text(FlutterI18n.translate(context, "ls_settings_duration_1_day"))),
+              DropdownMenuItem(
+                  value: 259200, child: Text(FlutterI18n.translate(context, "ls_settings_duration_3_days"))),
+              DropdownMenuItem(
+                  value: 604800, child: Text(FlutterI18n.translate(context, "ls_settings_duration_7_days"))),
+              DropdownMenuItem(
+                  value: 1209600, child: Text(FlutterI18n.translate(context, "ls_settings_duration_14_days"))),
+            ],
+            onChanged: _isSendingAutoHibernate
+                ? null
+                : (value) async {
+                    if (value == null) return;
+                    setState(() => _isSendingAutoHibernate = true);
+                    try {
+                      await setAutoHibernateTimeCommand(
+                        context.read<ScooterService>().myScooter,
+                        context.read<ScooterService>().characteristicRepository,
+                        Duration(seconds: value),
+                      );
+                      if (!mounted) return;
+                      setState(() => _autoHibernateDuration = value);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(FlutterI18n.translate(context, "ls_settings_auto_hibernate_success"))),
+                      );
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                              content: Text(FlutterI18n.translate(
+                            context,
+                            "ls_settings_auto_hibernate_error",
+                            translationParams: {"error": e.toString()},
+                          ))),
+                        );
+                      }
+                    } finally {
+                      if (mounted) setState(() => _isSendingAutoHibernate = false);
+                    }
+                  },
+          ),
+        ),
+        if (context.watch<ScooterService>().identity.supportsScheduledHibernation == true)
+          ListTile(
+            leading: const Icon(Icons.bedtime_outlined),
+            title: _lsTitle(FlutterI18n.translate(context, "ls_scheduled_hibernation_title")),
+            subtitle: Text(FlutterI18n.translate(context, "ls_settings_scheduled_hibernation_subtitle")),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const LsScheduledHibernationScreen()),
+            ),
+          ),
+        if (context.watch<ScooterService>().identity.supportsApnConfig == true)
+          ListTile(
+            leading: const Icon(Icons.cell_tower_outlined),
+            title: _lsTitle(FlutterI18n.translate(context, "ls_settings_apn_title")),
+            subtitle: Text(_apnSubtitle(context)),
+            trailing: _isSendingApn
+                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.chevron_right),
+            onTap: _isSendingApn ? null : _editApn,
+          ),
+        ListTile(
+          leading: const Icon(Icons.vpn_key_outlined),
+          title: _lsTitle(FlutterI18n.translate(context, "ls_keycard_title")),
+          subtitle: Text(_keycardCount != null
+              ? FlutterI18n.translate(context, "ls_settings_keycards_count",
+                  translationParams: {"count": _keycardCount.toString()})
+              : FlutterI18n.translate(context, "ls_settings_keycards_loading")),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LsKeycardScreen())),
+        ),
+      ];
+
   List<Widget> settingsItems({required bool isLibrescoot}) => [
         Header(
           FlutterI18n.translate(context, "stats_settings_section_scooter"),
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
         ),
-        if (isLibrescoot)
-          ListTile(
-            leading: const Icon(Icons.local_fire_department_outlined),
-            title: Text(FlutterI18n.translate(context, "ls_settings_title")),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const LsSettingsScreen()),
-              );
-            },
-          ),
+        if (isLibrescoot) ..._librescootSettingsItems(),
         SwitchListTile(
           secondary: const Icon(Icons.key_outlined),
           title: Text(FlutterI18n.translate(context, "settings_auto_unlock")),
@@ -462,6 +751,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final bool isLibrescoot = context.select<ScooterService, bool>(
       (service) => service.identity.isLibrescoot == true,
     );
+    _ensureLsDataLoaded(isLibrescoot);
     final items = settingsItems(isLibrescoot: isLibrescoot);
 
     return Scaffold(
