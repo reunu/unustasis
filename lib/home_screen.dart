@@ -364,49 +364,19 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                   builder: (context, value, child) {
                                     if (value.isLibrescoot != true) return const SizedBox.shrink();
-                                    final color = Theme.of(context).colorScheme.onSurface;
                                     return Positioned(
-                                      right: 96,
-                                      bottom: 12,
-                                      child: Tooltip(
-                                        message: FlutterI18n.translate(context, 'nav_title'),
-                                        child: Stack(
-                                          clipBehavior: Clip.none,
-                                          children: [
-                                            OutlinedButton(
-                                              style: OutlinedButton.styleFrom(
-                                                shape: const CircleBorder(),
-                                                padding: const EdgeInsets.all(16),
-                                                backgroundColor: Theme.of(context).colorScheme.surface,
-                                                side: BorderSide(color: color),
-                                              ),
-                                              onPressed: () => Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  settings: const RouteSettings(name: 'navigation'),
-                                                  builder: (context) => const NavigationScreen(),
-                                                ),
-                                              ),
-                                              child: Icon(Icons.navigation_outlined, color: color),
-                                            ),
-                                            if (value.hasNavigation)
-                                              Positioned(
-                                                top: 1,
-                                                right: 1,
-                                                child: Container(
-                                                  width: 14,
-                                                  height: 14,
-                                                  decoration: BoxDecoration(
-                                                    color: Theme.of(context).colorScheme.primary,
-                                                    shape: BoxShape.circle,
-                                                    border: Border.all(
-                                                      color: Theme.of(context).colorScheme.surface,
-                                                      width: 2,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                          ],
+                                      right: 36,
+                                      bottom: 4,
+                                      child: ScooterActionButton(
+                                        icon: Icons.navigation_outlined,
+                                        label: FlutterI18n.translate(context, 'nav_title'),
+                                        showBubble: value.hasNavigation,
+                                        onPressed: () => Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            settings: const RouteSettings(name: 'navigation'),
+                                            builder: (context) => const NavigationScreen(),
+                                          ),
                                         ),
                                       ),
                                     );
