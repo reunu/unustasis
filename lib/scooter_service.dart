@@ -76,6 +76,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   bool _wasBackgrounded = false;
 
   late Timer _locationTimer, _manualRefreshTimer;
+  late final Timer _manualTargetHeartbeatTimer;
   late PausableTimer rssiTimer;
   late CharacteristicRepository characteristicRepository;
   late bool isInBackgroundService;
@@ -116,6 +117,15 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       WidgetsBinding.instance.addObserver(this);
       log.info("Registered for app lifecycle callbacks");
     }
+
+    // Keep the background isolate's manual-target gate alive while the
+    // user's explicit connection intent is active. The gate expires on its
+    // own for safety, and the periodic re-arm also survives a background
+    // isolate restart that would have swallowed the one-shot message.
+    _manualTargetHeartbeatTimer = Timer.periodic(const Duration(seconds: 60), (_) {
+      final target = _manualConnectionTargetId;
+      if (target != null) updateBackgroundService({"manualConnectionTarget": target});
+    });
 
     // update the "scanning" listener
     flutterBluePlus.isScanning.listen((isScanning) {
@@ -432,7 +442,11 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       intentGeneration = ++_connectionIntentGeneration;
       stopAutoRestart(clearManualTarget: false);
       _manualConnectionTargetId = id;
-      updateBackgroundService({"manualConnectionTarget": id});
+      updateBackgroundService({
+        "manualConnectionTarget": id,
+        "scooterName": savedScooters[id]?.name,
+        "scooterColor": savedScooters[id]?.color,
+      });
     }
 
     if (connected && myScooter?.remoteId.toString() == id && myScooter!.isConnected) {
@@ -560,8 +574,12 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       });
     } on _SupersededConnectionAttempt {
       log.info("Connection attempt to $id was superseded");
-      if (identical(myScooter, attemptedScooter)) myScooter = null;
-      await _safeDisconnect(attemptedScooter);
+      // A newer attempt may be connecting this very device; tearing it down
+      // would break the attempt that superseded us.
+      if (!identical(_attemptedScooter, attemptedScooter)) {
+        if (identical(myScooter, attemptedScooter)) myScooter = null;
+        await _safeDisconnect(attemptedScooter);
+      }
     } catch (e, stack) {
       log.shout("Couldn't connect to scooter!", e, stack);
       if (isCurrentAttempt()) {
@@ -574,7 +592,9 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
           unawaited(_attemptAutoRestart());
         }
       }
-      await _safeDisconnect(attemptedScooter);
+      if (!identical(_attemptedScooter, attemptedScooter)) {
+        await _safeDisconnect(attemptedScooter);
+      }
       rethrow;
     } finally {
       if (identical(_attemptedScooter, attemptedScooter)) _attemptedScooter = null;
@@ -716,20 +736,28 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
 
   bool _autoRestartAttemptPending = false;
 
+  /// Retries the pinned target (or generic auto-connect) until something
+  /// connects or the intent is superseded. Runs as a single loop so retry
+  /// re-schedules can't stack up concurrent chains.
   Future<void> _attemptAutoRestart() async {
-    // The UI's isScanning listener and the failure handler can both schedule
-    // a retry; two concurrent chains would fight over one connection.
     if (_autoRestartAttemptPending) return;
     _autoRestartAttemptPending = true;
     try {
-      await Future.delayed(const Duration(seconds: 3));
-      if (!_foundSth && !scanning && _autoRestarting) {
-        // make sure nothing happened in these few seconds
+      while (_autoRestarting && !_foundSth && !scanning) {
+        await Future.delayed(const Duration(seconds: 3));
+        // Things may have changed while we waited.
+        if (!_autoRestarting || _foundSth || scanning) break;
         log.info("Auto-restarting...${_targetScooterId != null ? " targeting $_targetScooterId" : ""}");
-        if (_targetScooterId != null) {
+        final targetScooterId = _targetScooterId;
+        if (targetScooterId != null) {
           // Keep retrying the specific scooter the user selected; generic
-          // auto-connect must not take over this connection intent.
-          final targetScooterId = _targetScooterId!;
+          // auto-connect must not take over this connection intent. Re-arm
+          // the background gate each round: it expires on its own to stay
+          // safe against a killed foreground, and this also survives a
+          // background isolate restart.
+          if (_manualConnectionTargetId != null) {
+            updateBackgroundService({"manualConnectionTarget": targetScooterId});
+          }
           try {
             await connectToScooterId(
               targetScooterId,
@@ -738,13 +766,11 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
             );
           } catch (e) {
             log.warning("Failed to connect to target scooter $targetScooterId during auto-restart: $e");
-            if (!_foundSth && _autoRestarting && _targetScooterId == targetScooterId) {
-              unawaited(_attemptAutoRestart());
-            }
           }
         } else {
           // Fall back to generic start() for auto-connect behavior
           start();
+          break;
         }
       }
     } finally {
@@ -1183,6 +1209,12 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       _externalManualTargetSince = null;
     }
     SavedScooter? latestScooter = await getMostRecentScooter();
+    if (_externalManualTargetId != null) {
+      // A manual intent arrived while we were picking a candidate; don't
+      // start racing it now.
+      log.info("Manual connection target appeared during auto-connect preparation");
+      return false;
+    }
     if (latestScooter != null) {
       try {
         await connectToScooterId(
@@ -1417,10 +1449,10 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     _connectionIntentGeneration++;
     _connectionAttemptGeneration++;
     _lsProbeGeneration++;
-    _manualConnectionTargetId = null;
-    stopAutoRestart();
+    stopAutoRestart(); // also clears the manual target and tells the background
 
     _locationTimer.cancel();
+    _manualTargetHeartbeatTimer.cancel();
     rssiTimer.cancel();
     _manualRefreshTimer.cancel();
     _connectionStateSubscription?.cancel();
