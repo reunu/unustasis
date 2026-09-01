@@ -294,6 +294,8 @@
     "activity_log_error": "Deine Aktivitäten konnten nicht geladen werden. Eventuell befinden sich korrupte Daten im Log. Wenn das Problem besteht, lösche deine Aktivitäten um neu zu beginnen.",
     "activity_log_empty": "Keine Aktivitäten geloggt. Zeit für eine Spritztour?",
     "activity_log_disclaimer": "Diese Aktivitäten werden nur auf diesem Gerät gespeichert und niemals geteilt.",
+    "activity_log_store": "Aktivitätsverlauf speichern",
+    "activity_log_store_description": "Neue Roller-Aktivitäten auf diesem Gerät speichern.",
     "activity_log_clear": "ALLE LÖSCHEN",
     "activity_log_cleared": "Aktivitätsverlauf gelöscht",
     "cancel": "Abbrechen",

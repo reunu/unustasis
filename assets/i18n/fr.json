@@ -294,6 +294,8 @@
     "activity_log_error": "Votre journal d'activité n'a pas pu être lu et peut contenir des données corrompues. Si ce problème persiste, vous pouvez effacer votre journal et recommencer.",
     "activity_log_empty": "Aucune activité enregistrée. C'est peut-être le moment d'une balade ?",
     "activity_log_disclaimer": "Ces activités sont stockées uniquement sur cet appareil et ne sont jamais partagées.",
+    "activity_log_store": "Enregistrer le journal d’activité",
+    "activity_log_store_description": "Enregistrer les nouvelles activités du scooter sur cet appareil.",
     "activity_log_clear": "TOUT SUPPRIMER",
     "activity_log_cleared": "Votre journal d'activité a été effacé",
     "cancel": "Annuler",

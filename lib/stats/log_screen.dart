@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:maps_launcher/maps_launcher.dart';
 import 'package:provider/provider.dart';
 
@@ -43,15 +44,20 @@ class LogScreen extends StatelessWidget {
 
   Widget _eventIcon(BuildContext context, EventType eventType) {
     return switch (eventType) {
-      EventType.lock => const Icon(Icons.lock_rounded),
-      EventType.unlock => const Icon(Icons.lock_open_rounded),
-      EventType.openSeat => const ImageIcon(
-          AssetImage("assets/icons/librescoot-seatbox-open.png"),
-          size: 24,
+      EventType.lock => const Icon(Icons.lock_outline_rounded),
+      EventType.unlock => const Icon(Icons.lock_open_outlined),
+      EventType.openSeat => SvgPicture.asset(
+          "assets/icons/librescoot-seatbox-open.svg",
+          width: 24,
+          height: 24,
+          colorFilter: ColorFilter.mode(
+            IconTheme.of(context).color ?? Theme.of(context).colorScheme.onSurfaceVariant,
+            BlendMode.srcIn,
+          ),
         ),
-      EventType.hibernate => const Icon(Icons.bedtime_rounded),
+      EventType.hibernate => const Icon(Icons.bedtime_outlined),
       EventType.wakeUp => const Icon(Icons.wb_sunny_outlined),
-      EventType.unknown => const Icon(Icons.history_rounded),
+      EventType.unknown => const Icon(Icons.history_outlined),
     };
   }
 
@@ -87,6 +93,7 @@ class LogScreen extends StatelessWidget {
             leading: const Icon(Icons.privacy_tip_outlined),
             title: Text(FlutterI18n.translate(context, "activity_log_disclaimer")),
           ),
+          const _ActivityLogToggle(),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: SizedBox(
@@ -194,5 +201,43 @@ class LogScreen extends StatelessWidget {
           ),
         ) ??
         false;
+  }
+}
+
+class _ActivityLogToggle extends StatefulWidget {
+  const _ActivityLogToggle();
+
+  @override
+  State<_ActivityLogToggle> createState() => _ActivityLogToggleState();
+}
+
+class _ActivityLogToggleState extends State<_ActivityLogToggle> {
+  bool? _enabled;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final enabled = await StatisticsHelper().isEventLoggingEnabled();
+    if (mounted) setState(() => _enabled = enabled);
+  }
+
+  Future<void> _setEnabled(bool enabled) async {
+    setState(() => _enabled = enabled);
+    await StatisticsHelper().setEventLoggingEnabled(enabled);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SwitchListTile(
+      secondary: const Icon(Icons.history_outlined),
+      title: Text(FlutterI18n.translate(context, "activity_log_store")),
+      subtitle: Text(FlutterI18n.translate(context, "activity_log_store_description")),
+      value: _enabled ?? true,
+      onChanged: _enabled == null ? null : _setEnabled,
+    );
   }
 }

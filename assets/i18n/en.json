@@ -294,6 +294,8 @@
     "activity_log_error": "Your activity log could not be read, and may include corrupted data. If this problem persists, you may want to clear your log and start over.",
     "activity_log_empty": "No activities logged. Maybe it's time for a ride?",
     "activity_log_disclaimer": "These activities are stored only on this device and are never shared.",
+    "activity_log_store": "Store activity log",
+    "activity_log_store_description": "Save new scooter activities on this device.",
     "activity_log_clear": "DELETE ALL",
     "activity_log_cleared": "Your activity log has been cleared",
     "cancel": "Cancel",

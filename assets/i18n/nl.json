@@ -294,6 +294,8 @@
     "activity_log_error": "Je activiteitenlog kon niet worden gelezen en bevat mogelijk beschadigde gegevens. Als dit probleem aanhoudt, kun je het logboek wissen en opnieuw beginnen.",
     "activity_log_empty": "Geen activiteiten gelogd. Misschien tijd voor een ritje?",
     "activity_log_disclaimer": "Deze activiteiten worden alleen op dit apparaat opgeslagen en nooit gedeeld.",
+    "activity_log_store": "Activiteitenlog opslaan",
+    "activity_log_store_description": "Nieuwe scooteractiviteiten op dit apparaat opslaan.",
     "activity_log_clear": "ALLES VERWIJDEREN",
     "activity_log_cleared": "Je activiteitenlog is gewist",
     "cancel": "Annuleren",

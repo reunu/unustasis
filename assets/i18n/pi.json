@@ -274,6 +274,8 @@
     "activity_log_error": "Your activity log could not be read, and may include corrupted data. If this problem persists, you may want to clear your log and start over.",
     "activity_log_empty": "Here be dragons. Time to set sail!",
     "activity_log_disclaimer": "Your logbook is stored safely at your helm, and no one shall ever lay their eyes on it!",
+    "activity_log_store": "Keep the logbook",
+    "activity_log_store_description": "Record new adventures aboard this device.",
     "activity_log_clear": "DELETE ALL",
     "activity_log_cleared": "Yer Logbook has been wiped empty",
     "cancel": "Abort",
