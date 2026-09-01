@@ -138,6 +138,11 @@ class _ScooterScreenState extends State<ScooterScreen> {
           ...scooters.map((scooter) {
             final bool connected = (scooter.id == scooterService.myScooter?.remoteId.toString() &&
                 scooterService.state != ScooterState.disconnected);
+            // While a connection attempt is in flight, the status label
+            // belongs to the scooter we're connecting to, not to whichever
+            // one myScooter still remembers.
+            final bool active = connected ||
+                (scooterService.state == ScooterState.linking && scooterService.connectingScooterId == scooter.id);
 
             if (_isListView) {
               return Padding(
@@ -145,7 +150,7 @@ class _ScooterScreenState extends State<ScooterScreen> {
                 child: SavedScooterListItem(
                   savedScooter: scooter,
                   single: single,
-                  connected: connected,
+                  connected: active,
                   rebuild: () => setState(() {}),
                   onNavigateBack: widget.onNavigateBack,
                 ),
@@ -156,7 +161,7 @@ class _ScooterScreenState extends State<ScooterScreen> {
                 child: SavedScooterCard(
                   savedScooter: scooter,
                   single: single,
-                  connected: connected,
+                  connected: active,
                   rebuild: () => setState(() {}),
                   onNavigateBack: widget.onNavigateBack,
                 ),

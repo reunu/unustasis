@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:logging/logging.dart';
+
+final _log = Logger('ScooterCharacteristics');
 
 /// Subscribes to a characteristic's values and hands back the subscription.
 ///
@@ -14,9 +17,17 @@ StreamSubscription<List<int>> subscribeCharacteristic(
   BluetoothCharacteristic characteristic,
   Function(List<int>) onData,
 ) {
-  characteristic.setNotifyValue(true);
+  // The device can drop while this setup is in flight; without the guards
+  // every failed notification setup surfaces as an unhandled async error.
+  characteristic.setNotifyValue(true).catchError((Object e) {
+    _log.warning('Failed to enable notifications: $e');
+    return false;
+  });
   final StreamSubscription<List<int>> subscription = characteristic.lastValueStream.listen(onData);
-  characteristic.read();
+  characteristic.read().catchError((Object e) {
+    _log.warning('Failed to read characteristic after subscribing: $e');
+    return <int>[];
+  });
   return subscription;
 }
 

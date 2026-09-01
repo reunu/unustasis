@@ -462,6 +462,13 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     }
 
     log.info("Connecting to scooter with ID: $id (intent $intentGeneration, attempt $attemptGeneration)");
+    // Point the service away from the old scooter before publishing the
+    // linking state, so "connecting" shows on the right row in the list
+    // instead of lingering on the previously connected one.
+    final BluetoothDevice? previousConnection = myScooter;
+    if (previousConnection != null && previousConnection.remoteId.toString() != id) {
+      myScooter = null;
+    }
     // Invalidate everything the previous connection owned before the shared
     // state is pointed at the new target: live characteristic feeds, the
     // disconnect listener, and any in-flight capability probe.
@@ -491,8 +498,10 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
         await previousAttempt.disconnect();
         ensureCurrentAttempt();
       }
-      if (myScooter != null && myScooter!.remoteId != attemptedScooter.remoteId && myScooter!.isConnected) {
-        await myScooter!.disconnect();
+      if (previousConnection != null &&
+          previousConnection.remoteId != attemptedScooter.remoteId &&
+          previousConnection.isConnected) {
+        await previousConnection.disconnect();
         ensureCurrentAttempt();
       }
 
