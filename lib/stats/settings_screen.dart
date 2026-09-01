@@ -394,7 +394,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Stack(
                 children: [
                   Positioned(left: 0, top: 0, child: Icon(Icons.bedtime_outlined, size: 22)),
-                  Positioned(right: 0, bottom: 0, child: Icon(Icons.access_time_filled, size: 12)),
+                  Positioned(right: 0, top: 0, child: Icon(Icons.access_time_filled, size: 12)),
                 ],
               ),
             ),
