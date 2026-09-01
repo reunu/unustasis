@@ -191,7 +191,7 @@
     "settings_biometrics_description": "Vingerafdruk of gezichtsherkenning vereisen om de app te openen.",
     "biometrics_message": "Verifieer om de app te openen",
     "biometrics_failed": "Verificatie mislukt",
-    "settings_auto_unlock": "Sleutelloos starten",
+    "settings_auto_unlock": "Automatisch ontgrendelen in de buurt",
     "settings_auto_unlock_description": "De scooter automatisch ontgrendelen wanneer de app open is en de scooter vlakbij staat.",
     "settings_auto_unlock_threshold": "Sleutelloze startafstand",
     "settings_auto_unlock_threshold_explainer": "Huidige afstand (lichte lijn): {rssi} dBm",

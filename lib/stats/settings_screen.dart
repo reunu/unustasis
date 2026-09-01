@@ -496,7 +496,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (isLibrescoot)
           ..._librescootScooterSettingsItems(supportsScheduledHibernation: supportsScheduledHibernation),
         SwitchListTile(
-          secondary: const Icon(Icons.key_outlined),
+          secondary: const Icon(Icons.lock_open),
           title: Text(FlutterI18n.translate(context, "settings_auto_unlock")),
           subtitle: Text(
             FlutterI18n.translate(context, "settings_auto_unlock_description"),
@@ -585,7 +585,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
         SwitchListTile(
-          secondary: const Icon(Icons.work_outline),
+          secondary: const ImageIcon(
+            AssetImage("assets/icons/librescoot-seatbox-open.png"),
+            size: 24,
+          ),
           title: Text(
             FlutterI18n.translate(context, "settings_open_seat_on_unlock"),
           ),
@@ -604,7 +607,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           },
         ),
         SwitchListTile(
-          secondary: const Icon(Icons.code_rounded),
+          secondary: const Icon(Icons.sync_alt),
           title: Text(FlutterI18n.translate(context, "settings_hazard_locking")),
           subtitle: Text(
             FlutterI18n.translate(context, "settings_hazard_locking_description"),
@@ -694,7 +697,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           builder: (context, biometricsOptionsSnap) {
             if (biometricsOptionsSnap.hasData && biometricsOptionsSnap.data!.isNotEmpty) {
               return SwitchListTile(
-                secondary: const Icon(Icons.lock_outlined),
+                secondary: const Icon(Icons.fingerprint),
                 title: Text(FlutterI18n.translate(context, "settings_biometrics")),
                 subtitle: Text(
                   FlutterI18n.translate(context, "settings_biometrics_description"),

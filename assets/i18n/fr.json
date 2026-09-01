@@ -191,7 +191,7 @@
     "settings_biometrics_description": "Exiger une empreinte digitale ou la reconnaissance faciale pour accéder à l'application.",
     "biometrics_message": "Authentifiez-vous pour accéder à l'application",
     "biometrics_failed": "Échec de l'authentification",
-    "settings_auto_unlock": "Démarrage sans clé",
+    "settings_auto_unlock": "Déverrouillage automatique à proximité",
     "settings_auto_unlock_description": "Déverrouiller automatiquement le scooter quand l'application est ouverte et que le scooter est juste à côté de vous.",
     "settings_auto_unlock_threshold": "Distance de démarrage sans clé",
     "settings_auto_unlock_threshold_explainer": "Distance actuelle (ligne claire) : {rssi} dBm",
