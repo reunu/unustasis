@@ -262,10 +262,6 @@ class SavedScooterCard extends StatelessWidget {
               children: [
                 const SizedBox(height: 4),
                 GestureDetector(
-                  child: Image.asset(
-                    "images/scooter/side_${forceHover ? 9 : savedScooter.color}.webp",
-                    height: 160,
-                  ),
                   onTap: connected ? null : () => _connect(context),
                   onLongPress: () async {
                     HapticFeedback.mediumImpact();
@@ -279,6 +275,10 @@ class SavedScooterCard extends StatelessWidget {
                       rebuild();
                     }
                   },
+                  child: Image.asset(
+                    "images/scooter/side_${forceHover ? 9 : savedScooter.color}.webp",
+                    height: 160,
+                  ),
                 ),
                 if (showOnboarding)
                   Text(

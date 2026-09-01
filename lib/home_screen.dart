@@ -335,52 +335,79 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                           Expanded(
-                            child: ScooterVisual(
-                              color: context.select<ScooterService, int?>(
-                                    (service) => service.identity.color,
-                                  ) ??
-                                  1,
-                              state: context.select(
-                                (ScooterService service) => service.state,
-                              ),
-                              scanning: context.select(
-                                (ScooterService service) => service.scanning,
-                              ),
-                              blinkerLeft: _hazards,
-                              blinkerRight: _hazards,
-                              winter: _snowing,
-                              aprilFools: _forceHover,
-                              halloween: _fall && context.isDarkMode,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Selector<ScooterService, ({bool connected, bool? isLibrescoot})>(
-                            selector: (context, service) =>
-                                (connected: service.connected, isLibrescoot: service.identity.isLibrescoot),
-                            builder: (context, value, child) => Visibility(
-                                visible: value.isLibrescoot == true,
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                  children: [
-                                    ScooterActionButton(
-                                      icon: Icons.navigation_outlined,
-                                      label: FlutterI18n.translate(context, 'nav_title'),
-                                      showBubble: context.select<ScooterService, bool>(
-                                        (service) =>
-                                            service.navigationActive == true || service.pendingNavigation != null,
-                                      ),
-                                      onPressed: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            settings: const RouteSettings(name: 'navigation'),
-                                            builder: (context) => const NavigationScreen(),
-                                          ),
-                                        );
-                                      },
+                            child: Stack(
+                              children: [
+                                Positioned.fill(
+                                  child: ScooterVisual(
+                                    color: context.select<ScooterService, int?>(
+                                          (service) => service.identity.color,
+                                        ) ??
+                                        1,
+                                    state: context.select(
+                                      (ScooterService service) => service.state,
                                     ),
-                                  ],
-                                )),
+                                    scanning: context.select(
+                                      (ScooterService service) => service.scanning,
+                                    ),
+                                    blinkerLeft: _hazards,
+                                    blinkerRight: _hazards,
+                                    winter: _snowing,
+                                    aprilFools: _forceHover,
+                                    halloween: _fall && context.isDarkMode,
+                                  ),
+                                ),
+                                Selector<ScooterService, ({bool? isLibrescoot, bool hasNavigation})>(
+                                  selector: (context, service) => (
+                                    isLibrescoot: service.identity.isLibrescoot,
+                                    hasNavigation:
+                                        service.navigationActive == true || service.pendingNavigation != null,
+                                  ),
+                                  builder: (context, value, child) {
+                                    if (value.isLibrescoot != true) return const SizedBox.shrink();
+                                    return Positioned(
+                                      right: 12,
+                                      bottom: 12,
+                                      child: Tooltip(
+                                        message: FlutterI18n.translate(context, 'nav_title'),
+                                        child: Stack(
+                                          clipBehavior: Clip.none,
+                                          children: [
+                                            FloatingActionButton.small(
+                                              heroTag: 'navigation',
+                                              onPressed: () => Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  settings: const RouteSettings(name: 'navigation'),
+                                                  builder: (context) => const NavigationScreen(),
+                                                ),
+                                              ),
+                                              child: const Icon(Icons.navigation_outlined),
+                                            ),
+                                            if (value.hasNavigation)
+                                              Positioned(
+                                                top: -1,
+                                                right: -1,
+                                                child: Container(
+                                                  width: 14,
+                                                  height: 14,
+                                                  decoration: BoxDecoration(
+                                                    color: Theme.of(context).colorScheme.error,
+                                                    shape: BoxShape.circle,
+                                                    border: Border.all(
+                                                      color: Theme.of(context).colorScheme.surface,
+                                                      width: 2,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
                           ),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
