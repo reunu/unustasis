@@ -366,8 +366,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                     if (value.isLibrescoot != true) return const SizedBox.shrink();
                                     final color = Theme.of(context).colorScheme.onSurface;
                                     return Positioned(
-                                      right: 16,
-                                      top: 24,
+                                      right: 96,
+                                      bottom: 12,
                                       child: Tooltip(
                                         message: FlutterI18n.translate(context, 'nav_title'),
                                         child: Stack(
