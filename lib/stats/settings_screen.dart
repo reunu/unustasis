@@ -388,7 +388,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         if (supportsScheduledHibernation)
           ListTile(
-            leading: const Icon(Icons.bedtime_outlined),
+            leading: const SizedBox(
+              width: 24,
+              height: 24,
+              child: Stack(
+                children: [
+                  Positioned(left: 0, top: 0, child: Icon(Icons.bedtime_outlined, size: 22)),
+                  Positioned(right: 0, bottom: 0, child: Icon(Icons.access_time_filled, size: 12)),
+                ],
+              ),
+            ),
             title: _lsTitle(FlutterI18n.translate(context, "ls_scheduled_hibernation_title")),
             subtitle: Text(FlutterI18n.translate(context, "ls_settings_scheduled_hibernation_subtitle")),
             trailing: const Icon(Icons.chevron_right),
@@ -607,7 +616,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           },
         ),
         SwitchListTile(
-          secondary: const Icon(Icons.sync_alt),
+          secondary: const ImageIcon(
+            AssetImage("assets/icons/librescoot-blinkers.png"),
+            size: 24,
+          ),
           title: Text(FlutterI18n.translate(context, "settings_hazard_locking")),
           subtitle: Text(
             FlutterI18n.translate(context, "settings_hazard_locking_description"),
