@@ -364,16 +364,22 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                   builder: (context, value, child) {
                                     if (value.isLibrescoot != true) return const SizedBox.shrink();
+                                    final color = Theme.of(context).colorScheme.onSurface;
                                     return Positioned(
-                                      right: 12,
-                                      bottom: 12,
+                                      right: 16,
+                                      top: 24,
                                       child: Tooltip(
                                         message: FlutterI18n.translate(context, 'nav_title'),
                                         child: Stack(
                                           clipBehavior: Clip.none,
                                           children: [
-                                            FloatingActionButton.small(
-                                              heroTag: 'navigation',
+                                            OutlinedButton(
+                                              style: OutlinedButton.styleFrom(
+                                                shape: const CircleBorder(),
+                                                padding: const EdgeInsets.all(16),
+                                                backgroundColor: Theme.of(context).colorScheme.surface,
+                                                side: BorderSide(color: color),
+                                              ),
                                               onPressed: () => Navigator.push(
                                                 context,
                                                 MaterialPageRoute(
@@ -381,17 +387,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                                   builder: (context) => const NavigationScreen(),
                                                 ),
                                               ),
-                                              child: const Icon(Icons.navigation_outlined),
+                                              child: Icon(Icons.navigation_outlined, color: color),
                                             ),
                                             if (value.hasNavigation)
                                               Positioned(
-                                                top: -1,
-                                                right: -1,
+                                                top: 1,
+                                                right: 1,
                                                 child: Container(
                                                   width: 14,
                                                   height: 14,
                                                   decoration: BoxDecoration(
-                                                    color: Theme.of(context).colorScheme.error,
+                                                    color: Theme.of(context).colorScheme.primary,
                                                     shape: BoxShape.circle,
                                                     border: Border.all(
                                                       color: Theme.of(context).colorScheme.surface,
