@@ -714,31 +714,41 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     }
   }
 
+  bool _autoRestartAttemptPending = false;
+
   Future<void> _attemptAutoRestart() async {
-    await Future.delayed(const Duration(seconds: 3));
-    if (!_foundSth && !scanning && _autoRestarting) {
-      // make sure nothing happened in these few seconds
-      log.info("Auto-restarting...${_targetScooterId != null ? " targeting $_targetScooterId" : ""}");
-      if (_targetScooterId != null) {
-        // Keep retrying the specific scooter the user selected; generic
-        // auto-connect must not take over this connection intent.
-        final targetScooterId = _targetScooterId!;
-        try {
-          await connectToScooterId(
-            targetScooterId,
-            automatic: true,
-            expectedIntentGeneration: _connectionIntentGeneration,
-          );
-        } catch (e) {
-          log.warning("Failed to connect to target scooter $targetScooterId during auto-restart: $e");
-          if (!_foundSth && _autoRestarting && _targetScooterId == targetScooterId) {
-            unawaited(_attemptAutoRestart());
+    // The UI's isScanning listener and the failure handler can both schedule
+    // a retry; two concurrent chains would fight over one connection.
+    if (_autoRestartAttemptPending) return;
+    _autoRestartAttemptPending = true;
+    try {
+      await Future.delayed(const Duration(seconds: 3));
+      if (!_foundSth && !scanning && _autoRestarting) {
+        // make sure nothing happened in these few seconds
+        log.info("Auto-restarting...${_targetScooterId != null ? " targeting $_targetScooterId" : ""}");
+        if (_targetScooterId != null) {
+          // Keep retrying the specific scooter the user selected; generic
+          // auto-connect must not take over this connection intent.
+          final targetScooterId = _targetScooterId!;
+          try {
+            await connectToScooterId(
+              targetScooterId,
+              automatic: true,
+              expectedIntentGeneration: _connectionIntentGeneration,
+            );
+          } catch (e) {
+            log.warning("Failed to connect to target scooter $targetScooterId during auto-restart: $e");
+            if (!_foundSth && _autoRestarting && _targetScooterId == targetScooterId) {
+              unawaited(_attemptAutoRestart());
+            }
           }
+        } else {
+          // Fall back to generic start() for auto-connect behavior
+          start();
         }
-      } else {
-        // Fall back to generic start() for auto-connect behavior
-        start();
       }
+    } finally {
+      _autoRestartAttemptPending = false;
     }
   }
 
