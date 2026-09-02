@@ -475,6 +475,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                                   : () async {
                                                       try {
                                                         await context.read<ScooterService>().wakeUpAndUnlock();
+                                                        if (context.mounted && context.read<ScooterService>().hazardLocking) {
+                                                          _flashHazards(2);
+                                                        }
                                                       } catch (e, stack) {
                                                         log.warning("Could not wake and unlock scooter", e, stack);
                                                         if (context.mounted) {
