@@ -18,8 +18,9 @@ const String lsKeyScheduledHibernateEnabled = "pm.scheduled-hibernate-enabled";
 const String lsKeyScheduledHibernateCron = "pm.scheduled-hibernate-cron";
 const String lsKeyScheduledHibernateDuration = "pm.scheduled-hibernate-duration";
 
-/// Librescoot settings key holding the APN the modem attaches with. An empty
-/// value means the modem falls back to the SIM operator's defaults.
+/// Librescoot settings keys used by the scooter settings screen.
+const String lsKeyAutoStandbySeconds = "scooter.auto-standby-seconds";
+const String lsKeyHibernateTimer = "pm.hibernation-timer";
 const String lsKeyCellularApn = "cellular.apn";
 
 Future<void> _extendedChannelQueue = Future.value();
@@ -636,30 +637,12 @@ Future<void> setAutoStandbyTimeCommand(BluetoothDevice? scooter, CharacteristicR
     log.warning("Auto-standby time cannot be greater than 1 hour");
     throw "Auto-standby time cannot be greater than 1 hour";
   }
-  final response = await sendLsExtendedCommand(
-    scooter,
-    repo,
-    "config:auto-standby-seconds $seconds",
-  );
-  if (response != "config:ok") {
-    log.severe("Failed to set auto-standby time, response: $response");
-    throw "Failed to set auto-standby time, response: $response";
-  }
-  return;
+  await setLsSettingCommand(scooter, repo, lsKeyAutoStandbySeconds, seconds.toString());
 }
 
 Future<void> setAutoHibernateTimeCommand(BluetoothDevice? scooter, CharacteristicRepository repo, Duration time) async {
   final seconds = time.inSeconds;
-  final response = await sendLsExtendedCommand(
-    scooter,
-    repo,
-    "config:hibernate-timer $seconds",
-  );
-  if (response != "config:ok") {
-    log.severe("Failed to set auto-hibernate time, response: $response");
-    throw "Failed to set auto-hibernate time, response: $response";
-  }
-  return;
+  await setLsSettingCommand(scooter, repo, lsKeyHibernateTimer, seconds.toString());
 }
 
 /// Why a user-entered APN can't be sent to the scooter.
@@ -700,12 +683,7 @@ Future<void> setCellularApnCommand(
     log.warning("Refusing to send APN '$apn': ${problem.name}");
     throw "Invalid APN (${problem.name})";
   }
-  final response = await sendLsExtendedCommand(scooter, repo, "$_apnCommandPrefix$trimmed");
-  if (response != "config:ok") {
-    log.severe("Failed to set APN, response: $response");
-    throw "Failed to set APN, response: $response";
-  }
-  return;
+  await setLsSettingCommand(scooter, repo, lsKeyCellularApn, trimmed);
 }
 
 /// Clears the configured APN so the modem falls back to whatever the SIM

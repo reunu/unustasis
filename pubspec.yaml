@@ -75,6 +75,7 @@ dependencies:
       ref: main
   flutter_photon: ^2.0.1
   flutter_sharing_intent: ^2.0.4
+  flutter_svg: ^2.0.17
 
 dev_dependencies:
   flutter_test:
@@ -121,6 +122,7 @@ flutter:
     - assets/i18n/
     - assets/
     - assets/anim/
+    - assets/icons/
 
   fonts:
     - family: icomoon

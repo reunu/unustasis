@@ -235,6 +235,28 @@ class SavedScooterCard extends StatelessWidget {
     if (context.mounted) context.read<ScooterService>().scooterColor = newColor;
   }
 
+  Future<void> _connect(BuildContext context) async {
+    try {
+      log.info("Trying to connect to ${savedScooter.id}");
+      context.read<ScooterService>().connectToScooterId(savedScooter.id);
+      if (!context.mounted) return;
+      context.read<ScooterService>().startAutoRestart(targetScooterId: savedScooter.id);
+      rebuild();
+      WidgetsBinding.instance.addPostFrameCallback((_) => onNavigateBack?.call());
+    } catch (e, stack) {
+      log.severe("Couldn't connect to ${savedScooter.id}", e, stack);
+      if (context.mounted) {
+        Fluttertoast.showToast(
+          msg: FlutterI18n.translate(
+            context,
+            "settings_connect_failed",
+            translationParams: {"name": savedScooter.name},
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // Odometer only exists for the connected scooter.
@@ -257,11 +279,8 @@ class SavedScooterCard extends StatelessWidget {
               children: [
                 const SizedBox(height: 4),
                 GestureDetector(
-                  child: Image.asset(
-                    "images/scooter/side_${forceHover ? 9 : savedScooter.color}.webp",
-                    height: 160,
-                  ),
-                  onTap: () async {
+                  onTap: connected ? null : () => _connect(context),
+                  onLongPress: () async {
                     HapticFeedback.mediumImpact();
                     int? newColor = await showColorDialog(savedScooter.color, savedScooter.name, context);
                     if (newColor != null && context.mounted) {
@@ -273,6 +292,10 @@ class SavedScooterCard extends StatelessWidget {
                       rebuild();
                     }
                   },
+                  child: Image.asset(
+                    "images/scooter/side_${forceHover ? 9 : savedScooter.color}.webp",
+                    height: 160,
+                  ),
                 ),
                 if (showOnboarding)
                   Text(
@@ -301,6 +324,10 @@ class SavedScooterCard extends StatelessWidget {
                             textAlign: TextAlign.center,
                           ),
                         ),
+                        if (savedScooter.isLibrescoot == true) ...[
+                          const SizedBox(width: 6),
+                          const Icon(Icons.local_fire_department_outlined, size: 20),
+                        ],
                         const SizedBox(width: 12),
                         const Icon(
                           Icons.edit_outlined,
@@ -485,31 +512,7 @@ class SavedScooterCard extends StatelessWidget {
                                 horizontal: 16,
                               ),
                             ),
-                            onPressed: () async {
-                              try {
-                                log.info("Trying to connect to ${savedScooter.id}");
-                                // Start the connection but don't wait for it to fully complete
-                                // Just initiate it and navigate back immediately
-                                context.read<ScooterService>().connectToScooterId(savedScooter.id);
-
-                                if (context.mounted) {
-                                  // Start auto-restart targeting this specific scooter
-                                  context.read<ScooterService>().startAutoRestart(targetScooterId: savedScooter.id);
-                                  rebuild();
-                                  // Navigate back to main screen after initiating connection
-                                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                                    onNavigateBack?.call();
-                                  });
-                                }
-                              } catch (e, stack) {
-                                log.severe("Couldn't connect to ${savedScooter.id}", e, stack);
-                                if (context.mounted) {
-                                  Fluttertoast.showToast(
-                                      msg: FlutterI18n.translate((context), "settings_connect_failed",
-                                          translationParams: {"name": savedScooter.name}));
-                                }
-                              }
-                            },
+                            onPressed: () => _connect(context),
                             icon: const Icon(
                               Icons.bluetooth,
                               size: 16,
@@ -773,11 +776,22 @@ class SavedScooterListItem extends StatelessWidget {
                                   rebuild();
                                 }
                               },
-                              child: Text(
-                                savedScooter.name,
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                      height: 1.1,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      savedScooter.name,
+                                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                            height: 1.1,
+                                          ),
                                     ),
+                                  ),
+                                  if (savedScooter.isLibrescoot == true) ...[
+                                    const SizedBox(width: 6),
+                                    const Icon(Icons.local_fire_department_outlined, size: 18),
+                                  ],
+                                ],
                               ),
                             ),
                           ),

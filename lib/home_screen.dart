@@ -33,9 +33,7 @@ import '../control_sheet.dart';
 import '../helper_widgets/snowfall.dart';
 import '../helper_widgets/clouds.dart';
 import '../helper_widgets/grassscape.dart';
-import '../ls_settings_screen.dart';
 import '../navigation_screen.dart';
-import 'state/vehicle_status.dart';
 
 class HomeScreen extends StatefulWidget {
   final bool? forceOpen;
@@ -63,6 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
       redirectOrStart();
     }
   }
+
 
   Future<void> _startSeasonal() async {
     SharedPreferencesAsync prefs = SharedPreferencesAsync();
@@ -336,69 +335,55 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                           Expanded(
-                            child: ScooterVisual(
-                              color: context.select<ScooterService, int?>(
-                                    (service) => service.identity.color,
-                                  ) ??
-                                  1,
-                              state: context.select(
-                                (ScooterService service) => service.state,
-                              ),
-                              scanning: context.select(
-                                (ScooterService service) => service.scanning,
-                              ),
-                              blinkerLeft: _hazards,
-                              blinkerRight: _hazards,
-                              winter: _snowing,
-                              aprilFools: _forceHover,
-                              halloween: _fall && context.isDarkMode,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Selector<ScooterService, ({bool connected, bool? isLibrescoot})>(
-                            selector: (context, service) =>
-                                (connected: service.connected, isLibrescoot: service.identity.isLibrescoot),
-                            builder: (context, value, child) => Visibility(
-                                visible: value.isLibrescoot == true,
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                  children: [
-                                    ScooterActionButton(
-                                      icon: Icons.navigation_outlined,
-                                      label: FlutterI18n.translate(context, 'nav_title'),
-                                      showBubble: context.select<ScooterService, bool>(
-                                        (service) =>
-                                            service.navigationActive == true || service.pendingNavigation != null,
-                                      ),
-                                      onPressed: () {
-                                        Navigator.push(
+                            child: Stack(
+                              children: [
+                                Positioned.fill(
+                                  child: ScooterVisual(
+                                    color: context.select<ScooterService, int?>(
+                                          (service) => service.identity.color,
+                                        ) ??
+                                        1,
+                                    state: context.select(
+                                      (ScooterService service) => service.state,
+                                    ),
+                                    scanning: context.select(
+                                      (ScooterService service) => service.scanning,
+                                    ),
+                                    blinkerLeft: _hazards,
+                                    blinkerRight: _hazards,
+                                    winter: _snowing,
+                                    aprilFools: _forceHover,
+                                    halloween: _fall && context.isDarkMode,
+                                  ),
+                                ),
+                                Selector<ScooterService, ({bool? isLibrescoot, bool hasNavigation})>(
+                                  selector: (context, service) => (
+                                    isLibrescoot: service.identity.isLibrescoot,
+                                    hasNavigation:
+                                        service.navigationActive == true || service.pendingNavigation != null,
+                                  ),
+                                  builder: (context, value, child) {
+                                    if (value.isLibrescoot != true) return const SizedBox.shrink();
+                                    return Positioned(
+                                      right: 36,
+                                      bottom: 4,
+                                      child: ScooterActionButton(
+                                        icon: Icons.navigation_outlined,
+                                        label: FlutterI18n.translate(context, 'nav_title'),
+                                        showBubble: value.hasNavigation,
+                                        onPressed: () => Navigator.push(
                                           context,
                                           MaterialPageRoute(
                                             settings: const RouteSettings(name: 'navigation'),
                                             builder: (context) => const NavigationScreen(),
                                           ),
-                                        );
-                                      },
-                                    ),
-                                    ScooterActionButton(
-                                      icon: Icons.local_fire_department_outlined,
-                                      label: "Librescoot",
-                                      showBubble: context.select<ScooterService, bool>(
-                                        (service) => service.vehicle.usbMode == UsbMode.massStorage,
+                                        ),
                                       ),
-                                      onPressed: !value.connected
-                                          ? null
-                                          : () {
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) => const LsSettingsScreen(),
-                                                ),
-                                              );
-                                            },
-                                    )
-                                  ],
-                                )),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
                           ),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -742,7 +727,8 @@ class StatusText extends StatelessWidget {
           bool scanning,
           ScooterState? state,
           ScooterVehicleState? vehicleState,
-          ScooterPowerState? powerState
+          ScooterPowerState? powerState,
+          bool isLibrescoot
         })>(
       selector: (context, service) => (
         state: service.state,
@@ -750,6 +736,7 @@ class StatusText extends StatelessWidget {
         connected: service.connected,
         vehicleState: service.vehicleState,
         powerState: service.powerState,
+        isLibrescoot: service.identity.isLibrescoot == true,
       ),
       builder: (context, data, _) {
         String stateText;
@@ -779,9 +766,18 @@ class StatusText extends StatelessWidget {
           stateText += FlutterI18n.translate(context, "home_unlocked");
         }
 
-        return Text(
-          stateText,
-          style: Theme.of(context).textTheme.titleMedium,
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              stateText,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            if (data.isLibrescoot) ...[
+              const SizedBox(width: 6),
+              const Icon(Icons.local_fire_department_outlined, size: 18),
+            ],
+          ],
         );
       },
     );
