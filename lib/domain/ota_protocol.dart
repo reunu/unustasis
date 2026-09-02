@@ -31,6 +31,7 @@ class OtaProtocol {
   static const int startBusy = 0x11;
   static const int startBadParams = 0x12;
   static const int startInstalling = 0x13;
+  static const int startAlreadyInstalled = 0x14;
 
   // ACK flags.
   static const int ackFlagRewind = 0x01;

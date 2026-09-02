@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:crypto/crypto.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
@@ -308,6 +309,7 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
     final dir = await getApplicationSupportDirectory();
     final file = File("${dir.path}/ota/${asset.name}");
     if (await file.exists() && await file.length() == asset.size) {
+      await _verifyBundle(file, asset);
       return file; // already downloaded
     }
     await file.parent.create(recursive: true);
@@ -344,10 +346,39 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
       } finally {
         await sink.close();
       }
+      await _verifyBundle(file, asset);
       return file;
     } finally {
       if (mounted) setState(() => _downloading = false);
     }
+  }
+
+  /// Verifies the bundle against the channel index checksum when the index
+  /// provides one. The SHA sent in OTA START is computed from this same file,
+  /// so a corrupted download would otherwise transfer cleanly (self-consistent
+  /// hash) and only surface as an opaque install failure after a full BLE
+  /// transfer. Deletes the file on mismatch so the retry re-downloads.
+  Future<void> _verifyBundle(File file, FirmwareAsset asset) async {
+    if (asset.sha256.isEmpty) return;
+    log.info("Verifying ${asset.name} against channel checksum");
+    final digest = await _sha256Hex(file);
+    if (digest == asset.sha256.toLowerCase()) return;
+    try {
+      await file.delete();
+    } catch (e) {
+      log.warning("Deleting corrupt bundle failed: $e");
+    }
+    throw "Downloaded bundle is corrupt (checksum mismatch), please retry";
+  }
+
+  Future<String> _sha256Hex(File f) async {
+    final output = _DigestSink();
+    final input = sha256.startChunkedConversion(output);
+    await for (final chunk in f.openRead()) {
+      input.add(chunk);
+    }
+    input.close();
+    return output.events.single.toString();
   }
 
   String _formatBytes(num bytes) {
@@ -721,4 +752,16 @@ class _LsOtaScreenState extends State<LsOtaScreen> {
       ),
     );
   }
+}
+
+/// Minimal accumulator sink for chunked hashing (mirrors the pattern in
+/// ota_transfer_service.dart; kept local to avoid a cross-file dependency).
+class _DigestSink implements Sink<Digest> {
+  final events = <Digest>[];
+
+  @override
+  void add(Digest event) => events.add(event);
+
+  @override
+  void close() {}
 }
