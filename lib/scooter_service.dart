@@ -839,6 +839,8 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       source: source,
     );
 
+    log.info('[wake-timing] unlock command acknowledged');
+
     if (settings.openSeatOnUnlock) {
       await Future.delayed(const Duration(seconds: 1), () {
         openSeat(source: EventSource.auto);
@@ -863,6 +865,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
 
   Future<void> wakeUpAndUnlock({EventSource? source}) async {
     final stopwatch = Stopwatch()..start();
+    log.info('[wake-timing] wake-and-unlock started');
     final waiter = StateWaiter<ScooterState?>(
       notifier: this,
       value: () => state,
@@ -874,12 +877,17 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
 
     try {
       await Future.wait([wakeUp(), standby], eagerError: true);
+      log.info('[wake-timing] standby reached after ${stopwatch.elapsed.inMilliseconds} ms');
 
       final remaining = wakeAndUnlockTimeout - stopwatch.elapsed;
       if (remaining <= Duration.zero) {
         throw TimeoutException('Timed out waking and unlocking the scooter.', wakeAndUnlockTimeout);
       }
       await unlock(source: source ?? EventSource.app).timeout(remaining);
+      log.info('[wake-timing] wake-and-unlock completed after ${stopwatch.elapsed.inMilliseconds} ms');
+    } catch (e, stack) {
+      log.warning('[wake-timing] wake-and-unlock failed after ${stopwatch.elapsed.inMilliseconds} ms: $e', e, stack);
+      rethrow;
     } finally {
       waiter.cancel();
     }
@@ -955,6 +963,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
 
   Future<void> wakeUp() async {
     await commands.wakeUpCommand(myScooter, characteristicRepository);
+    log.info('[wake-timing] wake command acknowledged');
   }
 
   Future<void> hibernate() async {
