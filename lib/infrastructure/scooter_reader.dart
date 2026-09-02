@@ -23,6 +23,11 @@ int? _bytesToUint32(List<int> data) {
   return (data[3] << 24) + (data[2] << 16) + (data[1] << 8) + data[0];
 }
 
+int? parseOdometerMeters(List<int> data) {
+  if (data.length < 4) return null;
+  return _bytesToUint32(data.sublist(0, 4));
+}
+
 // -- String-based subscriptions --
 
 /// Subscribes to a BLE characteristic that sends ASCII string values.
@@ -101,6 +106,25 @@ StreamSubscription<List<int>> subscribeToAuxCharging(
 }
 
 // -- NRF version (read-once) --
+
+/// Reads the total odometer once from the characteristic.
+/// Calls [onRead] with the decoded distance in metres.
+Future<void> readOdometer(
+  BluetoothCharacteristic characteristic,
+  void Function(int meters) onRead,
+) async {
+  try {
+    final value = parseOdometerMeters(await characteristic.read());
+    if (value == null) {
+      _log.warning('Ignoring malformed odometer value');
+      return;
+    }
+    _log.info('Odometer received: $value m');
+    onRead(value);
+  } catch (e, stack) {
+    _log.warning('Failed to read odometer', e, stack);
+  }
+}
 
 /// Reads the nRF firmware version once from the characteristic.
 /// Calls [onRead] with the version string and whether it's a librescoot build.

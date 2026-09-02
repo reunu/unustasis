@@ -513,5 +513,5 @@
     "ls_ota_warn_no_image_for": "No {board} cargo found for {version}.",
     "ls_ota_warn_no_delta_path": "No delta passage from {version} — full cargo be needed ({latest}).",
     "ls_settings_apn_clear": "Strike it",
-    "ls_settings_apn_cleared": "Beacon struck, sailin' by the SIM's own charts"
+    "ls_settings_apn_cleared": "Beacon struck, sailin' by the SIM's own charts",,
 }

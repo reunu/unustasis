@@ -533,5 +533,5 @@
     "ls_ota_warn_no_image_for": "Kein {board}-Image für {version} gefunden.",
     "ls_ota_warn_no_delta_path": "Kein Delta-Pfad von {version} — ein vollständiges Image ist nötig ({latest}).",
     "ls_settings_apn_clear": "Löschen",
-    "ls_settings_apn_cleared": "APN gelöscht, Standard des SIM-Anbieters wird genutzt"
+    "ls_settings_apn_cleared": "APN gelöscht, Standard des SIM-Anbieters wird genutzt",,
 }
