@@ -307,8 +307,14 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   int? get odometerMeters => identity.odometerMeters;
 
   void refreshOdometer() {
-    if (!connected) return;
-    identity.refreshOdometer(characteristicRepository, onUpdate: notifyListeners);
+    if (!connected || myScooter == null) return;
+    final device = myScooter!;
+    identity.refreshOdometer(
+      characteristicRepository,
+      onUpdate: notifyListeners,
+      // Discard the read if the connection it started on is no longer current.
+      isCurrent: () => identical(myScooter, device) && connected,
+    );
   }
 
   // Passthrough getters for battery state
@@ -675,6 +681,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
 
   void _subscribeToAllCharacteristics() {
     var chars = characteristicRepository;
+    final wiredScooter = myScooter;
 
     vehicle.wireSubscriptions(
       chars,
@@ -712,7 +719,11 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       cacheSoc: _cacheSocForScooter,
     );
 
-    identity.wireOdometer(chars, onUpdate: notifyListeners);
+    identity.wireOdometer(
+      chars,
+      onUpdate: notifyListeners,
+      isCurrent: () => identical(myScooter, wiredScooter),
+    );
 
     identity.wireNrfVersion(
       chars,
