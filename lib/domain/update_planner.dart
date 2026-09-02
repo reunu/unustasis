@@ -16,7 +16,19 @@ class FirmwareAsset {
   final String url;
   final int size;
 
-  const FirmwareAsset({required this.name, required this.url, required this.size});
+  /// Hex SHA-256 from the channel JSON, "" on older channels without
+  /// checksums. Verified against the downloaded bundle before transfer: the
+  /// START SHA is computed from the same file, so without this check a
+  /// corrupted download transfers cleanly and only fails as an opaque
+  /// install error after a full BLE transfer.
+  final String sha256;
+
+  const FirmwareAsset({
+    required this.name,
+    required this.url,
+    required this.size,
+    this.sha256 = "",
+  });
 
   bool get isDelta => name.endsWith(".delta");
   bool get isMender => name.endsWith(".mender");
@@ -25,7 +37,12 @@ class FirmwareAsset {
     final name = json["name"] as String? ?? "";
     final url = json["url"] as String? ?? "";
     if (name.isEmpty || url.isEmpty) return null;
-    return FirmwareAsset(name: name, url: url, size: (json["size"] as num?)?.toInt() ?? 0);
+    return FirmwareAsset(
+      name: name,
+      url: url,
+      size: (json["size"] as num?)?.toInt() ?? 0,
+      sha256: json["sha256"] as String? ?? "",
+    );
   }
 }
 

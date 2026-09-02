@@ -196,10 +196,16 @@ class OtaTransferService extends ChangeNotifier {
         bundleId: bundleId,
       );
 
+      // ATT-MTU minus 3 (ATT header) minus 4 (DATA offset prefix). No floor:
+      // a chunk larger than the negotiated MTU is truncated/rejected on every
+      // write, which surfaces as endless rewinds instead of a clean error.
       final chunkSize = min(
         ack.maxChunk,
-        min(OtaProtocol.maxChunkSize, max(20, scooter.mtuNow - 3 - 4)),
+        min(OtaProtocol.maxChunkSize, scooter.mtuNow - 7),
       );
+      if (chunkSize < 1) {
+        throw "Negotiated ATT MTU (${scooter.mtuNow}) too small for OTA";
+      }
       final window = max(1, ack.windowChunks) * chunkSize;
 
       raf = await bundle.open();
@@ -301,6 +307,8 @@ class OtaTransferService extends ChangeNotifier {
               throw "An installation is already in progress";
             case OtaProtocol.startBusy:
               throw "Another transfer is in progress";
+            case OtaProtocol.startAlreadyInstalled:
+              throw "This version is already installed on the scooter";
             default:
               throw "Scooter rejected the transfer (code ${ack.status})";
           }
