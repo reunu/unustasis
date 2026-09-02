@@ -138,6 +138,11 @@ class _ScooterScreenState extends State<ScooterScreen> {
           ...scooters.map((scooter) {
             final bool connected = (scooter.id == scooterService.myScooter?.remoteId.toString() &&
                 scooterService.state != ScooterState.disconnected);
+            // While a connection attempt is in flight, the status label
+            // belongs to the scooter we're connecting to, not to whichever
+            // one myScooter still remembers.
+            final bool active = connected ||
+                (scooterService.state == ScooterState.linking && scooterService.connectingScooterId == scooter.id);
 
             if (_isListView) {
               return Padding(
@@ -145,7 +150,7 @@ class _ScooterScreenState extends State<ScooterScreen> {
                 child: SavedScooterListItem(
                   savedScooter: scooter,
                   single: single,
-                  connected: connected,
+                  connected: active,
                   rebuild: () => setState(() {}),
                   onNavigateBack: widget.onNavigateBack,
                 ),
@@ -156,7 +161,7 @@ class _ScooterScreenState extends State<ScooterScreen> {
                 child: SavedScooterCard(
                   savedScooter: scooter,
                   single: single,
-                  connected: connected,
+                  connected: active,
                   rebuild: () => setState(() {}),
                   onNavigateBack: widget.onNavigateBack,
                 ),
@@ -224,11 +229,12 @@ class SavedScooterCard extends StatelessWidget {
   Future<void> _connect(BuildContext context) async {
     try {
       log.info("Trying to connect to ${savedScooter.id}");
-      context.read<ScooterService>().connectToScooterId(savedScooter.id);
-      if (!context.mounted) return;
-      context.read<ScooterService>().startAutoRestart(targetScooterId: savedScooter.id);
+      final service = context.read<ScooterService>();
+      final attempt = service.connectToScooterId(savedScooter.id);
+      service.startAutoRestart(targetScooterId: savedScooter.id);
       rebuild();
       WidgetsBinding.instance.addPostFrameCallback((_) => onNavigateBack?.call());
+      await attempt;
     } catch (e, stack) {
       log.severe("Couldn't connect to ${savedScooter.id}", e, stack);
       if (context.mounted) {
@@ -620,19 +626,17 @@ class SavedScooterListItem extends StatelessWidget {
               try {
                 log.info("Trying to connect to ${savedScooter.id}");
 
-                // Start the connection but don't wait for it to fully complete
-                // Just initiate it and navigate back immediately
-                context.read<ScooterService>().connectToScooterId(savedScooter.id);
-
-                if (context.mounted) {
-                  // Start auto-restart targeting this specific scooter
-                  context.read<ScooterService>().startAutoRestart(targetScooterId: savedScooter.id);
-                  rebuild();
-                  // Navigate back to main screen after initiating connection
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    onNavigateBack?.call();
-                  });
-                }
+                final service = context.read<ScooterService>();
+                final attempt = service.connectToScooterId(savedScooter.id);
+                service.startAutoRestart(targetScooterId: savedScooter.id);
+                rebuild();
+                // Show the selected scooter on the main screen while its
+                // connection continues; this callback still awaits the Future
+                // below so failures are handled rather than becoming unhandled.
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  onNavigateBack?.call();
+                });
+                await attempt;
               } catch (e, stack) {
                 log.severe("Couldn't connect to ${savedScooter.id}", e, stack);
                 if (context.mounted) {

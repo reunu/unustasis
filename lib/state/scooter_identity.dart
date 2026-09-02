@@ -33,10 +33,12 @@ class ScooterIdentity {
   void wireNrfVersion(
     CharacteristicRepository chars, {
     required VoidCallback onUpdate,
+    bool Function()? isCurrent,
   }) {
     if (chars.nrfVersionCharacteristic != null) {
       _log.info('Reading nRF version');
       readNrfVersion(chars.nrfVersionCharacteristic!, (version, isLibre) {
+        if (isCurrent?.call() == false) return;
         nrfVersion = version;
         isLibrescoot = isLibre;
         onUpdate();
