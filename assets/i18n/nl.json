@@ -533,7 +533,5 @@
     "ls_ota_warn_no_image_for": "Geen {board}-image gevonden voor {version}.",
     "ls_ota_warn_no_delta_path": "Geen delta-pad vanaf {version} — een volledige image is nodig ({latest}).",
     "ls_settings_apn_clear": "Wissen",
-    "ls_settings_apn_cleared": "APN gewist, de standaard van de SIM-provider wordt gebruikt",
-    "ls_settings_odometer_title": "Kilometerteller",
-    "ls_settings_odometer_value": "{kilometres} km"
+    "ls_settings_apn_cleared": "APN gewist, de standaard van de SIM-provider wordt gebruikt",,
 }

@@ -533,7 +533,5 @@
     "ls_ota_warn_no_image_for": "No {board} image found for {version}.",
     "ls_ota_warn_no_delta_path": "No delta path from {version} — a full image is needed ({latest}).",
     "ls_settings_apn_clear": "Clear",
-    "ls_settings_apn_cleared": "APN cleared, using the SIM operator's default",
-    "ls_settings_odometer_title": "Odometer",
-    "ls_settings_odometer_value": "{kilometres} km"
+    "ls_settings_apn_cleared": "APN cleared, using the SIM operator's default",,
 }

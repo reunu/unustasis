@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:provider/provider.dart';
@@ -29,7 +27,6 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
   bool _isSendingApn = false;
   bool _apnLoaded = false;
   String? _apn;
-  Timer? _odometerRefreshTimer;
 
   // Owned here rather than per-dialog. showDialog's future completes on pop,
   // while the route is still animating out with the TextField attached, so a
@@ -38,7 +35,6 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
 
   @override
   void dispose() {
-    _odometerRefreshTimer?.cancel();
     _apnController.dispose();
     super.dispose();
   }
@@ -51,11 +47,6 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _getKeycardCount();
       _getApn();
-      context.read<ScooterService>().refreshOdometer();
-      _odometerRefreshTimer = Timer.periodic(
-        const Duration(seconds: 30),
-        (_) => context.read<ScooterService>().refreshOdometer(),
-      );
     });
   }
 
@@ -420,16 +411,6 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
                   )
                 : Icon(Icons.chevron_right),
             onTap: _isSendingApn ? null : _editApn,
-          ),
-        if (context.watch<ScooterService>().odometerMeters case final meters?)
-          ListTile(
-            leading: const Icon(Icons.route_outlined),
-            title: Text(FlutterI18n.translate(context, "ls_settings_odometer_title")),
-            subtitle: Text(FlutterI18n.translate(
-              context,
-              "ls_settings_odometer_value",
-              translationParams: {"kilometres": (meters / 1000).toStringAsFixed(1)},
-            )),
           ),
         ListTile(
           leading: Icon(Icons.usb_outlined),
