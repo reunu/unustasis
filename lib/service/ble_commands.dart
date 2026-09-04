@@ -22,6 +22,12 @@ const String lsKeyScheduledHibernateDuration = "pm.scheduled-hibernate-duration"
 /// value means the modem falls back to the SIM operator's defaults.
 const String lsKeyCellularApn = "cellular.apn";
 
+/// Librescoot settings key that keeps the running battery active while the
+/// seatbox is open, instead of letting it drop out. battery-service also wakes
+/// a sleeping pack when this is on, which is what makes it useful for digging
+/// a scooter out of a flat AUX battery.
+const String lsKeyBatteryKeepActiveOnSeatboxOpen = "scooter.battery-keep-active-on-seatbox-open";
+
 Future<void> _extendedChannelQueue = Future.value();
 
 /// Serializes access to the extended command/response characteristics so that

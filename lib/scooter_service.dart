@@ -722,6 +722,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
           identity.supportsScheduledHibernation = false;
           identity.supportsApnConfig = false;
           identity.supportsBondForget = false;
+          identity.supportsBatteryKeepActive = false;
         }
         notifyListeners();
       },
@@ -800,6 +801,22 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     // firmware rather than the app: a cache would go stale the moment the
     // scooter takes a firmware update.
     identity.supportsBondForget = supportsBondForget;
+    notifyListeners();
+
+    bool? supportsBatteryKeepActive;
+    try {
+      final value = await commands.getLsSettingCommand(
+        myScooter,
+        characteristicRepository,
+        commands.lsKeyBatteryKeepActiveOnSeatboxOpen,
+      );
+      supportsBatteryKeepActive = value != null;
+    } catch (e, stack) {
+      log.warning("battery keep-active probe failed", e, stack);
+      supportsBatteryKeepActive = false;
+    }
+    if (generation != _lsProbeGeneration) return;
+    identity.supportsBatteryKeepActive = supportsBatteryKeepActive;
     notifyListeners();
   }
 
@@ -964,6 +981,29 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   /// Sets the APN the scooter's modem attaches with.
   Future<void> setCellularApn(String apn) async {
     await commands.setCellularApnCommand(myScooter, characteristicRepository, apn);
+  }
+
+  /// Reads whether the scooter keeps its running battery active (waking it if
+  /// needed) while the seatbox is open. Returns null when the firmware doesn't
+  /// expose the setting; an unset value counts as off.
+  Future<bool?> getBatteryKeepActive() async {
+    final value = await commands.getLsSettingCommand(
+      myScooter,
+      characteristicRepository,
+      commands.lsKeyBatteryKeepActiveOnSeatboxOpen,
+    );
+    if (value == null) return null;
+    return value == "true";
+  }
+
+  /// Turns the battery keep-active override on or off.
+  Future<void> setBatteryKeepActive(bool enabled) async {
+    await commands.setLsSettingCommand(
+      myScooter,
+      characteristicRepository,
+      commands.lsKeyBatteryKeepActiveOnSeatboxOpen,
+      enabled ? "true" : "false",
+    );
   }
 
   Future<void> clearCellularApn() async {

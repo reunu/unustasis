@@ -22,12 +22,14 @@ class ScooterIdentity {
   bool? supportsScheduledHibernation;
   bool? supportsApnConfig;
   bool? supportsBondForget;
+  bool? supportsBatteryKeepActive;
 
   void resetLsCapabilities() {
     supportsHibernateFor = null;
     supportsScheduledHibernation = null;
     supportsApnConfig = null;
     supportsBondForget = null;
+    supportsBatteryKeepActive = null;
   }
 
   void wireNrfVersion(
