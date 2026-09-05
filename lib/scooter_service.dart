@@ -28,13 +28,14 @@ import '../state/battery_state.dart';
 import '../state/scooter_identity.dart';
 import '../state/vehicle_status.dart';
 import '../service/scooter_storage.dart';
+import '../service/state_waiter.dart';
 import '../service/ble_commands.dart' as commands;
 import '../service/ble_scanner.dart';
 import '../service/user_settings.dart';
 
-const bootingTimeSeconds = 25;
 const keylessCooldownSeconds = 60;
 const handlebarCheckSeconds = 5;
+const wakeAndUnlockTimeout = Duration(seconds: 45);
 
 class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   final log = Logger('ScooterService');
@@ -855,6 +856,8 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       source: source,
     );
 
+    log.info('[wake-timing] unlock command acknowledged');
+
     if (settings.openSeatOnUnlock) {
       await Future.delayed(const Duration(seconds: 1), () {
         openSeat(source: EventSource.auto);
@@ -878,15 +881,32 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   }
 
   Future<void> wakeUpAndUnlock({EventSource? source}) async {
-    wakeUp();
-
-    await _waitForScooterState(
-      ScooterState.standby,
-      const Duration(seconds: bootingTimeSeconds + 5),
+    final stopwatch = Stopwatch()..start();
+    log.info('[wake-timing] wake-and-unlock started');
+    final waiter = StateWaiter<ScooterState?>(
+      notifier: this,
+      value: () => state,
+      expected: ScooterState.standby,
+      timeout: wakeAndUnlockTimeout,
+      isDisconnected: (state) => state == ScooterState.disconnected,
     );
+    final standby = waiter.wait();
 
-    if (_state == ScooterState.standby) {
-      unlock();
+    try {
+      await Future.wait([wakeUp(), standby], eagerError: true);
+      log.info('[wake-timing] standby reached after ${stopwatch.elapsed.inMilliseconds} ms');
+
+      final remaining = wakeAndUnlockTimeout - stopwatch.elapsed;
+      if (remaining <= Duration.zero) {
+        throw TimeoutException('Timed out waking and unlocking the scooter.', wakeAndUnlockTimeout);
+      }
+      await unlock(source: source ?? EventSource.app).timeout(remaining);
+      log.info('[wake-timing] wake-and-unlock completed after ${stopwatch.elapsed.inMilliseconds} ms');
+    } catch (e, stack) {
+      log.warning('[wake-timing] wake-and-unlock failed after ${stopwatch.elapsed.inMilliseconds} ms: $e', e, stack);
+      rethrow;
+    } finally {
+      waiter.cancel();
     }
   }
 
@@ -960,6 +980,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
 
   Future<void> wakeUp() async {
     await commands.wakeUpCommand(myScooter, characteristicRepository);
+    log.info('[wake-timing] wake command acknowledged');
   }
 
   Future<void> hibernate() async {
@@ -1042,35 +1063,6 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       }
     }
     return false;
-  }
-
-  Future<void> _waitForScooterState(
-    ScooterState expectedScooterState,
-    Duration limit,
-  ) async {
-    Completer<void> completer = Completer<void>();
-
-    // Check new state every 2s
-    var timer = Timer.periodic(const Duration(seconds: 2), (timer) {
-      ScooterState? scooterState = _state;
-      log.info("Waiting for $expectedScooterState, and got: $scooterState...");
-      if (scooterState == expectedScooterState) {
-        log.info("Found $expectedScooterState, cancel timer...");
-        timer.cancel();
-        completer.complete();
-      }
-    });
-
-    // Clean up
-    Future.delayed(limit, () {
-      log.info("Timer limit reached after $limit");
-      timer.cancel();
-      if (!completer.isCompleted) {
-        completer.complete();
-      }
-    });
-
-    return completer.future;
   }
 
   // SAVED SCOOTER MANAGEMENT
