@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:logging/logging.dart';
 
+import '../domain/alarm_wake_sources.dart';
 import '../domain/scooter_battery.dart';
 import '../infrastructure/utils.dart';
 
@@ -59,6 +60,23 @@ StreamSubscription<List<int>> subscribeToIntValue(
     if (value != null) {
       //_log.info("$label received: $value");
       onChanged(value);
+    }
+  });
+}
+
+// -- Alarm subscriptions --
+
+/// Subscribes to the packed alarm wake-sources characteristic.
+/// Calls [onChanged] with the parsed [AlarmWakeSources]; a value of an
+/// unexpected length is skipped.
+StreamSubscription<List<int>> subscribeToAlarmWakeSources(
+  BluetoothCharacteristic characteristic,
+  void Function(AlarmWakeSources sources) onChanged,
+) {
+  return subscribeCharacteristic(characteristic, (data) {
+    final AlarmWakeSources? sources = AlarmWakeSources.fromBytes(data);
+    if (sources != null) {
+      onChanged(sources);
     }
   });
 }

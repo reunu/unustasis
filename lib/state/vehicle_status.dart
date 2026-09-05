@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
 
+import '../domain/alarm_status.dart';
+import '../domain/alarm_wake_sources.dart';
 import '../domain/scooter_state.dart';
 import '../domain/scooter_vehicle_state.dart';
 import '../domain/scooter_power_state.dart';
@@ -23,6 +25,10 @@ class VehicleStatus {
   UsbMode? usbMode;
   ScooterVehicleState? vehicleState;
   ScooterPowerState? powerState;
+
+  AlarmStatus? alarmStatus;
+  ({String source, DateTime? timestamp})? alarmLastTrigger;
+  AlarmWakeSources? alarmWakeSources;
 
   ScooterState? computeAggregateState() {
     return ScooterState.fromVehicleAndPowerState(vehicleState, powerState);
@@ -48,6 +54,7 @@ class VehicleStatus {
     required void Function() onNavigationChanged,
     required void Function() onUsbModeChanged,
     required void Function(bool?) onHandlebarsChanged,
+    required void Function() onAlarmChanged,
   }) {
     log.info('Wiring vehicle status subscriptions');
     cancelSubscriptions();
@@ -115,5 +122,35 @@ class VehicleStatus {
     } catch (e) {
       log.info('Navigation characteristic not available, skipping subscription');
     }
+
+    // Alarm
+    try {
+      _subscriptions.add(subscribeToStringValue(chars.alarmStatusCharacteristic!, 'Alarm', (value) {
+        alarmStatus = AlarmStatus.fromString(value);
+        onAlarmChanged();
+      }));
+      _subscriptions.add(subscribeToStringValue(chars.alarmLastTriggerCharacteristic!, 'Alarm trigger', (value) {
+        alarmLastTrigger = parseAlarmLastTrigger(value);
+        onAlarmChanged();
+      }));
+      _subscriptions.add(subscribeToAlarmWakeSources(chars.alarmWakeSourcesCharacteristic!, (sources) {
+        alarmWakeSources = sources;
+        onAlarmChanged();
+      }));
+    } catch (e) {
+      log.info('Alarm characteristics not available, skipping subscriptions');
+    }
   }
+}
+
+/// Splits `<source>,<RFC3339 timestamp>` into its two halves. The timestamp is
+/// null if it doesn't parse, since the source alone is still worth showing.
+({String source, DateTime? timestamp})? parseAlarmLastTrigger(String value) {
+  final int comma = value.indexOf(',');
+  if (comma < 0) {
+    return value.isEmpty ? null : (source: value, timestamp: null);
+  }
+  final String source = value.substring(0, comma);
+  if (source.isEmpty) return null;
+  return (source: source, timestamp: DateTime.tryParse(value.substring(comma + 1)));
 }

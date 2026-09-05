@@ -28,6 +28,13 @@ const String lsKeyCellularApn = "cellular.apn";
 /// a scooter out of a flat AUX battery.
 const String lsKeyBatteryKeepActiveOnSeatboxOpen = "scooter.battery-keep-active-on-seatbox-open";
 
+/// Librescoot settings key for the alarm as a whole. Off means the scooter
+/// never arms, whatever the vehicle is doing.
+const String lsKeyAlarmEnabled = "alarm.enabled";
+
+/// Librescoot settings key that adds the horn to the alarm's siren.
+const String lsKeyAlarmHonk = "alarm.honk";
+
 Future<void> _extendedChannelQueue = Future.value();
 
 /// Serializes access to the extended command/response characteristics so that
