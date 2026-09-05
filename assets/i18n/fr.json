@@ -538,5 +538,5 @@
     "ls_ota_warn_no_image_for": "Aucune image {board} trouvée pour {version}.",
     "ls_ota_warn_no_delta_path": "Pas de chemin delta depuis {version} — une image complète est nécessaire ({latest}).",
     "ls_settings_apn_clear": "Effacer",
-    "ls_settings_apn_cleared": "APN effacé, les réglages de l'opérateur SIM sont utilisés"
+    "ls_settings_apn_cleared": "APN effacé, les réglages de l'opérateur SIM sont utilisés",,
 }

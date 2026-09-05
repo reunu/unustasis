@@ -15,6 +15,7 @@ class ScooterIdentity {
   String? nrfVersion;
   bool? isLibrescoot;
   int? rssi;
+  int? odometerMeters;
 
   // librescoot capability flags, probed after each connection.
   // null = unknown / not yet probed.
@@ -30,6 +31,32 @@ class ScooterIdentity {
     supportsApnConfig = null;
     supportsBondForget = null;
     supportsBatteryKeepActive = null;
+  }
+
+  void wireOdometer(
+    CharacteristicRepository chars, {
+    required VoidCallback onUpdate,
+    bool Function()? isCurrent,
+  }) {
+    refreshOdometer(chars, onUpdate: onUpdate, isCurrent: isCurrent);
+  }
+
+  void refreshOdometer(
+    CharacteristicRepository chars, {
+    required VoidCallback onUpdate,
+    bool Function()? isCurrent,
+  }) {
+    final characteristic = chars.odometerCharacteristic;
+    if (characteristic == null) return;
+
+    _log.info('Reading odometer');
+    readOdometer(characteristic, (meters) {
+      // A read that starts on one connection can finish after a reconnect;
+      // without the guard it would publish stale metres onto the new scooter.
+      if (isCurrent?.call() == false) return;
+      odometerMeters = meters;
+      onUpdate();
+    });
   }
 
   void wireNrfVersion(
