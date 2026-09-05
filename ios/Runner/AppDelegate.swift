@@ -1,17 +1,18 @@
 import Flutter
 import UIKit
 import flutter_background_service_ios
-import flutter_sharing_intent
 import home_widget
 import workmanager_apple
 
 @main
-@objc class AppDelegate: FlutterAppDelegate {
+@objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
 
+    // BGTaskScheduler identifiers have to be claimed before launch finishes, so
+    // this setup stays here instead of moving to the implicit engine callback.
     SwiftFlutterBackgroundServicePlugin.taskIdentifier = "de.freal.unustasis.background"
 
     WorkmanagerPlugin.setPluginRegistrantCallback { registry in
@@ -30,17 +31,16 @@ import workmanager_apple
       }
     }
 
-    GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
-  override func application(
-    _ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]
-  ) -> Bool {
-    let sharingIntent = SwiftFlutterSharingIntentPlugin.instance
-    if sharingIntent.hasSameSchemePrefix(url: url) {
-      return sharingIntent.application(app, open: url, options: options)
-    }
-    return super.application(app, open: url, options: options)
+  // Under the UIScene lifecycle the engine is created after UIKit's
+  // didFinishLaunchingWithOptions returns, so plugins register here instead.
+  func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
+    GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
   }
+
+  // Incoming share URLs used to be routed here by hand. UIKit no longer calls
+  // application(_:open:options:) on a scene-based app; FlutterSceneDelegate now
+  // forwards scene(_:openURLContexts:) to flutter_sharing_intent for us.
 }
