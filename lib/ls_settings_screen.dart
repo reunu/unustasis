@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:provider/provider.dart';
@@ -27,6 +29,8 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
   bool _isSendingApn = false;
   bool _apnLoaded = false;
   String? _apn;
+  bool _isSendingBatteryKeepActive = false;
+  bool? _batteryKeepActive;
 
   // Owned here rather than per-dialog. showDialog's future completes on pop,
   // while the route is still animating out with the TextField attached, so a
@@ -47,6 +51,7 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _getKeycardCount();
       _getApn();
+      _getBatteryKeepActive();
     });
   }
 
@@ -74,6 +79,59 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
       _apn = apn;
       _apnLoaded = true;
     });
+  }
+
+  Future<void> _getBatteryKeepActive() async {
+    if (!mounted) return;
+    bool? enabled;
+    try {
+      enabled = await context.read<ScooterService>().getBatteryKeepActive();
+    } catch (e) {
+      enabled = null;
+    }
+    if (!mounted) return;
+    setState(() {
+      _batteryKeepActive = enabled;
+    });
+  }
+
+  Future<void> _setBatteryKeepActive(bool enabled) async {
+    setState(() {
+      _isSendingBatteryKeepActive = true;
+    });
+    try {
+      await context.read<ScooterService>().setBatteryKeepActive(enabled);
+      if (!mounted) return;
+      setState(() {
+        _batteryKeepActive = enabled;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(FlutterI18n.translate(
+              context,
+              enabled
+                  ? "ls_settings_battery_keep_active_on_success"
+                  : "ls_settings_battery_keep_active_off_success")),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(FlutterI18n.translate(context, "ls_settings_battery_keep_active_error",
+              translationParams: {"error": e.toString()})),
+        ),
+      );
+      // The scooter kept its old value, so re-read rather than leaving the
+      // switch showing something the scooter never accepted.
+      unawaited(_getBatteryKeepActive());
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSendingBatteryKeepActive = false;
+        });
+      }
+    }
   }
 
   String _apnSubtitle(BuildContext context) {
@@ -460,6 +518,22 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
                   },
           ),
         ),
+        if (context.watch<ScooterService>().identity.supportsBatteryKeepActive == true)
+          ListTile(
+            leading: Icon(Icons.battery_charging_full_outlined),
+            title: Text(FlutterI18n.translate(context, "ls_settings_battery_keep_active_title")),
+            subtitle: Text(FlutterI18n.translate(context, "ls_settings_battery_keep_active_subtitle")),
+            trailing: _batteryKeepActive == null
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Switch(
+                    value: _batteryKeepActive!,
+                    onChanged: _isSendingBatteryKeepActive ? null : _setBatteryKeepActive,
+                  ),
+          ),
         ListTile(
           leading: Icon(Icons.vpn_key_outlined),
           title: Text(FlutterI18n.translate(context, "ls_keycard_title")),
