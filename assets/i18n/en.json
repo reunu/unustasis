@@ -475,7 +475,7 @@
     "nav_disconnected_title": "Scooter not connected",
     "nav_disconnected_subtitle": "Connect to your scooter to see saved destinations.",
     "nav_empty_title": "No saved destinations",
-    "nav_empty_subtitle": "Pull down to refresh.",
+    "nav_empty_subtitle": "Search for an address to add a destination.",
     "ls_keycard_ios_unsupported": "Couldn't detect your card? Make sure it is supported by iOS (MIFARE, ISO 7816, ISO 15693).",
     "ls_keycard_add_success": "Keycard added successfully!",
     "ls_settings_ota_title": "Firmware update",
