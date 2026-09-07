@@ -461,6 +461,7 @@
     "nav_destination_fallback": "Destination",
     "nav_rename": "Renommer",
     "nav_status_active_title": "Navigation active",
+    "nav_stop_button": "Arrêter",
     "nav_status_pending_title": "Navigation en attente",
     "nav_status_active_subtitle": "Suivez les indications sur l'écran de votre scooter.",
     "nav_status_pending_subtitle": "Votre scooter naviguera vers {destination} à la prochaine connexion.",

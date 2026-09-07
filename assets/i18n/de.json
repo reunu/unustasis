@@ -461,6 +461,7 @@
     "nav_destination_fallback": "Ziel",
     "nav_rename": "Umbenennen",
     "nav_status_active_title": "Navigation aktiv",
+    "nav_stop_button": "Beenden",
     "nav_status_pending_title": "Navigation ausstehend",
     "nav_status_active_subtitle": "Folge den Anweisungen auf dem Display deines Rollers.",
     "nav_status_pending_subtitle": "Dein Roller navigiert zu {destination}, sobald du dich verbindest.",

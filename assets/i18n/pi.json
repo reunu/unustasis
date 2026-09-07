@@ -441,6 +441,7 @@
     "nav_destination_fallback": "Destination",
     "nav_rename": "Rename",
     "nav_status_active_title": "Navigation is active, arr!",
+    "nav_stop_button": "Belay",
     "nav_status_pending_title": "Navigation be pending",
     "nav_status_active_subtitle": "Follow the charts on yer scooter's display.",
     "nav_status_pending_subtitle": "Yer scooter will sail to {destination} next time ye connect.",
