@@ -45,8 +45,8 @@ const _englishFallbacks = {
   'state_name_disconnected': 'Disconnected',
   'state_name_shutting_down': 'Shutting Down',
   'state_name_unknown': 'Unknown',
-  'lock_state_locked': 'Locked',
-  'lock_state_unlocked': 'Unlocked',
+  'lock_state_locked': 'Handlebar locked',
+  'lock_state_unlocked': 'Handlebar unlocked',
   'lock_state_unknown': '',
 };
 
