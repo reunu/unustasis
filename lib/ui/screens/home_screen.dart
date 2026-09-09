@@ -435,22 +435,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                       action: state != null && state.isReadyForLockChange
                                           ? (state.isOn
                                               ? () async {
-                                                  if (context.read<ScooterService>().vehicle.seatClosed == false) {
-                                                    bool overrideSeat = await showSeatWarning() == true;
-                                                    if (!overrideSeat) {
-                                                      return;
-                                                    }
-                                                  }
+                                                  final service = context.read<ScooterService>();
                                                   try {
-                                                    if (!context.mounted) return;
-                                                    await context.read<ScooterService>().lock();
+                                                    if (!await lockWithSeatConfirmation(context, service)) return;
                                                     if (!context.mounted) return;
                                                     if (context.read<ScooterService>().hazardLocking) {
                                                       _flashHazards(1);
                                                     }
                                                   } catch (e, stack) {
                                                     log.severe(
-                                                      "Problem opening the seat",
+                                                      "Could not lock scooter",
                                                       e,
                                                       stack,
                                                     );
@@ -557,14 +551,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<bool?> showSeatWarning() async {
-    HapticFeedback.vibrate();
-    return await showDialog<bool?>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const SeatWarning(),
-    );
-  }
+
 
   void showHandlebarWarning({required bool didNotUnlock}) {
     showDialog<bool>(
@@ -875,7 +862,7 @@ class StateCircle extends StatelessWidget {
 class ScooterPowerButton extends StatefulWidget {
   const ScooterPowerButton({
     super.key,
-    required void Function()? action,
+    required FutureOr<void> Function()? action,
     Widget? child,
     required IconData icon,
     required String label,
@@ -885,7 +872,7 @@ class ScooterPowerButton extends StatefulWidget {
         _label = label,
         _easterEgg = easterEgg;
 
-  final void Function()? _action;
+  final FutureOr<void> Function()? _action;
   final String _label;
   final IconData _icon;
   final bool? _easterEgg;
@@ -955,27 +942,20 @@ class _ScooterPowerButtonState extends State<ScooterPowerButton> with SingleTick
                       : () {
                           Fluttertoast.showToast(msg: widget._label);
                         },
-                  onLongPress: disabled
+                  onLongPress: disabled || loading
                       ? null
-                      : () {
-                          setState(() {
-                            loading = true;
-                          });
-                          widget._action!();
-                          Future.delayed(const Duration(seconds: 5), () {
-                            setState(() {
-                              loading = false;
-                              scale = 1.1; // Overshoot bounce
-                            });
-                            Future.delayed(
-                              const Duration(milliseconds: 200),
-                              () {
-                                setState(() {
-                                  scale = 1.0; // Return to normal size
-                                });
-                              },
-                            );
-                          });
+                      : () async {
+                          setState(() { loading = true; });
+                          try {
+                            await widget._action!();
+                          } finally {
+                            if (mounted) {
+                              setState(() { loading = false; scale = 1.1; });
+                              Future.delayed(const Duration(milliseconds: 200), () {
+                                if (mounted) setState(() { scale = 1.0; });
+                              });
+                            }
+                          }
                         },
                   child: Container(
                     padding: const EdgeInsets.symmetric(

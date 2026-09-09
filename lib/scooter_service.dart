@@ -406,9 +406,9 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
 
   Future<void> unlock({bool checkHandlebars = true, EventSource source = EventSource.app}) =>
       actions.unlock(checkHandlebars: checkHandlebars, source: source);
-  Future<void> lock({bool checkHandlebars = true, EventSource source = EventSource.app}) {
+  Future<void> lock({bool checkHandlebars = true, bool ignoreSeatbox = false, EventSource source = EventSource.app}) {
     warnIfLockingWithOpenSeatbox();
-    return actions.lock(checkHandlebars: checkHandlebars, source: source);
+    return actions.lock(checkHandlebars: checkHandlebars, ignoreSeatbox: ignoreSeatbox, source: source);
   }
 
   /// App-only diagnostic; explicit consumers call this only at ready dispatch.
