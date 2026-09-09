@@ -1,10 +1,4 @@
 {
-    "home_lock_override_unknown": "Le résultat de la demande de verrouillage est inconnu. Vérifiez l’état du scooter avant de réessayer.",
-    "home_lock_override_unavailable": "Impossible de vérifier la prise en charge du verrouillage avec le coffre ouvert. Aucune demande de verrouillage n’a été envoyée.",
-    "home_lock_override_expired": "La demande de verrouillage a expiré avant son acceptation. Vérifiez l’état du scooter.",
-    "home_lock_override_unsafe": "Le scooter a refusé la demande. Stationnez-le avant de le verrouiller.",
-    "home_lock_override_unsupported": "Ce micrologiciel ne permet pas de verrouiller avec le coffre ouvert. Fermez le coffre ou mettez à jour le micrologiciel du scooter.",
-    "home_lock_accepted": "Demande d’arrêt acceptée. Vérifiez l’état du verrouillage du scooter.",
     "onboarding_step0_heading": "Bienvenue !",
     "onboarding_step0_body": "stasis pour unu est une application open-source pour le unu Scooter Pro. Connectez votre scooter pour commencer.",
     "onboarding_step0_button": "COMMENCER",
@@ -53,7 +47,7 @@
     "home_controls_button": "Commandes",
     "home_reconnect_button": "Reconnecter",
     "seat_alert_title": "Coffre ouvert !",
-    "seat_alert_body": "Le coffre est ouvert. « Verrouiller quand même » ignore l’attente de fermeture du coffre et demande un arrêt normal. Le coffre restera non sécurisé tant que vous ne le fermerez pas.",
+    "seat_alert_body": "La selle est ouverte. « Verrouiller quand même » envoie deux demandes de verrouillage ordinaires. Les anciens firmwares peuvent encore attendre environ 30 secondes, puis prendre environ 5 secondes pour s’éteindre.",
     "seat_alert_action_override": "Verrouiller",
     "seat_alert_action_cancel": "Annuler",
     "locked_handlebar_alert_title": "Le guidon est toujours verrouillé !",
@@ -544,5 +538,7 @@
     "ls_ota_warn_no_image_for": "Aucune image {board} trouvée pour {version}.",
     "ls_ota_warn_no_delta_path": "Pas de chemin delta depuis {version} — une image complète est nécessaire ({latest}).",
     "ls_settings_apn_clear": "Effacer",
-    "ls_settings_apn_cleared": "APN effacé, les réglages de l'opérateur SIM sont utilisés"
+    "ls_settings_apn_cleared": "APN effacé, les réglages de l'opérateur SIM sont utilisés",
+  "home_lock_request_sent": "Demandes de verrouillage envoyées. Vérifiez l’état du scooter.",
+  "home_lock_request_incomplete": "Envoi des demandes incomplet. La première demande peut déjà avoir déclenché l’attente ou l’arrêt. Vérifiez le scooter ; aucune demande n’a été renvoyée."
 }

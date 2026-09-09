@@ -1,10 +1,4 @@
 {
-    "home_lock_override_unknown": "Das Ergebnis der Verriegelungsanfrage ist unbekannt. Prüfe den Status des Rollers, bevor du es erneut versuchst.",
-    "home_lock_override_unavailable": "Die Unterstützung für das Verriegeln bei offener Sitzbank konnte nicht geprüft werden. Es wurde keine Verriegelungsanfrage gesendet.",
-    "home_lock_override_expired": "Die Verriegelungsanfrage ist vor der Annahme abgelaufen. Prüfe den Status des Rollers.",
-    "home_lock_override_unsafe": "Der Roller hat die Anfrage abgelehnt. Stelle ihn vor dem Verriegeln ab.",
-    "home_lock_override_unsupported": "Diese Firmware unterstützt das Verriegeln bei offener Sitzbank nicht. Schließe die Sitzbank oder aktualisiere die Roller-Firmware.",
-    "home_lock_accepted": "Abschaltanfrage angenommen. Prüfe den Verriegelungsstatus des Rollers.",
     "onboarding_step0_heading": "Willkommen!",
     "onboarding_step0_body": "Stasis für unu ist eine open-source App für den unu Scooter Pro. Verbinde deinen Roller, um loszulegen.",
     "onboarding_step0_button": "LOS GEHT'S",
@@ -53,7 +47,7 @@
     "home_controls_button": "Steuerung",
     "home_reconnect_button": "Suchen",
     "seat_alert_title": "Sitzbank offen!",
-    "seat_alert_body": "Die Sitzbank ist offen. „Trotzdem verriegeln“ überspringt die Wartezeit auf die Sitzbank und fordert ein normales Herunterfahren an. Das Sitzfach bleibt ungesichert, bis du die Sitzbank schließt.",
+    "seat_alert_body": "Die Sitzbank ist offen. „Trotzdem sperren“ sendet zwei normale Sperranfragen. Ältere Firmware wartet möglicherweise weiterhin etwa 30 Sekunden und benötigt danach etwa 5 Sekunden zum Herunterfahren.",
     "seat_alert_action_override": "Trotzdem verriegeln",
     "seat_alert_action_cancel": "Abbrechen",
     "locked_handlebar_alert_title": "Lenker ist noch verriegelt!",
@@ -544,5 +538,7 @@
     "ls_ota_warn_no_image_for": "Kein {board}-Image für {version} gefunden.",
     "ls_ota_warn_no_delta_path": "Kein Delta-Pfad von {version} — ein vollständiges Image ist nötig ({latest}).",
     "ls_settings_apn_clear": "Löschen",
-    "ls_settings_apn_cleared": "APN gelöscht, Standard des SIM-Anbieters wird genutzt"
+    "ls_settings_apn_cleared": "APN gelöscht, Standard des SIM-Anbieters wird genutzt",
+  "home_lock_request_sent": "Sperranfragen gesendet. Prüfe den Status des Rollers.",
+  "home_lock_request_incomplete": "Sperranfragen nicht vollständig gesendet. Die erste Anfrage kann bereits das Warten oder Herunterfahren gestartet haben. Prüfe den Roller; keine Anfrage wurde wiederholt."
 }

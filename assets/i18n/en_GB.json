@@ -1,15 +1,11 @@
 {
-    "seat_alert_body": "The seatbox is open. Lock anyways skips the seatbox wait and requests normal shutdown. The seatbox will remain unsecured until you close it.",
-    "home_lock_override_unknown": "Lock request outcome unknown. Check the scooter’s status before trying again.",
-    "home_lock_override_unavailable": "Could not check seatbox override support. No lock request was sent.",
-    "home_lock_override_expired": "The lock request expired before acceptance. Check the scooter’s status.",
-    "home_lock_override_unsafe": "The scooter rejected the request. Park it before locking.",
-    "home_lock_override_unsupported": "This firmware does not support locking with an open seatbox. Close the seatbox or update the scooter firmware.",
-    "home_lock_accepted": "Shutdown request accepted. Check the scooter’s lock status.",
     "settings_color_onboarding": "Tap to change colour",
     "settings_color": "Scooter colour",
     "settings_licenses": "Licences",
     "language_en": "🇺🇸   English (US)",
     "language_en_gb": "🇬🇧   English (UK)",
-    "onboarding_step6_body": "Give your scooter a name and pick a colour."
+    "onboarding_step6_body": "Give your scooter a name and pick a colour.",
+  "seat_alert_body": "The seatbox is open. “Lock anyways” sends two ordinary lock requests. Older firmware may still wait about 30 seconds, then take about 5 seconds to shut down.",
+  "home_lock_request_sent": "Lock requests sent. Check the scooter’s status.",
+  "home_lock_request_incomplete": "Lock request sequence incomplete. The first request may already have started waiting or shutdown. Check the scooter’s status; no request was replayed."
 }

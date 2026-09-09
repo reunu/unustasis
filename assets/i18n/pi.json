@@ -1,10 +1,4 @@
 {
-    "home_lock_override_unknown": "Yer lock request’s fate be unknown. Check yer ship’s status before trying again.",
-    "home_lock_override_unavailable": "Couldn’t check open-chest locking support. No lock request was sent, matey.",
-    "home_lock_override_expired": "Yer lock request expired before acceptance. Check yer ship’s status.",
-    "home_lock_override_unsafe": "Yer ship refused the request. Anchor her before locking.",
-    "home_lock_override_unsupported": "This firmware can’t lock with an open treasure chest. Shut the chest or update yer ship’s firmware.",
-    "home_lock_accepted": "Shutdown request accepted, matey. Check yer ship’s lock status.",
     "onboarding_step0_heading": "Ahoy!",
     "onboarding_step0_body": "stasis fer unu be an open-source app fer the unu Scooter Pro. Connect yer ship to get started, me heartie.",
     "onboarding_step0_button": "SET SAIL",
@@ -53,7 +47,7 @@
     "home_controls_button": "The helm",
     "home_reconnect_button": "Reconnect",
     "seat_alert_title": "Arrr! The treasure chest be open!",
-    "seat_alert_body": "Yer treasure chest be open. Lock anyways skips the chest wait and requests normal shutdown. Yer chest stays unsecured till ye close it.",
+    "seat_alert_body": "The seat be open. Lock anyways sends two ordinary lock requests. Older firmware may still wait about 30 seconds, then need about 5 seconds to shut down.",
     "seat_alert_action_override": "Lock anyways",
     "seat_alert_action_cancel": "Belay",
     "locked_handlebar_alert_title": "Avast! Yar helm be locked!",
@@ -524,5 +518,7 @@
     "ls_ota_warn_no_image_for": "No {board} cargo found for {version}.",
     "ls_ota_warn_no_delta_path": "No delta passage from {version} — full cargo be needed ({latest}).",
     "ls_settings_apn_clear": "Strike it",
-    "ls_settings_apn_cleared": "Beacon struck, sailin' by the SIM's own charts"
+    "ls_settings_apn_cleared": "Beacon struck, sailin' by the SIM's own charts",
+  "home_lock_request_sent": "Lock requests sent, matey. Check yer scooter’s status.",
+  "home_lock_request_incomplete": "Lock requests incomplete. The first may already have started waiting or shutdown. Check yer scooter; no request was replayed."
 }

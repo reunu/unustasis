@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:scooter_flutter/action_commands.dart' show SeatboxLockException, SeatboxLockFailure;
 import 'package:unustasis/scooter_service.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:lottie/lottie.dart';
@@ -55,23 +54,19 @@ Future<bool> lockWithSeatConfirmation(BuildContext context, ScooterService servi
   }
   if (!context.mounted || target?.isCurrent != true) return false;
   try {
-    await service.lock(ignoreSeatbox: seatOpen);
+    await service.lock(confirmOpenSeat: seatOpen);
     if (!context.mounted || target?.isCurrent != true) return false;
     if (seatOpen) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(FlutterI18n.translate(context, 'home_lock_accepted')),
+        content: Text(FlutterI18n.translate(context, 'home_lock_request_sent')),
       ));
     }
     return true;
-  } on SeatboxLockException catch (error) {
-    if (!context.mounted || target?.isCurrent != true) return false;
-    final key = switch (error.failure) {
-      SeatboxLockFailure.unsupported => 'home_lock_override_unsupported',
-      SeatboxLockFailure.unsafeState => 'home_lock_override_unsafe',
-      SeatboxLockFailure.expired => 'home_lock_override_expired',
-      SeatboxLockFailure.redis => 'home_lock_override_unavailable',
-      SeatboxLockFailure.unknownOutcome => 'home_lock_override_unknown',
-    };
+  } catch (_) {
+    if (!context.mounted) return false;
+    // The first write may already have started waiting or shutdown. Do not
+    // retry, fall back, or retarget after any uncertain/partial issuance.
+    const key = 'home_lock_request_incomplete';
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(FlutterI18n.translate(context, key)),
     ));
