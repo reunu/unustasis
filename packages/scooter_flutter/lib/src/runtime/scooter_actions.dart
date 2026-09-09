@@ -164,6 +164,7 @@ class ScooterActions {
       !_disposed &&
       !t.expired &&
       identical(_connection, t.connection) &&
+      identical(_repository, t.repository) &&
       t.connection.isCurrent &&
       (t.deadline == null || _now() < t.deadline!);
   void _check(_Target t) {
@@ -234,15 +235,20 @@ class ScooterActions {
 
   Future<void> lock(
       {bool checkHandlebars = true,
-      bool ignoreSeatbox = false,
+      bool confirmOpenSeat = false,
       EventSource source = EventSource.app}) async =>
-      _lock(_capture(), checkHandlebars, source, ignoreSeatbox: ignoreSeatbox);
+      _lock(_capture(), checkHandlebars, source, confirmOpenSeat: confirmOpenSeat);
   Future<void> _lock(_Target t, bool checkHandlebars, EventSource source,
-      {bool ignoreSeatbox = false}) async {
-    await _ack(t, EventType.lock, source,
-        (d, r, c) => ignoreSeatbox
-            ? commands.lockIgnoringSeatbox(d, r, isCurrent: c)
-            : commands.lockScooter(d, r, isCurrent: c, onWriteIssued: t.onWriteIssued));
+      {bool confirmOpenSeat = false}) async {
+    // Explicit open-seat intent is two sequential ordinary writes, not a retry.
+    // Both use the same captured connection/repository; any failure stops here.
+    await _command(t,
+        (d, r, c) => commands.lockScooter(d, r, isCurrent: c, onWriteIssued: t.onWriteIssued));
+    if (confirmOpenSeat) {
+      await _command(t,
+          (d, r, c) => commands.lockScooter(d, r, isCurrent: c, onWriteIssued: t.onWriteIssued));
+    }
+    effects.acknowledged(t.event(EventType.lock, source));
     _check(t);
     if (t.settings.hazardLocking) {
       _background(() async {
