@@ -21,6 +21,79 @@ Future<void> lockScooter(
   await sendCommand(scooter, repo, lockCommand, isCurrent: isCurrent, onWriteIssued: onWriteIssued);
 }
 
+enum SeatboxLockFailure { unsupported, unsafeState, expired, redis, unknownOutcome }
+
+class SeatboxLockException implements Exception {
+  const SeatboxLockException(this.failure);
+  final SeatboxLockFailure failure;
+  @override
+  String toString() => 'Seatbox lock: ${failure.name}';
+}
+
+/// Explicit rider intent only. Probe and dispatch share the existing FIFO and
+/// captured session. A successful reply accepts shutdown, not physical locking.
+Future<void> lockIgnoringSeatbox(
+    BluetoothDevice? scooter, CharacteristicRepository repo,
+    {bool Function()? isCurrent}) => withExtendedChannel(() async {
+  checkCommandCurrent(isCurrent);
+  final cmd = repo.extendedCommandCharacteristic;
+  final resp = repo.extendedResponseCharacteristic;
+  if (cmd == null || resp == null) {
+    throw const SeatboxLockException(SeatboxLockFailure.unsupported);
+  }
+  await ensureExtendedNotify(resp);
+  checkCommandCurrent(isCurrent);
+  final probe = ExtendedResponseListener(resp.onValueReceived);
+  final replies = StreamIterator(probe.responses.timeout(const Duration(seconds: 10)));
+  try {
+    await sendCommand(scooter, repo, 'cap:lock', characteristic: cmd, isCurrent: isCurrent);
+    if (!await replies.moveNext()) {
+      throw const SeatboxLockException(SeatboxLockFailure.unsupported);
+    }
+    if (replies.current == 'cap:lock:error:redis') {
+      throw const SeatboxLockException(SeatboxLockFailure.redis);
+    }
+    if (replies.current != 'cap:lock:count:1' || !await replies.moveNext() ||
+        replies.current != 'cap:lock:ignore-seatbox') {
+      throw const SeatboxLockException(SeatboxLockFailure.unsupported);
+    }
+  } on TimeoutException {
+    throw const SeatboxLockException(SeatboxLockFailure.unsupported);
+  } finally {
+    await replies.cancel();
+    await probe.cancel();
+  }
+  checkCommandCurrent(isCurrent);
+  final ack = ExtendedResponseListener(resp.onValueReceived);
+  var issued = false;
+  try {
+    await sendCommand(scooter, repo, 'lock:ignore-seatbox', characteristic: cmd,
+        isCurrent: isCurrent, onWriteIssued: () => issued = true);
+    final response = await ack.responses.first.timeout(const Duration(seconds: 10));
+    checkCommandCurrent(isCurrent);
+    switch (response) {
+      case 'lock:accepted': return;
+      case 'lock:error:unsupported':
+        throw const SeatboxLockException(SeatboxLockFailure.unsupported);
+      case 'lock:error:unsafe-state':
+        throw const SeatboxLockException(SeatboxLockFailure.unsafeState);
+      case 'lock:error:expired':
+        throw const SeatboxLockException(SeatboxLockFailure.expired);
+      default:
+        throw const SeatboxLockException(SeatboxLockFailure.unknownOutcome);
+    }
+  } on SeatboxLockException {
+    rethrow;
+  } catch (_) {
+    // Even a failed native write or a lost ACK may follow vehicle acceptance.
+    // Never retry or fall back to a basic/force lock.
+    if (issued) throw const SeatboxLockException(SeatboxLockFailure.unknownOutcome);
+    rethrow;
+  } finally {
+    await ack.cancel();
+  }
+});
+
 Future<void> openSeatCommand(
     BluetoothDevice? scooter, CharacteristicRepository repo,
     {bool Function()? isCurrent, void Function()? onWriteIssued}) async {

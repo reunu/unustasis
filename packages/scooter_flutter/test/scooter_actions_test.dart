@@ -251,6 +251,94 @@ Future<void> settleTransport() async {
 }
 
 void main() {
+  for (final response in ['lock:accepted', 'lock:ok', 'lock:error:unsupported', 'lock:error:unsafe-state', 'lock:error:unknown-outcome', null]) {
+    test('seatbox override requires exact vehicle acceptance: $response', () async {
+      final h = Harness(FakeAsync());
+      await settleTransport(); h.trace.clear();
+      h.wire.onWrite = (command) async {
+        if (command == 'cap:lock') {
+          h.wire.reply('cap:lock:count:1'); h.wire.reply('cap:lock:ignore-seatbox');
+        } else if (command == 'lock:ignore-seatbox' && response != null) {
+          h.wire.reply(response);
+        }
+      };
+      final action = h.actions.lock(ignoreSeatbox: true, checkHandlebars: false);
+      if (response == 'lock:accepted') { await action; }
+      else { await expectLater(action, throwsA(isA<Exception>())); }
+      expect(h.trace.where((e) => e.startsWith('A:')).toList(), ['A:cap:lock', 'A:lock:ignore-seatbox']);
+      expect(h.effects.events, response == 'lock:accepted' ? hasLength(1) : isEmpty);
+      expect(h.wire.responses.hasListener, isFalse);
+      h.dispose(); await settleTransport();
+    });
+  }
+  for (final header in ['cap:lock:count:0', 'cap:error:unknown command', 'cap:other:count:1', 'cap:lock:count:2', 'cap:lock:error:redis']) {
+    test('unsupported/malformed capability cannot actuate: $header', () async {
+      final h = Harness(FakeAsync()); await settleTransport(); h.trace.clear();
+      h.wire.onWrite = (c) async { h.wire.reply(header); };
+      await expectLater(h.actions.lock(ignoreSeatbox: true), throwsA(isA<Exception>()));
+      expect(h.trace, ['A:cap:lock']); expect(h.effects.events, isEmpty);
+      expect(h.wire.responses.hasListener, isFalse);
+      h.dispose(); await settleTransport();
+    });
+  }
+  for (final replaceAtAck in [false, true]) {
+    test('seatbox override captures session at ${replaceAtAck ? 'ACK' : 'probe'}', () async {
+      final h = Harness(FakeAsync()); await settleTransport(); h.trace.clear();
+      final old = h.wire;
+      if (replaceAtAck) {
+        old.onWrite = (command) async {
+          if (command == 'cap:lock') { old.reply('cap:lock:count:1'); old.reply('cap:lock:ignore-seatbox'); }
+        };
+      }
+      final action = h.actions.lock(ignoreSeatbox: true);
+      final failure = expectLater(action, throwsA(anything));
+      await settleTransport(); h.connect('B'); await settleTransport();
+      if (replaceAtAck) { old.reply('lock:accepted'); }
+      else { old.reply('cap:lock:count:1'); old.reply('cap:lock:ignore-seatbox'); }
+      await failure;
+      expect(h.trace.where((e) => e == 'B:lock:ignore-seatbox'), isEmpty);
+      expect(h.trace.where((e) => e == 'A:lock:ignore-seatbox'), hasLength(replaceAtAck ? 1 : 0));
+      expect(h.effects.events, isEmpty); expect(old.responses.hasListener, isFalse);
+      h.dispose(); await settleTransport();
+    });
+  }
+  test('seatbox override stays in FIFO and cannot retarget while queued', () async {
+    final h = Harness(FakeAsync()); await settleTransport(); h.trace.clear();
+    final old = h.wire;
+    final gate = Completer<void>(); old.isNotifying = false; old.notifyGate = gate;
+    final first = expectLater(h.actions.enterUMSMode(), throwsA(anything));
+    final second = expectLater(h.actions.lock(ignoreSeatbox: true), throwsA(anything));
+    await settleTransport(); h.connect('B'); await settleTransport(); gate.complete();
+    await Future.wait([first, second]);
+    expect(h.trace.where((e) => e.contains('cap:lock') || e.contains('lock:ignore-seatbox')), isEmpty);
+    expect(h.effects.events, isEmpty);
+    h.dispose(); await settleTransport();
+  });
+  test('seatbox override native write failure has unknown outcome and no retry', () async {
+    final h = Harness(FakeAsync()); await settleTransport(); h.trace.clear();
+    h.wire.onWrite = (c) async {
+      if (c == 'cap:lock') { h.wire.reply('cap:lock:count:1'); h.wire.reply('cap:lock:ignore-seatbox'); }
+      else { throw StateError('native write failed'); }
+    };
+    await expectLater(h.actions.lock(ignoreSeatbox: true), throwsA(predicate((e) => e.toString() == 'Seatbox lock: unknownOutcome')));
+    expect(h.trace, ['A:cap:lock', 'A:lock:ignore-seatbox']);
+    expect(h.effects.events, isEmpty); expect(h.wire.responses.hasListener, isFalse);
+    h.dispose(); await settleTransport();
+  });
+  test('seatbox override missing extended characteristics is unsupported without basic fallback', () async {
+    final h = Harness(FakeAsync()); await settleTransport(); h.trace.clear();
+    h.repos['A']!.extendedCommandCharacteristic = null;
+    await expectLater(h.actions.lock(ignoreSeatbox: true), throwsA(predicate((e) => e.toString() == 'Seatbox lock: unsupported')));
+    expect(h.trace, isEmpty); expect(h.effects.events, isEmpty);
+    h.dispose(); await settleTransport();
+  });
+  test('seatbox override rejects malformed capability entry without actuation', () async {
+    final h = Harness(FakeAsync()); await settleTransport(); h.trace.clear();
+    h.wire.onWrite = (c) async { h.wire.reply('cap:lock:count:1'); h.wire.reply('cap:lock:ignore-seatbox:force'); };
+    await expectLater(h.actions.lock(ignoreSeatbox: true), throwsA(predicate((e) => e.toString() == 'Seatbox lock: unsupported')));
+    expect(h.trace, ['A:cap:lock']); expect(h.effects.events, isEmpty);
+    h.dispose(); await settleTransport();
+  });
   for (final kind in [EventType.lock, EventType.unlock, EventType.openSeat]) {
     test('explicit $kind rejects partial discovery and stale capture without native issuance', () {
       fakeAsync((time) {

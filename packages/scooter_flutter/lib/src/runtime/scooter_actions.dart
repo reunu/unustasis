@@ -234,11 +234,15 @@ class ScooterActions {
 
   Future<void> lock(
       {bool checkHandlebars = true,
+      bool ignoreSeatbox = false,
       EventSource source = EventSource.app}) async =>
-      _lock(_capture(), checkHandlebars, source);
-  Future<void> _lock(_Target t, bool checkHandlebars, EventSource source) async {
+      _lock(_capture(), checkHandlebars, source, ignoreSeatbox: ignoreSeatbox);
+  Future<void> _lock(_Target t, bool checkHandlebars, EventSource source,
+      {bool ignoreSeatbox = false}) async {
     await _ack(t, EventType.lock, source,
-        (d, r, c) => commands.lockScooter(d, r, isCurrent: c, onWriteIssued: t.onWriteIssued));
+        (d, r, c) => ignoreSeatbox
+            ? commands.lockIgnoringSeatbox(d, r, isCurrent: c)
+            : commands.lockScooter(d, r, isCurrent: c, onWriteIssued: t.onWriteIssued));
     _check(t);
     if (t.settings.hazardLocking) {
       _background(() async {
