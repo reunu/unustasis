@@ -130,7 +130,7 @@ Settings:
       backgroundScan = ${await prefs.getBool("backgroundScan") ?? false}
       biometrics = ${await prefs.getBool("biometrics") ?? false}
       autoUnlock = ${service.autoUnlock}
-      autoUnlockDistance = ${ScooterKeylessDistance.fromThreshold(service.autoUnlockThreshold) ?? ScooterKeylessDistance.regular.threshold}
+      autoUnlockDistance = ${ScooterKeylessDistance.fromThreshold(service.autoUnlockThreshold)}
       openSeatOnUnlock = ${service.openSeatOnUnlock}
       hazardLocking = ${service.hazardLocking}
       osmConsent = ${await prefs.getBool("osmConsent") ?? true}

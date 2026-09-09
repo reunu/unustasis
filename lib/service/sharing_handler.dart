@@ -11,7 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../domain/location_url_parser.dart';
 import '../domain/nav_destination.dart';
 import '../geo_helper.dart';
-import '../navigation_screen.dart';
+import '../ui/screens/navigation_screen.dart';
 import '../scooter_service.dart';
 
 final _log = Logger('SharingHandler');

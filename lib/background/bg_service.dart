@@ -11,7 +11,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../background/background_i18n.dart';
 import '../background/widget_handler.dart';
-import '../domain/statistics_helper.dart';
 import '../flutter/blue_plus_mockable.dart';
 import '../scooter_service.dart';
 import '../background/notification_handler.dart';
@@ -84,12 +83,13 @@ Future<bool> onIosBackground(ServiceInstance service) async {
     scooterColor: scooterService.identity.color,
     lastLocation: scooterService.identity.lastLocation,
     seatClosed: scooterService.vehicle.seatClosed,
-    scooterId: scooterService.myScooter?.remoteId.toString(),
+    scooterId: scooterService.currentScooterId,
   );
   return true;
 }
 
 Future<void> attemptConnectionCycle() async {
+  if (_widgetActionInProgress) return;
   await scooterService.attemptLatestAutoConnection();
   setWidgetScanning(false);
   return;
@@ -126,7 +126,7 @@ Future<void> _checkPendingWidgetAction() async {
     final actionName = prefs.getString("pendingWidgetActionName");
     if (pending && actionName != null) {
       Logger("bgservice").info("Found lost pending widget action: $actionName");
-      await _executeAction(actionName);
+      await executeWidgetAction(actionName);
     }
   } catch (e) {
     Logger("bgservice").warning("Error checking pending widget action", e);
@@ -135,7 +135,7 @@ Future<void> _checkPendingWidgetAction() async {
 
 /// Connects to the scooter if needed, then performs the given action.
 /// Handles foreground promotion, scanning UI, and post-action cleanup.
-Future<void> _executeAction(String actionName) async {
+Future<void> executeWidgetAction(String actionName) async {
   if (_widgetActionInProgress) return;
   _widgetActionInProgress = true;
 
@@ -145,65 +145,109 @@ Future<void> _executeAction(String actionName) async {
   try {
     promoteToForeground();
 
-    // Clear the persisted pending action so the fallback check in the
-    // connection listener / rescan timer won't re-execute it.
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool("pendingWidgetAction", false);
-    await prefs.remove("pendingWidgetActionName");
+    await prefs.reload();
+    bool matchesRequest() => prefs.getBool("pendingWidgetAction") == true &&
+        prefs.getString("pendingWidgetActionName") == actionName;
+    // All producers persist first. A delayed invoke after a successful action
+    // must not replay an already consumed slot (or an unrelated action name).
+    if (!matchesRequest()) return;
 
-    if (!scooterService.connected) {
-      await setWidgetScanning(true);
-      await attemptConnectionCycle();
-      await setWidgetScanning(false);
-    } else {
-      // Already connected — clear the "Connecting…" state that
-      // backgroundCallback wrote from its isolate.
-      await setWidgetScanning(false);
+    if (!scooterService.connected) await setWidgetScanning(true);
+    final dispatch = await scooterService.prepareWidgetAction(actionName);
+    if (dispatch == null) return; // Pending connection/pin change: retain request.
+    await setWidgetScanning(false);
+    if (actionName == "lock" || actionName == "unlock") {
+      await setWidgetUnlocking(true);
     }
 
-    switch (actionName) {
-      case "lock":
-        await setWidgetUnlocking(true);
-        await scooterService.lock(
-          checkHandlebars: false,
-          source: EventSource.background,
-        );
-        Future.delayed(const Duration(seconds: 3), () => setWidgetUnlocking(false));
-      case "unlock":
-        await setWidgetUnlocking(true);
-        await scooterService.unlock(
-          checkHandlebars: false,
-          source: EventSource.background,
-        );
-        Future.delayed(const Duration(seconds: 3), () => setWidgetUnlocking(false));
-      case "openseat":
-        scooterService.openSeat();
-      default:
-        log.warning("Unknown action: $actionName");
+    await prefs.reload();
+    if (!matchesRequest()) return; // A newer different request won during connect.
+    if (!dispatch.isReady()) return;
+    // Claim only once the captured target is usable, immediately before issuing.
+    // Preference APIs update their local cache even on failure: recovery must
+    // reload disk, not infer durability from that optimistic cache.
+    var mayHaveIssued = false;
+    try {
+      if (!await prefs.setBool("pendingWidgetAction", false)) {
+        throw StateError("Pending action claim was not persisted");
+      }
+      if (!dispatch.isReady()) return;
+      await prefs.reload();
+      if (!dispatch.isReady() || prefs.getBool("pendingWidgetAction") == true ||
+          prefs.getString("pendingWidgetActionName") != actionName) {
+        return;
+      }
+      if (!await prefs.remove("pendingWidgetActionName")) {
+        throw StateError("Pending action name removal was not persisted");
+      }
+      await prefs.reload();
+      if (prefs.getBool("pendingWidgetAction") == true ||
+          prefs.getString("pendingWidgetActionName") != null) {
+        return; // A newer request arrived during the issued removal.
+      }
+      if (!dispatch.isReady()) return;
+      if (actionName == "lock") scooterService.warnIfLockingWithOpenSeatbox();
+      // App log listeners can reenter and invalidate the captured target.
+      if (!dispatch.isReady()) return;
+      // An unclassified dispatch exception is conservatively ambiguous. The
+      // shared action boundary returns false only before any native write call.
+      mayHaveIssued = true;
+      if (!await dispatch()) mayHaveIssued = false;
+    } finally {
+      if (!mayHaveIssued) await _restoreUnissuedWidgetAction(prefs, actionName);
     }
   } catch (e, stack) {
     log.severe("Action '$actionName' failed", e, stack);
   } finally {
-    _widgetActionInProgress = false;
-    await setWidgetScanning(false);
-    await setWidgetUnlocking(false);
-    // Flush the real scooterService state to the widget. While scanning
-    // was active, passToWidget calls from the scooterService listener
-    // were blocked by _widgetIsScanning. Now that scanning is off, push
-    // the current state so the widget doesn't stay stuck on "Connecting…".
-    passToWidget(
-      connected: scooterService.connected,
-      lastPing: scooterService.lastPing,
-      scooterState: scooterService.state,
-      primarySOC: scooterService.primarySOC,
-      secondarySOC: scooterService.secondarySOC,
-      scooterName: scooterService.scooterName,
-      scooterColor: scooterService.scooterColor,
-      lastLocation: scooterService.lastLocation,
-      seatClosed: scooterService.seatClosed,
-      scooterLocked: scooterService.handlebarsLocked,
-      scooterId: scooterService.myScooter?.remoteId.toString(),
-    );
+    try {
+      await setWidgetScanning(false);
+      await setWidgetUnlocking(false);
+      // Flush the real scooterService state to the widget. While scanning
+      // was active, passToWidget calls from the scooterService listener
+      // were blocked by _widgetIsScanning. Now that scanning is off, push
+      // the current state so the widget doesn't stay stuck on "Connecting…".
+      passToWidget(
+        connected: scooterService.connected,
+        lastPing: scooterService.lastPing,
+        scooterState: scooterService.state,
+        primarySOC: scooterService.primarySOC,
+        secondarySOC: scooterService.secondarySOC,
+        scooterName: scooterService.scooterName,
+        scooterColor: scooterService.scooterColor,
+        lastLocation: scooterService.lastLocation,
+        seatClosed: scooterService.seatClosed,
+        scooterLocked: scooterService.handlebarsLocked,
+        scooterId: scooterService.currentScooterId,
+      );
+    } finally {
+      _widgetActionInProgress = false;
+    }
+  }
+}
+
+/// One best-effort recovery pass, never an automatic actuation retry. These two
+/// keys are not a transaction: a concurrent same-name request is indistinguishable
+/// and already-issued preference operations cannot be rolled back.
+Future<void> _restoreUnissuedWidgetAction(SharedPreferences prefs, String actionName) async {
+  try {
+    await prefs.reload();
+    if (prefs.getBool("pendingWidgetAction") == true) return;
+    final name = prefs.getString("pendingWidgetActionName");
+    if (name != null && name != actionName) return;
+    if (!await prefs.setString("pendingWidgetActionName", actionName)) {
+      throw StateError("Unissued action name was not restored");
+    }
+    await prefs.reload();
+    if (prefs.getBool("pendingWidgetAction") == true ||
+        prefs.getString("pendingWidgetActionName") != actionName) {
+      return;
+    }
+    if (!await prefs.setBool("pendingWidgetAction", true)) {
+      throw StateError("Unissued action flag was not restored");
+    }
+  } catch (e, stack) {
+    Logger("bgservice").warning("Could not restore unissued action '$actionName'; pending persistence is uncertain", e, stack);
   }
 }
 
@@ -275,10 +319,6 @@ void onStart(ServiceInstance service) async {
   final prefs = await SharedPreferences.getInstance();
   final pendingWidgetAction = prefs.getBool("pendingWidgetAction") ?? false;
   final pendingActionName = prefs.getString("pendingWidgetActionName");
-  if (pendingWidgetAction) {
-    await prefs.setBool("pendingWidgetAction", false);
-    await prefs.remove("pendingWidgetActionName");
-  }
 
   // Seed widget caches and clear stale spinner BEFORE any code path
   // that might stop the service (e.g. _disableScanning → stopSelf).
@@ -318,7 +358,7 @@ void onStart(ServiceInstance service) async {
           scooterColor: scooterService.scooterColor,
           lastLocation: scooterService.lastLocation,
           seatClosed: scooterService.seatClosed,
-          scooterId: scooterService.myScooter?.remoteId.toString());
+          scooterId: scooterService.currentScooterId);
     });
   }
   Logger("bgservice").info("Widget seeded with initial data. ScooterName: ${scooterService.identity.name}");
@@ -367,6 +407,8 @@ void onStart(ServiceInstance service) async {
         await scooterService.refetchSavedScooters();
       }
 
+      handleForegroundConnectionUpdate(scooterService, data);
+
       Future.delayed(const Duration(seconds: 3), () {
         passToWidget(
           connected: scooterService.connected,
@@ -378,7 +420,7 @@ void onStart(ServiceInstance service) async {
           scooterColor: scooterService.identity.color,
           lastLocation: scooterService.identity.lastLocation,
           seatClosed: scooterService.vehicle.seatClosed,
-          scooterId: scooterService.myScooter?.remoteId.toString(),
+          scooterId: scooterService.currentScooterId,
         );
       });
     } catch (e, stack) {
@@ -386,9 +428,9 @@ void onStart(ServiceInstance service) async {
     }
   });
 
-  service.on("lock").listen((data) async => _executeAction("lock"));
-  service.on("unlock").listen((data) async => _executeAction("unlock"));
-  service.on("openseat").listen((data) async => _executeAction("openseat"));
+  service.on("lock").listen((data) async => executeWidgetAction("lock"));
+  service.on("unlock").listen((data) async => executeWidgetAction("unlock"));
+  service.on("openseat").listen((data) async => executeWidgetAction("openseat"));
 
   service.on("test").listen((data) async {
     Logger("bgservice").info("Test command received by background service! Data: $data");
@@ -407,7 +449,7 @@ void onStart(ServiceInstance service) async {
       lastLocation: scooterService.identity.lastLocation,
       seatClosed: scooterService.vehicle.seatClosed,
       scooterLocked: scooterService.vehicle.handlebarsLocked,
-      scooterId: scooterService.myScooter?.remoteId.toString(),
+      scooterId: scooterService.currentScooterId,
     );
     if (backgroundScanEnabled) {
       updateNotification();
@@ -424,7 +466,7 @@ void onStart(ServiceInstance service) async {
   // Wait for scooterService to load cached data (saved scooter IDs, etc.)
   if (pendingWidgetAction && pendingActionName != null) {
     await Future.delayed(const Duration(seconds: 3));
-    _executeAction(pendingActionName);
+    executeWidgetAction(pendingActionName);
   }
 
   _rescanTimer = PausableTimer.periodic(const Duration(seconds: 35), () async {
@@ -452,4 +494,14 @@ void onStart(ServiceInstance service) async {
   });
 
   _rescanTimer!.start();
+}
+
+/// Foreground proof-of-life refreshes only an already active manual-target gate.
+/// An explicit empty target releases it; ordinary legacy metadata never arms it.
+void handleForegroundConnectionUpdate(ScooterService scooterService, Map<String, dynamic>? data) {
+  if (data?.containsKey("manualConnectionTarget") == true) {
+    scooterService.setManualConnectionTarget(data!["manualConnectionTarget"] as String?);
+  } else {
+    scooterService.touchManualConnectionTarget();
+  }
 }
