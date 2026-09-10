@@ -114,6 +114,11 @@ void main() {
     final cue = find.bySemanticsLabel('Navigation');
     expect(find.text('Navigation'), findsOneWidget);
     expect(tester.getSize(cue).height, greaterThanOrEqualTo(48));
+    expect(tester.getSize(cue).width, tester.getSize(find.byType(HomeScreen)).width);
+    final chevron = find.byIcon(Icons.keyboard_arrow_up_rounded);
+    final hint = find.text('Navigation');
+    expect(tester.getBottomLeft(chevron).dy, lessThanOrEqualTo(tester.getTopLeft(hint).dy));
+    expect(tester.getCenter(chevron).dx, closeTo(tester.getCenter(hint).dx, 1));
     expect(tester.widget<Badge>(find.byType(Badge)).isLabelVisible, isFalse);
 
     // A queued destination without a display name must still show the dot.
