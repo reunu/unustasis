@@ -221,12 +221,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                                 // // Hidden for stable release, but useful for various debugging
                                 // onLongPress: () {
-                                //   Navigator.push(
-                                //     context,
-                                //     MaterialPageRoute(
-                                //       builder: (context) => const LsKeycardScreen(),
-                                //     ),
-                                //   );
+                                //   context.read<ScooterService>().addDemoData();
                                 // },
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -742,7 +737,8 @@ class StatusText extends StatelessWidget {
           bool scanning,
           ScooterState? state,
           ScooterVehicleState? vehicleState,
-          ScooterPowerState? powerState
+          ScooterPowerState? powerState,
+          bool? handlebarsLocked,
         })>(
       selector: (context, service) => (
         state: service.state,
@@ -750,6 +746,7 @@ class StatusText extends StatelessWidget {
         connected: service.connected,
         vehicleState: service.vehicleState,
         powerState: service.powerState,
+        handlebarsLocked: service.vehicle.handlebarsLocked,
       ),
       builder: (context, data, _) {
         String stateText;
@@ -770,18 +767,35 @@ class StatusText extends StatelessWidget {
               data.state != null ? data.state!.name(context) : FlutterI18n.translate(context, "home_loading_state");
         }
 
-        // Add handlebar unlocked indicator
-        if (data.connected &&
-            context.select<ScooterService, bool?>(
-                  (service) => service.vehicle.handlebarsLocked,
-                ) ==
-                false) {
-          stateText += FlutterI18n.translate(context, "home_unlocked");
-        }
+        final handlebarText =
+            data.connected && data.handlebarsLocked == false ? FlutterI18n.translate(context, "home_unlocked") : null;
 
-        return Text(
-          stateText,
-          style: Theme.of(context).textTheme.titleMedium,
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              stateText,
+              style: Theme.of(context).textTheme.titleMedium,
+              textAlign: TextAlign.center,
+            ),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOut,
+              alignment: Alignment.topCenter,
+              child: handlebarText == null
+                  ? const SizedBox.shrink()
+                  : Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        handlebarText,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+            ),
+          ],
         );
       },
     );
