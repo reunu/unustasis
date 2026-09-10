@@ -303,6 +303,20 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   bool? get handlebarsLocked => vehicle.handlebarsLocked;
   bool? get navigationActive => vehicle.navigationActive;
 
+  // Read-only total distance reported by Librescoot, in metres.
+  int? get odometerMeters => identity.odometerMeters;
+
+  void refreshOdometer() {
+    if (!connected || myScooter == null) return;
+    final device = myScooter!;
+    identity.refreshOdometer(
+      characteristicRepository,
+      onUpdate: notifyListeners,
+      // Discard the read if the connection it started on is no longer current.
+      isCurrent: () => identical(myScooter, device) && connected,
+    );
+  }
+
   // Passthrough getters for battery state
   int? get primarySOC => battery.primarySOC;
   int? get secondarySOC => battery.secondarySOC;
@@ -419,6 +433,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       log.info("Connected to ${attemptedScooter.remoteId}");
       // Set up this scooter as ours
       myScooter = attemptedScooter;
+      identity.odometerMeters = null;
       identity.resetLsCapabilities();
       // fall back to the cached capability until the probe resolves again
       identity.supportsHibernateFor = savedScooters[attemptedScooter.remoteId.toString()]?.supportsHibernateFor;
@@ -666,6 +681,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
 
   void _subscribeToAllCharacteristics() {
     var chars = characteristicRepository;
+    final wiredScooter = myScooter;
 
     vehicle.wireSubscriptions(
       chars,
@@ -701,6 +717,12 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
         notifyListeners();
       },
       cacheSoc: _cacheSocForScooter,
+    );
+
+    identity.wireOdometer(
+      chars,
+      onUpdate: notifyListeners,
+      isCurrent: () => identical(myScooter, wiredScooter),
     );
 
     identity.wireNrfVersion(

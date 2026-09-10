@@ -78,6 +78,7 @@ dependencies:
   flutter_svg: ^2.0.17
 
 dev_dependencies:
+  shared_preferences_platform_interface: ^2.4.1
   flutter_test:
     sdk: flutter
   mockito: ^5.4.4
