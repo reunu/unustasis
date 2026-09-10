@@ -92,9 +92,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.dispose();
   }
 
+  bool get _scooterConnected => context.read<ScooterService>().connected;
+
+  // Keep scooter controls discoverable offline without building loading or
+  // actionable children. App-local preferences and cached diagnostics stay usable.
+  List<Widget> _connectionRequiredItems(List<Widget> items) {
+    if (_scooterConnected) return items;
+    return items.map((item) {
+      Widget? leading;
+      Widget? title;
+      if (item is ListTile) {
+        leading = item.leading;
+        title = item.title;
+      } else {
+        return item;
+      }
+      return ListTile(
+        enabled: false,
+        leading: leading,
+        title: title,
+        subtitle: Text(FlutterI18n.translate(context, 'settings_scooter_disconnected')),
+        trailing: const Icon(Icons.bluetooth_disabled),
+      );
+    }).toList();
+  }
+
   void _ensureLsDataLoaded(bool isLibrescoot) {
     final service = context.read<ScooterService>();
-    if (!isLibrescoot || !service.connected || _lsDataLoadStarted) return;
+    if (!service.connected) {
+      _lsDataLoadStarted = false;
+      return;
+    }
+    if (!isLibrescoot || _lsDataLoadStarted) return;
     _lsDataLoadStarted = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _getKeycardCount();
@@ -387,7 +416,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
         ),
-        if (supportsScheduledHibernation)
+        if (!_scooterConnected || supportsScheduledHibernation)
           ListTile(
             leading: const SizedBox(
               width: 24,
@@ -426,7 +455,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required bool otaAvailable,
   }) =>
       [
-        if (connected && otaAvailable)
+        if (!connected || otaAvailable)
           ListTile(
             leading: const Icon(Icons.system_update_alt_outlined),
             title: _lsTitle(FlutterI18n.translate(context, "ls_settings_ota_title")),
@@ -478,7 +507,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   },
           ),
         ),
-        if (supportsApnConfig)
+        if (!_scooterConnected || supportsApnConfig)
           ListTile(
             leading: const Icon(Icons.cell_tower_outlined),
             title: _lsTitle(FlutterI18n.translate(context, "ls_settings_apn_title")),
@@ -504,7 +533,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
         ),
         if (isLibrescoot)
-          ..._librescootScooterSettingsItems(supportsScheduledHibernation: supportsScheduledHibernation),
+          ..._connectionRequiredItems(_librescootScooterSettingsItems(supportsScheduledHibernation: supportsScheduledHibernation)),
         SwitchListTile(
           secondary: const Icon(Icons.lock_open),
           title: Text(FlutterI18n.translate(context, "settings_auto_unlock")),
@@ -654,12 +683,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         if (isLibrescoot) ...[
           Header(FlutterI18n.translate(context, "ls_settings_section_maintenance")),
-          ..._librescootMaintenanceSettingsItems(
+          ..._connectionRequiredItems(_librescootMaintenanceSettingsItems(
             supportsApnConfig: supportsApnConfig,
             usbMode: usbMode,
             connected: connected,
             otaAvailable: otaAvailable,
-          ),
+          )),
         ],
         Header(FlutterI18n.translate(context, "stats_settings_section_app")),
         if (Platform.isAndroid)
