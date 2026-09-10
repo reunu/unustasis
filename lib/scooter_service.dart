@@ -56,6 +56,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   Map<String, SavedScooter> get savedScooters => store.scooters;
   set savedScooters(Map<String, SavedScooter> value) => store.scooters = value;
 
+  final BluetoothDevice Function(String) _deviceFactory;
   BluetoothDevice? myScooter; // reserved for a connected scooter!
   BluetoothDevice? _attemptedScooter;
   String? _connectingScooterId;
@@ -107,7 +108,11 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   }
 
   // On initialization...
-  ScooterService(this.flutterBluePlus, {this.isInBackgroundService = false}) {
+  ScooterService(
+    this.flutterBluePlus, {
+    this.isInBackgroundService = false,
+    BluetoothDevice Function(String)? deviceFactory,
+  }) : _deviceFactory = deviceFactory ?? BluetoothDevice.fromId {
     settings = UserSettings(isInBackgroundService: isInBackgroundService);
     scanner = BleScanner(flutterBluePlus);
     _loadCachedData();
@@ -200,6 +205,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     // Everything below is only known from a live link. Drop the previous
     // scooter's values so they don't leak into this scooter's views.
     identity.nrfVersion = null;
+    identity.odometerMeters = null;
     identity.rssi = null;
     identity.resetLsCapabilities();
     identity.supportsHibernateFor = scooter?.supportsHibernateFor;
@@ -350,6 +356,20 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   bool? get handlebarsLocked => vehicle.handlebarsLocked;
   bool? get navigationActive => vehicle.navigationActive;
 
+  // Read-only total distance reported by Librescoot, in metres.
+  int? get odometerMeters => identity.odometerMeters;
+
+  void refreshOdometer() {
+    if (!connected || myScooter == null) return;
+    final device = myScooter!;
+    identity.refreshOdometer(
+      characteristicRepository,
+      onUpdate: notifyListeners,
+      // Discard the read if the connection it started on is no longer current.
+      isCurrent: () => identical(myScooter, device) && connected,
+    );
+  }
+
   // Passthrough getters for battery state
   int? get primarySOC => battery.primarySOC;
   int? get secondarySOC => battery.secondarySOC;
@@ -475,6 +495,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     vehicle.cancelSubscriptions();
     battery.cancelSubscriptions();
     await _connectionStateSubscription?.cancel();
+    if (!isCurrentAttempt()) return;
     _lsProbeGeneration++;
 
     _connectingScooterId = id;
@@ -483,7 +504,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     state = ScooterState.linking;
     _showCachedScooter(savedScooters[id]);
 
-    final attemptedScooter = BluetoothDevice.fromId(id);
+    final attemptedScooter = _deviceFactory(id);
     final previousAttempt = _attemptedScooter;
     _attemptedScooter = attemptedScooter;
 
@@ -531,6 +552,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
 
       log.info("Connected to ${attemptedScooter.remoteId}");
       myScooter = attemptedScooter;
+      identity.odometerMeters = null;
       identity.resetLsCapabilities();
       identity.supportsHibernateFor = savedScooters[id]?.supportsHibernateFor;
       identity.supportsApnConfig = savedScooters[id]?.supportsApnConfig;
@@ -585,10 +607,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       log.info("Connection attempt to $id was superseded");
       // A newer attempt may be connecting this very device; tearing it down
       // would break the attempt that superseded us.
-      if (!identical(_attemptedScooter, attemptedScooter)) {
-        if (identical(myScooter, attemptedScooter)) myScooter = null;
-        await _safeDisconnect(attemptedScooter);
-      }
+      await _safeDisconnect(attemptedScooter);
     } catch (e, stack) {
       log.shout("Couldn't connect to scooter!", e, stack);
       if (isCurrentAttempt()) {
@@ -597,13 +616,12 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
         connected = false;
         state = ScooterState.disconnected;
         if (identical(myScooter, attemptedScooter)) myScooter = null;
+        if (identical(_attemptedScooter, attemptedScooter)) _attemptedScooter = null;
         if (_autoRestarting && _targetScooterId == id) {
           unawaited(_attemptAutoRestart());
         }
       }
-      if (!identical(_attemptedScooter, attemptedScooter)) {
-        await _safeDisconnect(attemptedScooter);
-      }
+      await _safeDisconnect(attemptedScooter);
       rethrow;
     } finally {
       if (identical(_attemptedScooter, attemptedScooter)) _attemptedScooter = null;
@@ -612,6 +630,9 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
 
   /// Cleanup disconnect that must never mask the error being propagated.
   Future<void> _safeDisconnect(BluetoothDevice device) async {
+    // Different Dart wrappers can own the same physical connection. Never
+    // let stale cleanup disconnect the device a newer attempt now owns.
+    if (_attemptedScooter?.remoteId == device.remoteId || myScooter?.remoteId == device.remoteId) return;
     if (!device.isConnected) return;
     try {
       await device.disconnect();
@@ -899,6 +920,12 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
         notifyListeners();
       },
       cacheSoc: _cacheSocForScooter,
+    );
+
+    identity.wireOdometer(
+      chars,
+      onUpdate: notifyListeners,
+      isCurrent: isCurrentConnection,
     );
 
     identity.wireNrfVersion(
