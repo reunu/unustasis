@@ -316,32 +316,37 @@ class GarageWidget extends StatelessWidget {
   }
 
   Future<List<Garage>> getClosestGarages() async {
-    // check for GPS permission
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        throw const PermissionDeniedException("Location permissions are/were denied");
-      }
-    }
-    // get both location and garage data
-    List<dynamic> result = await Future.wait({
-      getGarages(),
-      Geolocator.getLastKnownPosition(),
-    });
-    // organize results
-    List<Garage> garages = result[0] as List<Garage>;
-    Position currentPosition = result[1] as Position;
+    final garages = await getGarages();
+    if (garages.isEmpty) return garages;
 
-    // set the distance of each garage
-    for (Garage garage in garages) {
-      double distance = Geolocator.distanceBetween(
-          currentPosition.latitude, currentPosition.longitude, garage.location.latitude, garage.location.longitude);
-      garage.distance = distance;
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        throw const LocationServiceDisabledException();
+      }
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+        throw const PermissionDeniedException('Location permission denied');
+      }
+      final currentPosition = await Geolocator.getLastKnownPosition() ??
+          await Geolocator.getCurrentPosition(
+            locationSettings: const LocationSettings(
+              accuracy: LocationAccuracy.low,
+              timeLimit: Duration(seconds: 12),
+            ),
+          );
+      for (final garage in garages) {
+        garage.distance = Geolocator.distanceBetween(
+          currentPosition.latitude,
+          currentPosition.longitude,
+          garage.location.latitude,
+          garage.location.longitude,
+        );
+      }
+      garages.sort((a, b) => a.distance!.compareTo(b.distance!));
+    } on Exception catch (error) {
+      Logger('GarageWidget').info('Showing community garages without distance sorting: $error');
     }
-    // sort by distance
-    garages.sort((a, b) => a.distance!.compareTo(b.distance!));
-    // only return the 3 closest garages
     return garages.take(5).toList();
   }
 
@@ -379,6 +384,17 @@ class GarageWidget extends StatelessWidget {
             );
           }
           List<Garage> garages = snapshot.data!;
+          if (garages.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Text(
+                  FlutterI18n.translate(context, "support_garages_none"),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            );
+          }
           return ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             scrollDirection: Axis.horizontal,
@@ -422,8 +438,9 @@ class _GarageTile extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text("${garage.street}, ${garage.city}", overflow: TextOverflow.ellipsis),
-            Text(FlutterI18n.translate(context, "support_garage_distance",
-                translationParams: {"dist": (garage.distance! / 1000).toStringAsFixed(1)})),
+            if (garage.distance != null)
+              Text(FlutterI18n.translate(context, "support_garage_distance",
+                  translationParams: {"dist": (garage.distance! / 1000).toStringAsFixed(1)})),
             const SizedBox(height: 16),
             Row(
               mainAxisSize: MainAxisSize.max,

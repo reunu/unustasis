@@ -526,9 +526,10 @@ class _NavigationScreenState extends State<NavigationScreen> {
                 ),
             ],
           ),
-          Selector<ScooterService, ({String? pendingName, bool isNavigating})>(
+          Selector<ScooterService, ({String? pendingName, String? activeName, bool isNavigating})>(
             selector: (_, s) => (
               pendingName: s.pendingNavigation?.name,
+              activeName: s.activeNavigation?.name,
               isNavigating: s.vehicle.navigationActive == true,
             ),
             builder: (context, state, _) {
@@ -540,6 +541,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
                 child: _navigationStatusCard(
                   isNavigating: state.isNavigating,
                   pendingName: state.pendingName,
+                  activeName: state.activeName,
                 ),
               );
             },
@@ -744,7 +746,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
     );
   }
 
-  Widget _navigationStatusCard({required bool isNavigating, String? pendingName}) {
+  Widget _navigationStatusCard({required bool isNavigating, String? pendingName, String? activeName}) {
     final service = context.read<ScooterService>();
     return Dismissible(
       key: const Key("navigation_status_card"),
@@ -761,9 +763,11 @@ class _NavigationScreenState extends State<NavigationScreen> {
         child: ListTile(
           leading: Icon(isNavigating ? Icons.navigation : Icons.schedule, color: Theme.of(context).colorScheme.surface),
           title: Text(
-            isNavigating
-                ? FlutterI18n.translate(context, "nav_status_active_title")
-                : FlutterI18n.translate(context, "nav_status_pending_title"),
+            isNavigating && activeName?.trim().isNotEmpty == true
+                ? activeName!
+                : isNavigating
+                    ? FlutterI18n.translate(context, "nav_status_active_title")
+                    : FlutterI18n.translate(context, "nav_status_pending_title"),
             style: TextStyle(color: Theme.of(context).colorScheme.surface),
           ),
           subtitle: Text(
@@ -775,9 +779,15 @@ class _NavigationScreenState extends State<NavigationScreen> {
             style: TextStyle(
                 color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.7), fontStyle: FontStyle.italic),
           ),
-          trailing: IconButton(
-            icon: Icon(Icons.close, color: Theme.of(context).colorScheme.surface),
-            tooltip: FlutterI18n.translate(context, "cancel"),
+          trailing: TextButton.icon(
+            style: TextButton.styleFrom(
+              foregroundColor:
+                  isNavigating ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.surface,
+            ),
+            icon: Icon(isNavigating ? Icons.stop_circle_outlined : Icons.close, size: 20),
+            label: Text(
+              FlutterI18n.translate(context, isNavigating ? "nav_stop_button" : "cancel"),
+            ),
             onPressed: () {
               if (isNavigating) {
                 service.navigation.cancel();
