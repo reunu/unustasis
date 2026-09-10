@@ -41,6 +41,11 @@ class CharacteristicRepository {
   BluetoothCharacteristic? otaControlCharacteristic;
   BluetoothCharacteristic? otaStatusCharacteristic;
 
+  // Alarm state (librescoot firmware with the 0x0220 service only)
+  BluetoothCharacteristic? alarmStatusCharacteristic;
+  BluetoothCharacteristic? alarmLastTriggerCharacteristic;
+  BluetoothCharacteristic? alarmWakeSourcesCharacteristic;
+
   CharacteristicRepository(this.scooter);
 
   Future<void> findAll({bool additionalLibrescootFeatures = false}) async {
@@ -104,6 +109,12 @@ class CharacteristicRepository {
           findCharacteristic(scooter, "9a590500-6e67-5d0d-aab9-ad9126b66f91", "9a590502-6e67-5d0d-aab9-ad9126b66f91");
       otaStatusCharacteristic =
           findCharacteristic(scooter, "9a590500-6e67-5d0d-aab9-ad9126b66f91", "9a590503-6e67-5d0d-aab9-ad9126b66f91");
+      alarmStatusCharacteristic =
+          findCharacteristic(scooter, "9a590220-6e67-5d0d-aab9-ad9126b66f91", "9a590221-6e67-5d0d-aab9-ad9126b66f91");
+      alarmLastTriggerCharacteristic =
+          findCharacteristic(scooter, "9a590220-6e67-5d0d-aab9-ad9126b66f91", "9a590222-6e67-5d0d-aab9-ad9126b66f91");
+      alarmWakeSourcesCharacteristic =
+          findCharacteristic(scooter, "9a590220-6e67-5d0d-aab9-ad9126b66f91", "9a590223-6e67-5d0d-aab9-ad9126b66f91");
     }
     return;
   }
@@ -111,6 +122,12 @@ class CharacteristicRepository {
   /// Whether the connected firmware exposes the OTA transfer service.
   bool get otaAvailable =>
       otaDataCharacteristic != null && otaControlCharacteristic != null && otaStatusCharacteristic != null;
+
+  /// Whether the connected firmware exposes the alarm state service.
+  bool get alarmAvailable =>
+      alarmStatusCharacteristic != null &&
+      alarmLastTriggerCharacteristic != null &&
+      alarmWakeSourcesCharacteristic != null;
 
   bool anyAreNull() {
     return stateCharacteristic == null ||

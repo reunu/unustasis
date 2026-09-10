@@ -684,6 +684,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
         ping();
         notifyListeners();
       },
+      onAlarmChanged: () => notifyListeners(),
       onHandlebarsChanged: (locked) {
         // Cache the value in SavedScooter if possible
         if (myScooter != null && savedScooters.containsKey(myScooter!.remoteId.toString())) {
@@ -723,6 +724,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
           identity.supportsApnConfig = false;
           identity.supportsBondForget = false;
           identity.supportsBatteryKeepActive = false;
+          identity.supportsAlarmControl = false;
         }
         notifyListeners();
       },
@@ -817,6 +819,18 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     }
     if (generation != _lsProbeGeneration) return;
     identity.supportsBatteryKeepActive = supportsBatteryKeepActive;
+    notifyListeners();
+
+    bool? supportsAlarmControl;
+    try {
+      final caps = await commands.getLsCapabilitiesCommand(myScooter, characteristicRepository, "alarm");
+      supportsAlarmControl = caps.contains("enable");
+    } catch (e, stack) {
+      log.warning("alarm capability probe failed", e, stack);
+      supportsAlarmControl = false;
+    }
+    if (generation != _lsProbeGeneration) return;
+    identity.supportsAlarmControl = supportsAlarmControl;
     notifyListeners();
   }
 
@@ -1002,6 +1016,46 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       myScooter,
       characteristicRepository,
       commands.lsKeyBatteryKeepActiveOnSeatboxOpen,
+      enabled ? "true" : "false",
+    );
+  }
+
+  /// Returns null when the firmware doesn't expose the setting.
+  Future<bool?> getAlarmEnabled() async {
+    final value = await commands.getLsSettingCommand(
+      myScooter,
+      characteristicRepository,
+      commands.lsKeyAlarmEnabled,
+    );
+    if (value == null) return null;
+    return value == "true";
+  }
+
+  Future<void> setAlarmEnabled(bool enabled) async {
+    await commands.setLsSettingCommand(
+      myScooter,
+      characteristicRepository,
+      commands.lsKeyAlarmEnabled,
+      enabled ? "true" : "false",
+    );
+  }
+
+  /// Returns null when the firmware doesn't expose the setting.
+  Future<bool?> getAlarmHonk() async {
+    final value = await commands.getLsSettingCommand(
+      myScooter,
+      characteristicRepository,
+      commands.lsKeyAlarmHonk,
+    );
+    if (value == null) return null;
+    return value == "true";
+  }
+
+  Future<void> setAlarmHonk(bool enabled) async {
+    await commands.setLsSettingCommand(
+      myScooter,
+      characteristicRepository,
+      commands.lsKeyAlarmHonk,
       enabled ? "true" : "false",
     );
   }
