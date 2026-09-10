@@ -14,6 +14,7 @@ import 'package:workmanager/workmanager.dart';
 
 import '../background/background_i18n.dart';
 import '../background/translate_static.dart';
+import '../domain/widget_range.dart';
 import '../domain/scooter_state.dart';
 
 // value cache
@@ -168,6 +169,12 @@ void passToWidget({
   _seatClosed = seatClosed ?? _seatClosed;
   _scooterLocked = scooterLocked ?? _scooterLocked;
   _lockStateName = getLocalizedLockStateName(scooterLocked ?? true);
+
+  // Derived from the same cached SOC snapshot as the existing battery rows.
+  // Null stays unavailable; never turn missing telemetry into zero range.
+  await HomeWidget.saveWidgetData<int?>(
+    'estimatedRangeKm', estimatedWidgetRangeKm(_primarySOC, _secondarySOC),
+  );
 
   // update widget data storage
   await HomeWidget.saveWidgetData<bool>("connected", _connected);

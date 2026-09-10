@@ -21,7 +21,8 @@ struct Provider: TimelineProvider {
             seatClosed: true,
             scanning: false,
             lockStateName: "Unknown",
-            hasScooterId: true
+            hasScooterId: true,
+            estimatedRangeKm: 84
         )
     }
 
@@ -77,7 +78,8 @@ struct Provider: TimelineProvider {
             seatClosed: seatClosed,
             scanning: scanning,
             lockStateName: lockStateName,
-            hasScooterId: hasScooterId
+            hasScooterId: hasScooterId,
+            estimatedRangeKm: prefs?.object(forKey: "estimatedRangeKm") as? Int
         )
         completion(entry)
     }
@@ -110,6 +112,7 @@ struct ScooterStatusEntry: TimelineEntry {
     let scanning: Bool?
     let lockStateName: String
     let hasScooterId: Bool  // Whether scooter ID is saved for widget lock/unlock
+    let estimatedRangeKm: Int?  // Last-known estimate from the app, not live telemetry.
 
 }
 
@@ -260,36 +263,29 @@ struct ScooterWidgetSmallView: View {
 // CIRCULAR WIDGET
 struct ScooterWidgetCircularView: View {
     var entry: Provider.Entry
-    var hasSecondarySOC: Bool {
-        guard let soc2 = entry.secondarySOC else { return false }
-        return soc2 > 0
-    }
     var body: some View {
-        ZStack {
-            // primary SOC gauge
-            Gauge(
-                value: Double(entry.primarySOC ?? 0),
-                in: 0...100,
-            ) {
-                let iconSize: CGFloat = hasSecondarySOC ? 24 : 32
-                Image("scooter_icon")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .foregroundColor(Color.primary)
-                    .frame(width: iconSize, height: iconSize)
+        // Open range gauge: value in the centre, small scooter in the bottom
+        // opening. The scale is the nominal two-battery maximum, not SOC.
+        Gauge(value: Double(min(max(entry.estimatedRangeKm ?? 0, 0), 90)), in: 0...90) {
+            Image("scooter_icon")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 14, height: 14)
+        } currentValueLabel: {
+            HStack(alignment: .firstTextBaseline, spacing: 1) {
+                Text(entry.estimatedRangeKm.map { String($0) } ?? "—")
+                    .font(.system(size: 22, weight: .semibold, design: .rounded))
+                    .monospacedDigit()
+                Text("km")
+                    .font(.system(size: 8))
             }
-            .gaugeStyle(.accessoryCircularCapacity)
-            // secondary SOC gauge
-            if hasSecondarySOC {
-                Gauge(
-                    value: Double(entry.secondarySOC!),
-                    in: 0...100,
-                ) {
-
-                }.padding(8)
-                    .gaugeStyle(.accessoryCircularCapacity)
-            }
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
         }
+        .gaugeStyle(.accessoryCircular)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Estimated range")
+        .accessibilityValue(entry.estimatedRangeKm.map { "\($0) kilometres, last known estimate" } ?? "Unavailable")
     }
 }
 
@@ -432,7 +428,8 @@ struct BatteryBar: View {
         seatClosed: true,
         scanning: false,
         lockStateName: "Locked",
-        hasScooterId: true
+        hasScooterId: true,
+        estimatedRangeKm: 84
     )
 }
 
@@ -456,6 +453,7 @@ struct BatteryBar: View {
         seatClosed: true,
         scanning: false,
         lockStateName: "Locked",
-        hasScooterId: true
+        hasScooterId: true,
+        estimatedRangeKm: 84
     )
 }

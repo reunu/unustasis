@@ -114,6 +114,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
         val connected : Boolean = data.getBoolean("connected", false)
         val scanning : Boolean = data.getBoolean("scanning", false)
         val lastPing : String? = data.getString("lastPingDifference", null)
+        val estimatedRangeKm: Int? = if (data.contains("estimatedRangeKm")) data.getInt("estimatedRangeKm", 0) else null
         val soc1: Int = data.getInt("soc1", 0)
         val soc2 : Int = data.getInt("soc2", 0)
         val scooterName : String = data.getString("scooterName", "Unu Scooter")!!
@@ -182,7 +183,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                                 singleLine = size.width < LONG_BAR.width,
                             )
                             if (size.width >= LONG_BAR.width)
-                                BatteryWidget(soc1, soc2)
+                                BatteryWidget(soc1, soc2, estimatedRangeKm = estimatedRangeKm, compact = true)
 
                         }
                         SinglePowerButton(
@@ -196,7 +197,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                     // tall and thin pillar
                     Column(
                         horizontalAlignment = Alignment.Horizontal.CenterHorizontally,
-                        modifier = GlanceModifier.fillMaxSize().padding(vertical = 16.dp),
+                        modifier = GlanceModifier.fillMaxSize().padding(vertical = 8.dp),
                     ) {
                         if(size.height >= LONG_PILLAR.height){
                             Header(
@@ -213,7 +214,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                             singleLine = false,
                             modifier = GlanceModifier.padding(bottom = 4.dp)
                         )
-                        BatteryWidget(soc1, soc2, true)
+                        BatteryWidget(soc1, soc2, true, estimatedRangeKm = estimatedRangeKm)
                         Spacer(GlanceModifier.defaultWeight())
                         SinglePowerButton(
                             scanning = scanning,
@@ -249,7 +250,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                                     singleLine = false,
                                     modifier = GlanceModifier.padding(bottom = 4.dp)
                                 )
-                                BatteryWidget(soc1, soc2)
+                                BatteryWidget(soc1, soc2, estimatedRangeKm = estimatedRangeKm)
                                 Spacer(GlanceModifier.defaultWeight())
                             }
                             Spacer(GlanceModifier.defaultWeight())
@@ -331,13 +332,48 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
     fun BatteryWidget(
         soc1: Int,
         soc2: Int,
+        center: Boolean = false,
+        estimatedRangeKm: Int? = null,
+        compact: Boolean = false,
+    ) {
+        if (compact) {
+            Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
+                RangeText(estimatedRangeKm, compact = true)
+                Spacer(GlanceModifier.width(8.dp))
+                BatteryIndicators(soc1, soc2)
+            }
+        } else {
+            Column(horizontalAlignment = if (center) Alignment.Horizontal.CenterHorizontally else Alignment.Horizontal.Start) {
+                RangeText(estimatedRangeKm)
+                BatteryIndicators(soc1, soc2, center)
+            }
+        }
+    }
+
+    @Composable
+    fun RangeText(estimatedRangeKm: Int?, compact: Boolean = false) {
+        Text(
+            text = estimatedRangeKm?.let { "≈$it km" } ?: "— km",
+            maxLines = 1,
+            style = TextStyle(
+                fontSize = if (compact) 16.sp else 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = GlanceTheme.colors.onBackground,
+            ),
+        )
+    }
+
+    @Composable
+    fun BatteryIndicators(
+        soc1: Int,
+        soc2: Int,
         center: Boolean? = false,
         modifier: GlanceModifier = GlanceModifier,
     ) {
         Row (
             horizontalAlignment = if(center == true) Alignment.Horizontal.CenterHorizontally else Alignment.Horizontal.Start,
             verticalAlignment = Alignment.Vertical.CenterVertically,
-            modifier = modifier.width(160.dp)
+            modifier = modifier
         ){
             SingleBattery(soc1)
             if(soc2 > 0) Spacer(GlanceModifier.width(8.dp))
