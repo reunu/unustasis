@@ -509,6 +509,8 @@
     "cloud_sync_data_message": "Le scooter local et le scooter cloud ont des données différentes. Comment souhaitez-vous synchroniser ?",
     "cloud_sync_name_diff": "Différence de nom :",
     "cloud_sync_color_diff": "Différence de couleur :",
+    "cloud_sync_local_value": "Local : {value}",
+    "cloud_sync_cloud_value": "Cloud : {value}",
     "cloud_sync_no_sync": "Lier sans synchroniser",
     "cloud_sync_from_cloud": "Utiliser les données du cloud",
     "cloud_sync_to_cloud": "Utiliser les données locales",

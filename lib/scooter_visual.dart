@@ -283,7 +283,7 @@ class _ScooterVisualState extends State<ScooterVisual> {
       gaplessPlayback: true,
       image: AssetImage("images/scooter/base_${widget.aprilFools ? 9 : widget.color ?? 1}.webp"),
     );
-    if (!widget.hasCustomColor || widget.cloudImageUrl == null) {
+    if (widget.cloudImageUrl == null || widget.cloudImageUrl!.trim().isEmpty) {
       return defaultAsset;
     }
     return _CloudScooterImage(url: widget.cloudImageUrl!, fallback: defaultAsset);

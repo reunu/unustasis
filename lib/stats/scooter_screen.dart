@@ -333,14 +333,14 @@ class SavedScooterCard extends StatelessWidget {
               const SizedBox(height: 16),
               if (nameDiffers) ...[
                 Text(FlutterI18n.translate(context, "cloud_sync_name_diff")),
-                Text('Local: $localName'),
-                Text('Cloud: $cloudName'),
+                Text(FlutterI18n.translate(context, "cloud_sync_local_value", translationParams: {"value": localName})),
+                Text(FlutterI18n.translate(context, "cloud_sync_cloud_value", translationParams: {"value": cloudName})),
                 const SizedBox(height: 8),
               ],
               if (colorDiffers) ...[
                 Text(FlutterI18n.translate(context, "cloud_sync_color_diff")),
-                Text('Local: $localColorName'),
-                Text('Cloud: $cloudColorName'),
+                Text(FlutterI18n.translate(context, "cloud_sync_local_value", translationParams: {"value": localColorName})),
+                Text(FlutterI18n.translate(context, "cloud_sync_cloud_value", translationParams: {"value": cloudColorName})),
               ],
             ],
           ),

@@ -490,6 +490,8 @@
     "cloud_sync_data_message": "Yer local ship and the cloud ship carry different tales. How be ye wantin' to reconcile 'em?",
     "cloud_sync_name_diff": "Name be different:",
     "cloud_sync_color_diff": "Colors be different:",
+    "cloud_sync_local_value": "Aboard: {value}",
+    "cloud_sync_cloud_value": "In the clouds: {value}",
     "cloud_sync_no_sync": "Tie the knot, leave it be",
     "cloud_sync_from_cloud": "Take the cloud's word",
     "cloud_sync_to_cloud": "Take the local word",

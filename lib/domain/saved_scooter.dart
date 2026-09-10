@@ -272,13 +272,14 @@ class SavedScooter {
         _colorHex = cloudData['color_hex'];
         _color = 1; // fallback for anything that still reads the predefined index
       }
-      if (cloudData['images'] != null) {
-        _cloudImages = Map<String, String>.from(cloudData['images'] as Map<String, dynamic>);
-      }
     } else if (cloudData['color_id'] != null) {
       _color = cloudData['color_id'];
       _colorHex = null;
       _cloudImages = null;
+    }
+
+    if (cloudData['images'] != null) {
+      _cloudImages = Map<String, String>.from(cloudData['images'] as Map<String, dynamic>);
     }
 
     updateSharedPreferences();

@@ -122,7 +122,7 @@ class CloudService {
       final state = callbackUri.queryParameters['state'];
       final storedState = await _secureStorage.read(key: 'oauth_state');
 
-      if (code == null || state != storedState) {
+      if (code == null || state == null || storedState == null || state != storedState) {
         throw Exception('Invalid OAuth callback');
       }
 
