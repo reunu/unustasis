@@ -433,6 +433,7 @@
     "ls_keycard_read_error": "Kaart-UID kon niet worden gelezen. Probeer het opnieuw.",
     "ls_keycard_already_registered": "Deze kaart is al geregistreerd.",
     "ls_keycard_mismatch": "Deze kaart is mogelijk niet compatibel of er is een fout opgetreden bij het lezen. Probeer het opnieuw.",
+    "home_navigation_hint": "Veeg omhoog voor navigatie",
     "nav_title": "Navigatie",
     "nav_timeout_cached": "Verbinding verbroken, laatste bekende bestemmingen worden weergegeven.",
     "nav_load_error": "Bestemmingen konden niet worden geladen: {error}",

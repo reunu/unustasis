@@ -433,6 +433,7 @@
     "ls_keycard_read_error": "Impossible de lire l'UID de la carte. Veuillez réessayer.",
     "ls_keycard_already_registered": "Cette carte est déjà enregistrée.",
     "ls_keycard_mismatch": "Cette carte n'est peut-être pas compatible ou une erreur s'est produite lors de la lecture. Veuillez réessayer.",
+    "home_navigation_hint": "Balayez vers le haut pour la navigation",
     "nav_title": "Navigation",
     "nav_timeout_cached": "Connexion expirée, affichage des dernières destinations connues.",
     "nav_load_error": "Impossible de charger les destinations : {error}",

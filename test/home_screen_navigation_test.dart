@@ -112,12 +112,14 @@ void main() {
     await pumpHome(tester);
 
     final cue = find.bySemanticsLabel('Navigation');
-    expect(find.text('Navigation'), findsOneWidget);
+    expect(find.text('Swipe up for navigation'), findsOneWidget);
     expect(tester.getSize(cue).height, greaterThanOrEqualTo(48));
     expect(tester.getSize(cue).width, tester.getSize(find.byType(HomeScreen)).width);
     final chevron = find.byIcon(Icons.keyboard_arrow_up_rounded);
-    final hint = find.text('Navigation');
-    expect(tester.getBottomLeft(chevron).dy, lessThanOrEqualTo(tester.getTopLeft(hint).dy));
+    final hint = find.text('Swipe up for navigation');
+    expect(tester.getSize(find.byType(Badge)).height, 14);
+    expect(tester.getCenter(chevron).dy, lessThan(tester.getTopLeft(hint).dy));
+    expect(tester.getTopLeft(chevron).dy, greaterThan(tester.getBottomLeft(find.text('Hold to start')).dy + 12));
     expect(tester.getCenter(chevron).dx, closeTo(tester.getCenter(hint).dx, 1));
     expect(tester.widget<Badge>(find.byType(Badge)).isLabelVisible, isFalse);
 
@@ -156,7 +158,7 @@ void main() {
   for (final brightness in Brightness.values) {
     testWidgets('navigation drawer uses the action sheet style in ${brightness.name} mode', (tester) async {
       await pumpHome(tester, brightness: brightness);
-      await tester.tap(find.text('Navigation'));
+      await tester.tap(find.text('Swipe up for navigation'));
       await tester.pumpAndSettle();
 
       expect(tester.widget<NavigationScreen>(find.byType(NavigationScreen)).embedded, isTrue);
@@ -191,8 +193,8 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await pumpHome(tester, textScale: 2);
-    expect(find.text('Navigation'), findsOneWidget);
-    await tester.tap(find.text('Navigation'));
+    expect(find.text('Swipe up for navigation'), findsOneWidget);
+    await tester.tap(find.text('Swipe up for navigation'));
     await tester.pumpAndSettle();
     final title = find.descendant(of: find.byType(NavigationScreen), matching: find.text('Navigation'));
     expect(tester.getRect(title).right, lessThan(tester.getRect(find.byTooltip('Close')).left));
@@ -236,10 +238,10 @@ void main() {
 
   testWidgets('deliberate swipe still opens navigation but a short drag does not', (tester) async {
     await pumpHome(tester);
-    await tester.drag(find.text('Navigation'), const Offset(0, -35));
+    await tester.drag(find.text('Swipe up for navigation'), const Offset(0, -35));
     await tester.pumpAndSettle();
     expect(find.byType(NavigationScreen), findsNothing);
-    await tester.drag(find.text('Navigation'), const Offset(0, -160));
+    await tester.drag(find.text('Swipe up for navigation'), const Offset(0, -160));
     await tester.pumpAndSettle();
     expect(find.byType(NavigationScreen), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());

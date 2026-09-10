@@ -500,7 +500,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ],
                             ),
-                            _navigationCue(),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 12),
+                              child: _navigationCue(),
+                            ),
                           ],
                         ),
                       ),
@@ -548,14 +551,21 @@ class _HomeScreenState extends State<HomeScreen> {
                     Badge(
                       isLabelVisible: state.active || state.pending,
                       backgroundColor: Theme.of(context).colorScheme.primary,
-                      child: Icon(
-                        Icons.keyboard_arrow_up_rounded,
-                        size: 22,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      child: SizedBox(
+                        height: 14,
+                        width: 22,
+                        child: OverflowBox(
+                          maxHeight: 22,
+                          child: Icon(
+                            Icons.keyboard_arrow_up_rounded,
+                            size: 22,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
                       ),
                     ),
                     Text(
-                      FlutterI18n.translate(context, 'nav_title'),
+                      FlutterI18n.translate(context, 'home_navigation_hint'),
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
                             color: Theme.of(context).colorScheme.onSurfaceVariant,
