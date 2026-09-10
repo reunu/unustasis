@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:local_auth/local_auth.dart';
@@ -594,9 +595,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
         SwitchListTile(
-          secondary: const ImageIcon(
-            AssetImage("assets/icons/librescoot-seatbox-open.png"),
-            size: 24,
+          secondary: SvgPicture.asset(
+            "assets/icons/librescoot-seatbox-open.svg",
+            width: 24,
+            height: 24,
+            colorFilter: ColorFilter.mode(
+              IconTheme.of(context).color ?? Theme.of(context).colorScheme.onSurfaceVariant,
+              BlendMode.srcIn,
+            ),
           ),
           title: Text(
             FlutterI18n.translate(context, "settings_open_seat_on_unlock"),
