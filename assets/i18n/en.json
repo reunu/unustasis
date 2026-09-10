@@ -43,6 +43,7 @@
     "home_seat_button_closed": "Open seat",
     "home_seat_button_open": "Seat is open!",
     "home_unlock_button": "Hold to start",
+    "home_unlock_failed": "Couldn't wake and unlock the scooter. Try again.",
     "home_lock_button": "Hold for standby",
     "home_controls_button": "Controls",
     "home_reconnect_button": "Reconnect",

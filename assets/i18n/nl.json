@@ -43,6 +43,7 @@
     "home_seat_button_closed": "Buddy openen",
     "home_seat_button_open": "Buddy is open",
     "home_unlock_button": "Vasthouden om te starten",
+    "home_unlock_failed": "De scooter kon niet worden gewekt en ontgrendeld. Probeer opnieuw.",
     "home_lock_button": "Vasthouden voor standby",
     "home_controls_button": "Bediening",
     "home_reconnect_button": "Opnieuw verbinden",

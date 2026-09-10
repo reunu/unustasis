@@ -43,6 +43,7 @@
     "home_seat_button_closed": "Ouvrir le coffre",
     "home_seat_button_open": "Coffre ouvert",
     "home_unlock_button": "Maintenir pour démarrer",
+    "home_unlock_failed": "Impossible de réveiller et déverrouiller le scooter. Réessayez.",
     "home_lock_button": "Maintenir pour veille",
     "home_controls_button": "Commandes",
     "home_reconnect_button": "Reconnecter",

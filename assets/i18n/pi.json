@@ -43,6 +43,7 @@
     "home_seat_button_closed": "Open chest",
     "home_seat_button_open": "Chest open",
     "home_unlock_button": "Set sail",
+    "home_unlock_failed": "Couldn't wake and unlock the scooter. Try again.",
     "home_lock_button": "Drop anchor",
     "home_controls_button": "The helm",
     "home_reconnect_button": "Reconnect",

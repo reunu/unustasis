@@ -43,6 +43,7 @@
     "home_seat_button_closed": "Sitz öffnen",
     "home_seat_button_open": "Sitz ist offen",
     "home_unlock_button": "Halten zum Starten",
+    "home_unlock_failed": "Der Roller konnte nicht aufgeweckt und entriegelt werden. Bitte versuche es erneut.",
     "home_lock_button": "Halten für Standby",
     "home_controls_button": "Steuerung",
     "home_reconnect_button": "Suchen",
