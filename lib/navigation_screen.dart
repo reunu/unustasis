@@ -553,7 +553,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
             if (_loading && _initialLoad)
               const Expanded(child: _DestinationsLoading())
             else if (_destinations.isEmpty && !connected && !_showingCached)
-              const Expanded(child: _DisconnectedEmpty())
+              Expanded(child: _pullDownDismiss(const _DisconnectedEmpty()))
             else if (_destinations.isEmpty)
               Expanded(child: _pullDownDismiss(const _NoDestinationsEmpty()))
             else

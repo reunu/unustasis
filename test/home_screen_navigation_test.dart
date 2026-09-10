@@ -192,6 +192,17 @@ void main() {
     final title = find.descendant(of: find.byType(NavigationScreen), matching: find.text('Navigation'));
     expect(tester.getRect(title).right, lessThan(tester.getRect(find.byTooltip('Close')).left));
     expect(tester.takeException(), isNull);
+    final scrollable = find.descendant(of: find.byType(NavigationScreen), matching: find.byType(Scrollable)).first;
+    final position = tester.state<ScrollableState>(scrollable).position;
+    expect(position.maxScrollExtent, greaterThan(0));
+    await tester.drag(scrollable, const Offset(0, -80));
+    await tester.pumpAndSettle();
+    expect(position.pixels, greaterThan(0));
+    position.jumpTo(0);
+    await tester.pump();
+    await tester.drag(scrollable, const Offset(0, 180));
+    await tester.pumpAndSettle();
+    expect(find.byType(NavigationScreen), findsNothing);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
