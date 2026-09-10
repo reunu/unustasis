@@ -13,6 +13,7 @@ import '../service/photon_service.dart';
 import '../domain/nav_destination.dart';
 import '../domain/saved_scooter.dart';
 import '../geo_helper.dart';
+import '../helper_widgets/header.dart';
 import '../scooter_service.dart';
 import '../service/ble_commands.dart';
 
@@ -581,42 +582,35 @@ class _NavigationScreenState extends State<NavigationScreen> {
     );
 
     if (widget.embedded) {
-      return Material(
-        color: Theme.of(context).scaffoldBackgroundColor,
-        child: SafeArea(
-          top: false,
-          child: Column(
-            children: [
-              const SizedBox(height: 8),
-              Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.outlineVariant,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 8, 0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        FlutterI18n.translate(context, "nav_title"),
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
+      return SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Center(
+                    child: Header(
+                      FlutterI18n.translate(context, "nav_title"),
+                      padding: const EdgeInsets.fromLTRB(48, 8, 48, 16),
                     ),
-                    IconButton(
+                  ),
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: IconButton(
                       tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
                       onPressed: () => Navigator.of(context).pop(),
                       icon: const Icon(Icons.close),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              Expanded(child: content),
-            ],
-          ),
+            ),
+            Expanded(child: content),
+          ],
         ),
       );
     }
@@ -909,21 +903,24 @@ class _DisconnectedEmpty extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.bluetooth_disabled, size: 64, color: Colors.grey),
-          const SizedBox(height: 16),
-          Text(
-            FlutterI18n.translate(context, "nav_disconnected_title"),
-            style: const TextStyle(fontSize: 18, color: Colors.grey),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            FlutterI18n.translate(context, "nav_disconnected_subtitle"),
-            style: const TextStyle(color: Colors.grey),
-          ),
-        ],
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.bluetooth_disabled, size: 64, color: Colors.grey),
+            const SizedBox(height: 16),
+            Text(
+              FlutterI18n.translate(context, "nav_disconnected_title"),
+              style: const TextStyle(fontSize: 18, color: Colors.grey),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              FlutterI18n.translate(context, "nav_disconnected_subtitle"),
+              style: const TextStyle(color: Colors.grey),
+            ),
+          ],
+        ),
       ),
     );
   }

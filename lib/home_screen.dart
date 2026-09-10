@@ -516,24 +516,53 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _navigationCue() {
-    return Selector<ScooterService, bool>(
-      selector: (context, service) => service.identity.isLibrescoot == true || kDebugMode,
-      builder: (context, isLibrescoot, child) {
-        if (!isLibrescoot) return const SizedBox.shrink();
+    return Selector<ScooterService, ({bool visible, bool active, bool pending})>(
+      selector: (context, service) => (
+        visible: service.identity.isLibrescoot == true || kDebugMode,
+        active: service.vehicle.navigationActive == true,
+        pending: service.pendingNavigation != null,
+      ),
+      builder: (context, state, child) {
+        if (!state.visible) return const SizedBox.shrink();
         return Semantics(
           button: true,
           label: FlutterI18n.translate(context, 'nav_title'),
+          value: state.active
+              ? FlutterI18n.translate(context, 'nav_status_active_title')
+              : state.pending
+                  ? FlutterI18n.translate(context, 'nav_status_pending_title')
+                  : null,
+          excludeSemantics: true,
+          onTap: _openNavigationSheet,
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: _openNavigationSheet,
-            child: SizedBox(
-              height: 28,
-              width: double.infinity,
-              child: Center(
-                child: Icon(
-                  Icons.keyboard_arrow_up_rounded,
-                  size: 22,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Badge(
+                      isLabelVisible: state.active || state.pending,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      child: Icon(
+                        Icons.keyboard_arrow_up_rounded,
+                        size: 22,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        FlutterI18n.translate(context, 'nav_title'),
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -549,10 +578,12 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => const FractionallySizedBox(
-        heightFactor: 0.9,
-        child: NavigationScreen(embedded: true),
+      showDragHandle: true,
+      clipBehavior: Clip.antiAlias,
+      builder: (context) => SizedBox(
+        // The native drag handle occupies the remaining 48 logical pixels.
+        height: MediaQuery.sizeOf(context).height * 0.9 - kMinInteractiveDimension,
+        child: const NavigationScreen(embedded: true),
       ),
     );
   }
