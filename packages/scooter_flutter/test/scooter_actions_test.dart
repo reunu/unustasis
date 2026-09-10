@@ -251,6 +251,53 @@ Future<void> settleTransport() async {
 }
 
 void main() {
+  test('version snapshot uses only sequential read queries and no action effects', () async {
+    final h = Harness(FakeAsync());
+    await settleTransport();
+    h.trace.clear();
+    h.telemetry.identity.nrfVersion = 'v2.11.0-ls';
+    h.wire.onWrite = (command) async => h.wire.reply('$command:v1');
+    final result = await h.actions.readInstalledVersions();
+    expect(result, {'mdb': 'v1', 'dbc': 'v1', 'nrf': 'v2.11.0-ls'});
+    expect(h.trace, ['A:status:version:mdb', 'A:status:version:dbc']);
+    expect(h.effects.events, isEmpty);
+    h.dispose();
+    await settleTransport();
+  });
+  test('nRF remains available without extended-command firmware', () async {
+    final h = Harness(FakeAsync());
+    await settleTransport();
+    h.trace.clear();
+    h.telemetry.identity.nrfVersion = 'v2.11.0-ls';
+    h.repos['A']!.extendedCommandCharacteristic = null;
+    expect(await h.actions.readInstalledVersions(), {'mdb': null, 'dbc': null, 'nrf': 'v2.11.0-ls'});
+    expect(h.trace, isEmpty);
+    expect(h.effects.events, isEmpty);
+    h.dispose();
+    await settleTransport();
+  });
+  for (final change in ['B', 'same-id', 'disconnect']) {
+    test('version snapshot discards results without retargeting after $change', () async {
+      final h = Harness(FakeAsync());
+      await settleTransport();
+      h.trace.clear();
+      final wire = h.wire;
+      wire.onWrite = (command) async {
+        wire.reply('$command:v1');
+        if (change == 'disconnect') {
+          h.device.drop();
+        } else {
+          if (change == 'same-id') h.session.connected = false;
+          h.connect(change == 'B' ? 'B' : 'A');
+        }
+      };
+      await expectLater(h.actions.readInstalledVersions(), throwsStateError);
+      expect(h.trace.where((line) => line.contains('status:version')), ['A:status:version:mdb']);
+      expect(h.effects.events, isEmpty);
+      h.dispose();
+      await settleTransport();
+    });
+  }
   test('confirmed open seat writes two ordinary locks sequentially with one set of effects', () {
     fakeAsync((time) {
       final h = Harness(time);

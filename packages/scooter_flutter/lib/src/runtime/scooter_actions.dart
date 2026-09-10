@@ -348,6 +348,24 @@ class ScooterActions {
       _capture(),
       (d, r, c) => transport.sendLsExtendedCommand(d, r, clockPayload(time),
           isCurrent: c));
+  /// Read-only diagnostic snapshot. Every query uses one captured session;
+  /// replacement or disconnect discards the whole result, without retrying.
+  Future<Map<String, String?>> readInstalledVersions() async {
+    final target = _capture();
+    final versions = <String, String?>{'mdb': null, 'dbc': null};
+    if (target.repository.extendedCommandCharacteristic != null &&
+        target.repository.extendedResponseCharacteristic != null) {
+      for (final component in const ['mdb', 'dbc']) {
+        versions[component] = await _command(target,
+            (d, r, c) => queries.getInstalledVersionCommand(d, r, component, isCurrent: c));
+      }
+    }
+    _check(target);
+    // The existing session-owned Device Info subscription already reads nRF.
+    versions['nrf'] = telemetry.identity.nrfVersion;
+    return Map.unmodifiable(versions);
+  }
+
   Future<bool?> getBoolSetting(String key) async {
     final value = await getSetting(key);
     return value == null ? null : value == 'true';
