@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
@@ -34,6 +36,7 @@ class _ScooterScreenState extends State<ScooterScreen> {
   String? nameCache;
   TextEditingController nameController = TextEditingController();
   FocusNode nameFocusNode = FocusNode();
+  Timer? _odometerRefreshTimer;
 
   void setupInitialColor() async {
     int initialColor = await SharedPreferencesAsync().getInt("color") ?? 1;
@@ -47,6 +50,16 @@ class _ScooterScreenState extends State<ScooterScreen> {
     super.initState();
     setupInitialColor();
     _loadViewMode();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refreshOdometer();
+      _odometerRefreshTimer = Timer.periodic(const Duration(seconds: 30), (_) => _refreshOdometer());
+    });
+  }
+
+  /// Odometer is read-only and refreshed only while this screen is on top.
+  void _refreshOdometer() {
+    if (!mounted || ModalRoute.of(context)?.isCurrent != true) return;
+    context.read<ScooterService>().refreshOdometer();
   }
 
   Future<void> _loadViewMode() async {
@@ -192,6 +205,7 @@ class _ScooterScreenState extends State<ScooterScreen> {
 
   @override
   void dispose() {
+    _odometerRefreshTimer?.cancel();
     nameController.dispose();
     nameFocusNode.dispose();
     super.dispose();
@@ -223,6 +237,9 @@ class SavedScooterCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Odometer only exists for the connected scooter.
+    final int? odometerMeters =
+        connected ? context.select<ScooterService, int?>((service) => service.odometerMeters) : null;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -318,6 +335,28 @@ class SavedScooterCard extends StatelessWidget {
                         }),
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
+                if (odometerMeters != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.route_outlined,
+                          size: 14,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          "${(odometerMeters / 1000).toStringAsFixed(1)} km",
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
                 SizedBox(height: 8),
                 BatteryBars(
                   primarySOC: savedScooter.lastPrimarySOC,
@@ -611,6 +650,9 @@ class SavedScooterListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Odometer only exists for the connected scooter.
+    final int? odometerMeters =
+        connected ? context.select<ScooterService, int?>((service) => service.odometerMeters) : null;
     return GestureDetector(
       onTap: !connected
           ? () async {
@@ -750,6 +792,27 @@ class SavedScooterListItem extends StatelessWidget {
                                         ?.description(context) ??
                                     FlutterI18n.translate(context, "stats_unknown"),
                                 style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                            ),
+                          if (odometerMeters != null)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 4),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.route_outlined,
+                                    size: 14,
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    "${(odometerMeters / 1000).toStringAsFixed(1)} km",
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                        ),
+                                  ),
+                                ],
                               ),
                             ),
                           // Battery SOC data
