@@ -221,12 +221,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                                 // // Hidden for stable release, but useful for various debugging
                                 // onLongPress: () {
-                                //   Navigator.push(
-                                //     context,
-                                //     MaterialPageRoute(
-                                //       builder: (context) => const LsKeycardScreen(),
-                                //     ),
-                                //   );
+                                //   context.read<ScooterService>().addDemoData();
                                 // },
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -783,16 +778,23 @@ class StatusText extends StatelessWidget {
               style: Theme.of(context).textTheme.titleMedium,
               textAlign: TextAlign.center,
             ),
-            if (handlebarText != null) ...[
-              const SizedBox(height: 2),
-              Text(
-                handlebarText,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+            AnimatedSize(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOut,
+              alignment: Alignment.topCenter,
+              child: handlebarText == null
+                  ? const SizedBox.shrink()
+                  : Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        handlebarText,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
-                textAlign: TextAlign.center,
-              ),
-            ],
+            ),
           ],
         );
       },
