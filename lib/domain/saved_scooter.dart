@@ -78,6 +78,7 @@ class SavedScooter {
   set color(int color) {
     _color = color;
     _colorHex = null; // predefined color replaces any custom hex color
+    _cloudImages = null; // an explicit local color choice restores its matching asset
     updateSharedPreferences();
   }
 

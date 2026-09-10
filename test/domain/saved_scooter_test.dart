@@ -47,6 +47,23 @@ void main() {
       });
     }
 
+    for (final custom in [false, true]) {
+      test('local recoloring clears cloud images through persistence (custom: $custom)', () async {
+        final scooter = SavedScooter(
+          id: 'test-scooter',
+          colorHex: custom ? '#123456' : null,
+          cloudImages: images,
+        );
+        scooter.color = 3;
+        final restored = await reload(scooter);
+        expect(restored.color, 3);
+        expect(restored.hasCustomColor, isFalse);
+        expect(restored.cloudImages, isNull);
+        expect(restored.cloudImageFront, isNull);
+        expect(restored.cloudImageSide, isNull);
+      });
+    }
+
     test('custom to predefined sync uses the newly supplied images', () async {
       final scooter = SavedScooter(id: 'test-scooter', colorHex: '#123456', cloudImages: {'front': 'old.png'});
       scooter.updateFromCloudData({'color_id': 3, 'images': images});
