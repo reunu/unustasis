@@ -3,11 +3,12 @@ import 'dart:convert';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:scooter_core/scooter_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'nav_destination.dart';
 
-class SavedScooter {
+class SavedScooter implements SavedScooterRecord {
   String _name;
   String _id;
   int _color;
@@ -59,21 +60,25 @@ class SavedScooter {
         _supportsApnConfig = supportsApnConfig,
         _cachedDestinations = cachedDestinations;
 
+  @override
   set name(String name) {
     _name = name;
     updateSharedPreferences();
   }
 
+  @override
   set color(int color) {
     _color = color;
     updateSharedPreferences();
   }
 
+  @override
   set lastPing(DateTime lastPing) {
     _lastPing = lastPing;
     updateSharedPreferences();
   }
 
+  @override
   set autoConnect(bool autoConnect) {
     _autoConnect = autoConnect;
     updateSharedPreferences();
@@ -136,10 +141,14 @@ class SavedScooter {
     updateSharedPreferences();
   }
 
+  @override
   String get name => _name;
   String get id => _id;
+  @override
   int get color => _color;
+  @override
   DateTime get lastPing => _lastPing;
+  @override
   bool get autoConnect => _autoConnect;
   int? get lastPrimarySOC => _lastPrimarySOC;
   int? get lastSecondarySOC => _lastSecondarySOC;
@@ -155,6 +164,7 @@ class SavedScooter {
 
   BluetoothDevice get bluetoothDevice => BluetoothDevice.fromId(_id);
 
+  @override
   Map<String, dynamic> toJson() => {
         'id': _id,
         'name': _name,

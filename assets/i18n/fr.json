@@ -47,7 +47,7 @@
     "home_controls_button": "Commandes",
     "home_reconnect_button": "Reconnecter",
     "seat_alert_title": "Coffre ouvert !",
-    "seat_alert_body": "Le scooter ne s'est pas verrouillé parce que le coffre est encore ouvert.\n\nSi vous voulez quand même verrouiller le scooter, vous pouvez ignorer cet avertissement.",
+    "seat_alert_body": "La selle est ouverte. « Verrouiller quand même » envoie deux demandes de verrouillage ordinaires. Les anciens firmwares peuvent encore attendre environ 30 secondes, puis prendre environ 5 secondes pour s’éteindre.",
     "seat_alert_action_override": "Verrouiller",
     "seat_alert_action_cancel": "Annuler",
     "locked_handlebar_alert_title": "Le guidon est toujours verrouillé !",
@@ -242,8 +242,8 @@
     "forget_alert_success": "{name} oublié",
     "settings_app_version": "Version de l'application",
     "settings_privacy_policy": "Politique de confidentialité",
-    "settings_osm_consent": "Afficher la dernière adresse connue",
-    "settings_osm_consent_description": "Utiliser les services en ligne pour résoudre la dernière position connue du scooter en adresse",
+    "settings_osm_consent": "Services de localisation en ligne",
+    "settings_osm_consent_description": "Envoie la position du scooter ou du téléphone et les recherches de destinations aux services Nominatim d’OpenStreetMap et Photon de Komoot pour trouver des adresses et des lieux.",
     "settings_seasonal": "Effets saisonniers",
     "stats_last_ping_title": "Dernière connexion",
     "stats_last_ping": "Il y a {time}",
@@ -336,6 +336,7 @@
     "share_no_librescoot_close": "Fermer",
     "share_no_librescoot_learn_more": "En savoir plus",
     "share_parse_error": "Impossible d'extraire un lieu du texte partagé.",
+    "ls_settings_extended_unavailable": "Indisponible pour cette connexion",
     "ls_settings_title": "Paramètres Librescoot",
     "ls_settings_clock_title": "Horloge du scooter",
     "ls_settings_clock_subtitle": "Synchronise l'horloge interne du scooter avec l'heure actuelle de ce téléphone.",
@@ -572,5 +573,8 @@
     "ls_ota_warn_no_image_for": "Aucune image {board} trouvée pour {version}.",
     "ls_ota_warn_no_delta_path": "Pas de chemin delta depuis {version} — une image complète est nécessaire ({latest}).",
     "ls_settings_apn_clear": "Effacer",
-    "ls_settings_apn_cleared": "APN effacé, les réglages de l'opérateur SIM sont utilisés"
+    "ls_settings_apn_cleared": "APN effacé, les réglages de l'opérateur SIM sont utilisés",
+  "home_lock_request_sent": "Demandes de verrouillage envoyées. Vérifiez l’état du scooter.",
+  "home_lock_request_incomplete": "Envoi des demandes incomplet. La première demande peut déjà avoir déclenché l’attente ou l’arrêt. Vérifiez le scooter ; aucune demande n’a été renvoyée.",
+    "settings_scooter_disconnected": "Connectez-vous au scooter pour utiliser ce réglage."
 }

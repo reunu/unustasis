@@ -47,7 +47,7 @@
     "home_controls_button": "Bediening",
     "home_reconnect_button": "Opnieuw verbinden",
     "seat_alert_title": "Buddy is open!",
-    "seat_alert_body": "De scooter is niet vergrendeld omdat de buddy nog open is.\n\nAls je de scooter toch wilt vergrendelen, kun je deze waarschuwing negeren.",
+    "seat_alert_body": "Het zadel is open. ‘Toch vergrendelen’ verstuurt twee gewone vergrendelverzoeken. Oudere firmware kan nog ongeveer 30 seconden wachten en daarna ongeveer 5 seconden nodig hebben om uit te schakelen.",
     "seat_alert_action_override": "Toch vergrendelen",
     "seat_alert_action_cancel": "Annuleren",
     "locked_handlebar_alert_title": "Stuur is nog vergrendeld!",
@@ -242,8 +242,8 @@
     "forget_alert_success": "{name} vergeten",
     "settings_app_version": "App-versie",
     "settings_privacy_policy": "Privacybeleid",
-    "settings_osm_consent": "Laatst bekende adres tonen",
-    "settings_osm_consent_description": "Online diensten gebruiken om de laatst bekende scooterlocatie om te zetten naar een adres",
+    "settings_osm_consent": "Online locatiediensten",
+    "settings_osm_consent_description": "Stuurt scooter- of telefoonlocaties en zoekopdrachten naar bestemmingen naar Nominatim van OpenStreetMap en Photon van Komoot om adressen en plaatsen te vinden.",
     "settings_seasonal": "Seizoenseffecten",
     "stats_last_ping_title": "Laatst gezien",
     "stats_last_ping": "{time} geleden",
@@ -336,6 +336,7 @@
     "share_no_librescoot_close": "Sluiten",
     "share_no_librescoot_learn_more": "Meer informatie",
     "share_parse_error": "Kon geen locatie uit de gedeelde tekst halen.",
+    "ls_settings_extended_unavailable": "Niet beschikbaar voor deze verbinding",
     "ls_settings_title": "Librescoot-instellingen",
     "ls_settings_clock_title": "Scooterklok",
     "ls_settings_clock_subtitle": "Stelt de interne klok van de scooter in op de huidige tijd van deze telefoon.",
@@ -572,5 +573,8 @@
     "ls_ota_warn_no_image_for": "Geen {board}-image gevonden voor {version}.",
     "ls_ota_warn_no_delta_path": "Geen delta-pad vanaf {version} — een volledige image is nodig ({latest}).",
     "ls_settings_apn_clear": "Wissen",
-    "ls_settings_apn_cleared": "APN gewist, de standaard van de SIM-provider wordt gebruikt"
+    "ls_settings_apn_cleared": "APN gewist, de standaard van de SIM-provider wordt gebruikt",
+  "home_lock_request_sent": "Vergrendelverzoeken verstuurd. Controleer de status van de scooter.",
+  "home_lock_request_incomplete": "Vergrendelverzoeken niet volledig verstuurd. Het eerste verzoek kan het wachten of uitschakelen al gestart hebben. Controleer de scooter; er is niets opnieuw verstuurd.",
+    "settings_scooter_disconnected": "Maak verbinding met de scooter om deze instelling te gebruiken."
 }

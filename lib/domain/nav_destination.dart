@@ -1,12 +1,7 @@
-import 'package:latlong2/latlong.dart';
+import 'package:scooter_core/navigation.dart';
+export 'package:scooter_core/navigation.dart' show SpecialDestinationType;
 
 import '../geo_helper.dart';
-
-enum SpecialDestinationType {
-  home,
-  work,
-  school,
-}
 
 List<String> homeNames = [
   'home',
@@ -50,20 +45,13 @@ List<String> schoolNames = [
   'universidad'
 ];
 
-class NavDestination {
-  LatLng location;
-  String? name;
-  String? id;
-  SpecialDestinationType? type;
-
-  NavDestination({
-    required this.location,
-    this.name,
-    this.id,
-    this.type,
-  }) {
+class NavDestination extends NavigationDestination {
+  NavDestination({required super.location, super.name, super.id, super.type}) {
     type ??= name != null ? inferTypeFromName(name!) : null;
   }
+
+  factory NavDestination.fromDestination(NavigationDestination destination) => NavDestination(
+      location: destination.location, name: destination.name, id: destination.id, type: destination.type);
 
   SpecialDestinationType? inferTypeFromName(String name) {
     if (homeNames.any((keyword) => name.toLowerCase().contains(keyword))) {
@@ -76,25 +64,8 @@ class NavDestination {
     return null;
   }
 
-  Map<String, dynamic> toJson() => {
-        'latitude': location.latitude,
-        'longitude': location.longitude,
-        'name': name,
-        'id': id,
-        'type': type?.name,
-      };
-
-  factory NavDestination.fromJson(Map<String, dynamic> map) {
-    return NavDestination(
-      location: LatLng(
-        (map['latitude'] as num).toDouble(),
-        (map['longitude'] as num).toDouble(),
-      ),
-      name: map['name'],
-      id: map['id'],
-      type: map['type'] != null ? SpecialDestinationType.values.firstWhere((v) => v.name == map['type']) : null,
-    );
-  }
+  factory NavDestination.fromJson(Map<String, dynamic> map) =>
+      NavDestination.fromDestination(NavigationDestination.fromJson(map));
 
   Future<NavDestination> ensureNamed() async {
     if (name != null) return this;
