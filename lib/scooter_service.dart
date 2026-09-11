@@ -972,10 +972,10 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   }
 
   void autoUnlockCooldown() {
-    try {
+    // Only the app side has this channel; inside the service it's a message to
+    // itself, and one that throws.
+    if (!isInBackgroundService) {
       FlutterBackgroundService().invoke("autoUnlockCooldown");
-    } catch (e) {
-      // closing the loop
     }
     _autoUnlockCooldown = true;
     Future.delayed(const Duration(seconds: keylessCooldownSeconds), () {

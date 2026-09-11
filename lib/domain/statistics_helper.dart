@@ -8,7 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 enum EventType { lock, unlock, openSeat, hibernate, wakeUp, unknown }
 
-enum EventSource { app, background, auto, unknown }
+enum EventSource { app, background, auto, tasker, unknown }
 
 class LogEntry {
   final DateTime timestamp;

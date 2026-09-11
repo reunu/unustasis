@@ -13,6 +13,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 
 import '../background/background_i18n.dart';
+import '../background/tasker_bridge.dart';
 import '../background/translate_static.dart';
 import '../domain/scooter_state.dart';
 
@@ -257,6 +258,9 @@ FutureOr<void> backgroundCallback(Uri? data) async {
 
   // Determine the action to perform
   String? action;
+  // Set only for Tasker, which is blocking on the result. Widget taps leave it
+  // null and nothing is reported back.
+  final String? requestId = data?.queryParameters["requestId"];
   // Read from SharedPreferences since this callback runs in a separate isolate
   // where the module-level backgroundScanEnabled variable is not shared.
   final bgScanEnabled = (await SharedPreferences.getInstance()).getBool("backgroundScan") ?? false;
@@ -274,6 +278,12 @@ FutureOr<void> backgroundCallback(Uri? data) async {
       print("Unknown command: ${data?.host}");
   }
 
+  if (action == null && requestId != null) {
+    // Nothing will run, so answer now rather than leave Tasker to time out.
+    await publishActionResult(requestId, taskerResultUnsupportedAction);
+    return;
+  }
+
   // Show scanning feedback immediately so the user sees a spinner
   // while the service spins up and connects.
   if (action != null) {
@@ -289,6 +299,12 @@ FutureOr<void> backgroundCallback(Uri? data) async {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool("pendingWidgetAction", true);
       await prefs.setString("pendingWidgetActionName", action);
+      if (requestId != null) {
+        await prefs.setString(taskerRequestIdKey, requestId);
+      } else {
+        // A widget tap must not inherit an abandoned request's id.
+        await prefs.remove(taskerRequestIdKey);
+      }
     }
 
     final running = await FlutterBackgroundService().isRunning();
@@ -305,6 +321,23 @@ FutureOr<void> backgroundCallback(Uri? data) async {
     }
   } catch (e) {
     print("Error starting background service: $e");
+    // Android only allows a background start with an exemption, which a widget
+    // tap has and another app's broadcast doesn't.
+    final blocked = e.toString().contains("startForegroundService() not allowed");
+    if (blocked) {
+      // Drop the action rather than leave it queued: whenever the service next
+      // starts could be hours away, with the phone nowhere near the scooter.
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool("pendingWidgetAction", false);
+      await prefs.remove("pendingWidgetActionName");
+      await prefs.remove(taskerRequestIdKey);
+    }
+    if (requestId != null) {
+      await publishActionResult(
+        requestId,
+        blocked ? taskerResultServiceBlocked : "$taskerResultFailedPrefix$e",
+      );
+    }
   }
   await HomeWidget.updateWidget(
     qualifiedAndroidName: 'de.freal.unustasis.HomeWidgetReceiver',

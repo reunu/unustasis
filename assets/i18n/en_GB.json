@@ -4,5 +4,6 @@
     "settings_licenses": "Licences",
     "language_en": "🇺🇸   English (US)",
     "language_en_gb": "🇬🇧   English (UK)",
-    "onboarding_step6_body": "Give your scooter a name and pick a colour."
+    "onboarding_step6_body": "Give your scooter a name and pick a colour.",
+    "settings_battery_optimization": "Ignore battery optimisation"
 }

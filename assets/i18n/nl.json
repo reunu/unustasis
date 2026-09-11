@@ -198,6 +198,8 @@
     "language_pi": "🏴‍☠️   Piraat",
     "settings_background_scan": "Achtergrondverbinding (beta)",
     "settings_background_scan_description": "Verbind met de scooter, ook als de app gesloten is.",
+    "settings_battery_optimization": "Batterijoptimalisatie negeren",
+    "settings_battery_optimization_description": "Verbetert achtergrondfuncties en integraties terwijl de app gesloten is",
     "notification_channel_service": "Achtergronddienst",
     "notification_channel_service_description": "Vereist voor achtergrondwerking. Je kunt dit kanaal verbergen.",
     "notification_channel_connection": "Scooterverbinding",

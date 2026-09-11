@@ -198,6 +198,8 @@
     "language_pi": "🏴‍☠️   Pirat",
     "settings_background_scan": "Hintergrundverbindung (Beta)",
     "settings_background_scan_description": "Auch bei geschlossener App mit dem Roller verbinden.",
+    "settings_battery_optimization": "Akku-Optimierung ignorieren",
+    "settings_battery_optimization_description": "Verbessert Hintergrundfunktionen und Integrationen, während die App geschlossen ist.",
     "notification_channel_service": "Hintergrunddienst",
     "notification_channel_service_description": "Für den Hintergrundbetrieb erforderlich. Du kannst diesen Kanal ausblenden.",
     "notification_channel_connection": "Roller-Verbindung",
