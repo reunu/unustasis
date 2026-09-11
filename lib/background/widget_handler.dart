@@ -258,8 +258,8 @@ FutureOr<void> backgroundCallback(Uri? data) async {
 
   // Determine the action to perform
   String? action;
-  // Set when the request came from the Tasker plugin, which is blocking on the
-  // result. Widget taps leave this null and nothing is reported back.
+  // Set only for Tasker, which is blocking on the result. Widget taps leave it
+  // null and nothing is reported back.
   final String? requestId = data?.queryParameters["requestId"];
   // Read from SharedPreferences since this callback runs in a separate isolate
   // where the module-level backgroundScanEnabled variable is not shared.
@@ -279,8 +279,7 @@ FutureOr<void> backgroundCallback(Uri? data) async {
   }
 
   if (action == null && requestId != null) {
-    // Nothing to run, so nothing will ever report back — answer now rather
-    // than leaving Tasker to sit out its timeout.
+    // Nothing will run, so answer now rather than leave Tasker to time out.
     await publishActionResult(requestId, taskerResultUnsupportedAction);
     return;
   }
@@ -303,8 +302,7 @@ FutureOr<void> backgroundCallback(Uri? data) async {
       if (requestId != null) {
         await prefs.setString(taskerRequestIdKey, requestId);
       } else {
-        // A widget tap must not inherit a request id left over from an
-        // abandoned Tasker request.
+        // A widget tap must not inherit an abandoned request's id.
         await prefs.remove(taskerRequestIdKey);
       }
     }
@@ -323,12 +321,18 @@ FutureOr<void> backgroundCallback(Uri? data) async {
     }
   } catch (e) {
     print("Error starting background service: $e");
+    // Android only allows a background start with an exemption, which a widget
+    // tap has and another app's broadcast doesn't.
+    final blocked = e.toString().contains("startForegroundService() not allowed");
+    if (blocked) {
+      // Drop the action rather than leave it queued: whenever the service next
+      // starts could be hours away, with the phone nowhere near the scooter.
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool("pendingWidgetAction", false);
+      await prefs.remove("pendingWidgetActionName");
+      await prefs.remove(taskerRequestIdKey);
+    }
     if (requestId != null) {
-      // Android blocks starting a foreground service from the background
-      // unless something granted an exemption, which a widget tap does and a
-      // broadcast from another app doesn't. Worth naming, since the fix is a
-      // setting rather than anything about the scooter.
-      final blocked = e.toString().contains("startForegroundService() not allowed");
       await publishActionResult(
         requestId,
         blocked ? taskerResultServiceBlocked : "$taskerResultFailedPrefix$e",

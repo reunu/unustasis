@@ -1,10 +1,15 @@
 package de.freal.unustasis.tasker
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.view.Gravity
 import android.widget.ArrayAdapter
+import android.widget.LinearLayout
 import android.widget.ListView
+import android.widget.TextView
+import de.freal.unustasis.BatteryOptimization
 import de.freal.unustasis.R
 
 /**
@@ -29,33 +34,67 @@ class TaskerActionEditActivity : Activity() {
             )
             choiceMode = ListView.CHOICE_MODE_SINGLE
             setOnItemClickListener { _, _, position, _ -> save(actions[position]) }
+            // Balances the space the title leaves above the first row.
+            setPadding(0, 0, 0, dp(8))
+            clipToPadding = false
         }
 
         // Preselect whatever the action is currently set to, if we're editing.
         previousAction()?.let { list.setItemChecked(actions.indexOf(it), true) }
 
-        setContentView(list)
+        setContentView(
+            LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                warningView()?.let { addView(it) }
+                addView(
+                    list,
+                    LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        0,
+                        1f,
+                    ),
+                )
+            }
+        )
     }
+
+    /**
+     * Warns when nothing will be able to start the background service: with
+     * background scanning off it stops itself, and Android won't let another
+     * app's broadcast start it again without the Doze exemption.
+     */
+    private fun warningView(): TextView? {
+        if (backgroundScanEnabled() || BatteryOptimization.isIgnored(this)) return null
+        return TextView(this).apply {
+            text = getString(R.string.tasker_warning_unreachable)
+            gravity = Gravity.START
+            setPadding(dp(16), dp(16), dp(16), dp(8))
+        }
+    }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+
+    /** Reads the app's own setting out of the file shared_preferences writes. */
+    private fun backgroundScanEnabled(): Boolean =
+        getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+            .getBoolean("flutter.backgroundScan", false)
 
     private fun previousAction(): TaskerAction? = TaskerAction.fromKey(
         intent.getBundleExtra(TaskerPluginProtocol.EXTRA_BUNDLE)
             ?.getString(TaskerPluginProtocol.BUNDLE_KEY_ACTION)
     )
 
+    /**
+     * The timeout and variable declarations go in both the result intent and
+     * the stored config bundle, since hosts differ on which they read.
+     */
     private fun save(action: TaskerAction) {
         val settings = Bundle().apply {
             putString(TaskerPluginProtocol.BUNDLE_KEY_ACTION, action.key)
-            // Hosts differ on where they read the timeout request from: some
-            // take it off the result intent, others off the stored config
-            // bundle. It costs nothing to answer both, and a host that only
-            // reads the bundle may well gate the completion intent on it.
             putInt(
                 TaskerPluginProtocol.EXTRA_REQUESTED_TIMEOUT,
                 TaskerActionRunner.DEFAULT_TIMEOUT_MS.toInt(),
             )
-            // Declared in both places for the same reason as the timeout: the
-            // host may only honour variables it knew about from the stored
-            // config, and an undeclared one is dropped without a word.
             putStringArray(TaskerPluginProtocol.EXTRA_RELEVANT_VARIABLES, relevantVariables())
         }
 
@@ -63,8 +102,6 @@ class TaskerActionEditActivity : Activity() {
             putExtra(TaskerPluginProtocol.EXTRA_BUNDLE, settings)
             // What Tasker shows on the action in the task list.
             putExtra(TaskerPluginProtocol.EXTRA_STRING_BLURB, getString(action.labelRes))
-            // Ask for long enough to cover a cold start plus a BLE connect,
-            // since the action doesn't return until the scooter has obeyed.
             putExtra(
                 TaskerPluginProtocol.EXTRA_REQUESTED_TIMEOUT,
                 TaskerActionRunner.DEFAULT_TIMEOUT_MS.toInt(),

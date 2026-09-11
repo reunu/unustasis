@@ -198,6 +198,8 @@
     "language_pi": "🏴‍☠️   Pirate",
     "settings_background_scan": "Background connection (beta)",
     "settings_background_scan_description": "Connect to the scooter, even if the app is closed.",
+    "settings_battery_optimization": "Ignore battery optimization",
+    "settings_battery_optimization_description": "Improves background features and integrations while the app is closed",
     "notification_channel_service": "Background Service",
     "notification_channel_service_description": "Required for background operation. You can hide this channel.",
     "notification_channel_connection": "Scooter Connection",

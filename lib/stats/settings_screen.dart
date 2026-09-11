@@ -14,6 +14,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../domain/theme_helper.dart';
+import '../service/battery_optimization.dart';
 import '../domain/scooter_keyless_distance.dart';
 import '../scooter_service.dart';
 import '../helper_widgets/header.dart';
@@ -26,7 +27,7 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObserver {
   final log = Logger('SettingsScreen');
   bool backgroundScan = false;
   bool biometrics = false;
@@ -36,6 +37,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool openSeatOnUnlock = false;
   bool hazardLocking = false;
   bool osmConsent = true;
+  bool batteryOptimizationOff = false;
   final SharedPreferencesAsync prefs = SharedPreferencesAsync();
 
   void getInitialSettings() async {
@@ -65,7 +67,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     getInitialSettings();
+    refreshBatteryOptimization();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Granting and revoking happen in system screens that report nothing back.
+    if (state == AppLifecycleState.resumed) refreshBatteryOptimization();
+  }
+
+  Future<void> refreshBatteryOptimization() async {
+    if (!BatteryOptimization.isSupported) return;
+    final ignored = await BatteryOptimization.isIgnored();
+    if (!mounted) return;
+    setState(() => batteryOptimizationOff = ignored);
   }
 
   List<Widget> settingsItems() => [
@@ -210,6 +233,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
             trailing: const Icon(Icons.chevron_right),
           ),
         Header(FlutterI18n.translate(context, "stats_settings_section_app")),
+        if (Platform.isAndroid)
+          SwitchListTile(
+            secondary: const Icon(Icons.battery_saver_outlined),
+            title: Text(FlutterI18n.translate(context, "settings_battery_optimization")),
+            subtitle: Text(
+              FlutterI18n.translate(
+                context,
+                "settings_battery_optimization_description",
+              ),
+            ),
+            value: batteryOptimizationOff,
+            onChanged: (value) async {
+              // Both land in a system screen; didChangeAppLifecycleState picks
+              // up the answer on the way back.
+              if (value) {
+                await BatteryOptimization.request();
+              } else {
+                // Android won't let an app drop its own exemption.
+                await BatteryOptimization.openSettings();
+              }
+            },
+          ),
         if (Platform.isAndroid)
           SwitchListTile(
             secondary: const Icon(Icons.find_replace_outlined),

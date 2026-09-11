@@ -11,4 +11,7 @@
     <string name="tasker_action_open_seat">Open seat</string>
     <string name="tasker_variable_result_label">Result</string>
     <string name="tasker_variable_result_description">ok, or why the action didn\'t go through</string>
+    <string name="tasker_warning_unreachable">Heads up: with background connection off and battery
+        optimisation on, this action can only reach your scooter while the app has been used
+        recently. Turn on either one in the app\'s settings to make it reliable.</string>
 </resources>

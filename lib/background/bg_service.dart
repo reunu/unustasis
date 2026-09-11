@@ -135,18 +135,15 @@ Future<void> _checkPendingWidgetAction() async {
   }
 }
 
-/// How long to give the scooter to report the state an action asked for. The
-/// state notification follows the command closely, so this is mostly slack for
-/// a scooter that's slow to answer.
 const Duration _actionConfirmationTimeout = Duration(seconds: 15);
 
 /// Waits for the scooter to report the state an action asked for, so callers
-/// blocking on the result only get an answer once it has actually happened.
-/// State arrives over BLE notifications, so there's nothing to await directly.
+/// blocking on the result only hear back once it has actually happened. State
+/// arrives over BLE notifications, so there's nothing to await directly.
 ///
 /// Test against something the scooter reports live. `handlebarsLocked` is
-/// seeded from the saved scooter on startup, so it reads as already-correct
-/// for one direction and never arrives for the other.
+/// seeded from the saved scooter on startup, so it reads as already-correct in
+/// one direction and never arrives in the other.
 Future<String> _confirmed(bool Function() satisfied) async {
   if (satisfied()) return taskerResultOk;
 
@@ -169,15 +166,13 @@ Future<String> _confirmed(bool Function() satisfied) async {
 /// Connects to the scooter if needed, then performs the given action.
 /// Handles foreground promotion, scanning UI, and post-action cleanup.
 ///
-/// When the request came from the Tasker plugin it carries a request id, and
-/// the outcome is published for the native receiver that's blocking on it.
+/// A Tasker request carries an id, and its outcome is published for the native
+/// receiver blocking on it.
 Future<void> _executeAction(String actionName) async {
   // Claimed before anything is awaited: an invoke and the pending-action
   // fallback can arrive for the same action at once, and an await in between
-  // would let both of them through.
+  // would let both through.
   if (_widgetActionInProgress) {
-    // The in-flight action will still be retried by the pending-action
-    // fallback, but a caller waiting on *this* request can't wait for that.
     await reportActionResult(await takePendingRequestId(), taskerResultBusy);
     return;
   }
@@ -208,12 +203,9 @@ Future<void> _executeAction(String actionName) async {
       await setWidgetScanning(false);
     }
 
-    // Only a scooter that was never set up is worth refusing outright: the
-    // connection attempt returned without trying, and nothing else will help.
-    // Beyond that, send the command the way the widget always has and let it
-    // report its own failure — `connected` can still be catching up with a
-    // link that came up moments ago, and skipping the action over that would
-    // drop it on the floor.
+    // Only a scooter that was never set up is worth refusing outright. Don't
+    // gate on `connected`, which can still be catching up with a link that
+    // came up moments ago: send the command and let it report its own failure.
     if ((await scooterService.getSavedScooterIds()).isEmpty) {
       log.warning("Action '$actionName' aborted: no scooter set up to connect to");
       result = taskerResultNoScooterSaved;
