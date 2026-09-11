@@ -3,7 +3,7 @@ on:
   pull_request:
     branches:
     - main
-    types: [opened, reopened, closed]
+    types: [opened, reopened, ready_for_review, converted_to_draft, closed]
   push:
     tags:
       - '**'
@@ -13,34 +13,101 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Notify Discord - Pull Request
-      uses: rjstone/discord-webhook-notify@v1
+      uses: actions/github-script@v7
+      env:
+        WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK }}
       with:
-        severity: info
-        webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
-        description: |
-          **Pull Request ${{ github.event.action }}**
-          ${{ github.event.pull_request.title }}
-        details: |
-          **Author:** ${{ github.event.pull_request.user.login }}
-          **Status:** ${{ github.event.pull_request.state }}
-          **Merged:** ${{ github.event.pull_request.merged }}
-          **Link:** ${{ github.event.pull_request.html_url }}
-        username: Unustasis Bot
+        script: |
+          const pr = context.payload.pull_request;
+          const action = context.payload.action;
+
+          // Discord blurple palette
+          const COLORS = {
+            draft:  0x99AAB5, // gray
+            open:   0x57F288, // green
+            merged: 0x9B59B6, // purple
+            closed: 0xED4245, // red
+          };
+
+          let color, verb;
+          if (action === 'closed' && pr.merged) {
+            color = COLORS.merged;
+            verb = 'merged';
+          } else if (action === 'closed') {
+            color = COLORS.closed;
+            verb = 'closed without merging';
+          } else if (pr.draft) {
+            color = COLORS.draft;
+            verb = action === 'opened' ? 'opened as draft'
+              : action === 'converted_to_draft' ? 'converted to draft'
+              : 'reopened as draft';
+          } else {
+            color = COLORS.open;
+            verb = action === 'ready_for_review' ? 'marked ready for review'
+              : action === 'reopened' ? 'reopened'
+              : 'opened';
+          }
+
+          const actor = (action === 'closed' && pr.merged && pr.merged_by && pr.merged_by.login) || pr.user.login;
+          const base = pr.base && pr.base.ref ? ` → \`${pr.base.ref}\`` : '';
+          const fields = [];
+          fields.push({ name: 'Branch', value: `\`${pr.head.ref}\`${base}`, inline: true });
+          if (pr.additions != null && pr.deletions != null && pr.changed_files != null) {
+            fields.push({
+              name: 'Changes',
+              value: `**+${pr.additions}** −${pr.deletions} across ${pr.changed_files} file${pr.changed_files === 1 ? '' : 's'}`,
+              inline: true,
+            });
+          }
+          const embed = {
+            color,
+            author: {
+              name: `${actor} ${verb} #${pr.number}`,
+              icon_url: pr.user && pr.user.avatar_url ? pr.user.avatar_url : undefined,
+            },
+            title: pr.title,
+            url: pr.html_url,
+            fields,
+          };
+
+          const res = await fetch(process.env.WEBHOOK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: 'Unustasis Bot', embeds: [embed] }),
+          });
+          if (!res.ok) {
+            core.setFailed(`Discord webhook returned ${res.status}: ${await res.text()}`);
+          }
 
   Notify-Discord-Tag:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
     - name: Notify Discord - Tag
-      uses: rjstone/discord-webhook-notify@v1
+      uses: actions/github-script@v7
+      env:
+        WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK }}
       with:
-        severity: info
-        webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
-        description: |
-          **New Tag Created**
-          Tag: ${{ github.ref_name }}
-        details: |
-          **Repository:** ${{ github.repository }}
-          **Pushed by:** ${{ github.actor }}
-          **Link:** https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}
-        username: Unustasis Bot
+        script: |
+          const tag = context.ref.replace('refs/tags/', '');
+          const embed = {
+            color: 0xF1C40F, // gold
+            author: {
+              name: `${context.actor} pushed a new tag`,
+              icon_url: 'https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png',
+            },
+            title: tag,
+            url: `https://github.com/${context.repo.owner}/${context.repo.repo}/releases/tag/${tag}`,
+            fields: [
+              { name: 'Repository', value: `${context.repo.owner}/${context.repo.repo}`, inline: true },
+            ],
+          };
+
+          const res = await fetch(process.env.WEBHOOK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: 'Unustasis Bot', embeds: [embed] }),
+          });
+          if (!res.ok) {
+            core.setFailed(`Discord webhook returned ${res.status}: ${await res.text()}`);
+          }
