@@ -1,4 +1,5 @@
 ### Changes:
+- Lock, unlock and open the seat from Tasker; the action waits until the scooter has actually done it
 - Renamed to "stasis for unu"
 - Bluetooth updating of librescoot scooters
 - Disabling "hibernate for" feature for unsupported scooters

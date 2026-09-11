@@ -10,7 +10,9 @@ import 'package:pausable_timer/pausable_timer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../background/background_i18n.dart';
+import '../background/tasker_bridge.dart';
 import '../background/widget_handler.dart';
+import '../domain/scooter_state.dart';
 import '../domain/statistics_helper.dart';
 import '../flutter/blue_plus_mockable.dart';
 import '../scooter_service.dart';
@@ -133,14 +135,59 @@ Future<void> _checkPendingWidgetAction() async {
   }
 }
 
+/// How long to give the scooter to report the state an action asked for. The
+/// state notification follows the command closely, so this is mostly slack for
+/// a scooter that's slow to answer.
+const Duration _actionConfirmationTimeout = Duration(seconds: 15);
+
+/// Waits for the scooter to report the state an action asked for, so callers
+/// blocking on the result only get an answer once it has actually happened.
+/// State arrives over BLE notifications, so there's nothing to await directly.
+///
+/// Test against something the scooter reports live. `handlebarsLocked` is
+/// seeded from the saved scooter on startup, so it reads as already-correct
+/// for one direction and never arrives for the other.
+Future<String> _confirmed(bool Function() satisfied) async {
+  if (satisfied()) return taskerResultOk;
+
+  final completer = Completer<bool>();
+  final poll = Timer.periodic(const Duration(milliseconds: 250), (_) {
+    if (satisfied() && !completer.isCompleted) completer.complete(true);
+  });
+  final deadline = Timer(_actionConfirmationTimeout, () {
+    if (!completer.isCompleted) completer.complete(false);
+  });
+
+  try {
+    return await completer.future ? taskerResultOk : taskerResultNotConfirmed;
+  } finally {
+    poll.cancel();
+    deadline.cancel();
+  }
+}
+
 /// Connects to the scooter if needed, then performs the given action.
 /// Handles foreground promotion, scanning UI, and post-action cleanup.
+///
+/// When the request came from the Tasker plugin it carries a request id, and
+/// the outcome is published for the native receiver that's blocking on it.
 Future<void> _executeAction(String actionName) async {
-  if (_widgetActionInProgress) return;
+  // Claimed before anything is awaited: an invoke and the pending-action
+  // fallback can arrive for the same action at once, and an await in between
+  // would let both of them through.
+  if (_widgetActionInProgress) {
+    // The in-flight action will still be retried by the pending-action
+    // fallback, but a caller waiting on *this* request can't wait for that.
+    await reportActionResult(await takePendingRequestId(), taskerResultBusy);
+    return;
+  }
   _widgetActionInProgress = true;
 
   final log = Logger("bgservice");
+  final String? requestId = await takePendingRequestId();
+
   log.info("Executing action: $actionName");
+  String result = taskerResultOk;
 
   try {
     promoteToForeground();
@@ -161,30 +208,43 @@ Future<void> _executeAction(String actionName) async {
       await setWidgetScanning(false);
     }
 
+    // Only a scooter that was never set up is worth refusing outright: the
+    // connection attempt returned without trying, and nothing else will help.
+    // Beyond that, send the command the way the widget always has and let it
+    // report its own failure — `connected` can still be catching up with a
+    // link that came up moments ago, and skipping the action over that would
+    // drop it on the floor.
+    if ((await scooterService.getSavedScooterIds()).isEmpty) {
+      log.warning("Action '$actionName' aborted: no scooter set up to connect to");
+      result = taskerResultNoScooterSaved;
+      return;
+    }
+
+    final source = requestId != null ? EventSource.tasker : EventSource.background;
     switch (actionName) {
       case "lock":
         await setWidgetUnlocking(true);
-        await scooterService.lock(
-          checkHandlebars: false,
-          source: EventSource.background,
-        );
+        await scooterService.lock(checkHandlebars: false, source: source);
         Future.delayed(const Duration(seconds: 3), () => setWidgetUnlocking(false));
+        result = await _confirmed(() => scooterService.state?.isOn == false);
       case "unlock":
         await setWidgetUnlocking(true);
-        await scooterService.unlock(
-          checkHandlebars: false,
-          source: EventSource.background,
-        );
+        await scooterService.unlock(checkHandlebars: false, source: source);
         Future.delayed(const Duration(seconds: 3), () => setWidgetUnlocking(false));
+        result = await _confirmed(() => scooterService.state?.isOn == true);
       case "openseat":
-        scooterService.openSeat();
+        await scooterService.openSeat(source: source);
+        result = await _confirmed(() => scooterService.vehicle.seatClosed == false);
       default:
         log.warning("Unknown action: $actionName");
+        result = taskerResultUnsupportedAction;
     }
   } catch (e, stack) {
     log.severe("Action '$actionName' failed", e, stack);
+    result = taskerResultForError(e);
   } finally {
     _widgetActionInProgress = false;
+    await reportActionResult(requestId, result);
     await setWidgetScanning(false);
     await setWidgetUnlocking(false);
     // Flush the real scooterService state to the widget. While scanning

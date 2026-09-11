@@ -972,10 +972,11 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   }
 
   void autoUnlockCooldown() {
-    try {
+    // Only the app side has this channel. Inside the service this was both a
+    // message to itself and an unhandled exception: invoke() returns void, so
+    // the failure arrived asynchronously, past any catch around the call.
+    if (!isInBackgroundService) {
       FlutterBackgroundService().invoke("autoUnlockCooldown");
-    } catch (e) {
-      // closing the loop
     }
     _autoUnlockCooldown = true;
     Future.delayed(const Duration(seconds: keylessCooldownSeconds), () {

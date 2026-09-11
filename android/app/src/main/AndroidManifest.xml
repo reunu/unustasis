@@ -80,6 +80,29 @@
             </intent-filter>
         </receiver>
 
+        <!-- Tasker plugin: the config screen Tasker opens when the action is
+             added, and the receiver that runs it. Both have to be exported for
+             Tasker to reach them. -->
+        <activity
+            android:name=".tasker.TaskerActionEditActivity"
+            android:exported="true"
+            android:label="@string/tasker_plugin_label"
+            android:icon="@mipmap/ic_launcher"
+            android:theme="@style/TaskerConfigTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode">
+            <intent-filter>
+                <action android:name="com.twofortyfouram.locale.intent.action.EDIT_SETTING" />
+            </intent-filter>
+        </activity>
+
+        <receiver
+            android:name=".tasker.TaskerActionReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.twofortyfouram.locale.intent.action.FIRE_SETTING" />
+            </intent-filter>
+        </receiver>
+
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@drawable/ic_bg_service_small" />
@@ -124,4 +147,6 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Keeps the CPU up while a Tasker action waits on a BLE connect. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 </manifest>

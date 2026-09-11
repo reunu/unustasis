@@ -1,4 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">stasis for unu</string>
+
+    <!-- Tasker plugin. Kept in Android resources rather than assets/i18n
+         because Tasker shows these without the Flutter engine running. -->
+    <string name="tasker_plugin_label">Scooter action</string>
+    <string name="tasker_config_title">Pick an action</string>
+    <string name="tasker_action_lock">Lock</string>
+    <string name="tasker_action_unlock">Unlock</string>
+    <string name="tasker_action_open_seat">Open seat</string>
+    <string name="tasker_variable_result_label">Result</string>
+    <string name="tasker_variable_result_description">ok, or why the action didn\'t go through</string>
 </resources>
