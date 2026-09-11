@@ -4,5 +4,8 @@
     "settings_licenses": "Licences",
     "language_en": "🇺🇸   English (US)",
     "language_en_gb": "🇬🇧   English (UK)",
-    "onboarding_step6_body": "Give your scooter a name and pick a colour."
+    "onboarding_step6_body": "Give your scooter a name and pick a colour.",
+  "seat_alert_body": "The seatbox is open. “Lock anyways” sends two ordinary lock requests. Older firmware may still wait about 30 seconds, then take about 5 seconds to shut down.",
+  "home_lock_request_sent": "Lock requests sent. Check the scooter’s status.",
+  "home_lock_request_incomplete": "Lock request sequence incomplete. The first request may already have started waiting or shutdown. Check the scooter’s status; no request was replayed."
 }

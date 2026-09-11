@@ -4,6 +4,8 @@ import 'package:flutter_photon/flutter_photon.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 
+import 'secure_http.dart';
+
 const _userAgent = 'UnustasisApp (oss4unu@freal.de)';
 
 /// Forward geocoding search using the Photon API with proper User-Agent.
@@ -16,7 +18,7 @@ Future<List<PhotonFeature>> photonForwardSearch(String query, {LatLng? ownLocati
   if (limit != null) params['limit'] = '$limit';
 
   final uri = Uri.https('photon.komoot.io', '/api', params);
-  final response = await http.get(uri, headers: {'User-Agent': _userAgent});
+  final response = await httpsGet(uri, headers: {'User-Agent': _userAgent});
   return _parsePhotonResponse(response);
 }
 
@@ -26,7 +28,7 @@ Future<List<PhotonFeature>> photonReverseSearch(double latitude, double longitud
     'lat': '$latitude',
     'lon': '$longitude',
   });
-  final response = await http.get(uri, headers: {'User-Agent': _userAgent});
+  final response = await httpsGet(uri, headers: {'User-Agent': _userAgent});
   return _parsePhotonResponse(response);
 }
 

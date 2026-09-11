@@ -415,8 +415,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                 } else if (locked == true && enabled){
                     actionRunCallback<UnlockAction>()
                 } else {
-                    // not connected, attempt anyways
-                    actionRunCallback<UnlockAction>()
+                    actionRunCallback<ConnectAction>()
                 },
                 backgroundColor = if(enabled) GlanceTheme.colors.primary else GlanceTheme.colors.surfaceVariant,
                 modifier = GlanceModifier
@@ -562,7 +561,13 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                         } else {
                             SquareIconButton(
                                 imageProvider = ImageProvider(if(enabled) if (locked == false && enabled) ic_unlock else ic_lock else ic_lock_disabled),
-                                contentDescription = " ${if (locked == false) "Unlock" else "Lock"} scooter",
+                                contentDescription = if (enabled && locked == false) {
+                                    "Lock scooter"
+                                } else if (enabled && locked == true) {
+                                    "Unlock scooter"
+                                } else {
+                                    "Reconnect scooter"
+                                },
                                 contentColor = if(enabled) GlanceTheme.colors.onPrimary else GlanceTheme.colors.secondary,
                                 backgroundColor = if(enabled){
                                     GlanceTheme.colors.primary
@@ -575,7 +580,7 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
                                 } else if (locked == true && enabled){
                                     actionRunCallback<UnlockAction>()
                                 } else {
-                                    actionRunCallback<UnlockAction>()
+                                    actionRunCallback<ConnectAction>()
                                 },
                                 modifier = GlanceModifier
                                     .fillMaxSize(),
@@ -593,6 +598,13 @@ class HomeWidgetGlanceAppWidget : GlanceAppWidget() {
 class LockAction : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
         val backgroundIntent = HomeWidgetBackgroundIntent.getBroadcast(context, Uri.parse("unustasis://lock"))
+        backgroundIntent.send()
+    }
+}
+
+class ConnectAction : ActionCallback {
+    override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
+        val backgroundIntent = HomeWidgetBackgroundIntent.getBroadcast(context, Uri.parse("unustasis://scan"))
         backgroundIntent.send()
     }
 }

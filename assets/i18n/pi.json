@@ -47,7 +47,7 @@
     "home_controls_button": "The helm",
     "home_reconnect_button": "Reconnect",
     "seat_alert_title": "Arrr! The treasure chest be open!",
-    "seat_alert_body": "Yer ship didn't lock 'cause the treasure chest be still open.\n\nIf ye still want to lock yer ship, ye can override this warnin'.",
+    "seat_alert_body": "The seat be open. Lock anyways sends two ordinary lock requests. Older firmware may still wait about 30 seconds, then need about 5 seconds to shut down.",
     "seat_alert_action_override": "Lock anyways",
     "seat_alert_action_cancel": "Belay",
     "locked_handlebar_alert_title": "Avast! Yar helm be locked!",
@@ -222,8 +222,8 @@
     "forget_alert_success": "{name} abandoned",
     "settings_app_version": "App version",
     "settings_privacy_policy": "Privacy policy",
-    "settings_osm_consent": "Show last known address",
-    "settings_osm_consent_description": "Use online services to resolve the last known scooter location to a street address",
+    "settings_osm_consent": "Online location services",
+    "settings_osm_consent_description": "Send scooter or phone locations and destination searches to OpenStreetMap's Nominatim and Komoot's Photon services to look up addresses and places.",
     "settings_seasonal": "Seasonal effects",
     "stats_last_ping_title": "Last seen",
     "stats_last_ping": "{time} ago",
@@ -316,6 +316,7 @@
     "share_no_librescoot_close": "Batten down",
     "share_no_librescoot_learn_more": "Learn more, matey",
     "share_parse_error": "Couldn't find no port in that there message, cap'n.",
+    "ls_settings_extended_unavailable": "Unavailable on this link, arrr!",
     "ls_settings_title": "Librescoot",
     "ls_settings_clock_title": "Ship's Chronometer",
     "ls_settings_clock_subtitle": "Sets the vessel's chronometer to this device's current time, arr!",
@@ -552,5 +553,8 @@
     "ls_ota_warn_no_image_for": "No {board} cargo found for {version}.",
     "ls_ota_warn_no_delta_path": "No delta passage from {version} — full cargo be needed ({latest}).",
     "ls_settings_apn_clear": "Strike it",
-    "ls_settings_apn_cleared": "Beacon struck, sailin' by the SIM's own charts"
+    "ls_settings_apn_cleared": "Beacon struck, sailin' by the SIM's own charts",
+  "home_lock_request_sent": "Lock requests sent, matey. Check yer scooter’s status.",
+  "home_lock_request_incomplete": "Lock requests incomplete. The first may already have started waiting or shutdown. Check yer scooter; no request was replayed.",
+    "settings_scooter_disconnected": "Connect to the scooter to use this setting."
 }

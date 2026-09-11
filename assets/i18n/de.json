@@ -47,7 +47,7 @@
     "home_controls_button": "Steuerung",
     "home_reconnect_button": "Suchen",
     "seat_alert_title": "Sitzbank offen!",
-    "seat_alert_body": "Der Roller wurde nicht verriegelt, weil die Sitzbank noch offen ist.\n\nWenn du den Roller trotzdem verriegeln möchtest, kannst du diese Warnung ignorieren.",
+    "seat_alert_body": "Die Sitzbank ist offen. „Trotzdem sperren“ sendet zwei normale Sperranfragen. Ältere Firmware wartet möglicherweise weiterhin etwa 30 Sekunden und benötigt danach etwa 5 Sekunden zum Herunterfahren.",
     "seat_alert_action_override": "Trotzdem verriegeln",
     "seat_alert_action_cancel": "Abbrechen",
     "locked_handlebar_alert_title": "Lenker ist noch verriegelt!",
@@ -242,8 +242,8 @@
     "forget_alert_success": "{name} entfernt",
     "settings_app_version": "App Version",
     "settings_privacy_policy": "Datenschutzerklärung",
-    "settings_osm_consent": "Letzte bekannte Adresse anzeigen",
-    "settings_osm_consent_description": "Onlinedienste nutzen, um die Adresse des letzten bekannten Rollerstandorts anzuzeigen",
+    "settings_osm_consent": "Online-Standortdienste",
+    "settings_osm_consent_description": "Sendet Roller- oder Handystandorte und Zielsuchen an Nominatim von OpenStreetMap und Photon von Komoot, um Adressen und Orte zu finden.",
     "settings_seasonal": "Saisonale Effekte",
     "stats_last_ping_title": "Zuletzt gesehen",
     "stats_last_ping": "vor {time}",
@@ -336,6 +336,7 @@
     "share_no_librescoot_close": "Schließen",
     "share_no_librescoot_learn_more": "Mehr erfahren",
     "share_parse_error": "Es konnte kein Standort aus dem geteilten Text extrahiert werden.",
+    "ls_settings_extended_unavailable": "Für diese Verbindung nicht verfügbar",
     "ls_settings_title": "Librescoot-Einstellungen",
     "ls_settings_clock_title": "Roller-Uhr",
     "ls_settings_clock_subtitle": "Synchronisiert die interne Uhr des Rollers mit der aktuellen Uhrzeit dieses Handys.",
@@ -572,5 +573,8 @@
     "ls_ota_warn_no_image_for": "Kein {board}-Image für {version} gefunden.",
     "ls_ota_warn_no_delta_path": "Kein Delta-Pfad von {version} — ein vollständiges Image ist nötig ({latest}).",
     "ls_settings_apn_clear": "Löschen",
-    "ls_settings_apn_cleared": "APN gelöscht, Standard des SIM-Anbieters wird genutzt"
+    "ls_settings_apn_cleared": "APN gelöscht, Standard des SIM-Anbieters wird genutzt",
+  "home_lock_request_sent": "Sperranfragen gesendet. Prüfe den Status des Rollers.",
+  "home_lock_request_incomplete": "Sperranfragen nicht vollständig gesendet. Die erste Anfrage kann bereits das Warten oder Herunterfahren gestartet haben. Prüfe den Roller; keine Anfrage wurde wiederholt.",
+    "settings_scooter_disconnected": "Verbinde dich mit dem Roller, um diese Einstellung zu verwenden."
 }

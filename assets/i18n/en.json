@@ -47,7 +47,7 @@
     "home_controls_button": "Controls",
     "home_reconnect_button": "Reconnect",
     "seat_alert_title": "Seat is open!",
-    "seat_alert_body": "The scooter didn't lock because the seat is still open.\n\nIf you want to lock the scooter anyways, you can override this warning.",
+    "seat_alert_body": "The seatbox is open. “Lock anyways” sends two ordinary lock requests. Older firmware may still wait about 30 seconds, then take about 5 seconds to shut down.",
     "seat_alert_action_override": "Lock anyways",
     "seat_alert_action_cancel": "Cancel",
     "locked_handlebar_alert_title": "Handlebars are still locked!",
@@ -242,8 +242,8 @@
     "forget_alert_success": "Forgot {name}",
     "settings_app_version": "App version",
     "settings_privacy_policy": "Privacy policy",
-    "settings_osm_consent": "Show last known address",
-    "settings_osm_consent_description": "Use online services to resolve the last known scooter location to a street address",
+    "settings_osm_consent": "Online location services",
+    "settings_osm_consent_description": "Send scooter or phone locations and destination searches to OpenStreetMap's Nominatim and Komoot's Photon services to look up addresses and places.",
     "settings_seasonal": "Seasonal effects",
     "stats_last_ping_title": "Last seen",
     "stats_last_ping": "{time} ago",
@@ -336,6 +336,7 @@
     "share_no_librescoot_close": "Close",
     "share_no_librescoot_learn_more": "Learn more",
     "share_parse_error": "Could not extract a location from the shared text.",
+    "ls_settings_extended_unavailable": "Unavailable on this connection",
     "ls_settings_title": "Librescoot Settings",
     "ls_settings_clock_title": "Scooter clock",
     "ls_settings_clock_subtitle": "Sets the scooter's internal clock to this phone's current time.",
@@ -572,5 +573,9 @@
     "ls_ota_warn_no_image_for": "No {board} image found for {version}.",
     "ls_ota_warn_no_delta_path": "No delta path from {version} — a full image is needed ({latest}).",
     "ls_settings_apn_clear": "Clear",
-    "ls_settings_apn_cleared": "APN cleared, using the SIM operator's default"
+    "ls_settings_apn_cleared": "APN cleared, using the SIM operator's default",
+    "ls_ota_awaiting_confirmation": "Reconnect to {scooter} to confirm the installation before starting another update.",
+  "home_lock_request_sent": "Lock requests sent. Check the scooter’s status.",
+  "home_lock_request_incomplete": "Lock request sequence incomplete. The first request may already have started waiting or shutdown. Check the scooter’s status; no request was replayed.",
+    "settings_scooter_disconnected": "Connect to the scooter to use this setting."
 }
