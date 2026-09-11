@@ -92,7 +92,7 @@
     "state_desc_booting": "Votre scooter démarre...",
     "state_desc_unknown": "Votre scooter est connecté",
     "state_desc_disconnected": "Votre scooter n'est pas connecté",
-    "state_desc_linking": "Votre scooter a été trouvé et se connecte à l'application...",
+    "state_desc_linking": "Tentative de connexion au scooter...",
     "stats_title": "Infos",
     "stats_unknown": "Inconnu",
     "stats_title_battery": "Batteries",

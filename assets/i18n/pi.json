@@ -80,7 +80,7 @@
     "state_desc_booting": "Yer ship be bootin' up",
     "state_desc_unknown": "Yer ship be lost at sea",
     "state_desc_disconnected": "Yer ship be adrift",
-    "state_desc_linking": "Yer ship be joinin' forces with the app as we speak!",
+    "state_desc_linking": "Tryin' to reach yer ship...",
     "stats_title": "Info",
     "stats_unknown": "Unknown",
     "stats_title_battery": "Battery",

@@ -92,7 +92,7 @@
     "state_desc_booting": "Dein Roller fährt hoch...",
     "state_desc_unknown": "Dein Roller ist verbunden",
     "state_desc_disconnected": "Dein Roller ist getrennt",
-    "state_desc_linking": "Dein Roller wurde gefunden, Verbindung läuft...",
+    "state_desc_linking": "Versuche, den Roller zu erreichen...",
     "stats_title": "Info",
     "stats_unknown": "Unbekannt",
     "stats_title_battery": "Akkus",

@@ -366,6 +366,11 @@ void onStart(ServiceInstance service) async {
       if (data?["updateSavedScooters"] == true) {
         await scooterService.refetchSavedScooters();
       }
+      if (data?.containsKey("manualConnectionTarget") == true) {
+        scooterService.setManualConnectionTarget(data!["manualConnectionTarget"] as String?);
+      } else {
+        scooterService.touchManualConnectionTarget();
+      }
 
       Future.delayed(const Duration(seconds: 3), () {
         passToWidget(
