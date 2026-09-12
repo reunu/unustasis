@@ -17,6 +17,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../domain/theme_helper.dart';
 import '../domain/alarm_status.dart';
+import '../domain/saved_scooter.dart';
 import '../domain/scooter_keyless_distance.dart';
 import '../scooter_service.dart';
 import '../helper_widgets/header.dart';
@@ -153,19 +154,56 @@ class _SettingsScreenState extends State<SettingsScreen> {
       identical(_service!.myScooter, _sessionDevice) &&
       identical(_service!.characteristicRepository, _sessionRepository);
 
-  String _scooterScope() {
+  /// Subtitle for the per-scooter settings header: names the scooter the
+  /// controls below apply to, and makes the boundary explicit.
+  String _scooterScopeOnly() {
     final service = context.read<ScooterService>();
+    final String? label;
     if (service.connected) {
       final id = service.myScooter?.remoteId.toString();
       final name = service.savedScooters[id]?.name.trim();
-      final label = name != null && name.isNotEmpty ? name : id;
-      return FlutterI18n.translate(context, 'settings_scope_connected',
-          translationParams: {'name': label ?? FlutterI18n.translate(context, 'settings_scope_unknown')});
+      label = name != null && name.isNotEmpty ? name : id;
+    } else {
+      final name = service.identity.name?.trim();
+      label = name != null && name.isNotEmpty ? name : null;
+    }
+    return label == null
+        ? FlutterI18n.translate(context, 'settings_scope_unknown')
+        : FlutterI18n.translate(context, 'settings_scope_scooter_only', translationParams: {'name': label});
+  }
+
+  /// Saved scooter the per-scooter settings apply to: the connected one when
+  /// available, otherwise the cached name, otherwise the only saved scooter.
+  SavedScooter? _currentSavedScooter() {
+    final service = context.read<ScooterService>();
+    if (service.connected) {
+      final id = service.myScooter?.remoteId.toString();
+      final scooter = service.savedScooters[id];
+      if (scooter != null) return scooter;
     }
     final name = service.identity.name?.trim();
-    return name != null && name.isNotEmpty
-        ? FlutterI18n.translate(context, 'settings_scope_cached', translationParams: {'name': name})
-        : FlutterI18n.translate(context, 'settings_scope_unknown');
+    if (name != null && name.isNotEmpty) {
+      for (final scooter in service.savedScooters.values) {
+        if (scooter.name.trim() == name) return scooter;
+      }
+    }
+    if (service.savedScooters.length == 1) return service.savedScooters.values.first;
+    return null;
+  }
+
+  // App-local per-scooter connectivity preference, duplicated from the scooter
+  // list where it is only reachable via long-press.
+  List<Widget> _scooterAutoConnectItems() {
+    final savedScooter = _currentSavedScooter();
+    if (savedScooter == null) return const [];
+    return [
+      SwitchListTile(
+        secondary: const Icon(Icons.sync),
+        title: Text(FlutterI18n.translate(context, "settings_scooter_auto_connect")),
+        value: savedScooter.autoConnect,
+        onChanged: (value) => setState(() => savedScooter.autoConnect = value),
+      ),
+    ];
   }
 
   @override
@@ -630,7 +668,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ListTile(
         leading: Icon(Icons.campaign_outlined),
         title: _lsTitle(FlutterI18n.translate(context, "ls_settings_alarm_honk_title")),
-        subtitle: _lsTitle(FlutterI18n.translate(context, "ls_settings_alarm_honk_subtitle")),
+        subtitle: Text(FlutterI18n.translate(context, "ls_settings_alarm_honk_subtitle")),
         trailing: _alarmHonk == null
             ? const SizedBox(
                 width: 16,
@@ -651,24 +689,160 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ];
   }
 
-  List<Widget> _librescootScooterSettingsItems({required bool supportsScheduledHibernation}) => [
-        if (!_scooterConnected || context.read<ScooterService>().identity.supportsBatteryKeepActive == true)
-          ListTile(
-            leading: Icon(Icons.battery_charging_full_outlined),
-            title: _lsTitle(FlutterI18n.translate(context, "ls_settings_battery_keep_active_title")),
-            subtitle: _lsTitle(FlutterI18n.translate(context, "ls_settings_battery_keep_active_subtitle")),
-            trailing: _batteryKeepActive == null
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Switch(
-                    value: _batteryKeepActive!,
-                    onChanged: _isSendingBatteryKeepActive ? null : _setBatteryKeepActive,
-                  ),
+  /// Access & Parking subsection: unlock behaviour plus the keycard entry.
+  // Applies to whichever scooter is connected, so it belongs with the app
+  // settings rather than under the scooter section.
+  List<Widget> _automationItems() => [
+        SwitchListTile(
+          secondary: const Icon(Icons.lock_open),
+          title: Text(FlutterI18n.translate(context, "settings_auto_unlock")),
+          subtitle: Text(
+            FlutterI18n.translate(context, "settings_auto_unlock_description"),
           ),
-        ...alarmItems(),
+          value: autoUnlock,
+          onChanged: (value) async {
+            if (value == true) {
+              // Check location permission (required for Bluetooth proximity detection)
+              bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+              if (!serviceEnabled && mounted) {
+                Fluttertoast.showToast(
+                  msg: FlutterI18n.translate(context, "location_services_disabled"),
+                  toastLength: Toast.LENGTH_LONG,
+                );
+                return;
+              }
+
+              LocationPermission permission = await Geolocator.checkPermission();
+              if (permission == LocationPermission.denied) {
+                permission = await Geolocator.requestPermission();
+                if (permission == LocationPermission.denied && mounted) {
+                  Fluttertoast.showToast(
+                    msg: FlutterI18n.translate(context, "location_permission_denied"),
+                    toastLength: Toast.LENGTH_LONG,
+                  );
+                  return;
+                }
+              }
+
+              if (permission == LocationPermission.deniedForever && mounted) {
+                Fluttertoast.showToast(
+                  msg: FlutterI18n.translate(context, "location_permission_denied_forever"),
+                  toastLength: Toast.LENGTH_LONG,
+                );
+                return;
+              }
+            }
+
+            if (!mounted) return;
+
+            context.read<ScooterService>().setAutoUnlock(value);
+            setState(() {
+              autoUnlock = value;
+            });
+          },
+        ),
+        if (autoUnlock)
+          ListTile(
+            title: Text(
+              "${FlutterI18n.translate(context, "settings_auto_unlock_threshold")}: ${autoUnlockDistance.name(context)}",
+            ),
+            subtitle: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Slider(
+                  value: autoUnlockDistance.threshold.toDouble(),
+                  min: ScooterKeylessDistance.getMinThresholdDistance().threshold.toDouble(),
+                  max: ScooterKeylessDistance.getMaxThresholdDistance().threshold.toDouble(),
+                  secondaryTrackValue: context.read<ScooterService>().identity.rssi?.toDouble(),
+                  divisions: ScooterKeylessDistance.values.length - 1,
+                  label: autoUnlockDistance.getFormattedThreshold(),
+                  onChanged: (value) async {
+                    var distance = ScooterKeylessDistance.fromThreshold(
+                      value.toInt(),
+                    );
+                    context.read<ScooterService>().setAutoUnlockThreshold(
+                          value.toInt(),
+                        );
+                    setState(() {
+                      autoUnlockDistance = distance;
+                    });
+                  },
+                ),
+                if (context.read<ScooterService>().identity.rssi != null)
+                  Text(
+                    FlutterI18n.translate(
+                      context,
+                      "settings_auto_unlock_threshold_explainer",
+                      translationParams: {
+                        "rssi": context.read<ScooterService>().identity.rssi.toString(),
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        SwitchListTile(
+          secondary: SvgPicture.asset(
+            "assets/icons/librescoot-seatbox-open.svg",
+            width: 24,
+            height: 24,
+            colorFilter: ColorFilter.mode(
+              IconTheme.of(context).color ?? Theme.of(context).colorScheme.onSurfaceVariant,
+              BlendMode.srcIn,
+            ),
+          ),
+          title: Text(
+            FlutterI18n.translate(context, "settings_open_seat_on_unlock"),
+          ),
+          subtitle: Text(
+            FlutterI18n.translate(
+              context,
+              "settings_open_seat_on_unlock_description",
+            ),
+          ),
+          value: openSeatOnUnlock,
+          onChanged: (value) async {
+            context.read<ScooterService>().setOpenSeatOnUnlock(value);
+            setState(() {
+              openSeatOnUnlock = value;
+            });
+          },
+        ),
+        SwitchListTile(
+          secondary: const ImageIcon(
+            AssetImage("assets/icons/librescoot-blinkers.png"),
+            size: 24,
+          ),
+          title: Text(FlutterI18n.translate(context, "settings_hazard_locking")),
+          subtitle: Text(
+            FlutterI18n.translate(context, "settings_hazard_locking_description"),
+          ),
+          value: hazardLocking,
+          onChanged: (value) async {
+            context.read<ScooterService>().setHazardLocking(value);
+            setState(() {
+              hazardLocking = value;
+            });
+          },
+        ),
+      ];
+
+  List<Widget> _accessItems({required bool isLibrescoot}) => [
+        if (isLibrescoot)
+          ListTile(
+            leading: const Icon(Icons.vpn_key_outlined),
+            title: _lsTitle(FlutterI18n.translate(context, "ls_keycard_title")),
+            subtitle: Text(_keycardCount != null
+                ? FlutterI18n.translate(context, "ls_settings_keycards_count",
+                    translationParams: {"count": _keycardCount.toString()})
+                : FlutterI18n.translate(context, "ls_settings_keycards_loading")),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LsKeycardScreen())),
+          ),
+      ];
+
+  List<Widget> _powerItems({required bool supportsScheduledHibernation}) => [
         ListTile(
           leading: const Icon(Icons.hourglass_bottom_rounded),
           title: _lsTitle(FlutterI18n.translate(context, "ls_settings_auto_lock_title")),
@@ -812,20 +986,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
               MaterialPageRoute(builder: (context) => const LsScheduledHibernationScreen()),
             ),
           ),
-        ListTile(
-          leading: const Icon(Icons.vpn_key_outlined),
-          title: _lsTitle(FlutterI18n.translate(context, "ls_keycard_title")),
-          subtitle: Text(_keycardCount != null
-              ? FlutterI18n.translate(context, "ls_settings_keycards_count",
-                  translationParams: {"count": _keycardCount.toString()})
-              : FlutterI18n.translate(context, "ls_settings_keycards_loading")),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LsKeycardScreen())),
-        ),
+        if (!_scooterConnected || context.read<ScooterService>().identity.supportsBatteryKeepActive == true)
+          ListTile(
+            leading: Icon(Icons.battery_charging_full_outlined),
+            title: _lsTitle(FlutterI18n.translate(context, "ls_settings_battery_keep_active_title")),
+            subtitle: _lsTitle(FlutterI18n.translate(context, "ls_settings_battery_keep_active_subtitle")),
+            trailing: _batteryKeepActive == null
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Switch(
+                    value: _batteryKeepActive!,
+                    onChanged: _isSendingBatteryKeepActive ? null : _setBatteryKeepActive,
+                  ),
+          ),
       ];
 
-  List<Widget> _librescootMaintenanceSettingsItems({
+  List<Widget> _connectivityItems({
+    required bool isLibrescoot,
     required bool supportsApnConfig,
+  }) =>
+      [
+        ..._scooterAutoConnectItems(),
+        if (isLibrescoot && (!_scooterConnected || supportsApnConfig))
+          ListTile(
+            leading: const Icon(Icons.cell_tower_outlined),
+            title: _lsTitle(FlutterI18n.translate(context, "ls_settings_apn_title")),
+            subtitle: Text(_apnSubtitle(context)),
+            trailing: _isSendingApn
+                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.chevron_right),
+            onTap: _isSendingApn ? null : _editApn,
+          ),
+      ];
+
+  List<Widget> _updatesItems({
     required UsbMode? usbMode,
     required bool connected,
     required bool otaAvailable,
@@ -885,17 +1082,58 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   },
           ),
         ),
-        if (!_scooterConnected || supportsApnConfig)
-          ListTile(
-            leading: const Icon(Icons.cell_tower_outlined),
-            title: _lsTitle(FlutterI18n.translate(context, "ls_settings_apn_title")),
-            subtitle: Text(_apnSubtitle(context)),
-            trailing: _isSendingApn
-                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Icon(Icons.chevron_right),
-            onTap: _isSendingApn ? null : _editApn,
-          ),
       ];
+
+  // A subsection heading with its items, dropped entirely when there is nothing
+  // to show. Without a scooter every Librescoot group is empty, and headings
+  // over nothing are worse than no headings.
+  List<Widget> _section(String titleKey, List<Widget> items) => items.isEmpty
+      ? const []
+      : [Header(FlutterI18n.translate(context, titleKey), level: 1), ...items];
+
+  List<Widget> _scooterSections({
+    required bool isLibrescoot,
+    required bool supportsScheduledHibernation,
+    required bool supportsApnConfig,
+    required UsbMode? usbMode,
+    required bool connected,
+    required bool otaAvailable,
+  }) {
+    final sections = <Widget>[
+      ..._section('settings_section_access_parking',
+          _connectionRequiredItems(_accessItems(isLibrescoot: isLibrescoot))),
+      if (isLibrescoot)
+        ..._section(
+            'settings_section_power',
+            _connectionRequiredItems(
+                _powerItems(supportsScheduledHibernation: supportsScheduledHibernation))),
+      if (isLibrescoot)
+        ..._section('ls_settings_section_alarm', _connectionRequiredItems(alarmItems())),
+      ..._section(
+          'settings_section_connectivity',
+          _connectionRequiredItems(_connectivityItems(
+            isLibrescoot: isLibrescoot,
+            supportsApnConfig: supportsApnConfig,
+          ))),
+      if (isLibrescoot)
+        ..._section(
+            'settings_section_updates_service',
+            _connectionRequiredItems(_updatesItems(
+              usbMode: usbMode,
+              connected: connected,
+              otaAvailable: otaAvailable,
+            ))),
+    ];
+    if (sections.isEmpty) return const [];
+    return [
+      Header(
+        FlutterI18n.translate(context, "stats_settings_section_scooter"),
+        subtitle: _scooterScopeOnly(),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      ),
+      ...sections,
+    ];
+  }
 
   List<Widget> settingsItems({
     required bool isLibrescoot,
@@ -906,158 +1144,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required bool otaAvailable,
   }) =>
       [
-        Header(
-          FlutterI18n.translate(context, "stats_settings_section_scooter"),
-          subtitle: _scooterScope(),
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+        ..._scooterSections(
+          isLibrescoot: isLibrescoot,
+          supportsScheduledHibernation: supportsScheduledHibernation,
+          supportsApnConfig: supportsApnConfig,
+          usbMode: usbMode,
+          connected: connected,
+          otaAvailable: otaAvailable,
         ),
-        if (isLibrescoot)
-          ..._connectionRequiredItems(
-              _librescootScooterSettingsItems(supportsScheduledHibernation: supportsScheduledHibernation)),
-        if (isLibrescoot) ...[
-          Header(FlutterI18n.translate(context, "ls_settings_section_maintenance"), subtitle: _scooterScope()),
-          ..._connectionRequiredItems(_librescootMaintenanceSettingsItems(
-            supportsApnConfig: supportsApnConfig,
-            usbMode: usbMode,
-            connected: connected,
-            otaAvailable: otaAvailable,
-          )),
-        ],
         Header(FlutterI18n.translate(context, "stats_settings_section_app"),
             subtitle: FlutterI18n.translate(context, 'settings_scope_app')),
-        SwitchListTile(
-          secondary: const Icon(Icons.lock_open),
-          title: Text(FlutterI18n.translate(context, "settings_auto_unlock")),
-          subtitle: Text(
-            FlutterI18n.translate(context, "settings_auto_unlock_description"),
-          ),
-          value: autoUnlock,
-          onChanged: (value) async {
-            if (value == true) {
-              // Check location permission (required for Bluetooth proximity detection)
-              bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-              if (!serviceEnabled && mounted) {
-                Fluttertoast.showToast(
-                  msg: FlutterI18n.translate(context, "location_services_disabled"),
-                  toastLength: Toast.LENGTH_LONG,
-                );
-                return;
-              }
-
-              LocationPermission permission = await Geolocator.checkPermission();
-              if (permission == LocationPermission.denied) {
-                permission = await Geolocator.requestPermission();
-                if (permission == LocationPermission.denied && mounted) {
-                  Fluttertoast.showToast(
-                    msg: FlutterI18n.translate(context, "location_permission_denied"),
-                    toastLength: Toast.LENGTH_LONG,
-                  );
-                  return;
-                }
-              }
-
-              if (permission == LocationPermission.deniedForever && mounted) {
-                Fluttertoast.showToast(
-                  msg: FlutterI18n.translate(context, "location_permission_denied_forever"),
-                  toastLength: Toast.LENGTH_LONG,
-                );
-                return;
-              }
-            }
-
-            if (!mounted) return;
-
-            context.read<ScooterService>().setAutoUnlock(value);
-            setState(() {
-              autoUnlock = value;
-            });
-          },
-        ),
-        if (autoUnlock)
-          ListTile(
-            title: Text(
-              "${FlutterI18n.translate(context, "settings_auto_unlock_threshold")}: ${autoUnlockDistance.name(context)}",
-            ),
-            subtitle: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Slider(
-                  value: autoUnlockDistance.threshold.toDouble(),
-                  min: ScooterKeylessDistance.getMinThresholdDistance().threshold.toDouble(),
-                  max: ScooterKeylessDistance.getMaxThresholdDistance().threshold.toDouble(),
-                  secondaryTrackValue: context.read<ScooterService>().identity.rssi?.toDouble(),
-                  divisions: ScooterKeylessDistance.values.length - 1,
-                  label: autoUnlockDistance.getFormattedThreshold(),
-                  onChanged: (value) async {
-                    var distance = ScooterKeylessDistance.fromThreshold(
-                      value.toInt(),
-                    );
-                    context.read<ScooterService>().setAutoUnlockThreshold(
-                          value.toInt(),
-                        );
-                    setState(() {
-                      autoUnlockDistance = distance;
-                    });
-                  },
-                ),
-                if (context.read<ScooterService>().identity.rssi != null)
-                  Text(
-                    FlutterI18n.translate(
-                      context,
-                      "settings_auto_unlock_threshold_explainer",
-                      translationParams: {
-                        "rssi": context.read<ScooterService>().identity.rssi.toString(),
-                      },
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        SwitchListTile(
-          secondary: SvgPicture.asset(
-            "assets/icons/librescoot-seatbox-open.svg",
-            width: 24,
-            height: 24,
-            colorFilter: ColorFilter.mode(
-              IconTheme.of(context).color ?? Theme.of(context).colorScheme.onSurfaceVariant,
-              BlendMode.srcIn,
-            ),
-          ),
-          title: Text(
-            FlutterI18n.translate(context, "settings_open_seat_on_unlock"),
-          ),
-          subtitle: Text(
-            FlutterI18n.translate(
-              context,
-              "settings_open_seat_on_unlock_description",
-            ),
-          ),
-          value: openSeatOnUnlock,
-          onChanged: (value) async {
-            context.read<ScooterService>().setOpenSeatOnUnlock(value);
-            setState(() {
-              openSeatOnUnlock = value;
-            });
-          },
-        ),
-        SwitchListTile(
-          secondary: const ImageIcon(
-            AssetImage("assets/icons/librescoot-blinkers.png"),
-            size: 24,
-          ),
-          title: Text(FlutterI18n.translate(context, "settings_hazard_locking")),
-          subtitle: Text(
-            FlutterI18n.translate(context, "settings_hazard_locking_description"),
-          ),
-          value: hazardLocking,
-          onChanged: (value) async {
-            context.read<ScooterService>().setHazardLocking(value);
-            setState(() {
-              hazardLocking = value;
-            });
-          },
-        ),
+        ..._section('settings_section_automation', _automationItems()),
         if (kDebugMode)
           ListTile(
             title: Text(FlutterI18n.translate(context, "activity_log_title")),
@@ -1071,56 +1168,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
             leading: const Icon(Icons.history_outlined),
             trailing: const Icon(Icons.chevron_right),
-          ),
-
-        if (Platform.isAndroid)
-          SwitchListTile(
-            secondary: const Icon(Icons.find_replace_outlined),
-            title: Text(FlutterI18n.translate(context, "settings_background_scan")),
-            subtitle: Text(
-              FlutterI18n.translate(
-                context,
-                "settings_background_scan_description",
-              ),
-            ),
-            value: backgroundScan,
-            onChanged: (value) async {
-              bool? confirmed;
-              if (value == true) {
-                // Request notification permission first
-                final notificationPlugin = FlutterLocalNotificationsPlugin();
-                final granted = await notificationPlugin
-                    .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-                    ?.requestNotificationsPermission();
-
-                if (granted != true && mounted) {
-                  Fluttertoast.showToast(
-                    msg: FlutterI18n.translate(context, "notification_permission_denied"),
-                    toastLength: Toast.LENGTH_LONG,
-                  );
-                  return;
-                }
-
-                // warn before turning on
-                if (mounted) {
-                  confirmed = await showBackgroundScanWarning(context);
-                }
-              } else {
-                // no warning for turning off
-                confirmed = true;
-              }
-              if (confirmed == true) {
-                await prefs.setBool("backgroundScan", value);
-                // inform the service!
-                FlutterBackgroundService().invoke("update", {
-                  "backgroundScan": value,
-                });
-                if (!mounted) return;
-                setState(() {
-                  backgroundScan = value;
-                });
-              }
-            },
           ),
         FutureBuilder<List<BiometricType>>(
           future: LocalAuthentication().getAvailableBiometrics(),
@@ -1278,6 +1325,55 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
         ),
+        if (Platform.isAndroid)
+          SwitchListTile(
+            secondary: const Icon(Icons.find_replace_outlined),
+            title: Text(FlutterI18n.translate(context, "settings_background_scan")),
+            subtitle: Text(
+              FlutterI18n.translate(
+                context,
+                "settings_background_scan_description",
+              ),
+            ),
+            value: backgroundScan,
+            onChanged: (value) async {
+              bool? confirmed;
+              if (value == true) {
+                // Request notification permission first
+                final notificationPlugin = FlutterLocalNotificationsPlugin();
+                final granted = await notificationPlugin
+                    .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+                    ?.requestNotificationsPermission();
+
+                if (granted != true && mounted) {
+                  Fluttertoast.showToast(
+                    msg: FlutterI18n.translate(context, "notification_permission_denied"),
+                    toastLength: Toast.LENGTH_LONG,
+                  );
+                  return;
+                }
+
+                // warn before turning on
+                if (mounted) {
+                  confirmed = await showBackgroundScanWarning(context);
+                }
+              } else {
+                // no warning for turning off
+                confirmed = true;
+              }
+              if (confirmed == true) {
+                await prefs.setBool("backgroundScan", value);
+                // inform the service!
+                FlutterBackgroundService().invoke("update", {
+                  "backgroundScan": value,
+                });
+                if (!mounted) return;
+                setState(() {
+                  backgroundScan = value;
+                });
+              }
+            },
+          ),
         SwitchListTile(
           secondary: const Icon(Icons.pin_drop_outlined),
           title: Text(FlutterI18n.translate(context, "settings_osm_consent")),

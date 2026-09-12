@@ -5,5 +5,12 @@
     "language_en": "🇺🇸   English (US)",
     "language_en_gb": "🇬🇧   English (UK)",
     "onboarding_step6_body": "Give your scooter a name and pick a colour.",
-    "settings_scooter_disconnected": "Connect to the scooter to use this setting."
+    "settings_scooter_disconnected": "Connect to the scooter to use this setting.",
+    "settings_scope_connected": "Connected scooter: {name}",
+    "settings_scope_cached": "Last cached scooter: {name}",
+    "settings_scope_unknown": "No scooter selected",
+    "settings_scope_app": "Applies across scooters on this phone",
+    "settings_scope_scooter_only": "Applies to {name} only",
+    "settings_scooter_auto_connect": "Auto-connect to this scooter",
+    "stats_settings_section_scooter": "Scooter"
 }

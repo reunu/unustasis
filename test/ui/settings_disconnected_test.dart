@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:unustasis/scooter_service.dart';
+import 'package:unustasis/domain/saved_scooter.dart';
 import 'package:unustasis/state/scooter_identity.dart';
 import 'package:unustasis/state/vehicle_status.dart';
 import 'package:unustasis/stats/settings_screen.dart';
@@ -33,6 +34,10 @@ class _Service extends ChangeNotifier implements ScooterService {
   bool get openSeatOnUnlock => false;
   @override
   bool get hazardLocking => false;
+  // The settings screen reads the saved-scooter store for app-local per-scooter
+  // preferences; an empty store is expected while disconnected in this test.
+  @override
+  Map<String, SavedScooter> get savedScooters => {};
   // Any attempted transport access/read/write is unexpected while disconnected.
   @override
   dynamic noSuchMethod(Invocation invocation) => throw TestFailure('Unexpected scooter access: ${invocation.memberName}');
@@ -56,9 +61,12 @@ void main() {
     ));
     await tester.pumpAndSettle();
     final context = tester.element(find.byType(SettingsScreen));
-    for (final key in ['ls_settings_auto_lock_title', 'ls_settings_auto_hibernate_title',
-      'ls_scheduled_hibernation_title', 'ls_keycard_title', 'ls_settings_ota_title',
-      'ls_settings_update_mode_title', 'ls_settings_apn_title']) {
+    for (final key in ['ls_keycard_title', 'ls_settings_auto_lock_title',
+      'ls_settings_auto_hibernate_title', 'ls_scheduled_hibernation_title',
+      'ls_settings_battery_keep_active_title', 'ls_settings_alarm_title',
+      'ls_settings_alarm_honk_title', 'ls_settings_alarm_watch_title',
+      'ls_settings_apn_title', 'ls_settings_ota_title',
+      'ls_settings_update_mode_title']) {
       final title = find.text(FlutterI18n.translate(context, key));
       await tester.scrollUntilVisible(title, 180, scrollable: find.byType(Scrollable).first);
       await tester.pumpAndSettle();
