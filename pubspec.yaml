@@ -75,8 +75,10 @@ dependencies:
       ref: main
   flutter_photon: ^2.0.1
   flutter_sharing_intent: ^2.0.4
+  flutter_svg: ^2.0.17
 
 dev_dependencies:
+  shared_preferences_platform_interface: ^2.4.1
   flutter_test:
     sdk: flutter
   mockito: ^5.4.4
@@ -126,6 +128,7 @@ flutter:
     - assets/fonts/KodeMono-Regular.ttf
     - assets/fonts/Nunito-OFL.txt
     - assets/fonts/KodeMono-OFL.txt
+    - assets/icons/
 
   fonts:
     - family: icomoon

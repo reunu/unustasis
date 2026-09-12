@@ -7,6 +7,7 @@ import '../domain/scooter_state.dart';
 import '../helper_widgets/header.dart';
 import '../hibernate_sheet.dart';
 import '../scooter_service.dart';
+import '../service/ble_commands.dart';
 
 enum BlinkerMode { left, right, hazard, off }
 
@@ -20,6 +21,7 @@ class ControlSheet extends StatefulWidget {
 class _ControlSheetState extends State<ControlSheet> with TickerProviderStateMixin {
   BlinkerMode _blinkerMode = BlinkerMode.off;
   bool _disconnectedHandled = false;
+  bool _isSendingTime = false;
 
   Future<bool> _confirmHardReboot(BuildContext context) async {
     return await showDialog<bool>(
@@ -321,6 +323,44 @@ class _ControlSheetState extends State<ControlSheet> with TickerProviderStateMix
               );
             },
           ),
+          if (context.select<ScooterService, bool>((service) => service.identity.isLibrescoot == true)) ...[
+            const SizedBox(height: 16),
+            TextButton.icon(
+              style: TextButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.onSurface,
+                foregroundColor: Theme.of(context).colorScheme.surface,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+              onPressed: _isSendingTime
+                  ? null
+                  : () async {
+                      setState(() => _isSendingTime = true);
+                      try {
+                        final service = context.read<ScooterService>();
+                        final result = await sendLsExtendedCommand(
+                          service.myScooter,
+                          service.characteristicRepository,
+                          "time:set ${DateTime.now().millisecondsSinceEpoch ~/ 1000}",
+                        );
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                              content: Text(FlutterI18n.translate(
+                            context,
+                            result == "time:ok" ? "ls_settings_clock_success" : "ls_settings_clock_error",
+                            translationParams: result == "time:ok" ? null : {"result": result ?? ""},
+                          ))),
+                        );
+                      } finally {
+                        if (mounted) setState(() => _isSendingTime = false);
+                      }
+                    },
+              icon: _isSendingTime
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.access_time_outlined),
+              label: Text(FlutterI18n.translate(context, "ls_settings_clock_title")),
+            ),
+          ],
           SizedBox(height: 64),
         ],
       ),

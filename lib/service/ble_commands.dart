@@ -18,8 +18,9 @@ const String lsKeyScheduledHibernateEnabled = "pm.scheduled-hibernate-enabled";
 const String lsKeyScheduledHibernateCron = "pm.scheduled-hibernate-cron";
 const String lsKeyScheduledHibernateDuration = "pm.scheduled-hibernate-duration";
 
-/// Librescoot settings key holding the APN the modem attaches with. An empty
-/// value means the modem falls back to the SIM operator's defaults.
+/// Librescoot settings keys used by the scooter settings screen.
+const String lsKeyAutoStandbySeconds = "scooter.auto-standby-seconds";
+const String lsKeyHibernateTimer = "pm.hibernation-timer";
 const String lsKeyCellularApn = "cellular.apn";
 
 /// Librescoot settings key that keeps the running battery active while the
@@ -54,6 +55,17 @@ class ExtendedResponseFormatException implements Exception {
 
   @override
   String toString() => "ExtendedResponseFormatException: $message";
+}
+
+/// Thrown by the extended-channel reads when the scooter accepts the command
+/// but never answers before the timeout.
+///
+/// A timeout is not an answer: it must stay distinguishable from a valid reply
+/// that happens to be empty (an unsupported key, or a scooter that genuinely
+/// supports none of a capability category), so a caller can never record
+/// "supports nothing" for a scooter that simply did not reply.
+class ExtendedCommandTimeoutException extends TimeoutException {
+  ExtendedCommandTimeoutException(String command) : super("no reply to '$command'");
 }
 
 /// Buffers the extended response characteristic's notifications.
@@ -649,30 +661,12 @@ Future<void> setAutoStandbyTimeCommand(BluetoothDevice? scooter, CharacteristicR
     log.warning("Auto-standby time cannot be greater than 1 hour");
     throw "Auto-standby time cannot be greater than 1 hour";
   }
-  final response = await sendLsExtendedCommand(
-    scooter,
-    repo,
-    "config:auto-standby-seconds $seconds",
-  );
-  if (response != "config:ok") {
-    log.severe("Failed to set auto-standby time, response: $response");
-    throw "Failed to set auto-standby time, response: $response";
-  }
-  return;
+  await setLsSettingCommand(scooter, repo, lsKeyAutoStandbySeconds, seconds.toString());
 }
 
 Future<void> setAutoHibernateTimeCommand(BluetoothDevice? scooter, CharacteristicRepository repo, Duration time) async {
   final seconds = time.inSeconds;
-  final response = await sendLsExtendedCommand(
-    scooter,
-    repo,
-    "config:hibernate-timer $seconds",
-  );
-  if (response != "config:ok") {
-    log.severe("Failed to set auto-hibernate time, response: $response");
-    throw "Failed to set auto-hibernate time, response: $response";
-  }
-  return;
+  await setLsSettingCommand(scooter, repo, lsKeyHibernateTimer, seconds.toString());
 }
 
 /// Why a user-entered APN can't be sent to the scooter.
@@ -713,12 +707,7 @@ Future<void> setCellularApnCommand(
     log.warning("Refusing to send APN '$apn': ${problem.name}");
     throw "Invalid APN (${problem.name})";
   }
-  final response = await sendLsExtendedCommand(scooter, repo, "$_apnCommandPrefix$trimmed");
-  if (response != "config:ok") {
-    log.severe("Failed to set APN, response: $response");
-    throw "Failed to set APN, response: $response";
-  }
-  return;
+  await setLsSettingCommand(scooter, repo, lsKeyCellularApn, trimmed);
 }
 
 /// Clears the configured APN so the modem falls back to whatever the SIM
@@ -794,7 +783,8 @@ String? parseCapabilityEntry(String category, String msg) {
 }
 
 /// Queries the scooter's power-management capabilities (e.g. "hibernate-for",
-/// "hibernate-cancel").
+/// "hibernate-cancel"). Throws [ExtendedCommandTimeoutException] when the
+/// scooter never answers.
 Future<Set<String>> getPmCapabilitiesCommand(
   BluetoothDevice? scooter,
   CharacteristicRepository repo,
@@ -802,8 +792,12 @@ Future<Set<String>> getPmCapabilitiesCommand(
     getLsCapabilitiesCommand(scooter, repo, "pm");
 
 /// Queries which commands the scooter supports in [category] ("pm", "config",
-/// …). Returns an empty set on firmware that doesn't support the capability
-/// query (error response or timeout).
+/// …).
+///
+/// Returns an empty set for a scooter that answered "none" (which includes
+/// firmware that doesn't support the capability query at all and replies with
+/// an error). Throws [ExtendedCommandTimeoutException] when the scooter never
+/// answered, so a timeout is never mistaken for "supports nothing".
 Future<Set<String>> getLsCapabilitiesCommand(
   BluetoothDevice? scooter,
   CharacteristicRepository repo,
@@ -827,11 +821,11 @@ Future<Set<String>> getLsCapabilitiesCommand(
     final entries = await readExtendedList(stream, (msg) => parseCapabilityEntry(category, msg));
     return entries.toSet();
   } on TimeoutException {
-    log.info("getLsCapabilitiesCommand: timeout, assuming no $category capabilities");
-    return <String>{};
+    log.info("getLsCapabilitiesCommand: no $category answer before the timeout");
+    throw ExtendedCommandTimeoutException("cap:$category");
   } on ExtendedResponseFormatException catch (e) {
     // Firmware without the capability query answers with an error string
-    // rather than a count. Treat that as "no capabilities", but log it.
+    // rather than a count. That is a genuine "no capabilities" answer.
     log.info("getLsCapabilitiesCommand: unparseable reply, assuming no $category capabilities ($e)");
     return <String>{};
   } finally {
@@ -866,18 +860,24 @@ Future<void> forgetBondCommand(
 }
 
 /// Reads a librescoot settings key via the generic get command. Returns null
-/// if the key or the get command itself is unsupported (or on timeout), and
-/// "" if the key exists but is unset.
+/// if the key or the get command itself is unsupported, and "" if the key
+/// exists but is unset. Throws [ExtendedCommandTimeoutException] when the
+/// scooter never answers, so a timeout can't be mistaken for a missing key.
 Future<String?> getLsSettingCommand(
   BluetoothDevice? scooter,
   CharacteristicRepository repo,
   String key,
 ) async {
   final response = await sendLsExtendedCommand(scooter, repo, "get:$key");
+  if (response == null) {
+    // sendLsExtendedCommand returns null only when the response timed out.
+    log.info("getLsSettingCommand: '$key' got no answer");
+    throw ExtendedCommandTimeoutException("get:$key");
+  }
   final prefix = "get:$key:";
-  if (response == null || !response.startsWith(prefix)) {
-    // covers "get:error:unknown key", "error:unknown command" and timeouts
-    log.info("getLsSettingCommand: '$key' unsupported or failed, response: $response");
+  if (!response.startsWith(prefix)) {
+    // covers "get:error:unknown key" and "error:unknown command"
+    log.info("getLsSettingCommand: '$key' unsupported, response: $response");
     return null;
   }
   // the value is everything after the first colon following the key; it may
