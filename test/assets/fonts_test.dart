@@ -63,12 +63,17 @@ void main() {
     final requests = <String, List<String>>{};
     for (final file in Directory('lib').listSync(recursive: true).whereType<File>()) {
       if (!file.path.endsWith('.dart')) continue;
-      final calls =
-          RegExp(r'GoogleFonts\.(\w+)\(').allMatches(file.readAsStringSync()).map((match) => match.group(1)!).toList();
+      final calls = RegExp(r'GoogleFonts\.(\w+)\(')
+          .allMatches(file.readAsStringSync())
+          .map((match) => match.group(1)!)
+          // pendingFonts waits for styles built elsewhere, it does not request a family.
+          .where((name) => name != 'pendingFonts')
+          .toSet()
+          .toList();
       if (calls.isNotEmpty) requests[file.path] = calls;
     }
     expect(requests, {
-      'lib/main.dart': ['nunitoTextTheme', 'nunitoTextTheme'],
+      'lib/main.dart': ['nunitoTextTheme'],
       'lib/ls_keycard_screen.dart': ['kodeMono'],
       'lib/ls_scheduled_hibernation_screen.dart': ['kodeMono'],
     });
