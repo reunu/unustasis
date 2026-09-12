@@ -13,12 +13,15 @@ import '../service/photon_service.dart';
 import '../domain/nav_destination.dart';
 import '../domain/saved_scooter.dart';
 import '../geo_helper.dart';
+import '../helper_widgets/header.dart';
 import '../scooter_service.dart';
 import '../service/ble_commands.dart';
 
 class NavigationScreen extends StatefulWidget {
   final NavDestination? initialDestination;
-  const NavigationScreen({this.initialDestination, super.key});
+  final bool embedded;
+
+  const NavigationScreen({this.initialDestination, this.embedded = false, super.key});
 
   @override
   State<NavigationScreen> createState() => _NavigationScreenState();
@@ -30,6 +33,8 @@ class _NavigationScreenState extends State<NavigationScreen> {
   bool _osmConsent = true;
   bool _initialLoad = true;
   bool _showingCached = false;
+  double _dismissPullDistance = 0;
+  bool _dismissTriggered = false;
   final FocusNode _searchFocusNode = FocusNode();
 
   @override
@@ -510,9 +515,109 @@ class _NavigationScreenState extends State<NavigationScreen> {
     }
   }
 
+  bool _handleDismissPull(ScrollNotification notification) {
+    if (!widget.embedded) return false;
+
+    if (notification is ScrollStartNotification) {
+      _dismissPullDistance = 0;
+      _dismissTriggered = false;
+    } else if (notification is OverscrollNotification &&
+        notification.metrics.pixels <= notification.metrics.minScrollExtent &&
+        notification.overscroll < 0) {
+      _dismissPullDistance += -notification.overscroll;
+      if (_dismissPullDistance >= 48 && !_dismissTriggered) {
+        _dismissTriggered = true;
+        Navigator.of(context).maybePop();
+      }
+    } else if (notification is ScrollEndNotification) {
+      _dismissPullDistance = 0;
+      _dismissTriggered = false;
+    }
+    return false;
+  }
+
+  Widget _pullDownDismiss(Widget child) {
+    return NotificationListener<ScrollNotification>(
+      onNotification: _handleDismissPull,
+      child: child,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final connected = context.select<ScooterService, bool>((s) => s.connected);
+    final content = Stack(
+      children: [
+        Column(
+          children: [
+            if (_osmConsent) _searchField(),
+            const SizedBox(height: 8),
+            if (_loading && _initialLoad)
+              const Expanded(child: _DestinationsLoading())
+            else if (_destinations.isEmpty && !connected && !_showingCached)
+              Expanded(child: _pullDownDismiss(const _DisconnectedEmpty()))
+            else if (_destinations.isEmpty)
+              Expanded(child: _pullDownDismiss(const _NoDestinationsEmpty()))
+            else
+              Expanded(child: _pullDownDismiss(_destinationList(connected))),
+          ],
+        ),
+        Selector<ScooterService, ({String? pendingName, String? activeName, bool isNavigating})>(
+          selector: (_, s) => (
+            pendingName: s.pendingNavigation?.name,
+            activeName: s.activeNavigation?.name,
+            isNavigating: s.vehicle.navigationActive == true,
+          ),
+          builder: (context, state, _) {
+            if (state.pendingName == null && !state.isNavigating) return const SizedBox.shrink();
+            return Positioned(
+              bottom: MediaQuery.of(context).viewInsets.bottom + 32,
+              left: 16,
+              right: 16,
+              child: _navigationStatusCard(
+                isNavigating: state.isNavigating,
+                pendingName: state.pendingName,
+                activeName: state.activeName,
+              ),
+            );
+          },
+        ),
+      ],
+    );
+
+    if (widget.embedded) {
+      return SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Center(
+                    child: Header(
+                      FlutterI18n.translate(context, "nav_title"),
+                      padding: const EdgeInsets.fromLTRB(48, 8, 48, 16),
+                    ),
+                  ),
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: IconButton(
+                      tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(child: content),
+          ],
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -532,54 +637,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
               ),
             )
           : null,
-      body: Stack(
-        children: [
-          Column(
-            children: [
-              if (_osmConsent) _searchField(),
-              const SizedBox(height: 8),
-              if (_loading && _initialLoad)
-                const Expanded(child: _DestinationsLoading())
-              else if (_destinations.isEmpty && !connected && !_showingCached)
-                const Expanded(child: _DisconnectedEmpty())
-              else if (_destinations.isEmpty)
-                Expanded(
-                  child: RefreshIndicator(
-                    onRefresh: _fetchDestinations,
-                    child: const _NoDestinationsEmpty(),
-                  ),
-                )
-              else
-                Expanded(
-                  child: RefreshIndicator(
-                    onRefresh: _fetchDestinations,
-                    child: _destinationList(connected),
-                  ),
-                ),
-            ],
-          ),
-          Selector<ScooterService, ({String? pendingName, String? activeName, bool isNavigating})>(
-            selector: (_, s) => (
-              pendingName: s.pendingNavigation?.name,
-              activeName: s.activeNavigation?.name,
-              isNavigating: s.vehicle.navigationActive == true,
-            ),
-            builder: (context, state, _) {
-              if (state.pendingName == null && !state.isNavigating) return const SizedBox.shrink();
-              return Positioned(
-                bottom: MediaQuery.of(context).viewInsets.bottom + 32,
-                left: 16,
-                right: 16,
-                child: _navigationStatusCard(
-                  isNavigating: state.isNavigating,
-                  pendingName: state.pendingName,
-                  activeName: state.activeName,
-                ),
-              );
-            },
-          ),
-        ],
-      ),
+      body: content,
     );
   }
 
@@ -618,6 +676,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
   Widget _destinationList(bool connected) {
     final regularDests = _destinations.where((d) => d.type == null).toList();
     return ListView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
       itemCount: regularDests.length + 1,
       itemBuilder: (context, index) {
@@ -861,21 +920,24 @@ class _DisconnectedEmpty extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.bluetooth_disabled, size: 64, color: Colors.grey),
-          const SizedBox(height: 16),
-          Text(
-            FlutterI18n.translate(context, "nav_disconnected_title"),
-            style: const TextStyle(fontSize: 18, color: Colors.grey),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            FlutterI18n.translate(context, "nav_disconnected_subtitle"),
-            style: const TextStyle(color: Colors.grey),
-          ),
-        ],
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.bluetooth_disabled, size: 64, color: Colors.grey),
+            const SizedBox(height: 16),
+            Text(
+              FlutterI18n.translate(context, "nav_disconnected_title"),
+              style: const TextStyle(fontSize: 18, color: Colors.grey),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              FlutterI18n.translate(context, "nav_disconnected_subtitle"),
+              style: const TextStyle(color: Colors.grey),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -887,6 +949,7 @@ class _NoDestinationsEmpty extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       children: [
         const SizedBox(height: 120),
         Center(
