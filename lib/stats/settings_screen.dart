@@ -889,6 +889,277 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ];
 
+  List<Widget> _backgroundConnectionItems() => [
+        if (Platform.isAndroid)
+          SwitchListTile(
+            secondary: const Icon(Icons.find_replace_outlined),
+            title: Text(FlutterI18n.translate(context, "settings_background_scan")),
+            subtitle: Text(
+              FlutterI18n.translate(
+                context,
+                "settings_background_scan_description",
+              ),
+            ),
+            value: backgroundScan,
+            onChanged: (value) async {
+              bool? confirmed;
+              if (value == true) {
+                // Request notification permission first
+                final notificationPlugin = FlutterLocalNotificationsPlugin();
+                final granted = await notificationPlugin
+                    .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+                    ?.requestNotificationsPermission();
+
+                if (granted != true && mounted) {
+                  Fluttertoast.showToast(
+                    msg: FlutterI18n.translate(context, "notification_permission_denied"),
+                    toastLength: Toast.LENGTH_LONG,
+                  );
+                  return;
+                }
+
+                // warn before turning on
+                if (mounted) {
+                  confirmed = await showBackgroundScanWarning(context);
+                }
+              } else {
+                // no warning for turning off
+                confirmed = true;
+              }
+              if (confirmed == true) {
+                await prefs.setBool("backgroundScan", value);
+                // inform the service!
+                FlutterBackgroundService().invoke("update", {
+                  "backgroundScan": value,
+                });
+                if (!mounted) return;
+                setState(() {
+                  backgroundScan = value;
+                });
+              }
+            },
+          ),
+      ];
+
+  List<Widget> _biometricsItems() => [
+        FutureBuilder<List<BiometricType>>(
+          future: LocalAuthentication().getAvailableBiometrics(),
+          builder: (context, biometricsOptionsSnap) {
+            if (biometricsOptionsSnap.hasData && biometricsOptionsSnap.data!.isNotEmpty) {
+              return SwitchListTile(
+                secondary: const Icon(Icons.fingerprint),
+                title: Text(FlutterI18n.translate(context, "settings_biometrics")),
+                subtitle: Text(
+                  FlutterI18n.translate(context, "settings_biometrics_description"),
+                ),
+                value: biometrics,
+                onChanged: (value) async {
+                  final LocalAuthentication auth = LocalAuthentication();
+                  try {
+                    final bool didAuthenticate = await auth.authenticate(
+                      localizedReason: FlutterI18n.translate(
+                        context,
+                        "biometrics_message",
+                      ),
+                    );
+                    if (didAuthenticate) {
+                      await prefs.setBool("biometrics", value);
+                      if (!mounted) return;
+                      setState(() {
+                        biometrics = value;
+                      });
+                    } else {
+                      if (context.mounted) {
+                        Fluttertoast.showToast(
+                          msg: FlutterI18n.translate(context, "biometrics_failed"),
+                        );
+                      }
+                    }
+                  } catch (e, stack) {
+                    if (context.mounted) {
+                      log.warning("Biometrics error", e, stack);
+                      Fluttertoast.showToast(
+                        msg: FlutterI18n.translate(context, "biometrics_failed"),
+                      );
+                    }
+                  }
+                },
+              );
+            } else {
+              return Container();
+            }
+          },
+        ),
+      ];
+
+  List<Widget> _themeItems() => [
+        ListTile(
+          leading: const Icon(Icons.wb_sunny_outlined),
+          title: Text(FlutterI18n.translate(context, "settings_theme")),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 12.0),
+            child: SegmentedButton<ThemeMode>(
+              onSelectionChanged: (newTheme) {
+                context.setThemeMode(newTheme.first);
+              },
+              showSelectedIcon: false,
+              selected: {EasyDynamicTheme.of(context).themeMode!},
+              style: ButtonStyle(
+                iconColor: WidgetStateProperty.resolveWith<Color>((states) {
+                  if (states.contains(WidgetState.selected)) {
+                    return Theme.of(context).colorScheme.onTertiary;
+                  }
+                  return Theme.of(context).colorScheme.onSurface;
+                }),
+                backgroundColor: WidgetStateProperty.resolveWith<Color>((states) {
+                  if (states.contains(WidgetState.selected)) {
+                    return Theme.of(context).colorScheme.primary;
+                  }
+                  return Colors.transparent;
+                }),
+              ),
+              segments: [
+                ButtonSegment(
+                  value: ThemeMode.light,
+                  icon: Icon(
+                    EasyDynamicTheme.of(context).themeMode! == ThemeMode.light
+                        ? Icons.light_mode
+                        : Icons.light_mode_outlined,
+                  ),
+                  tooltip: FlutterI18n.translate(context, "theme_light"),
+                ),
+                ButtonSegment(
+                  value: ThemeMode.dark,
+                  icon: Icon(
+                    EasyDynamicTheme.of(context).themeMode! == ThemeMode.dark
+                        ? Icons.nights_stay
+                        : Icons.nights_stay_outlined,
+                  ),
+                  tooltip: FlutterI18n.translate(context, "theme_dark"),
+                ),
+                ButtonSegment(
+                  value: ThemeMode.system,
+                  icon: Icon(
+                    EasyDynamicTheme.of(context).themeMode! == ThemeMode.system
+                        ? Icons.brightness_auto
+                        : Icons.brightness_auto_outlined,
+                  ),
+                  tooltip: FlutterI18n.translate(context, "theme_system"),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ];
+
+  List<Widget> _languageItems() => [
+        ListTile(
+          leading: const Icon(Icons.language_outlined),
+          title: Text(FlutterI18n.translate(context, "settings_language")),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: DropdownButtonFormField<Locale>(
+              initialValue: FlutterI18n.currentLocale(context)!,
+              isExpanded: true,
+              decoration: const InputDecoration(
+                contentPadding: EdgeInsets.all(16),
+                border: OutlineInputBorder(),
+              ),
+              dropdownColor: Theme.of(context).colorScheme.surfaceContainer,
+              items: [
+                DropdownMenuItem<Locale>(
+                  value: const Locale("en"),
+                  child: Text(FlutterI18n.translate(context, "language_en")),
+                ),
+                DropdownMenuItem<Locale>(
+                  value: const Locale("en", "GB"),
+                  child: Text(FlutterI18n.translate(context, "language_en_gb")),
+                ),
+                DropdownMenuItem<Locale>(
+                  value: const Locale("de"),
+                  child: Text(FlutterI18n.translate(context, "language_de")),
+                ),
+                DropdownMenuItem<Locale>(
+                  value: const Locale("fr"),
+                  child: Text(FlutterI18n.translate(context, "language_fr")),
+                ),
+                DropdownMenuItem<Locale>(
+                  value: const Locale("nl"),
+                  child: Text(FlutterI18n.translate(context, "language_nl")),
+                ),
+                DropdownMenuItem<Locale>(
+                  value: const Locale("pi"),
+                  child: Text(FlutterI18n.translate(context, "language_pi")),
+                ),
+              ],
+              onChanged: (Locale? newLanguage) async {
+                await FlutterI18n.refresh(context, newLanguage);
+                final tag = newLanguage!.countryCode != null
+                    ? '${newLanguage.languageCode}_${newLanguage.countryCode}'
+                    : newLanguage.languageCode;
+                await prefs.setString("savedLocale", tag);
+                if (!mounted) return;
+                setState(() {});
+              },
+            ),
+          ),
+        ),
+      ];
+
+  List<Widget> _locationConsentItems() => [
+        SwitchListTile(
+          secondary: const Icon(Icons.pin_drop_outlined),
+          title: Text(FlutterI18n.translate(context, "settings_osm_consent")),
+          subtitle: Text(
+            FlutterI18n.translate(context, "settings_osm_consent_description"),
+          ),
+          value: osmConsent,
+          onChanged: (value) async {
+            await prefs.setBool("osmConsent", value);
+            if (!mounted) return;
+            setState(() {
+              osmConsent = value;
+            });
+          },
+        ),
+      ];
+
+  List<Widget> _seasonalItems() => [
+        if (DateTime.now().month == 12 ||
+            DateTime.now().month == 4 ||
+            DateTime.now().month == 10) // All seasonal months
+          SwitchListTile(
+            secondary: const Icon(Icons.star),
+            title: Text(FlutterI18n.translate(context, "settings_seasonal")),
+            subtitle: Text(FlutterI18n.translate(context, "settings_color_info")),
+            value: seasonal,
+            onChanged: (value) async {
+              await prefs.setBool("seasonal", value);
+              if (!mounted) return;
+              setState(() {
+                seasonal = value;
+              });
+            },
+          ),
+      ];
+
+  List<Widget> _activityLogItems() => [
+        if (kDebugMode)
+          ListTile(
+            title: Text(FlutterI18n.translate(context, "activity_log_title")),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const LogScreen(),
+                ),
+              );
+            },
+            leading: const Icon(Icons.history_outlined),
+            trailing: const Icon(Icons.chevron_right),
+          ),
+      ];
+
   List<Widget> _accessItems({required bool isLibrescoot}) => [
         if (isLibrescoot)
           ListTile(
@@ -1231,259 +1502,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
           connected: connected,
           otaAvailable: otaAvailable,
         ),
-        Header(FlutterI18n.translate(context, "stats_settings_section_app"),
-            subtitle: FlutterI18n.translate(context, 'settings_scope_app')),
+        Header(FlutterI18n.translate(context, "stats_settings_section_app")),
         ..._section('settings_section_automation', _automationItems()),
-        if (Platform.isAndroid)
-          SwitchListTile(
-            secondary: const Icon(Icons.find_replace_outlined),
-            title: Text(FlutterI18n.translate(context, "settings_background_scan")),
-            subtitle: Text(
-              FlutterI18n.translate(
-                context,
-                "settings_background_scan_description",
-              ),
-            ),
-            value: backgroundScan,
-            onChanged: (value) async {
-              bool? confirmed;
-              if (value == true) {
-                // Request notification permission first
-                final notificationPlugin = FlutterLocalNotificationsPlugin();
-                final granted = await notificationPlugin
-                    .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-                    ?.requestNotificationsPermission();
-
-                if (granted != true && mounted) {
-                  Fluttertoast.showToast(
-                    msg: FlutterI18n.translate(context, "notification_permission_denied"),
-                    toastLength: Toast.LENGTH_LONG,
-                  );
-                  return;
-                }
-
-                // warn before turning on
-                if (mounted) {
-                  confirmed = await showBackgroundScanWarning(context);
-                }
-              } else {
-                // no warning for turning off
-                confirmed = true;
-              }
-              if (confirmed == true) {
-                await prefs.setBool("backgroundScan", value);
-                // inform the service!
-                FlutterBackgroundService().invoke("update", {
-                  "backgroundScan": value,
-                });
-                if (!mounted) return;
-                setState(() {
-                  backgroundScan = value;
-                });
-              }
-            },
-          ),
-        FutureBuilder<List<BiometricType>>(
-          future: LocalAuthentication().getAvailableBiometrics(),
-          builder: (context, biometricsOptionsSnap) {
-            if (biometricsOptionsSnap.hasData && biometricsOptionsSnap.data!.isNotEmpty) {
-              return SwitchListTile(
-                secondary: const Icon(Icons.fingerprint),
-                title: Text(FlutterI18n.translate(context, "settings_biometrics")),
-                subtitle: Text(
-                  FlutterI18n.translate(context, "settings_biometrics_description"),
-                ),
-                value: biometrics,
-                onChanged: (value) async {
-                  final LocalAuthentication auth = LocalAuthentication();
-                  try {
-                    final bool didAuthenticate = await auth.authenticate(
-                      localizedReason: FlutterI18n.translate(
-                        context,
-                        "biometrics_message",
-                      ),
-                    );
-                    if (didAuthenticate) {
-                      await prefs.setBool("biometrics", value);
-                      if (!mounted) return;
-                      setState(() {
-                        biometrics = value;
-                      });
-                    } else {
-                      if (context.mounted) {
-                        Fluttertoast.showToast(
-                          msg: FlutterI18n.translate(context, "biometrics_failed"),
-                        );
-                      }
-                    }
-                  } catch (e, stack) {
-                    if (context.mounted) {
-                      log.warning("Biometrics error", e, stack);
-                      Fluttertoast.showToast(
-                        msg: FlutterI18n.translate(context, "biometrics_failed"),
-                      );
-                    }
-                  }
-                },
-              );
-            } else {
-              return Container();
-            }
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.wb_sunny_outlined),
-          title: Text(FlutterI18n.translate(context, "settings_theme")),
-          subtitle: Padding(
-            padding: const EdgeInsets.only(top: 12.0),
-            child: SegmentedButton<ThemeMode>(
-              onSelectionChanged: (newTheme) {
-                context.setThemeMode(newTheme.first);
-              },
-              showSelectedIcon: false,
-              selected: {EasyDynamicTheme.of(context).themeMode!},
-              style: ButtonStyle(
-                iconColor: WidgetStateProperty.resolveWith<Color>((states) {
-                  if (states.contains(WidgetState.selected)) {
-                    return Theme.of(context).colorScheme.onTertiary;
-                  }
-                  return Theme.of(context).colorScheme.onSurface;
-                }),
-                backgroundColor: WidgetStateProperty.resolveWith<Color>((states) {
-                  if (states.contains(WidgetState.selected)) {
-                    return Theme.of(context).colorScheme.primary;
-                  }
-                  return Colors.transparent;
-                }),
-              ),
-              segments: [
-                ButtonSegment(
-                  value: ThemeMode.light,
-                  icon: Icon(
-                    EasyDynamicTheme.of(context).themeMode! == ThemeMode.light
-                        ? Icons.light_mode
-                        : Icons.light_mode_outlined,
-                  ),
-                  tooltip: FlutterI18n.translate(context, "theme_light"),
-                ),
-                ButtonSegment(
-                  value: ThemeMode.dark,
-                  icon: Icon(
-                    EasyDynamicTheme.of(context).themeMode! == ThemeMode.dark
-                        ? Icons.nights_stay
-                        : Icons.nights_stay_outlined,
-                  ),
-                  tooltip: FlutterI18n.translate(context, "theme_dark"),
-                ),
-                ButtonSegment(
-                  value: ThemeMode.system,
-                  icon: Icon(
-                    EasyDynamicTheme.of(context).themeMode! == ThemeMode.system
-                        ? Icons.brightness_auto
-                        : Icons.brightness_auto_outlined,
-                  ),
-                  tooltip: FlutterI18n.translate(context, "theme_system"),
-                ),
-              ],
-            ),
-          ),
-        ),
-        ListTile(
-          leading: const Icon(Icons.language_outlined),
-          title: Text(FlutterI18n.translate(context, "settings_language")),
-          subtitle: Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: DropdownButtonFormField<Locale>(
-              initialValue: FlutterI18n.currentLocale(context)!,
-              isExpanded: true,
-              decoration: const InputDecoration(
-                contentPadding: EdgeInsets.all(16),
-                border: OutlineInputBorder(),
-              ),
-              dropdownColor: Theme.of(context).colorScheme.surfaceContainer,
-              items: [
-                DropdownMenuItem<Locale>(
-                  value: const Locale("en"),
-                  child: Text(FlutterI18n.translate(context, "language_en")),
-                ),
-                DropdownMenuItem<Locale>(
-                  value: const Locale("en", "GB"),
-                  child: Text(FlutterI18n.translate(context, "language_en_gb")),
-                ),
-                DropdownMenuItem<Locale>(
-                  value: const Locale("de"),
-                  child: Text(FlutterI18n.translate(context, "language_de")),
-                ),
-                DropdownMenuItem<Locale>(
-                  value: const Locale("fr"),
-                  child: Text(FlutterI18n.translate(context, "language_fr")),
-                ),
-                DropdownMenuItem<Locale>(
-                  value: const Locale("nl"),
-                  child: Text(FlutterI18n.translate(context, "language_nl")),
-                ),
-                DropdownMenuItem<Locale>(
-                  value: const Locale("pi"),
-                  child: Text(FlutterI18n.translate(context, "language_pi")),
-                ),
-              ],
-              onChanged: (Locale? newLanguage) async {
-                await FlutterI18n.refresh(context, newLanguage);
-                final tag = newLanguage!.countryCode != null
-                    ? '${newLanguage.languageCode}_${newLanguage.countryCode}'
-                    : newLanguage.languageCode;
-                await prefs.setString("savedLocale", tag);
-                if (!mounted) return;
-                setState(() {});
-              },
-            ),
-          ),
-        ),
-        SwitchListTile(
-          secondary: const Icon(Icons.pin_drop_outlined),
-          title: Text(FlutterI18n.translate(context, "settings_osm_consent")),
-          subtitle: Text(
-            FlutterI18n.translate(context, "settings_osm_consent_description"),
-          ),
-          value: osmConsent,
-          onChanged: (value) async {
-            await prefs.setBool("osmConsent", value);
-            if (!mounted) return;
-            setState(() {
-              osmConsent = value;
-            });
-          },
-        ),
-        if (DateTime.now().month == 12 ||
-            DateTime.now().month == 4 ||
-            DateTime.now().month == 10) // All seasonal months
-          SwitchListTile(
-            secondary: const Icon(Icons.star),
-            title: Text(FlutterI18n.translate(context, "settings_seasonal")),
-            subtitle: Text(FlutterI18n.translate(context, "settings_color_info")),
-            value: seasonal,
-            onChanged: (value) async {
-              await prefs.setBool("seasonal", value);
-              if (!mounted) return;
-              setState(() {
-                seasonal = value;
-              });
-            },
-          ),
-        if (kDebugMode)
-          ListTile(
-            title: Text(FlutterI18n.translate(context, "activity_log_title")),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const LogScreen(),
-                ),
-              );
-            },
-            leading: const Icon(Icons.history_outlined),
-            trailing: const Icon(Icons.chevron_right),
-          ),
+        ..._section('settings_section_connection', _backgroundConnectionItems()),
+        ..._section('settings_section_privacy_security', [
+          ..._biometricsItems(),
+          ..._locationConsentItems(),
+          ..._activityLogItems(),
+        ]),
+        ..._section('settings_section_appearance', [
+          ..._themeItems(),
+          ..._languageItems(),
+          ..._seasonalItems(),
+        ]),
         Container(), // to force another divider at the end
       ];
 
