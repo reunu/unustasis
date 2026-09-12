@@ -126,6 +126,7 @@ flutter:
     - assets/fonts/KodeMono-Regular.ttf
     - assets/fonts/Nunito-OFL.txt
     - assets/fonts/KodeMono-OFL.txt
+    - assets/icons/
 
   fonts:
     - family: icomoon
