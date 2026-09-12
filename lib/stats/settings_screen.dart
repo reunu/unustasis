@@ -19,6 +19,7 @@ import '../domain/theme_helper.dart';
 import '../domain/alarm_status.dart';
 import '../domain/saved_scooter.dart';
 import '../domain/scooter_keyless_distance.dart';
+import '../domain/scooter_state.dart';
 import '../scooter_service.dart';
 import '../helper_widgets/header.dart';
 import '../ls_keycard_screen.dart';
@@ -49,8 +50,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Object? _sessionDevice;
   Object? _sessionRepository;
   bool _sessionConnected = false;
+  bool _sessionAsleep = false;
   int _session = 0;
   bool _lsDataLoadStarted = false;
+  // Keycard count: one read, retried on later notifications, bounded.
+  // bounded so a scooter that never answers can't loop.
+  static const int _maxKeycardLoadAttempts = 3;
+  int _keycardLoadAttempts = 0;
+  bool _keycardLoadInFlight = false;
   bool _batteryLoadStarted = false;
   bool _alarmLoadStarted = false;
   bool _isSendingBatteryKeepActive = false;
@@ -120,25 +127,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() => _syncSession());
   }
 
-  // Observe every notification, not only builds: disconnect/reconnect can both
-  // happen before the next frame, even for the same device.
+  // Every notification, not only builds: reconnect can beat the next frame.
   void _syncSession({bool force = false}) {
     final service = _service!;
     final device = service.connected ? service.myScooter : null;
     final repository = service.connected ? service.characteristicRepository : null;
+    final bool asleep = _scooterAsleep;
     if (!force &&
         _sessionConnected == service.connected &&
         identical(device, _sessionDevice) &&
-        identical(repository, _sessionRepository)) {
+        identical(repository, _sessionRepository) &&
+        _sessionAsleep == asleep) {
       return;
     }
+    // Same scooter falling asleep keeps the values we read; waking reloads them.
+    // can have changed anything while it slept.
+    final bool sameLink = !force &&
+        _sessionConnected == service.connected &&
+        identical(device, _sessionDevice) &&
+        identical(repository, _sessionRepository);
+    final bool waking = _sessionAsleep && !asleep;
+    _sessionAsleep = asleep;
     _sessionConnected = service.connected;
     _sessionDevice = device;
     _sessionRepository = repository;
     _session++;
+    if (sameLink && !waking) return;
     _lsDataLoadStarted = _batteryLoadStarted = _alarmLoadStarted = false;
     _timerDurationsLoaded = _apnLoaded = _apnLoadStarted = false;
     _autoLockDuration = _autoHibernateDuration = _keycardCount = null;
+    _keycardLoadAttempts = 0;
+    _keycardLoadInFlight = false;
     _apn = null;
     _batteryKeepActive = _alarmEnabled = _alarmHonk = null;
     _isSendingAutoLock = _isSendingAutoHibernate = _isSendingApn = false;
@@ -154,8 +173,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       identical(_service!.myScooter, _sessionDevice) &&
       identical(_service!.characteristicRepository, _sessionRepository);
 
-  /// Subtitle for the per-scooter settings header: names the scooter the
-  /// controls below apply to, and makes the boundary explicit.
   String _scooterScopeOnly() {
     final service = context.read<ScooterService>();
     final String? label;
@@ -172,8 +189,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         : FlutterI18n.translate(context, 'settings_scope_scooter_only', translationParams: {'name': label});
   }
 
-  /// Saved scooter the per-scooter settings apply to: the connected one when
-  /// available, otherwise the cached name, otherwise the only saved scooter.
+  // Connected id, else cached name, else the only saved scooter.
   SavedScooter? _currentSavedScooter() {
     final service = context.read<ScooterService>();
     if (service.connected) {
@@ -191,8 +207,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return null;
   }
 
-  // App-local per-scooter connectivity preference, duplicated from the scooter
-  // list where it is only reachable via long-press.
+  // Also in the scooter list, reachable there only by long-press.
   List<Widget> _scooterAutoConnectItems() {
     final savedScooter = _currentSavedScooter();
     if (savedScooter == null) return const [];
@@ -215,8 +230,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   bool get _scooterConnected => context.read<ScooterService>().connected;
 
-  // Keep scooter controls discoverable offline without building loading or
-  // actionable children. App-local preferences and cached diagnostics stay usable.
+  // Offline: keep controls visible but inert.
   List<Widget> _connectionRequiredItems(List<Widget> items) {
     if (_scooterConnected) return items;
     return items.map((item) {
@@ -238,18 +252,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }).toList();
   }
 
+  // Hibernating scooters hold the link but never answer extended reads.
+  bool get _scooterAsleep {
+    switch (_service?.state) {
+      case ScooterState.hibernating:
+      case ScooterState.hibernatingImminent:
+      case ScooterState.booting:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  List<Widget> _asleepAwareItems(List<Widget> items) =>
+      _scooterAsleep ? items : _connectionRequiredItems(items);
+
+  // A dash, not "off": we cannot claim a state we could not read.
+  Widget _asleepValuePlaceholder() =>
+      Text('—', style: TextStyle(color: Theme.of(context).disabledColor));
+
+  // Unknown is not absence: keep the group visible while asleep.
+  bool _alarmSectionVisible(ScooterService service) {
+    if (!_scooterAsleep) return service.identity.supportsAlarmControl == true;
+    return service.identity.supportsAlarmControl != false;
+  }
+
   void _ensureLsDataLoaded(bool isLibrescoot) {
     final service = context.read<ScooterService>();
-    if (!isLibrescoot || !_isCurrent(_session)) return;
+    if (!isLibrescoot || !_isCurrent(_session) || _scooterAsleep) return;
     final session = _session;
     if (!_lsDataLoadStarted) {
       _lsDataLoadStarted = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted || !_isCurrent(session)) return;
-        _getKeycardCount();
         _getTimerDurations();
       });
     }
+    _loadKeycards(session);
     if (service.identity.supportsApnConfig == true && !_apnLoaded && !_apnLoadStarted) {
       _apnLoadStarted = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -270,8 +309,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  Future<void> _getKeycardCount() async {
-    final session = _session;
+  void _loadKeycards(int session) {
+    if (_keycardCount != null ||
+        _keycardLoadInFlight ||
+        _keycardLoadAttempts >= _maxKeycardLoadAttempts) {
+      return;
+    }
+    _keycardLoadAttempts++;
+    _keycardLoadInFlight = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        if (mounted && _isCurrent(session)) await _getKeycardCount(session);
+      } finally {
+        _keycardLoadInFlight = false;
+      }
+    });
+  }
+
+  Future<void> _getKeycardCount(int session) async {
     if (!mounted || !_isCurrent(session)) return;
     try {
       final count = await countKeycardsCommand(_service!.myScooter, _service!.characteristicRepository);
@@ -361,8 +416,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               translationParams: {"error": e.toString()})),
         ),
       );
-      // The scooter kept its old value, so re-read rather than leaving the
-      // switch showing something the scooter never accepted.
+      // Re-read: the scooter kept its old value.
       unawaited(_getBatteryKeepActive());
     } finally {
       if (mounted && _isCurrent(session)) {
@@ -466,8 +520,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  /// Answers "would the scooter notice if someone moved it right now?", plus
-  /// the wake timer and last trigger when there are any.
+  // Would it notice movement now, plus wake timer and last trigger.
   String _alarmWatchSubtitle(BuildContext context, VehicleStatus vehicle) {
     final sources = vehicle.alarmWakeSources;
     final parts = <String>[];
@@ -491,7 +544,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
     }
     if (parts.isEmpty) {
-      return FlutterI18n.translate(context, "ls_settings_alarm_watch_loading");
+      return FlutterI18n.translate(
+          context, _scooterAsleep ? "ls_settings_scooter_asleep" : "ls_settings_alarm_watch_loading");
     }
     return parts.join(" ");
   }
@@ -526,7 +580,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
 
   String _apnSubtitle(BuildContext context) {
-    if (!_apnLoaded) return FlutterI18n.translate(context, "ls_settings_apn_loading");
+    if (!_apnLoaded) {
+      return FlutterI18n.translate(
+          context, _scooterAsleep ? "ls_settings_scooter_asleep" : "ls_settings_apn_loading");
+    }
     if (_apn == null) return FlutterI18n.translate(context, "ls_settings_apn_unknown");
     return _apn!.isEmpty ? FlutterI18n.translate(context, "ls_settings_apn_unset") : _apn!;
   }
@@ -641,47 +698,53 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   List<Widget> alarmItems() {
-    if (_scooterConnected && context.read<ScooterService>().identity.supportsAlarmControl != true) return [];
     final service = context.read<ScooterService>();
-    // The two switches ride the extended channel; everything else needs the
-    // alarm service, which older firmware doesn't have.
+    if (_scooterConnected && !_alarmSectionVisible(service)) return [];
+    // Switches ride the extended channel; the rest needs the alarm service.
     final bool live = service.connected && service.characteristicRepository.alarmAvailable;
     final AlarmStatus? status = service.vehicle.alarmStatus;
     return [
       ListTile(
+        enabled: !_scooterAsleep,
         leading: Icon(Icons.notifications_active_outlined),
         title: _lsTitle(FlutterI18n.translate(context, "ls_settings_alarm_title")),
         subtitle: Text(live && status != null
             ? status.name(context)
             : FlutterI18n.translate(context, "ls_settings_alarm_subtitle")),
         trailing: _alarmEnabled == null
-            ? const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
+            ? (_scooterAsleep
+                ? _asleepValuePlaceholder()
+                : const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ))
             : Switch(
                 value: _alarmEnabled!,
-                onChanged: _isSendingAlarmEnabled ? null : _setAlarmEnabled,
+                onChanged: _isSendingAlarmEnabled || _scooterAsleep ? null : _setAlarmEnabled,
               ),
       ),
       ListTile(
+        enabled: !_scooterAsleep,
         leading: Icon(Icons.campaign_outlined),
         title: _lsTitle(FlutterI18n.translate(context, "ls_settings_alarm_honk_title")),
         subtitle: Text(FlutterI18n.translate(context, "ls_settings_alarm_honk_subtitle")),
         trailing: _alarmHonk == null
-            ? const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
+            ? (_scooterAsleep
+                ? _asleepValuePlaceholder()
+                : const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ))
             : Switch(
                 value: _alarmHonk!,
-                onChanged: _isSendingAlarmHonk ? null : _setAlarmHonk,
+                onChanged: _isSendingAlarmHonk || _scooterAsleep ? null : _setAlarmHonk,
               ),
       ),
       if (!service.connected || live)
         ListTile(
+          enabled: !_scooterAsleep,
           leading: Icon(Icons.visibility_outlined),
           title: _lsTitle(FlutterI18n.translate(context, "ls_settings_alarm_watch_title")),
           subtitle: Text(_alarmWatchSubtitle(context, service.vehicle)),
@@ -689,9 +752,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ];
   }
 
-  /// Access & Parking subsection: unlock behaviour plus the keycard entry.
-  // Applies to whichever scooter is connected, so it belongs with the app
-  // settings rather than under the scooter section.
+  // Shared by all scooters, so it lives under App.
   List<Widget> _automationItems() => [
         SwitchListTile(
           secondary: const Icon(Icons.lock_open),
@@ -831,19 +892,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
   List<Widget> _accessItems({required bool isLibrescoot}) => [
         if (isLibrescoot)
           ListTile(
+            enabled: !_scooterAsleep,
             leading: const Icon(Icons.vpn_key_outlined),
             title: _lsTitle(FlutterI18n.translate(context, "ls_keycard_title")),
             subtitle: Text(_keycardCount != null
                 ? FlutterI18n.translate(context, "ls_settings_keycards_count",
                     translationParams: {"count": _keycardCount.toString()})
-                : FlutterI18n.translate(context, "ls_settings_keycards_loading")),
+                : FlutterI18n.translate(
+                    context, _scooterAsleep ? "ls_settings_scooter_asleep" : "ls_settings_keycards_loading")),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LsKeycardScreen())),
+            onTap: _scooterAsleep
+                ? null
+                : () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LsKeycardScreen())),
           ),
       ];
 
   List<Widget> _powerItems({required bool supportsScheduledHibernation}) => [
         ListTile(
+          enabled: !_scooterAsleep,
           leading: const Icon(Icons.hourglass_bottom_rounded),
           title: _lsTitle(FlutterI18n.translate(context, "ls_settings_auto_lock_title")),
           subtitle: Text(FlutterI18n.translate(context, "ls_settings_auto_lock_subtitle")),
@@ -853,7 +919,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               isExpanded: true,
               menuWidth: 144,
               value: _autoLockDuration,
-              hint: _timerDurationsLoaded
+              hint: _timerDurationsLoaded || _scooterAsleep
                   ? Text(FlutterI18n.translate(context, "ls_settings_duration_hint"))
                   : _timerLoadingIndicator(),
               items: [
@@ -867,7 +933,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 DropdownMenuItem(
                     value: 900, child: Text(FlutterI18n.translate(context, "ls_settings_duration_15_min"))),
               ],
-              onChanged: !_timerDurationsLoaded || _isSendingAutoLock
+              onChanged: !_timerDurationsLoaded || _isSendingAutoLock || _scooterAsleep
                   ? null
                   : (value) async {
                       final session = _session;
@@ -903,6 +969,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
         ListTile(
+          enabled: !_scooterAsleep,
           leading: const Icon(Icons.bedtime_outlined),
           title: _lsTitle(FlutterI18n.translate(context, "ls_settings_auto_hibernate_title")),
           subtitle: Text(FlutterI18n.translate(context, "ls_settings_auto_hibernate_subtitle")),
@@ -912,7 +979,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               isExpanded: true,
               menuWidth: 144,
               value: _autoHibernateDuration,
-              hint: _timerDurationsLoaded
+              hint: _timerDurationsLoaded || _scooterAsleep
                   ? Text(FlutterI18n.translate(context, "ls_settings_duration_hint"))
                   : _timerLoadingIndicator(),
               items: [
@@ -931,7 +998,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 DropdownMenuItem(
                     value: 1209600, child: Text(FlutterI18n.translate(context, "ls_settings_duration_14_days"))),
               ],
-              onChanged: !_timerDurationsLoaded || _isSendingAutoHibernate
+              onChanged: !_timerDurationsLoaded || _isSendingAutoHibernate || _scooterAsleep
                   ? null
                   : (value) async {
                       final session = _session;
@@ -968,6 +1035,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         if (!_scooterConnected || supportsScheduledHibernation)
           ListTile(
+            enabled: !_scooterAsleep,
             leading: const SizedBox(
               width: 24,
               height: 24,
@@ -981,25 +1049,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: _lsTitle(FlutterI18n.translate(context, "ls_scheduled_hibernation_title")),
             subtitle: Text(FlutterI18n.translate(context, "ls_settings_scheduled_hibernation_subtitle")),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const LsScheduledHibernationScreen()),
-            ),
+            onTap: _scooterAsleep
+                ? null
+                : () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const LsScheduledHibernationScreen()),
+                    ),
           ),
         if (!_scooterConnected || context.read<ScooterService>().identity.supportsBatteryKeepActive == true)
           ListTile(
+            enabled: !_scooterAsleep,
             leading: Icon(Icons.battery_charging_full_outlined),
             title: _lsTitle(FlutterI18n.translate(context, "ls_settings_battery_keep_active_title")),
             subtitle: _lsTitle(FlutterI18n.translate(context, "ls_settings_battery_keep_active_subtitle")),
             trailing: _batteryKeepActive == null
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
+                ? (_scooterAsleep
+                    ? _asleepValuePlaceholder()
+                    : const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ))
                 : Switch(
                     value: _batteryKeepActive!,
-                    onChanged: _isSendingBatteryKeepActive ? null : _setBatteryKeepActive,
+                    onChanged: _isSendingBatteryKeepActive || _scooterAsleep ? null : _setBatteryKeepActive,
                   ),
           ),
       ];
@@ -1012,13 +1085,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ..._scooterAutoConnectItems(),
         if (isLibrescoot && (!_scooterConnected || supportsApnConfig))
           ListTile(
+            enabled: !_scooterAsleep,
             leading: const Icon(Icons.cell_tower_outlined),
             title: _lsTitle(FlutterI18n.translate(context, "ls_settings_apn_title")),
             subtitle: Text(_apnSubtitle(context)),
-            trailing: _isSendingApn
+            trailing: _isSendingApn && !_scooterAsleep
                 ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
                 : const Icon(Icons.chevron_right),
-            onTap: _isSendingApn ? null : _editApn,
+            onTap: _isSendingApn || _scooterAsleep ? null : _editApn,
           ),
       ];
 
@@ -1030,13 +1104,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
       [
         if (!connected || otaAvailable)
           ListTile(
+            enabled: !_scooterAsleep,
             leading: const Icon(Icons.system_update_alt_outlined),
             title: _lsTitle(FlutterI18n.translate(context, "ls_settings_ota_title")),
             subtitle: Text(FlutterI18n.translate(context, "ls_settings_ota_subtitle")),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LsOtaScreen())),
+            onTap: _scooterAsleep
+                ? null
+                : () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LsOtaScreen())),
           ),
         ListTile(
+          enabled: !_scooterAsleep,
           leading: const Icon(Icons.usb_outlined),
           title: _lsTitle(FlutterI18n.translate(context, "ls_settings_update_mode_title")),
           subtitle: Text(usbMode == UsbMode.massStorage
@@ -1044,7 +1122,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               : FlutterI18n.translate(context, "ls_settings_update_mode_off_subtitle")),
           trailing: Switch(
             value: usbMode == UsbMode.massStorage,
-            onChanged: _isUpdatingUsbMode
+            onChanged: _isUpdatingUsbMode || _scooterAsleep
                 ? null
                 : (value) async {
                     final session = _session;
@@ -1084,9 +1162,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ];
 
-  // A subsection heading with its items, dropped entirely when there is nothing
-  // to show. Without a scooter every Librescoot group is empty, and headings
-  // over nothing are worse than no headings.
+  // Subsection heading plus items, omitted when empty.
   List<Widget> _section(String titleKey, List<Widget> items) => items.isEmpty
       ? const []
       : [Header(FlutterI18n.translate(context, titleKey), level: 1), ...items];
@@ -1101,34 +1177,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }) {
     final sections = <Widget>[
       ..._section('settings_section_access_parking',
-          _connectionRequiredItems(_accessItems(isLibrescoot: isLibrescoot))),
+          _asleepAwareItems(_accessItems(isLibrescoot: isLibrescoot))),
       if (isLibrescoot)
         ..._section(
             'settings_section_power',
-            _connectionRequiredItems(
+            _asleepAwareItems(
                 _powerItems(supportsScheduledHibernation: supportsScheduledHibernation))),
       if (isLibrescoot)
-        ..._section('ls_settings_section_alarm', _connectionRequiredItems(alarmItems())),
+        ..._section('ls_settings_section_alarm', _asleepAwareItems(alarmItems())),
       ..._section(
           'settings_section_connectivity',
-          _connectionRequiredItems(_connectivityItems(
+          _asleepAwareItems(_connectivityItems(
             isLibrescoot: isLibrescoot,
             supportsApnConfig: supportsApnConfig,
           ))),
       if (isLibrescoot)
         ..._section(
             'settings_section_updates_service',
-            _connectionRequiredItems(_updatesItems(
+            _asleepAwareItems(_updatesItems(
               usbMode: usbMode,
               connected: connected,
               otaAvailable: otaAvailable,
             ))),
     ];
-    if (sections.isEmpty) return const [];
+    // No scooter means no groups; asleep still gets the notice.
+    if (sections.isEmpty && !_scooterAsleep) return const [];
     return [
       Header(
         FlutterI18n.translate(context, "stats_settings_section_scooter"),
-        subtitle: _scooterScopeOnly(),
+        subtitle: _scooterAsleep
+            ? '${_scooterScopeOnly()}. ${FlutterI18n.translate(context, "ls_settings_scooter_asleep")}'
+            : _scooterScopeOnly(),
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       ),
       ...sections,
@@ -1155,19 +1234,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Header(FlutterI18n.translate(context, "stats_settings_section_app"),
             subtitle: FlutterI18n.translate(context, 'settings_scope_app')),
         ..._section('settings_section_automation', _automationItems()),
-        if (kDebugMode)
-          ListTile(
-            title: Text(FlutterI18n.translate(context, "activity_log_title")),
-            onTap: () {
-              Navigator.push(
+        if (Platform.isAndroid)
+          SwitchListTile(
+            secondary: const Icon(Icons.find_replace_outlined),
+            title: Text(FlutterI18n.translate(context, "settings_background_scan")),
+            subtitle: Text(
+              FlutterI18n.translate(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const LogScreen(),
-                ),
-              );
+                "settings_background_scan_description",
+              ),
+            ),
+            value: backgroundScan,
+            onChanged: (value) async {
+              bool? confirmed;
+              if (value == true) {
+                // Request notification permission first
+                final notificationPlugin = FlutterLocalNotificationsPlugin();
+                final granted = await notificationPlugin
+                    .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+                    ?.requestNotificationsPermission();
+
+                if (granted != true && mounted) {
+                  Fluttertoast.showToast(
+                    msg: FlutterI18n.translate(context, "notification_permission_denied"),
+                    toastLength: Toast.LENGTH_LONG,
+                  );
+                  return;
+                }
+
+                // warn before turning on
+                if (mounted) {
+                  confirmed = await showBackgroundScanWarning(context);
+                }
+              } else {
+                // no warning for turning off
+                confirmed = true;
+              }
+              if (confirmed == true) {
+                await prefs.setBool("backgroundScan", value);
+                // inform the service!
+                FlutterBackgroundService().invoke("update", {
+                  "backgroundScan": value,
+                });
+                if (!mounted) return;
+                setState(() {
+                  backgroundScan = value;
+                });
+              }
             },
-            leading: const Icon(Icons.history_outlined),
-            trailing: const Icon(Icons.chevron_right),
           ),
         FutureBuilder<List<BiometricType>>(
           future: LocalAuthentication().getAvailableBiometrics(),
@@ -1325,55 +1439,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
         ),
-        if (Platform.isAndroid)
-          SwitchListTile(
-            secondary: const Icon(Icons.find_replace_outlined),
-            title: Text(FlutterI18n.translate(context, "settings_background_scan")),
-            subtitle: Text(
-              FlutterI18n.translate(
-                context,
-                "settings_background_scan_description",
-              ),
-            ),
-            value: backgroundScan,
-            onChanged: (value) async {
-              bool? confirmed;
-              if (value == true) {
-                // Request notification permission first
-                final notificationPlugin = FlutterLocalNotificationsPlugin();
-                final granted = await notificationPlugin
-                    .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-                    ?.requestNotificationsPermission();
-
-                if (granted != true && mounted) {
-                  Fluttertoast.showToast(
-                    msg: FlutterI18n.translate(context, "notification_permission_denied"),
-                    toastLength: Toast.LENGTH_LONG,
-                  );
-                  return;
-                }
-
-                // warn before turning on
-                if (mounted) {
-                  confirmed = await showBackgroundScanWarning(context);
-                }
-              } else {
-                // no warning for turning off
-                confirmed = true;
-              }
-              if (confirmed == true) {
-                await prefs.setBool("backgroundScan", value);
-                // inform the service!
-                FlutterBackgroundService().invoke("update", {
-                  "backgroundScan": value,
-                });
-                if (!mounted) return;
-                setState(() {
-                  backgroundScan = value;
-                });
-              }
-            },
-          ),
         SwitchListTile(
           secondary: const Icon(Icons.pin_drop_outlined),
           title: Text(FlutterI18n.translate(context, "settings_osm_consent")),
@@ -1404,6 +1469,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 seasonal = value;
               });
             },
+          ),
+        if (kDebugMode)
+          ListTile(
+            title: Text(FlutterI18n.translate(context, "activity_log_title")),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const LogScreen(),
+                ),
+              );
+            },
+            leading: const Icon(Icons.history_outlined),
+            trailing: const Icon(Icons.chevron_right),
           ),
         Container(), // to force another divider at the end
       ];

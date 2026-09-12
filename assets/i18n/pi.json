@@ -150,7 +150,7 @@
     "stats_rssi_disconnected": "Disconnected",
     "stats_title_settings": "Settings",
     "stats_settings_section_scooter": "Scooter Settin's",
-    "stats_settings_section_app": "Ship's Settings",
+    "stats_settings_section_app": "Helm",
     "stats_settings_section_about": "About",
     "settings_color_onboarding": "Press and hold to change ship color",
     "settings_color": "Ship color",
@@ -577,5 +577,6 @@
     "settings_scope_unknown": "No vessel selected",
     "settings_scope_app": "Applies across vessels on this phone",
     "settings_scope_scooter_only": "Only applies to {name}, savvy?",
+    "ls_settings_scooter_asleep": "Wake yer scooter to change the extra settings, arrr!",
     "settings_scooter_auto_connect": "Auto-connect to this vessel"
 }

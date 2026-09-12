@@ -170,7 +170,7 @@
     "stats_rssi_disconnected": "Disconnected",
     "stats_title_settings": "Settings",
     "stats_settings_section_scooter": "Scooter",
-    "stats_settings_section_app": "App Settings",
+    "stats_settings_section_app": "App",
     "stats_settings_section_about": "About",
     "settings_color_onboarding": "Long press to change color",
     "settings_color": "Scooter color",
@@ -597,5 +597,6 @@
     "settings_scope_unknown": "No scooter selected",
     "settings_scope_app": "Applies across scooters on this phone",
     "settings_scope_scooter_only": "Applies to {name} only",
+    "ls_settings_scooter_asleep": "Wake your scooter to edit additional settings.",
     "settings_scooter_auto_connect": "Auto-connect to this scooter"
 }

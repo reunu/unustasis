@@ -170,7 +170,7 @@
     "stats_rssi_disconnected": "Déconnecté",
     "stats_title_settings": "Paramètres",
     "stats_settings_section_scooter": "Réglages du scooter",
-    "stats_settings_section_app": "Réglages de l'application",
+    "stats_settings_section_app": "Application",
     "stats_settings_section_about": "À propos",
     "settings_color_onboarding": "Appuyez longuement pour changer la couleur",
     "settings_color": "Couleur du scooter",
@@ -597,5 +597,6 @@
     "settings_scope_unknown": "Aucun scooter sélectionné",
     "settings_scope_app": "S’applique à tous les scooters sur ce téléphone",
     "settings_scope_scooter_only": "S’applique uniquement à {name}",
+    "ls_settings_scooter_asleep": "Réveillez votre scooter pour modifier des réglages supplémentaires.",
     "settings_scooter_auto_connect": "Se connecter automatiquement à ce scooter"
 }

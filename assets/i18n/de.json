@@ -170,7 +170,7 @@
     "stats_rssi_disconnected": "Getrennt",
     "stats_title_settings": "Einstellungen",
     "stats_settings_section_scooter": "Roller-Einstellungen",
-    "stats_settings_section_app": "App-Einstellungen",
+    "stats_settings_section_app": "App",
     "stats_settings_section_about": "Über",
     "settings_color_onboarding": "Gedrückt halten, um die Farbe zu ändern",
     "settings_color": "Rollerfarbe",
@@ -597,5 +597,6 @@
     "settings_scope_unknown": "Kein Roller ausgewählt",
     "settings_scope_app": "Gilt für alle Roller auf diesem Telefon",
     "settings_scope_scooter_only": "Gilt nur für {name}",
+    "ls_settings_scooter_asleep": "Wecke deinen Roller, um weitere Einstellungen zu ändern.",
     "settings_scooter_auto_connect": "Automatisch mit diesem Roller verbinden"
 }
