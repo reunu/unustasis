@@ -121,6 +121,11 @@ flutter:
     - assets/i18n/
     - assets/
     - assets/anim/
+    # google_fonts registers these exact variants from assets, not the network.
+    - assets/fonts/Nunito-Regular.ttf
+    - assets/fonts/KodeMono-Regular.ttf
+    - assets/fonts/Nunito-OFL.txt
+    - assets/fonts/KodeMono-OFL.txt
 
   fonts:
     - family: icomoon
