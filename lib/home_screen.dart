@@ -33,9 +33,7 @@ import '../control_sheet.dart';
 import '../helper_widgets/snowfall.dart';
 import '../helper_widgets/clouds.dart';
 import '../helper_widgets/grassscape.dart';
-import '../ls_settings_screen.dart';
 import '../navigation_screen.dart';
-import 'state/vehicle_status.dart';
 
 class HomeScreen extends StatefulWidget {
   final bool? forceOpen;
@@ -63,6 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
       redirectOrStart();
     }
   }
+
 
   Future<void> _startSeasonal() async {
     SharedPreferencesAsync prefs = SharedPreferencesAsync();
@@ -375,23 +374,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                         );
                                       },
                                     ),
-                                    ScooterActionButton(
-                                      icon: Icons.local_fire_department_outlined,
-                                      label: "Librescoot",
-                                      showBubble: context.select<ScooterService, bool>(
-                                        (service) => service.vehicle.usbMode == UsbMode.massStorage,
-                                      ),
-                                      onPressed: !value.connected
-                                          ? null
-                                          : () {
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) => const LsSettingsScreen(),
-                                                ),
-                                              );
-                                            },
-                                    )
                                   ],
                                 )),
                           ),
@@ -738,6 +720,7 @@ class StatusText extends StatelessWidget {
           ScooterState? state,
           ScooterVehicleState? vehicleState,
           ScooterPowerState? powerState,
+          bool isLibrescoot,
           bool? handlebarsLocked,
         })>(
       selector: (context, service) => (
@@ -746,6 +729,7 @@ class StatusText extends StatelessWidget {
         connected: service.connected,
         vehicleState: service.vehicleState,
         powerState: service.powerState,
+        isLibrescoot: service.identity.isLibrescoot == true,
         handlebarsLocked: service.vehicle.handlebarsLocked,
       ),
       builder: (context, data, _) {
@@ -773,10 +757,19 @@ class StatusText extends StatelessWidget {
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              stateText,
-              style: Theme.of(context).textTheme.titleMedium,
-              textAlign: TextAlign.center,
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  stateText,
+                  style: Theme.of(context).textTheme.titleMedium,
+                  textAlign: TextAlign.center,
+                ),
+                if (data.isLibrescoot) ...[
+                  const SizedBox(width: 6),
+                  const Icon(Icons.local_fire_department_outlined, size: 18),
+                ],
+              ],
             ),
             AnimatedSize(
               duration: const Duration(milliseconds: 250),
