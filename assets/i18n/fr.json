@@ -598,5 +598,6 @@
     "settings_scope_unknown": "Aucun scooter sélectionné",
     "settings_scope_scooter_only": "S’applique uniquement à {name}",
     "ls_settings_scooter_asleep": "Réveillez votre scooter pour modifier des réglages supplémentaires.",
-    "settings_scooter_auto_connect": "Se connecter automatiquement à ce scooter"
+    "settings_scooter_auto_connect": "Se connecter automatiquement à ce scooter",
+    "settings_scooter_auto_connect_description": "Se connecter automatiquement à ce scooter lorsqu'il est à portée."
 }

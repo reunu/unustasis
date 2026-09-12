@@ -598,5 +598,6 @@
     "settings_scope_unknown": "Kein Roller ausgewählt",
     "settings_scope_scooter_only": "Gilt nur für {name}",
     "ls_settings_scooter_asleep": "Wecke deinen Roller, um weitere Einstellungen zu ändern.",
-    "settings_scooter_auto_connect": "Automatisch mit diesem Roller verbinden"
+    "settings_scooter_auto_connect": "Automatisch mit diesem Roller verbinden",
+    "settings_scooter_auto_connect_description": "Automatisch mit diesem Roller verbinden, wenn er in Reichweite ist."
 }

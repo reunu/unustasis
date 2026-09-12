@@ -215,6 +215,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       SwitchListTile(
         secondary: const Icon(Icons.sync),
         title: Text(FlutterI18n.translate(context, "settings_scooter_auto_connect")),
+        subtitle: Text(FlutterI18n.translate(context, "settings_scooter_auto_connect_description")),
         value: savedScooter.autoConnect,
         onChanged: (value) => setState(() => savedScooter.autoConnect = value),
       ),

@@ -578,5 +578,6 @@
     "settings_scope_unknown": "No vessel selected",
     "settings_scope_scooter_only": "Only applies to {name}, savvy?",
     "ls_settings_scooter_asleep": "Wake yer scooter to change the extra settings, arrr!",
-    "settings_scooter_auto_connect": "Auto-connect to this vessel"
+    "settings_scooter_auto_connect": "Auto-connect to this vessel",
+    "settings_scooter_auto_connect_description": "Auto-board this vessel when she be in range, arrr!"
 }
