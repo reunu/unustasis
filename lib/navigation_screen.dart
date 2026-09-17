@@ -883,10 +883,9 @@ class _NavigationScreenState extends State<NavigationScreen> {
           ),
           trailing: TextButton.icon(
             style: TextButton.styleFrom(
-              foregroundColor:
-                  isNavigating ? Theme.of(context).colorScheme.error : Theme.of(context).colorScheme.surface,
+              foregroundColor: Theme.of(context).colorScheme.surface,
             ),
-            icon: Icon(isNavigating ? Icons.stop_circle_outlined : Icons.close, size: 20),
+            icon: const Icon(Icons.close, size: 20),
             label: Text(
               FlutterI18n.translate(context, isNavigating ? "nav_stop_button" : "cancel"),
             ),
