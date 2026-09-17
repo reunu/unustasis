@@ -198,11 +198,14 @@ class _SupportScreenState extends State<SupportScreen> {
         title: Text(FlutterI18n.translate(context, "stats_title_support")),
         backgroundColor: Theme.of(context).colorScheme.surface,
       ),
-      body: ListView.builder(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewPadding.bottom),
-        shrinkWrap: true,
-        itemCount: supportItems().length,
-        itemBuilder: (context, index) => supportItems()[index],
+      body: SafeArea(
+        child: ListView.builder(
+          padding:
+              MediaQuery.of(context).size.width > 600 ? const EdgeInsets.symmetric(horizontal: 80) : EdgeInsets.zero,
+          shrinkWrap: true,
+          itemCount: supportItems().length,
+          itemBuilder: (context, index) => supportItems()[index],
+        ),
       ),
     );
   }
@@ -395,11 +398,24 @@ class GarageWidget extends StatelessWidget {
               ),
             );
           }
-          return ListView.builder(
+          final carousel = ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             scrollDirection: Axis.horizontal,
             itemCount: garages.length,
             itemBuilder: (context, index) => _GarageTile(garage: garages[index]),
+          );
+          if (MediaQuery.of(context).size.width <= 600) {
+            return carousel;
+          }
+          return ShaderMask(
+            shaderCallback: (Rect rect) => const LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              colors: [Colors.transparent, Colors.black, Colors.black, Colors.transparent],
+              stops: [0.0, 0.03, 0.97, 1.0],
+            ).createShader(rect),
+            blendMode: BlendMode.dstIn,
+            child: carousel,
           );
         },
       ),
@@ -420,7 +436,7 @@ class _GarageTile extends StatelessWidget {
       padding: const EdgeInsets.only(right: 16),
       child: Container(
         width: MediaQuery.of(context).size.width * 0.7,
-        constraints: const BoxConstraints(maxWidth: 500),
+        constraints: const BoxConstraints(maxWidth: 400),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surfaceContainer,

@@ -144,61 +144,64 @@ class _ScooterScreenState extends State<ScooterScreen> {
           ),
         ],
       ),
-      body: ListView(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewPadding.bottom),
-        shrinkWrap: true,
-        children: [
-          ...scooters.map((scooter) {
-            final bool connected = (scooter.id == scooterService.myScooter?.remoteId.toString() &&
-                scooterService.state != ScooterState.disconnected);
+      body: SafeArea(
+        child: ListView(
+          padding:
+              MediaQuery.of(context).size.width > 600 ? const EdgeInsets.symmetric(horizontal: 80) : EdgeInsets.zero,
+          shrinkWrap: true,
+          children: [
+            ...scooters.map((scooter) {
+              final bool connected = (scooter.id == scooterService.myScooter?.remoteId.toString() &&
+                  scooterService.state != ScooterState.disconnected);
 
-            if (_isListView) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
-                child: SavedScooterListItem(
-                  savedScooter: scooter,
-                  single: single,
-                  connected: connected,
-                  rebuild: () => setState(() {}),
-                  onNavigateBack: widget.onNavigateBack,
+              if (_isListView) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
+                  child: SavedScooterListItem(
+                    savedScooter: scooter,
+                    single: single,
+                    connected: connected,
+                    rebuild: () => setState(() {}),
+                    onNavigateBack: widget.onNavigateBack,
+                  ),
+                );
+              } else {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                  child: SavedScooterCard(
+                    savedScooter: scooter,
+                    single: single,
+                    connected: connected,
+                    rebuild: () => setState(() {}),
+                    onNavigateBack: widget.onNavigateBack,
+                  ),
+                );
+              }
+            }),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+              child: TextButton.icon(
+                style: TextButton.styleFrom(
+                  minimumSize: const Size.fromHeight(60),
+                  backgroundColor: Theme.of(context).colorScheme.onSurface,
                 ),
-              );
-            } else {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                child: SavedScooterCard(
-                  savedScooter: scooter,
-                  single: single,
-                  connected: connected,
-                  rebuild: () => setState(() {}),
-                  onNavigateBack: widget.onNavigateBack,
-                ),
-              );
-            }
-          }),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-            child: TextButton.icon(
-              style: TextButton.styleFrom(
-                minimumSize: const Size.fromHeight(60),
-                backgroundColor: Theme.of(context).colorScheme.onSurface,
-              ),
-              onPressed: () => _handleAddScooter(context),
-              icon: Icon(
-                Icons.add,
-                color: Theme.of(context).colorScheme.surface,
-                size: 16,
-              ),
-              label: Text(
-                FlutterI18n.translate(context, "settings_add_scooter").toUpperCase(),
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
+                onPressed: () => _handleAddScooter(context),
+                icon: Icon(
+                  Icons.add,
                   color: Theme.of(context).colorScheme.surface,
+                  size: 16,
+                ),
+                label: Text(
+                  FlutterI18n.translate(context, "settings_add_scooter").toUpperCase(),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: Theme.of(context).colorScheme.surface,
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

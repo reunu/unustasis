@@ -138,6 +138,7 @@ Future<void> showServerNotifications(BuildContext context) async {
       barrierDismissible: true, // user can dismiss the dialog
       builder: (BuildContext context) {
         return AlertDialog(
+          constraints: BoxConstraints(maxWidth: 600),
           title: Text(notification['title'][FlutterI18n.currentLocale(context)?.languageCode] ??
               notification['title']['en'] ??
               "Notification"),
