@@ -1,7 +1,7 @@
 [
     {
         "id": "go-stable-ios",
-        "timestamp": "2026-09-19T00:00:00Z",
+        "timestamp": "2026-09-18T22:00:00Z",
         "branch": "stasis for unu",
         "platform": "ios",
         "duration-days": 30,
