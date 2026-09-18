@@ -103,6 +103,13 @@
             </intent-filter>
         </receiver>
 
+        <!-- Runs the fired action. A receiver's process has no lifecycle claim
+             once onReceive returns, and the action outlives the broadcast. -->
+        <service
+            android:name=".tasker.TaskerActionService"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice" />
+
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@drawable/ic_bg_service_small" />

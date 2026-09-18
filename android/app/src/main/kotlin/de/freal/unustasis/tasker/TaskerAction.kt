@@ -92,6 +92,9 @@ object TaskerActionRunner {
     const val RESULT_TIMEOUT = "timeout"
     const val RESULT_DISPATCH_FAILED = "dispatch_failed"
 
+    /** Matches `taskerResultServiceBlocked` in lib/background/tasker_bridge.dart. */
+    const val RESULT_SERVICE_BLOCKED = "service_blocked"
+
     /**
      * Triggers [action] and blocks until it finishes, [timeoutMs] elapses, or
      * the thread is interrupted. Never call this on the main thread.

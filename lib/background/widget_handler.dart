@@ -290,31 +290,23 @@ FutureOr<void> backgroundCallback(Uri? data) async {
     setWidgetScanning(true);
   }
 
-  try {
-    // Always persist the action so the service can pick it up as a
-    // fallback.  When Android suspends the service's Dart isolate,
-    // invoke() may silently fail; SharedPreferences ensures the action
-    // is not lost.
-    if (action != null) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool("pendingWidgetAction", true);
-      await prefs.setString("pendingWidgetActionName", action);
-      if (requestId != null) {
-        await prefs.setString(taskerRequestIdKey, requestId);
-      } else {
-        // A widget tap must not inherit an abandoned request's id.
-        await prefs.remove(taskerRequestIdKey);
-      }
-    }
+  // Queued before the service is touched so it can be picked up as a
+  // fallback. When Android suspends the service's Dart isolate, invoke() may
+  // silently fail; the queue makes sure the action isn't lost. The request id
+  // rides along in the same entry, so the service reads the two together
+  // rather than pairing an action with whatever id happens to be around.
+  final queued = action == null ? null : PendingAction(action, requestId: requestId);
+  if (queued != null) await queuePendingAction(queued);
 
+  try {
     final running = await FlutterBackgroundService().isRunning();
     if (!running) {
       final service = FlutterBackgroundService();
       await service.startService();
       // The action will be picked up and executed by onStart() itself.
     } else {
-      // Fast path: invoke directly.  _executeAction() will clear the
-      // persisted pending action so it won't run twice.
+      // Fast path: invoke directly. The service drains the queue, so the entry
+      // is consumed there rather than running twice.
       if (action != null) {
         FlutterBackgroundService().invoke(action);
       }
@@ -324,13 +316,13 @@ FutureOr<void> backgroundCallback(Uri? data) async {
     // Android only allows a background start with an exemption, which a widget
     // tap has and another app's broadcast doesn't.
     final blocked = e.toString().contains("startForegroundService() not allowed");
-    if (blocked) {
-      // Drop the action rather than leave it queued: whenever the service next
-      // starts could be hours away, with the phone nowhere near the scooter.
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool("pendingWidgetAction", false);
-      await prefs.remove("pendingWidgetActionName");
-      await prefs.remove(taskerRequestIdKey);
+    // Nothing is going to run this now. Leaving it queued would let the next
+    // service start — possibly hours later, with the phone nowhere near the
+    // scooter — replay it, long after Tasker stopped waiting. A widget tap is
+    // only dropped when Android refused outright, since anything else there
+    // may still be picked up by a service that is on its way up.
+    if (queued != null && (blocked || requestId != null)) {
+      await dropPendingAction(queued);
     }
     if (requestId != null) {
       await publishActionResult(

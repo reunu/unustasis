@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Bridge between the native Tasker plugin and the background service.
@@ -9,8 +11,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// unprefixed here; the native side reads them with shared_preferences'
 /// `flutter.` prefix.
 
-/// Id of the request in flight, when it came from Tasker rather than a widget.
-const String taskerRequestIdKey = "pendingActionRequestId";
+/// Queue of actions handed to the service, each with the Tasker request
+/// waiting on it. A queue rather than a single slot: two triggers can land
+/// before the service reads either, and the second would overwrite the first,
+/// leaving its caller waiting for an answer sent under someone else's id.
+const String pendingActionQueueKey = "pendingWidgetActionQueue";
 
 /// Results are stored as `actionResult.<requestId>`, cleared once read.
 const String taskerResultPrefix = "actionResult.";
@@ -44,16 +49,98 @@ const String taskerResultFailedPrefix = "failed:";
 /// How long a result nobody collected sticks around before being swept.
 const Duration _resultRetention = Duration(minutes: 10);
 
-/// Reads and clears the id of the request waiting on the next action.
-///
-/// Cleared on read so a later widget tap can't inherit an abandoned id, and
-/// re-read from disk because the trigger was handled in another isolate.
-Future<String?> takePendingRequestId() async {
-  final prefs = await SharedPreferences.getInstance();
+/// How long a queued action is still worth running. Tasker has long given up
+/// by then, so anything older would move the scooter with nobody expecting it.
+const Duration _queueRetention = Duration(minutes: 5);
+
+/// One action waiting for the service. [requestId] is set only for Tasker,
+/// which is blocking on the outcome; a widget tap leaves it null.
+class PendingAction {
+  PendingAction(this.action, {this.requestId, DateTime? queuedAt})
+      : queuedAt = queuedAt ?? DateTime.now();
+
+  final String action;
+  final String? requestId;
+  final DateTime queuedAt;
+
+  bool get isStale => DateTime.now().difference(queuedAt) > _queueRetention;
+
+  String encode() => jsonEncode({
+        "action": action,
+        "requestId": requestId,
+        "queuedAt": queuedAt.millisecondsSinceEpoch,
+      });
+
+  static PendingAction? decode(String raw) {
+    final json = jsonDecode(raw);
+    if (json is! Map || json["action"] is! String) return null;
+    return PendingAction(
+      json["action"] as String,
+      requestId: json["requestId"] as String?,
+      queuedAt: DateTime.fromMillisecondsSinceEpoch(json["queuedAt"] as int? ?? 0),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is PendingAction && other.action == action && other.requestId == requestId;
+
+  @override
+  int get hashCode => Object.hash(action, requestId);
+
+  @override
+  String toString() => requestId == null ? action : "$action($requestId)";
+}
+
+/// Re-read from disk every time: the queue is written in the callback isolate
+/// and drained in the service isolate.
+Future<List<PendingAction>> _read(SharedPreferences prefs) async {
   await prefs.reload();
-  final requestId = prefs.getString(taskerRequestIdKey);
-  if (requestId != null) await prefs.remove(taskerRequestIdKey);
-  return requestId;
+  final raw = prefs.getStringList(pendingActionQueueKey) ?? const <String>[];
+  return raw
+      .map((entry) {
+        try {
+          return PendingAction.decode(entry);
+        } catch (_) {
+          return null; // half-written or from an older build
+        }
+      })
+      .whereType<PendingAction>()
+      .where((entry) => !entry.isStale)
+      .toList();
+}
+
+Future<void> _write(SharedPreferences prefs, List<PendingAction> entries) =>
+    entries.isEmpty
+        ? prefs.remove(pendingActionQueueKey)
+        : prefs.setStringList(pendingActionQueueKey, [for (final e in entries) e.encode()]);
+
+/// Adds [entry] for the service to pick up.
+Future<void> queuePendingAction(PendingAction entry) async {
+  final prefs = await SharedPreferences.getInstance();
+  final entries = await _read(prefs);
+  await _write(prefs, entries..add(entry));
+}
+
+/// Whether anything is waiting, without consuming it.
+Future<bool> hasPendingActions() async =>
+    (await _read(await SharedPreferences.getInstance())).isNotEmpty;
+
+/// Takes the whole queue in one go, so a trigger and the fallback sweep can't
+/// come away with the same entry.
+Future<List<PendingAction>> takePendingActions() async {
+  final prefs = await SharedPreferences.getInstance();
+  final entries = await _read(prefs);
+  await prefs.remove(pendingActionQueueKey);
+  return entries;
+}
+
+/// Takes back what a trigger queued once it's clear nothing will run it. Only
+/// the first match goes, so an identical action queued meanwhile stays.
+Future<void> dropPendingAction(PendingAction entry) async {
+  final prefs = await SharedPreferences.getInstance();
+  final entries = await _read(prefs);
+  if (entries.remove(entry)) await _write(prefs, entries);
 }
 
 /// Describes a thrown failure in the bridge's own vocabulary. `sendCommand`

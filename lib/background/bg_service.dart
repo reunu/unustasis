@@ -122,17 +122,31 @@ void _disableScanning() {
 Future<void> _checkPendingWidgetAction() async {
   if (_widgetActionInProgress) return;
   try {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.reload(); // re-read from disk (action was written in another isolate)
-    final pending = prefs.getBool("pendingWidgetAction") ?? false;
-    final actionName = prefs.getString("pendingWidgetActionName");
-    if (pending && actionName != null) {
-      Logger("bgservice").info("Found lost pending widget action: $actionName");
-      await _executeAction(actionName);
-    }
+    await _drainPendingActions();
   } catch (e) {
     Logger("bgservice").warning("Error checking pending widget action", e);
   }
+}
+
+/// Takes everything queued and runs it.
+///
+/// The queue is emptied in one read, so a trigger and the fallback sweep can't
+/// come away with the same entry. Only one action can be in flight, so the
+/// first is executed and the rest are answered with `busy` rather than left
+/// behind for a later sweep to replay.
+Future<void> _drainPendingActions() async {
+  final entries = await takePendingActions();
+  if (entries.isEmpty) return;
+
+  final log = Logger("bgservice");
+  for (final dropped in entries.skip(1)) {
+    log.info("Dropping $dropped, another action is already going out");
+    await reportActionResult(dropped.requestId, taskerResultBusy);
+  }
+
+  final entry = entries.first;
+  log.info("Found pending action: $entry");
+  await _executeAction(entry.action, requestId: entry.requestId);
 }
 
 const Duration _actionConfirmationTimeout = Duration(seconds: 15);
@@ -168,30 +182,25 @@ Future<String> _confirmed(bool Function() satisfied) async {
 ///
 /// A Tasker request carries an id, and its outcome is published for the native
 /// receiver blocking on it.
-Future<void> _executeAction(String actionName) async {
+Future<void> _executeAction(String actionName, {String? requestId}) async {
   // Claimed before anything is awaited: an invoke and the pending-action
   // fallback can arrive for the same action at once, and an await in between
-  // would let both through.
+  // would let both through. The caller has already taken this entry off the
+  // queue, so reporting busy here drops it for good rather than leaving it to
+  // be replayed later without its id.
   if (_widgetActionInProgress) {
-    await reportActionResult(await takePendingRequestId(), taskerResultBusy);
+    await reportActionResult(requestId, taskerResultBusy);
     return;
   }
   _widgetActionInProgress = true;
 
   final log = Logger("bgservice");
-  final String? requestId = await takePendingRequestId();
 
   log.info("Executing action: $actionName");
   String result = taskerResultOk;
 
   try {
     promoteToForeground();
-
-    // Clear the persisted pending action so the fallback check in the
-    // connection listener / rescan timer won't re-execute it.
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool("pendingWidgetAction", false);
-    await prefs.remove("pendingWidgetActionName");
 
     if (!scooterService.connected) {
       await setWidgetScanning(true);
@@ -323,14 +332,10 @@ void onStart(ServiceInstance service) async {
 
   backgroundScanEnabled = (await SharedPreferences.getInstance()).getBool("backgroundScan") ?? false;
 
-  // Check if we were started by a widget action
-  final prefs = await SharedPreferences.getInstance();
-  final pendingWidgetAction = prefs.getBool("pendingWidgetAction") ?? false;
-  final pendingActionName = prefs.getString("pendingWidgetActionName");
-  if (pendingWidgetAction) {
-    await prefs.setBool("pendingWidgetAction", false);
-    await prefs.remove("pendingWidgetActionName");
-  }
+  // Check if we were started by a widget action. Only peeked at here; the
+  // queue is drained once everything below is initialised, so the entry and
+  // the request id waiting on it are taken together.
+  final pendingWidgetAction = await hasPendingActions();
 
   // Seed widget caches and clear stale spinner BEFORE any code path
   // that might stop the service (e.g. _disableScanning → stopSelf).
@@ -438,9 +443,11 @@ void onStart(ServiceInstance service) async {
     }
   });
 
-  service.on("lock").listen((data) async => _executeAction("lock"));
-  service.on("unlock").listen((data) async => _executeAction("unlock"));
-  service.on("openseat").listen((data) async => _executeAction("openseat"));
+  // The action name is only a wake-up call; what actually runs comes off the
+  // queue, together with the request id that belongs to it.
+  service.on("lock").listen((data) async => _drainPendingActions());
+  service.on("unlock").listen((data) async => _drainPendingActions());
+  service.on("openseat").listen((data) async => _drainPendingActions());
 
   service.on("test").listen((data) async {
     Logger("bgservice").info("Test command received by background service! Data: $data");
@@ -474,9 +481,9 @@ void onStart(ServiceInstance service) async {
   // If the service was started by a widget action, execute it now that
   // everything is initialized and all listeners are registered.
   // Wait for scooterService to load cached data (saved scooter IDs, etc.)
-  if (pendingWidgetAction && pendingActionName != null) {
+  if (pendingWidgetAction) {
     await Future.delayed(const Duration(seconds: 3));
-    _executeAction(pendingActionName);
+    _drainPendingActions();
   }
 
   _rescanTimer = PausableTimer.periodic(const Duration(seconds: 35), () async {

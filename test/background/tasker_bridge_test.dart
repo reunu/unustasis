@@ -36,18 +36,84 @@ void main() {
     });
   });
 
-  group('takePendingRequestId', () {
-    test('returns the id once, then clears it', () async {
-      SharedPreferences.setMockInitialValues({taskerRequestIdKey: "abc-123"});
+  group('pending action queue', () {
+    test('hands each action back with the id that was queued with it', () async {
+      await queuePendingAction(PendingAction("unlock", requestId: "abc-123"));
+      await queuePendingAction(PendingAction("lock", requestId: "def-456"));
 
-      expect(await takePendingRequestId(), "abc-123");
-      // A later widget tap must not inherit it.
-      expect(await takePendingRequestId(), isNull);
+      final taken = await takePendingActions();
+
+      // The second trigger must not have overwritten the first, and neither
+      // id may end up on the other's action.
+      expect(taken.map((e) => e.action), ["unlock", "lock"]);
+      expect(taken.map((e) => e.requestId), ["abc-123", "def-456"]);
     });
 
-    test('returns null when the trigger was a widget tap', () async {
-      expect(await takePendingRequestId(), isNull);
+    test('empties the queue in one read, so nothing is run twice', () async {
+      await queuePendingAction(PendingAction("unlock", requestId: "abc-123"));
+
+      expect(await takePendingActions(), hasLength(1));
+      expect(await takePendingActions(), isEmpty);
     });
+
+    test('carries no id for a widget tap', () async {
+      await queuePendingAction(PendingAction("unlock"));
+
+      final taken = await takePendingActions();
+      expect(taken.single.requestId, isNull);
+    });
+
+    test('a widget tap does not inherit an abandoned request id', () async {
+      await queuePendingAction(PendingAction("lock", requestId: "abc-123"));
+      await takePendingActions();
+
+      await queuePendingAction(PendingAction("unlock"));
+      expect((await takePendingActions()).single.requestId, isNull);
+    });
+
+    test('drops entries nobody picked up in time', () async {
+      await queuePendingAction(PendingAction(
+        "unlock",
+        requestId: "stale",
+        queuedAt: DateTime.now().subtract(const Duration(hours: 1)),
+      ));
+      await queuePendingAction(PendingAction(
+        "lock",
+        requestId: "fresh",
+        queuedAt: DateTime.now(),
+      ));
+
+      final taken = await takePendingActions();
+      expect(taken.map((e) => e.requestId), ["fresh"]);
+    });
+
+    test('hasPendingActions peeks without consuming', () async {
+      await queuePendingAction(PendingAction("unlock", requestId: "abc-123"));
+
+      expect(await hasPendingActions(), isTrue);
+      expect(await takePendingActions(), hasLength(1));
+      expect(await hasPendingActions(), isFalse);
+    });
+
+    test('dropPendingAction removes only the matching entry', () async {
+      await queuePendingAction(PendingAction("unlock", requestId: "abc-123"));
+      await queuePendingAction(PendingAction("lock", requestId: "def-456"));
+
+      await dropPendingAction(PendingAction("unlock", requestId: "abc-123"));
+
+      final taken = await takePendingActions();
+      expect(taken.map((e) => e.requestId), ["def-456"]);
+    });
+
+    test('dropPendingAction clears the queue when it empties', () async {
+      await queuePendingAction(PendingAction("unlock", requestId: "abc-123"));
+
+      await dropPendingAction(PendingAction("unlock", requestId: "abc-123"));
+
+      expect(await hasPendingActions(), isFalse);
+      expect(await takePendingActions(), isEmpty);
+    });
+
   });
 
   group('publishActionResult', () {

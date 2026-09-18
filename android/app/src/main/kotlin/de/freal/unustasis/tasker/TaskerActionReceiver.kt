@@ -3,14 +3,11 @@ package de.freal.unustasis.tasker
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.os.Bundle
-import android.os.PowerManager
-import android.os.SystemClock
 import android.util.Log
 
 /**
- * Fires a scooter action on Tasker's behalf and keeps the task waiting until
- * the scooter has actually done it.
+ * Hands a scooter action to [TaskerActionService] and keeps the Tasker task
+ * waiting until the scooter has actually done it.
  *
  * Waiting relies on the host supplying a completion intent: the broadcast is
  * released immediately and the outcome sent on once it's known. Holding the
@@ -33,62 +30,19 @@ class TaskerActionReceiver : BroadcastReceiver() {
 
         val appContext = context.applicationContext
         val completionIntent = completionIntentOf(intent)
+        if (completionIntent == null) Log.w(TAG, "No completion intent; ${action.key} can't be waited on")
+
         val pendingResult = goAsync()
-
-        if (completionIntent != null) {
-            pendingResult.setResultCodeSafely(TaskerPluginProtocol.RESULT_CODE_PENDING)
-            pendingResult.finish()
-            runOffThread(appContext, action) { result ->
-                completionIntent
-                    .putExtra(TaskerPluginProtocol.EXTRA_RESULT_CODE, resultCodeFor(result))
-                    .putExtra(TaskerPluginProtocol.EXTRA_VARIABLES_BUNDLE, variablesFor(result))
-                try {
-                    appContext.sendBroadcast(completionIntent)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Couldn't report ${action.key} back to the host", e)
-                }
-            }
-        } else {
-            Log.w(TAG, "No completion intent; ${action.key} can't be waited on")
-            pendingResult.setResultCodeSafely(TaskerPluginProtocol.RESULT_CODE_OK)
-            pendingResult.finish()
-            runOffThread(appContext, action) {}
-        }
-    }
-
-    /**
-     * Runs the action on a worker thread, holding a wake lock so a dozing
-     * device can't park us mid-connect.
-     */
-    private fun runOffThread(context: Context, action: TaskerAction, report: (String) -> Unit) {
-        Thread {
-            val timeoutMs = TaskerActionRunner.DEFAULT_TIMEOUT_MS
-            val wakeLock = (context.getSystemService(Context.POWER_SERVICE) as? PowerManager)
-                ?.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG)
-                ?.apply { acquire(timeoutMs + WAKE_LOCK_GRACE_MS) }
-            val startedAt = SystemClock.elapsedRealtime()
-            try {
-                val result = TaskerActionRunner.runBlocking(context, action, timeoutMs)
-                Log.i(TAG, "${action.key} finished: $result after ${SystemClock.elapsedRealtime() - startedAt}ms")
-                report(result)
-            } catch (e: Exception) {
-                Log.e(TAG, "${action.key} blew up", e)
-                report("failed:${e.message}")
-            } finally {
-                if (wakeLock?.isHeld == true) wakeLock.release()
-            }
-        }.apply { name = "unustasis-tasker-${action.key}" }.start()
-    }
-
-    /** Only a clean "ok" from the scooter counts as success. */
-    private fun resultCodeFor(result: String): Int =
-        if (result == TaskerActionRunner.RESULT_OK) TaskerPluginProtocol.RESULT_CODE_OK
-        else TaskerPluginProtocol.RESULT_CODE_FAILED
-
-    private fun variablesFor(result: String): Bundle = Bundle().apply {
-        putString(TaskerPluginProtocol.VARIABLE_RESULT, result)
-        if (result != TaskerActionRunner.RESULT_OK) {
-            putString(TaskerPluginProtocol.VARIABLE_ERROR_MESSAGE, result)
+        // Started while we're still inside onReceive, where Android still lets
+        // a receiver start a service; the action itself outlives this call.
+        val started = TaskerActionService.start(appContext, action, completionIntent)
+        pendingResult.setResultCodeSafely(
+            if (completionIntent != null) TaskerPluginProtocol.RESULT_CODE_PENDING
+            else TaskerPluginProtocol.RESULT_CODE_OK
+        )
+        pendingResult.finish()
+        if (!started) {
+            TaskerActionService.reply(appContext, completionIntent, TaskerActionRunner.RESULT_SERVICE_BLOCKED)
         }
     }
 
@@ -120,7 +74,5 @@ class TaskerActionReceiver : BroadcastReceiver() {
 
     companion object {
         private const val TAG = "TaskerActionReceiver"
-        private const val WAKE_LOCK_TAG = "unustasis:tasker-action"
-        private const val WAKE_LOCK_GRACE_MS = 5_000L
     }
 }
