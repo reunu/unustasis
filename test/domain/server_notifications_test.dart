@@ -59,7 +59,7 @@ void main() {
   });
 
   group('matchBuildNumber', () {
-    BuildScopeMatch match({Object? exact, Object? min, Object? max, int? buildNumber = 46}) => matchBuildNumber(
+    ScopeMatch match({Object? exact, Object? min, Object? max, int? buildNumber = 46}) => matchBuildNumber(
           exact: exact,
           min: min,
           max: max,
@@ -67,37 +67,37 @@ void main() {
         );
 
     test('an entry without a scope matches every build', () {
-      expect(match(), BuildScopeMatch.match);
-      expect(match(buildNumber: null), BuildScopeMatch.match);
+      expect(match(), ScopeMatch.match);
+      expect(match(buildNumber: null), ScopeMatch.match);
     });
 
     test('matches an exact build number or a list of them', () {
-      expect(match(exact: 46), BuildScopeMatch.match);
-      expect(match(exact: 45), BuildScopeMatch.mismatch);
-      expect(match(exact: [46, 47]), BuildScopeMatch.match);
-      expect(match(exact: [44, 45]), BuildScopeMatch.mismatch);
-      expect(match(exact: 46.0), BuildScopeMatch.match);
+      expect(match(exact: 46), ScopeMatch.match);
+      expect(match(exact: 45), ScopeMatch.mismatch);
+      expect(match(exact: [46, 47]), ScopeMatch.match);
+      expect(match(exact: [44, 45]), ScopeMatch.mismatch);
+      expect(match(exact: 46.0), ScopeMatch.match);
       // an empty list is the same as no constraint
-      expect(match(exact: <int>[]), BuildScopeMatch.match);
+      expect(match(exact: <int>[]), ScopeMatch.match);
     });
 
     test('matches min and max bounds inclusively', () {
-      expect(match(min: 40), BuildScopeMatch.match);
-      expect(match(min: 47), BuildScopeMatch.mismatch);
-      expect(match(max: 50), BuildScopeMatch.match);
-      expect(match(max: 45), BuildScopeMatch.mismatch);
-      expect(match(min: 40, max: 50), BuildScopeMatch.match);
-      expect(match(min: 40, max: 45), BuildScopeMatch.mismatch);
+      expect(match(min: 40), ScopeMatch.match);
+      expect(match(min: 47), ScopeMatch.mismatch);
+      expect(match(max: 50), ScopeMatch.match);
+      expect(match(max: 45), ScopeMatch.mismatch);
+      expect(match(min: 40, max: 50), ScopeMatch.match);
+      expect(match(min: 40, max: 45), ScopeMatch.mismatch);
     });
 
     test('scopes are combined (all must match)', () {
-      expect(match(exact: 46, min: 40, max: 50), BuildScopeMatch.match);
-      expect(match(exact: 46, min: 47), BuildScopeMatch.mismatch);
-      expect(match(exact: 46, max: 45), BuildScopeMatch.mismatch);
+      expect(match(exact: 46, min: 40, max: 50), ScopeMatch.match);
+      expect(match(exact: 46, min: 47), ScopeMatch.mismatch);
+      expect(match(exact: 46, max: 45), ScopeMatch.mismatch);
     });
 
     test('a scope that cannot be evaluated is malformed, never unscoped', () {
-      const scope = BuildScopeMatch.malformed;
+      const scope = ScopeMatch.malformed;
       expect(match(exact: "46"), scope);
       expect(match(exact: true), scope);
       expect(match(exact: [46, "47"]), scope);
@@ -106,6 +106,111 @@ void main() {
       // unknown app build number with a configured scope
       expect(match(exact: 46, buildNumber: null), scope);
       expect(match(min: 40, buildNumber: null), scope);
+    });
+  });
+
+  group('matchInstallerStore', () {
+    test('an entry without the field matches every install', () {
+      expect(matchInstallerStore(value: null, installerStore: "com.apple.testflight"), ScopeMatch.match);
+      expect(matchInstallerStore(value: null, installerStore: null), ScopeMatch.match);
+    });
+
+    test('accepts one store or a list', () {
+      expect(
+        matchInstallerStore(value: "com.apple.testflight", installerStore: "com.apple.testflight"),
+        ScopeMatch.match,
+      );
+      expect(
+        matchInstallerStore(value: ["com.apple.testflight", "com.apple"], installerStore: "com.apple"),
+        ScopeMatch.match,
+      );
+      expect(
+        matchInstallerStore(value: "com.apple.testflight", installerStore: "com.apple"),
+        ScopeMatch.mismatch,
+      );
+    });
+
+    test('a missing installer store matches the "none" sentinel', () {
+      expect(matchInstallerStore(value: "none", installerStore: null), ScopeMatch.match);
+      expect(matchInstallerStore(value: "none", installerStore: ""), ScopeMatch.match);
+      expect(matchInstallerStore(value: "com.android.vending", installerStore: null), ScopeMatch.mismatch);
+    });
+
+    test('malformed values never match', () {
+      expect(matchInstallerStore(value: [], installerStore: "com.apple"), ScopeMatch.malformed);
+      expect(matchInstallerStore(value: 42, installerStore: "com.apple"), ScopeMatch.malformed);
+      expect(matchInstallerStore(value: ["com.apple", 42], installerStore: "com.apple"), ScopeMatch.malformed);
+    });
+  });
+
+  group('matchInstallTimes', () {
+    final installed = DateTime.utc(2026, 9, 1);
+    final updated = DateTime.utc(2026, 9, 18, 22);
+
+    ScopeMatch match({
+      Object? minInstallTime,
+      Object? maxInstallTime,
+      Object? minUpdateTime,
+      Object? maxUpdateTime,
+      DateTime? installTime,
+      DateTime? updateTime,
+    }) =>
+        matchInstallTimes(
+          minInstallTime: minInstallTime,
+          maxInstallTime: maxInstallTime,
+          minUpdateTime: minUpdateTime,
+          maxUpdateTime: maxUpdateTime,
+          installTime: installTime ?? installed,
+          updateTime: updateTime ?? updated,
+        );
+
+    test('an entry without bounds matches every install', () {
+      expect(match(), ScopeMatch.match);
+    });
+
+    test('bounds are inclusive and compare instants', () {
+      expect(match(minUpdateTime: "2026-09-18T22:00:00Z"), ScopeMatch.match);
+      expect(match(maxUpdateTime: "2026-09-18T22:00:00Z"), ScopeMatch.match);
+      expect(match(minUpdateTime: "2026-09-19T00:00:00Z"), ScopeMatch.mismatch);
+      expect(match(maxUpdateTime: "2026-09-18T21:59:59Z"), ScopeMatch.mismatch);
+      expect(match(minInstallTime: "2026-08-01T00:00:00Z", maxInstallTime: "2026-09-15T00:00:00Z"),
+          ScopeMatch.match);
+      expect(match(minInstallTime: "2026-09-15T00:00:00Z"), ScopeMatch.mismatch);
+    });
+
+    test('install and update bounds are independent', () {
+      expect(
+        match(minUpdateTime: "2026-01-01T00:00:00Z", maxInstallTime: "2026-09-02T00:00:00Z"),
+        ScopeMatch.match,
+      );
+    });
+
+    test('a bound that cannot be checked fails closed', () {
+      expect(match(minUpdateTime: "not a date"), ScopeMatch.malformed);
+      expect(match(maxUpdateTime: 42), ScopeMatch.malformed);
+      // the platform did not report the timestamp the bound needs
+      expect(
+        matchInstallTimes(
+          minInstallTime: "2026-01-01T00:00:00Z",
+          maxInstallTime: null,
+          minUpdateTime: null,
+          maxUpdateTime: null,
+          installTime: null,
+          updateTime: updated,
+        ),
+        ScopeMatch.malformed,
+      );
+      expect(
+        matchInstallTimes(
+          minInstallTime: null,
+          maxInstallTime: null,
+          minUpdateTime: null,
+          maxUpdateTime: "2026-09-19T00:00:00Z",
+          installTime: installed,
+          updateTime: null,
+        ),
+        ScopeMatch.malformed,
+      );
     });
   });
 

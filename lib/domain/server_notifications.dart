@@ -13,6 +13,13 @@
 /// * `platform` - exact match against `Platform.operatingSystem`.
 /// * `build-number` / `min-build-number` / `max-build-number` - scope to specific
 ///                app build numbers from `PackageInfo.buildNumber`.
+/// * `installer-store` - scope to how the app was installed, one string or a list:
+///                `com.apple.testflight`/`com.apple` on iOS, `com.android.vending` for
+///                Play on Android. The sentinel `none` matches an app installed
+///                without install source information.
+/// * `min-install-time` / `max-install-time` / `min-update-time` / `max-update-time` -
+///                scope to when this installation was first installed or last updated,
+///                from `PackageInfo.installTime`/`updateTime` (RFC3339 bounds, inclusive).
 /// * `timestamp` + `duration-days` - the entry is valid from `timestamp` up to and
 ///                including `timestamp + duration-days`.
 /// * `max-shows` - how often the entry may be shown per installation, defaults to 1.
@@ -37,8 +44,8 @@ const kShownCountsPrefKey = 'shownServerNotificationCounts';
 /// Preference key of the original "shown once" string list, kept for migration only.
 const kLegacyShownPrefKey = 'shownServerNotifications';
 
-/// Result of comparing an entry's build scope against the running app.
-enum BuildScopeMatch {
+/// Result of comparing an entry's scope against the running app.
+enum ScopeMatch {
   /// No scope configured, or the running build is inside it.
   match,
 
@@ -194,28 +201,102 @@ bool isWithinWindow({required DateTime start, required int durationDays, require
 ///
 /// An entry without any of the fields applies to every build. When a scope is set
 /// and [buildNumber] is unknown, the entry is not shown.
-BuildScopeMatch matchBuildNumber({
+ScopeMatch matchBuildNumber({
   required Object? exact,
   required Object? min,
   required Object? max,
   required int? buildNumber,
 }) {
-  if (exact == null && min == null && max == null) return BuildScopeMatch.match;
-  if (buildNumber == null) return BuildScopeMatch.malformed;
+  if (exact == null && min == null && max == null) return ScopeMatch.match;
+  if (buildNumber == null) return ScopeMatch.malformed;
 
   final exactNumbers = _numbers(exact);
-  if (exactNumbers == null) return BuildScopeMatch.malformed;
-  if (exactNumbers.isNotEmpty && !exactNumbers.contains(buildNumber)) return BuildScopeMatch.mismatch;
+  if (exactNumbers == null) return ScopeMatch.malformed;
+  if (exactNumbers.isNotEmpty && !exactNumbers.contains(buildNumber)) return ScopeMatch.mismatch;
 
   final minNumber = _number(min);
-  if (minNumber == null && min != null) return BuildScopeMatch.malformed;
-  if (minNumber != null && buildNumber < minNumber) return BuildScopeMatch.mismatch;
+  if (minNumber == null && min != null) return ScopeMatch.malformed;
+  if (minNumber != null && buildNumber < minNumber) return ScopeMatch.mismatch;
 
   final maxNumber = _number(max);
-  if (maxNumber == null && max != null) return BuildScopeMatch.malformed;
-  if (maxNumber != null && buildNumber > maxNumber) return BuildScopeMatch.mismatch;
+  if (maxNumber == null && max != null) return ScopeMatch.malformed;
+  if (maxNumber != null && buildNumber > maxNumber) return ScopeMatch.mismatch;
 
-  return BuildScopeMatch.match;
+  return ScopeMatch.match;
+}
+
+/// Compares the optional `installer-store` field against [installerStore], the package
+/// that installed the app: `com.apple.testflight` for TestFlight, `com.apple` for the
+/// App Store, `com.android.vending` for Play. A development build installed from Xcode
+/// also reports `com.apple`, so this scopes beta builds but does not single out the
+/// store.
+ScopeMatch matchInstallerStore({required Object? value, required String? installerStore}) {
+  if (value == null) return ScopeMatch.match;
+  final wanted = _strings(value);
+  // an empty list would silently match nothing, which is always an authoring mistake
+  if (wanted == null || wanted.isEmpty) return ScopeMatch.malformed;
+  final current = installerStore == null || installerStore.isEmpty ? 'none' : installerStore;
+  return wanted.contains(current) ? ScopeMatch.match : ScopeMatch.mismatch;
+}
+
+/// Compares the optional `min-install-time`, `max-install-time`, `min-update-time` and
+/// `max-update-time` fields against when this installation was first installed and last
+/// updated. Bounds are RFC3339 strings and inclusive.
+///
+/// These are install dates, not build dates: the platform does not record when the
+/// running binary was compiled. When a bound is set but the platform reports no
+/// timestamp for it, the entry is not shown.
+ScopeMatch matchInstallTimes({
+  required Object? minInstallTime,
+  required Object? maxInstallTime,
+  required Object? minUpdateTime,
+  required Object? maxUpdateTime,
+  required DateTime? installTime,
+  required DateTime? updateTime,
+}) {
+  if (minInstallTime == null &&
+      maxInstallTime == null &&
+      minUpdateTime == null &&
+      maxUpdateTime == null) {
+    return ScopeMatch.match;
+  }
+  final minInstall = _timeBound(minInstallTime);
+  final maxInstall = _timeBound(maxInstallTime);
+  final minUpdate = _timeBound(minUpdateTime);
+  final maxUpdate = _timeBound(maxUpdateTime);
+  if ((minInstallTime != null && minInstall == null) ||
+      (maxInstallTime != null && maxInstall == null) ||
+      (minUpdateTime != null && minUpdate == null) ||
+      (maxUpdateTime != null && maxUpdate == null)) {
+    return ScopeMatch.malformed;
+  }
+  if (minInstall != null || maxInstall != null) {
+    if (installTime == null) return ScopeMatch.malformed;
+    if (minInstall != null && installTime.isBefore(minInstall)) return ScopeMatch.mismatch;
+    if (maxInstall != null && installTime.isAfter(maxInstall)) return ScopeMatch.mismatch;
+  }
+  if (minUpdate != null || maxUpdate != null) {
+    if (updateTime == null) return ScopeMatch.malformed;
+    if (minUpdate != null && updateTime.isBefore(minUpdate)) return ScopeMatch.mismatch;
+    if (maxUpdate != null && updateTime.isAfter(maxUpdate)) return ScopeMatch.mismatch;
+  }
+  return ScopeMatch.match;
+}
+
+/// Parses an RFC3339 time bound. Null means "missing or unusable", callers tell those
+/// apart by looking at the raw value.
+DateTime? _timeBound(Object? value) => value is String ? DateTime.tryParse(value) : null;
+
+/// Reads a single string or a list of strings. Null means "malformed".
+List<String>? _strings(Object? value) {
+  if (value is String) return [value];
+  if (value is! List) return null;
+  final strings = <String>[];
+  for (final entry in value) {
+    if (entry is! String) return null;
+    strings.add(entry);
+  }
+  return strings;
 }
 
 /// Reads a single build number, accepting JSON doubles. Null means "not a number".

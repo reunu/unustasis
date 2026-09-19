@@ -143,11 +143,26 @@ Future<void> showServerNotifications(BuildContext context) async {
         max: entry['max-build-number'],
         buildNumber: buildNumber,
       );
-      if (buildScope != BuildScopeMatch.match) {
+      // check if this is meant for how the app was installed (installer-store)
+      final storeScope = matchInstallerStore(
+        value: entry['installer-store'],
+        installerStore: packageInfo.installerStore,
+      );
+      // check if this is meant for how old this installation is (min/max-install-time, min/max-update-time)
+      final installScope = matchInstallTimes(
+        minInstallTime: entry['min-install-time'],
+        maxInstallTime: entry['max-install-time'],
+        minUpdateTime: entry['min-update-time'],
+        maxUpdateTime: entry['max-update-time'],
+        installTime: packageInfo.installTime,
+        updateTime: packageInfo.updateTime,
+      );
+      if (buildScope != ScopeMatch.match || storeScope != ScopeMatch.match || installScope != ScopeMatch.match) {
         // a scope that cannot be evaluated is skipped like a non-matching one, so a typo
         // in the payload can never turn into an unscoped notification
-        log.warning("Notification $id has a ${buildScope.name} build scope for app build number $buildNumber. "
-            "Skipping.");
+        log.warning("Notification $id does not match this app: build $buildScope ($buildNumber), "
+            "installer-store $storeScope (${packageInfo.installerStore}), install dates $installScope "
+            "(${packageInfo.installTime}, ${packageInfo.updateTime}). Skipping.");
         continue;
       }
       // check for already shown notifications, allowing repeats up to max-shows (default 1)

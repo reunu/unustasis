@@ -41,6 +41,10 @@
         "max-build-number": 60,
         "max-shows": 3,
         "snooze-days": 3,
+        "installer-store": [
+            "com.apple.testflight"
+        ],
+        "max-update-time": "2026-09-18T22:00:00Z",
         "title": {
             "en": "Sample Notification",
             "de": "Beispielbenachrichtigung",
@@ -78,6 +82,9 @@
             46,
             47,
             48
+        ],
+        "installer-store": [
+            "com.android.vending"
         ],
         "title": {
             "en": "Sample Notification",
