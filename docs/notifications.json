@@ -40,6 +40,11 @@
         "min-build-number": 40,
         "max-build-number": 60,
         "max-shows": 3,
+        "snooze-days": 3,
+        "installer-store": [
+            "com.apple.testflight"
+        ],
+        "max-update-time": "2026-09-18T22:00:00Z",
         "title": {
             "en": "Sample Notification",
             "de": "Beispielbenachrichtigung",
@@ -57,9 +62,14 @@
         },
         "action-url": "https://example.com/",
         "dismiss-text": {
-            "en": "OK",
-            "de": "OK",
-            "fr": "OK"
+            "en": "Later",
+            "de": "Später",
+            "fr": "Plus tard"
+        },
+        "never-text": {
+            "en": "Don't show again",
+            "de": "Nicht mehr anzeigen",
+            "fr": "Ne plus afficher"
         }
     },
     {
@@ -72,6 +82,9 @@
             46,
             47,
             48
+        ],
+        "installer-store": [
+            "com.android.vending"
         ],
         "title": {
             "en": "Sample Notification",
