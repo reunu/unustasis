@@ -40,6 +40,7 @@
         "min-build-number": 40,
         "max-build-number": 60,
         "max-shows": 3,
+        "snooze-days": 3,
         "title": {
             "en": "Sample Notification",
             "de": "Beispielbenachrichtigung",
@@ -57,9 +58,14 @@
         },
         "action-url": "https://example.com/",
         "dismiss-text": {
-            "en": "OK",
-            "de": "OK",
-            "fr": "OK"
+            "en": "Later",
+            "de": "Später",
+            "fr": "Plus tard"
+        },
+        "never-text": {
+            "en": "Don't show again",
+            "de": "Nicht mehr anzeigen",
+            "fr": "Ne plus afficher"
         }
     },
     {
