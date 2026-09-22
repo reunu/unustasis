@@ -11,6 +11,7 @@ import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 
 import '../domain/scooter_battery.dart';
+import '../helper_widgets/wide_layout.dart';
 import '../scooter_service.dart';
 
 typedef _BatteryScreenViewData = ({
@@ -66,7 +67,10 @@ class _BatteryScreenState extends State<BatteryScreen> {
               backgroundColor: Theme.of(context).colorScheme.surface,
             ),
             body: ListView(
-              padding: EdgeInsets.fromLTRB(16, 0, 16, MediaQuery.of(context).viewPadding.bottom),
+              padding: wideContentPadding(
+                context,
+                base: EdgeInsets.fromLTRB(16, 0, 16, MediaQuery.of(context).viewPadding.bottom),
+              ),
               shrinkWrap: true,
               children: [
                 Column(
