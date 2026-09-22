@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../domain/saved_scooter.dart';
 import '../domain/statistics_helper.dart';
+import '../helper_widgets/wide_layout.dart';
 import '../scooter_service.dart';
 
 class LogScreen extends StatelessWidget {
@@ -70,6 +71,7 @@ class LogScreen extends StatelessWidget {
                     //     log.eventType != EventType.wakeUp &&
                     //     log.eventType != EventType.hibernate);
                     return ListView.builder(
+                      padding: wideContentPadding(context),
                       itemCount: logs.length,
                       itemBuilder: (context, index) {
                         LogEntry log = logs[index];

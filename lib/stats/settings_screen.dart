@@ -17,6 +17,7 @@ import '../domain/theme_helper.dart';
 import '../domain/scooter_keyless_distance.dart';
 import '../scooter_service.dart';
 import '../helper_widgets/header.dart';
+import '../helper_widgets/wide_layout.dart';
 import 'log_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -453,7 +454,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       body: SafeArea(
         child: ListView.separated(
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: wideContentPadding(context, base: const EdgeInsets.symmetric(vertical: 16)),
           shrinkWrap: true,
           itemCount: settingsItems().length,
           separatorBuilder: (context, index) => Divider(

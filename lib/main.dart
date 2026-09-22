@@ -15,6 +15,7 @@ import 'package:shared_preferences/util/legacy_to_async_migration_util.dart';
 import '../background/bg_service.dart';
 import '../domain/log_helper.dart';
 import 'fonts.dart';
+import 'helper_widgets/wide_layout.dart';
 import '../flutter/blue_plus_mockable.dart';
 import '../home_screen.dart';
 import '../scooter_service.dart';
@@ -159,6 +160,8 @@ class _MyAppState extends State<MyApp> {
         appBarTheme: const AppBarTheme(
           centerTitle: true,
         ),
+        dialogTheme: const DialogThemeData(constraints: wideDialogConstraints),
+        bottomSheetTheme: const BottomSheetThemeData(constraints: wideDialogConstraints),
         textTheme: ThemeData(brightness: Brightness.light).textTheme.apply(fontFamily: 'Nunito'),
         brightness: Brightness.light,
         useMaterial3: true,
@@ -180,6 +183,8 @@ class _MyAppState extends State<MyApp> {
         appBarTheme: const AppBarTheme(
           centerTitle: true,
         ),
+        dialogTheme: const DialogThemeData(constraints: wideDialogConstraints),
+        bottomSheetTheme: const BottomSheetThemeData(constraints: wideDialogConstraints),
         textTheme: ThemeData(brightness: Brightness.dark).textTheme.apply(fontFamily: 'Nunito'),
         brightness: Brightness.dark,
         useMaterial3: true,
