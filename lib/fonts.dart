@@ -1,10 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
-/// Configure before building any text styles; missing assets must never download.
+/// Registers the bundled font licenses with Flutter's license registry.
+/// The families themselves are declared in pubspec.yaml.
 void configureBundledFonts() {
-  GoogleFonts.config.allowRuntimeFetching = false;
   LicenseRegistry.addLicense(() async* {
     yield LicenseEntryWithLineBreaks([
       'Nunito',

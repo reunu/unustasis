@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:easy_dynamic_theme/easy_dynamic_theme.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
@@ -160,7 +159,7 @@ class _MyAppState extends State<MyApp> {
         appBarTheme: const AppBarTheme(
           centerTitle: true,
         ),
-        textTheme: GoogleFonts.nunitoTextTheme(ThemeData(brightness: Brightness.light).textTheme),
+        textTheme: ThemeData(brightness: Brightness.light).textTheme.apply(fontFamily: 'Nunito'),
         brightness: Brightness.light,
         useMaterial3: true,
         colorScheme: ColorScheme.light(
@@ -181,7 +180,7 @@ class _MyAppState extends State<MyApp> {
         appBarTheme: const AppBarTheme(
           centerTitle: true,
         ),
-        textTheme: GoogleFonts.nunitoTextTheme(ThemeData(brightness: Brightness.dark).textTheme),
+        textTheme: ThemeData(brightness: Brightness.dark).textTheme.apply(fontFamily: 'Nunito'),
         brightness: Brightness.dark,
         useMaterial3: true,
         colorScheme: ColorScheme.dark(

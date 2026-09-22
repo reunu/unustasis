@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import 'domain/go_duration.dart';
@@ -551,7 +550,7 @@ class _LsScheduledHibernationScreenState extends State<LsScheduledHibernationScr
                       style: Theme.of(context).textTheme.titleSmall,
                     ),
                     const SizedBox(height: 8),
-                    Text(_rawCron!, style: GoogleFonts.kodeMono()),
+                    Text(_rawCron!, style: const TextStyle(fontFamily: 'KodeMono')),
                     const SizedBox(height: 8),
                     Text(FlutterI18n.translate(
                         context, "ls_scheduled_hibernation_custom_cron_body")),
