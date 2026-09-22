@@ -8,11 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
-// Reset the package's in-memory cache and intercept its HTTP client for this test.
-// ignore: implementation_imports
-import 'package:google_fonts/src/google_fonts_base.dart' as font_loader;
-import 'package:http/testing.dart';
 import 'package:unustasis/fonts.dart';
 
 const _fontHashes = {
@@ -59,68 +54,50 @@ void main() {
     expect(configure, lessThan(source.indexOf('  runApp(')));
   });
 
-  test('font request sites stay covered by the offline rendering test', () {
-    final requests = <String, List<String>>{};
+  test('fonts are bundled assets, not a runtime font service', () {
+    expect(File('pubspec.yaml').readAsStringSync(), isNot(contains('google_fonts:')));
     for (final file in Directory('lib').listSync(recursive: true).whereType<File>()) {
       if (!file.path.endsWith('.dart')) continue;
-      final calls =
-          RegExp(r'GoogleFonts\.(\w+)\(').allMatches(file.readAsStringSync()).map((match) => match.group(1)!).toList();
-      if (calls.isNotEmpty) requests[file.path] = calls;
+      final source = file.readAsStringSync();
+      for (final escape in ['google_fonts', 'GoogleFonts.', 'fonts.gstatic.com']) {
+        expect(source, isNot(contains(escape)), reason: '${file.path}: $escape');
+      }
     }
-    expect(requests, {
-      'lib/main.dart': ['nunitoTextTheme', 'nunitoTextTheme'],
-      'lib/ls_keycard_screen.dart': ['kodeMono'],
-      'lib/ls_scheduled_hibernation_screen.dart': ['kodeMono'],
-    });
-    final main = File('lib/main.dart').readAsStringSync();
-    for (final brightness in ['light', 'dark']) {
-      expect(
-          main,
-          contains('GoogleFonts.nunitoTextTheme('
-              'ThemeData(brightness: Brightness.$brightness).textTheme)'));
+  });
+
+  test('every text style resolves to a declared bundled family', () async {
+    final fonts = jsonDecode(await rootBundle.loadString('FontManifest.json')) as List<dynamic>;
+    final families = fonts.map((entry) => (entry as Map<String, dynamic>)['family']).toSet();
+    expect(families, containsAll(['icomoon', 'Nunito', 'KodeMono']));
+
+    for (final brightness in Brightness.values) {
+      final textTheme = ThemeData(brightness: brightness).textTheme.apply(fontFamily: 'Nunito');
+      expect(_styles(textTheme).map((s) => s.fontFamily).toSet(), {'Nunito'});
     }
-    expect(File('lib/ls_keycard_screen.dart').readAsStringSync(),
-        contains(RegExp(r'GoogleFonts\.kodeMono\(\s*color: Colors.white,\s*fontSize: 28,\s*\)')));
-    expect(File('lib/ls_scheduled_hibernation_screen.dart').readAsStringSync(), contains('GoogleFonts.kodeMono()'));
+    final keycard = File('lib/ls_keycard_screen.dart').readAsStringSync();
+    expect(keycard, contains(RegExp(r"fontFamily: 'KodeMono'")));
+    expect(File('lib/ls_scheduled_hibernation_screen.dart').readAsStringSync(),
+        contains(RegExp(r"TextStyle\(fontFamily: 'KodeMono'\)")));
   });
 
   testWidgets(
     'bundled fonts render light/dark typography without network or cache',
     (tester) async {
-      final previousClient = font_loader.httpClient;
-      final previousFetching = GoogleFonts.config.allowRuntimeFetching;
-      var networkRequests = 0;
       var cacheRequests = 0;
-      font_loader.clearCache();
-      font_loader.assetManifest = null;
-      font_loader.httpClient = MockClient((request) async {
-        networkRequests++;
-        throw StateError('Offline: unexpected font request ${request.url}');
-      });
       // No device cache is available, even if a developer has downloaded fonts.
       const pathProvider = MethodChannel('plugins.flutter.io/path_provider');
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
         pathProvider,
         (call) async {
           cacheRequests++;
-          throw StateError(
-            'Font loading must use assets, not the device cache',
-          );
+          throw StateError('Font loading must use assets, not the device cache');
         },
       );
       addTearDown(() {
-        font_loader.httpClient = previousClient;
-        font_loader.clearCache();
-        font_loader.assetManifest = null;
-        GoogleFonts.config.allowRuntimeFetching = previousFetching;
-        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-          pathProvider,
-          null,
-        );
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(pathProvider, null);
       });
 
       configureBundledFonts();
-      expect(GoogleFonts.config.allowRuntimeFetching, isFalse);
       final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
       for (final entry in _fontHashes.entries) {
         expect(manifest.listAssets(), contains(entry.key));
@@ -130,17 +107,6 @@ void main() {
           entry.value,
         );
       }
-      // The existing icon font must remain registered independently.
-      final fonts = jsonDecode(await rootBundle.loadString('FontManifest.json')) as List<dynamic>;
-      expect(
-        fonts,
-        contains(equals({
-          'family': 'icomoon',
-          'fonts': [
-            {'asset': 'assets/fonts/icomoon.ttf'},
-          ],
-        })),
-      );
 
       final licenses = await LicenseRegistry.licenses.toList();
       for (final family in ['Nunito', 'Kode Mono']) {
@@ -159,29 +125,21 @@ void main() {
 
       for (final brightness in Brightness.values) {
         // Match the app's two theme calls and both Kode Mono call sites exactly.
-        final textTheme = GoogleFonts.nunitoTextTheme(
-          ThemeData(brightness: brightness).textTheme,
-        );
-        // ThemeData's unlocalized slots have no weights yet: every request is
-        // Regular, even though Material later supplies 400/500 geometry.
-        expect(_styles(textTheme).map((s) => s.fontWeight).toSet(), {null});
-        expect(_styles(textTheme).map((s) => s.fontFamily).toSet(), {
-          'Nunito_regular',
-        });
+        final textTheme = ThemeData(brightness: brightness).textTheme.apply(fontFamily: 'Nunito');
         final theme = ThemeData(brightness: brightness, textTheme: textTheme);
         final localizedTextTheme = ThemeData.localize(
           theme,
           theme.typography.englishLike,
         ).textTheme;
         final styles = _styles(localizedTextTheme);
-        expect(styles.map((s) => s.fontWeight).toSet(), {
-          FontWeight.w400,
-          FontWeight.w500,
-        });
-        final keycard = GoogleFonts.kodeMono(color: Colors.white, fontSize: 28);
-        final cron = GoogleFonts.kodeMono();
-        expect(keycard.fontFamily, 'KodeMono_regular');
-        expect(cron.fontFamily, 'KodeMono_regular');
+        final keycard = const TextStyle(
+          fontFamily: 'KodeMono',
+          color: Colors.white,
+          fontSize: 28,
+        );
+        final cron = const TextStyle(fontFamily: 'KodeMono');
+        expect(keycard.fontFamily, 'KodeMono');
+        expect(cron.fontFamily, 'KodeMono');
         // copyWith does not request new variants; preserve existing synthesis.
         styles.addAll([
           localizedTextTheme.bodyMedium!.copyWith(fontWeight: FontWeight.w900),
@@ -189,7 +147,6 @@ void main() {
           keycard,
           cron,
         ]);
-        await tester.runAsync(() => GoogleFonts.pendingFonts());
         for (final style in styles) {
           expect(
             _textWidth(style),
@@ -237,9 +194,7 @@ void main() {
           image.dispose();
         });
       }
-      expect(networkRequests, 0);
       expect(cacheRequests, 0);
-      expect(font_loader.pendingFontFutures, isEmpty);
     },
   );
 }
