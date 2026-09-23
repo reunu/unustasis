@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../domain/saved_scooter.dart';
 import '../domain/statistics_helper.dart';
+import '../helper_widgets/wide_layout.dart';
 import '../scooter_service.dart';
 
 class LogScreen extends StatelessWidget {
@@ -138,6 +139,7 @@ class LogScreen extends StatelessWidget {
                 final multipleScootersInLog = logs.map((entry) => entry.scooterId).toSet().length > 1;
                 logs.sort((a, b) => b.timestamp.compareTo(a.timestamp));
                 return ListView.builder(
+                  padding: wideContentPadding(context),
                   itemCount: logs.length,
                   itemBuilder: (context, index) {
                     final log = logs[index];

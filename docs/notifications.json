@@ -1,10 +1,50 @@
 [
     {
+        "id": "go-stable-ios",
+        "timestamp": "2026-09-18T22:00:00Z",
+        "branch": "stasis for unu",
+        "platform": "ios",
+        "duration-days": 30,
+        "title": {
+            "en": "Out of beta, we're releasing on time",
+            "de": "Jetzt im App Store verfügbar",
+            "fr": "Maintenant disponible sur l'App Store",
+            "nl": "Nu beschikbaar in de App Store"
+        },
+        "body": {
+            "en": "After a long beta period, the stable version of this app is now available on the App Store! Thank you for all your support and feedback over the years.\n\nPlease update now, as the TestFlight version will stop working soon. We'll keep you posted on future beta programs.",
+            "de": "Nach einer langen Beta-Phase ist diese App endlich im App Store verfügbar! Danke für die Unterstützung über die letzten Jahre.\n\nBitte aktualisiere jetzt, da die TestFlight-Version bald nicht mehr funktionieren wird. Ein neues Beta-Programm wird in Kürze angekündigt.",
+            "fr": "Après une longue période de bêta, la version stable de cette application est maintenant disponible sur l'App Store ! Merci pour tout votre soutien et vos commentaires au fil des ans.\n\nVeuillez mettre à jour maintenant, car la version TestFlight cessera bientôt de fonctionner. Nous vous tiendrons informés des futurs programmes bêta.",
+            "nl": "Na een lange bèta-periode is de stabiele versie van deze app nu beschikbaar in de App Store! Bedankt voor al je steun en feedback door de jaren heen.\n\nWerk nu bij, want de TestFlight-versie zal binnenkort niet meer werken. We houden je op de hoogte van toekomstige bètaprogramma's."
+        },
+        "action-text": {
+            "en": "Update now",
+            "de": "Jetzt aktualisieren",
+            "fr": "Mettre à jour maintenant",
+            "nl": "Nu bijwerken"
+        },
+        "action-url": "https://apps.apple.com/app/stasis-for-unu/id6497332566",
+        "dismiss-text": {
+            "en": "Later",
+            "de": "Später",
+            "fr": "Plus tard",
+            "nl": "Later"
+        }
+    },
+    {
         "id": "sample-ios-unustasis",
         "timestamp": "1970-01-01T00:00:00Z",
-        "branch": "unustasis",
+        "branch": "stasis for unu",
         "platform": "ios",
         "duration-days": 100,
+        "min-build-number": 40,
+        "max-build-number": 60,
+        "max-shows": 3,
+        "snooze-days": 3,
+        "installer-store": [
+            "com.apple.testflight"
+        ],
+        "max-update-time": "2026-09-18T22:00:00Z",
         "title": {
             "en": "Sample Notification",
             "de": "Beispielbenachrichtigung",
@@ -22,17 +62,30 @@
         },
         "action-url": "https://example.com/",
         "dismiss-text": {
-            "en": "OK",
-            "de": "OK",
-            "fr": "OK"
+            "en": "Later",
+            "de": "Später",
+            "fr": "Plus tard"
+        },
+        "never-text": {
+            "en": "Don't show again",
+            "de": "Nicht mehr anzeigen",
+            "fr": "Ne plus afficher"
         }
     },
     {
         "id": "sample-android-unu",
         "timestamp": "1970-01-01T00:00:00Z",
-        "branch": "unustasis",
+        "branch": "stasis for unu",
         "platform": "android",
         "duration-days": 100,
+        "build-number": [
+            46,
+            47,
+            48
+        ],
+        "installer-store": [
+            "com.android.vending"
+        ],
         "title": {
             "en": "Sample Notification",
             "de": "Beispielbenachrichtigung",

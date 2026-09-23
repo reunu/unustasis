@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:easy_dynamic_theme/easy_dynamic_theme.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
@@ -16,6 +15,7 @@ import 'package:shared_preferences/util/legacy_to_async_migration_util.dart';
 import '../background/bg_service.dart';
 import '../domain/log_helper.dart';
 import 'fonts.dart';
+import 'helper_widgets/wide_layout.dart';
 import '../flutter/blue_plus_mockable.dart';
 import '../home_screen.dart';
 import '../scooter_service.dart';
@@ -160,7 +160,9 @@ class _MyAppState extends State<MyApp> {
         appBarTheme: const AppBarTheme(
           centerTitle: true,
         ),
-        textTheme: GoogleFonts.nunitoTextTheme(ThemeData(brightness: Brightness.light).textTheme),
+        dialogTheme: const DialogThemeData(constraints: wideDialogConstraints),
+        bottomSheetTheme: const BottomSheetThemeData(constraints: wideDialogConstraints),
+        textTheme: ThemeData(brightness: Brightness.light).textTheme.apply(fontFamily: 'Nunito'),
         brightness: Brightness.light,
         useMaterial3: true,
         colorScheme: ColorScheme.light(
@@ -181,7 +183,9 @@ class _MyAppState extends State<MyApp> {
         appBarTheme: const AppBarTheme(
           centerTitle: true,
         ),
-        textTheme: GoogleFonts.nunitoTextTheme(ThemeData(brightness: Brightness.dark).textTheme),
+        dialogTheme: const DialogThemeData(constraints: wideDialogConstraints),
+        bottomSheetTheme: const BottomSheetThemeData(constraints: wideDialogConstraints),
+        textTheme: ThemeData(brightness: Brightness.dark).textTheme.apply(fontFamily: 'Nunito'),
         brightness: Brightness.dark,
         useMaterial3: true,
         colorScheme: ColorScheme.dark(

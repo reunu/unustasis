@@ -12,6 +12,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../domain/log_helper.dart';
 import '../helper_widgets/header.dart';
+import '../helper_widgets/wide_layout.dart';
 
 class SupportScreen extends StatefulWidget {
   const SupportScreen({super.key});
@@ -198,11 +199,16 @@ class _SupportScreenState extends State<SupportScreen> {
         title: Text(FlutterI18n.translate(context, "stats_title_support")),
         backgroundColor: Theme.of(context).colorScheme.surface,
       ),
-      body: ListView.builder(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewPadding.bottom),
-        shrinkWrap: true,
-        itemCount: supportItems().length,
-        itemBuilder: (context, index) => supportItems()[index],
+      body: SafeArea(
+        child: ListView.builder(
+          padding: wideContentPadding(
+            context,
+            base: EdgeInsets.only(bottom: MediaQuery.of(context).viewPadding.bottom),
+          ),
+          shrinkWrap: true,
+          itemCount: supportItems().length,
+          itemBuilder: (context, index) => supportItems()[index],
+        ),
       ),
     );
   }

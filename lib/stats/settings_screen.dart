@@ -27,6 +27,7 @@ import '../ls_ota_screen.dart';
 import '../ls_scheduled_hibernation_screen.dart';
 import '../service/ble_commands.dart';
 import '../state/vehicle_status.dart';
+import '../helper_widgets/wide_layout.dart';
 import 'log_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -265,12 +266,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  List<Widget> _asleepAwareItems(List<Widget> items) =>
-      _scooterAsleep ? items : _connectionRequiredItems(items);
+  List<Widget> _asleepAwareItems(List<Widget> items) => _scooterAsleep ? items : _connectionRequiredItems(items);
 
   // A dash, not "off": we cannot claim a state we could not read.
-  Widget _asleepValuePlaceholder() =>
-      Text('—', style: TextStyle(color: Theme.of(context).disabledColor));
+  Widget _asleepValuePlaceholder() => Text('—', style: TextStyle(color: Theme.of(context).disabledColor));
 
   // Unknown is not absence: keep the group visible while asleep.
   bool _alarmSectionVisible(ScooterService service) {
@@ -311,9 +310,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _loadKeycards(int session) {
-    if (_keycardCount != null ||
-        _keycardLoadInFlight ||
-        _keycardLoadAttempts >= _maxKeycardLoadAttempts) {
+    if (_keycardCount != null || _keycardLoadInFlight || _keycardLoadAttempts >= _maxKeycardLoadAttempts) {
       return;
     }
     _keycardLoadAttempts++;
@@ -582,8 +579,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   String _apnSubtitle(BuildContext context) {
     if (!_apnLoaded) {
-      return FlutterI18n.translate(
-          context, _scooterAsleep ? "ls_settings_scooter_asleep" : "ls_settings_apn_loading");
+      return FlutterI18n.translate(context, _scooterAsleep ? "ls_settings_scooter_asleep" : "ls_settings_apn_loading");
     }
     if (_apn == null) return FlutterI18n.translate(context, "ls_settings_apn_unknown");
     return _apn!.isEmpty ? FlutterI18n.translate(context, "ls_settings_apn_unset") : _apn!;
@@ -1435,9 +1431,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ];
 
   // Subsection heading plus items, omitted when empty.
-  List<Widget> _section(String titleKey, List<Widget> items) => items.isEmpty
-      ? const []
-      : [Header(FlutterI18n.translate(context, titleKey), level: 1), ...items];
+  List<Widget> _section(String titleKey, List<Widget> items) =>
+      items.isEmpty ? const [] : [Header(FlutterI18n.translate(context, titleKey), level: 1), ...items];
 
   List<Widget> _scooterSections({
     required bool isLibrescoot,
@@ -1448,15 +1443,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required bool otaAvailable,
   }) {
     final sections = <Widget>[
-      ..._section('settings_section_access_parking',
-          _asleepAwareItems(_accessItems(isLibrescoot: isLibrescoot))),
+      ..._section('settings_section_access_parking', _asleepAwareItems(_accessItems(isLibrescoot: isLibrescoot))),
       if (isLibrescoot)
-        ..._section(
-            'settings_section_power',
-            _asleepAwareItems(
-                _powerItems(supportsScheduledHibernation: supportsScheduledHibernation))),
-      if (isLibrescoot)
-        ..._section('ls_settings_section_alarm', _asleepAwareItems(alarmItems())),
+        ..._section('settings_section_power',
+            _asleepAwareItems(_powerItems(supportsScheduledHibernation: supportsScheduledHibernation))),
+      if (isLibrescoot) ..._section('ls_settings_section_alarm', _asleepAwareItems(alarmItems())),
       ..._section(
           'settings_section_connectivity',
           _asleepAwareItems(_connectivityItems(
@@ -1547,7 +1538,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       body: SafeArea(
         child: ListView.separated(
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: wideContentPadding(context, base: const EdgeInsets.symmetric(vertical: 16)),
           shrinkWrap: true,
           itemCount: items.length,
           separatorBuilder: (context, index) => Divider(

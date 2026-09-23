@@ -14,6 +14,7 @@ import '../domain/nav_destination.dart';
 import '../domain/saved_scooter.dart';
 import '../geo_helper.dart';
 import '../helper_widgets/header.dart';
+import '../helper_widgets/wide_layout.dart';
 import '../scooter_service.dart';
 import '../service/ble_commands.dart';
 
@@ -677,7 +678,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
     final regularDests = _destinations.where((d) => d.type == null).toList();
     return ListView.builder(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
+      padding: wideContentPadding(context, base: const EdgeInsets.fromLTRB(16, 16, 16, 40)),
       itemCount: regularDests.length + 1,
       itemBuilder: (context, index) {
         if (index == 0) return _destinationQuickLaunch(connected);
@@ -949,6 +950,7 @@ class _NoDestinationsEmpty extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
+      padding: wideContentPadding(context),
       children: [
         const SizedBox(height: 120),
         Center(
