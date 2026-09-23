@@ -28,6 +28,8 @@ class ExplicitActionDispatch {
 /// Orchestrates the existing owners; it never owns a connection attempt, retry
 /// loop, transport FIFO or generation. Saved-record presentation and platform
 /// publication remain effects supplied by the application.
+bool _automaticConnectionsAllowed() => true;
+
 class ScooterRuntime<T extends SavedScooterRecord> {
   ScooterRuntime(
       {required ScooterSession session,
@@ -47,9 +49,11 @@ class ScooterRuntime<T extends SavedScooterRecord> {
       required this.readLocation,
       required this.saveLocation,
       required this.publishDisconnected,
+      bool Function()? automaticConnectionAllowed,
       required BluetoothDevice Function(String) deviceFromId})
       : _session = session,
         _isScanning = isScanning,
+        _automaticConnectionAllowed = automaticConnectionAllowed ?? _automaticConnectionsAllowed,
         _deviceFromId = deviceFromId;
   final ScooterSession _session;
   final ScooterTelemetry telemetry;
@@ -64,6 +68,7 @@ class ScooterRuntime<T extends SavedScooterRecord> {
   final void Function(String) manualTargetHeartbeat;
   final void Function(bool) scanningChanged;
   final bool Function() _isScanning;
+  final bool Function() _automaticConnectionAllowed;
   final Future<LatLng?> Function() readLocation;
   final void Function(String, LatLng) saveLocation;
   final BluetoothDevice Function(String) _deviceFromId;
@@ -265,7 +270,7 @@ class ScooterRuntime<T extends SavedScooterRecord> {
   }
 
   void start({bool restart = true}) {
-    if (_inactive) return;
+    if (_inactive || !_automaticConnectionAllowed()) return;
     final target = _session.manualTargetId;
     if (target == null) {
       _session.start(restart: restart);
@@ -374,7 +379,7 @@ class ScooterRuntime<T extends SavedScooterRecord> {
   }
 
   Future<bool> attemptLatestAutoConnection() async {
-    if (_inactive || _session.hasPendingConnectionAttempt) return false;
+    if (_inactive || !_automaticConnectionAllowed() || _session.hasPendingConnectionAttempt) return false;
     // While the foreground is manually connecting a scooter, the background
     // must not race it with its own auto-connect target. The flag expires so
     // a killed foreground can't suspend background reconnects forever.
@@ -385,6 +390,7 @@ class ScooterRuntime<T extends SavedScooterRecord> {
       return false;
     }
     T? latestScooter = await getMostRecentScooter();
+    if (!_automaticConnectionAllowed()) return false;
     if (_externalManualTargetId != null) {
       // A manual intent arrived while we were picking a candidate; don't
       // start racing it now.

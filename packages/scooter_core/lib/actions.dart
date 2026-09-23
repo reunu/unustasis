@@ -7,6 +7,7 @@ const String lsKeyScheduledHibernateDuration =
 const String lsKeyAutoStandbySeconds = "scooter.auto-standby-seconds";
 const String lsKeyHibernateTimer = "pm.hibernation-timer";
 const String lsKeyCellularApn = "cellular.apn";
+const String lsKeyServiceModeActive = "dashboard.service-mode-active";
 
 /// Librescoot settings key for the alarm as a whole. Off means the scooter
 /// never arms, whatever the vehicle is doing.
@@ -77,10 +78,20 @@ class ActionSettings {
       this.warnOfUnlockedHandlebars = true,
       this.autoUnlock = false,
       this.autoUnlockThreshold = -65,
-      this.optionalAuth = false});
+      this.optionalAuth = false,
+      this.autoUnlockAmbiguous = false,
+      this.autoUnlockPaused = false});
   final bool openSeatOnUnlock, hazardLocking, warnOfUnlockedHandlebars;
   final bool autoUnlock, optionalAuth;
   final int autoUnlockThreshold;
+
+  /// Proximity unlocking is held back by a user pause or a foreground grace.
+  /// RSSI is still polled, so the distance reading stays live.
+  final bool autoUnlockPaused;
+
+  /// More than one scooter with auto-unlock enabled is in range, so proximity
+  /// no longer identifies which scooter the user walked up to.
+  final bool autoUnlockAmbiguous;
 }
 
 class HandlebarWarning {
@@ -92,6 +103,11 @@ class HandlebarWarning {
 const keylessCooldownSeconds = 60;
 const handlebarCheckSeconds = 5;
 const wakeAndUnlockTimeout = Duration(seconds: 45);
+
+/// Window between proximity being met and the keyless unlock, so the rider can
+/// stop it. It applies in the background isolate as well, where nothing shows
+/// the countdown.
+const keylessApproachCountdown = Duration(seconds: 3);
 const unlockCommand = 'scooter:state unlock';
 const lockCommand = 'scooter:state lock';
 const seatCommand = 'scooter:seatbox open';
@@ -105,6 +121,9 @@ const hardRebootPowerCommand = 'hard-reboot';
 const usbUmsCommand = 'usb:ums';
 const usbNormalCommand = 'usb:normal';
 const usbAcknowledgement = 'usb:ok';
+const serviceModeEnableCommand = 'service-mode:on';
+const serviceModeDisableCommand = 'service-mode:off';
+const serviceModeAcknowledgement = 'service-mode:ok';
 const keycardCountCommand = 'keycard:count';
 const keycardListCommand = 'keycard:list';
 const keycardAcknowledgement = 'keycard:ok';

@@ -9,6 +9,142 @@ import 'command_transport.dart';
 
 final _log = Logger('BleCommands');
 
+class LsCapabilityGroups {
+  const LsCapabilityGroups(this.versions,
+      {required this.usedFallback, this.answered = true});
+  final Map<String, int?> versions;
+  final bool usedFallback;
+
+  /// False when nothing answered, so the list is unknown rather than empty.
+  final bool answered;
+  bool contains(String group) => versions.containsKey(group);
+}
+
+Map<String, int?> _parseCapabilityGroups(String response, String command) {
+  final prefix = '$command:';
+  if (!response.startsWith(prefix)) {
+    throw const ExtendedResponseFormatException(
+        'unexpected capability-group response');
+  }
+  final values = response.substring(prefix.length).split(':');
+  if (values.isEmpty || values.any((value) => value.isEmpty)) {
+    throw const ExtendedResponseFormatException('empty capability group');
+  }
+  final groups = <String, int?>{};
+  for (final value in values) {
+    final parts = value.split('=');
+    if (parts.length > 2 ||
+        parts.first.isEmpty ||
+        !RegExp(r'^[a-z][a-z0-9-]*$').hasMatch(parts.first)) {
+      throw const ExtendedResponseFormatException('invalid capability group');
+    }
+    final version = parts.length == 1 ? null : int.tryParse(parts.last);
+    if (parts.length == 2 && (version == null || version < 1) ||
+        groups.containsKey(parts.first)) {
+      throw const ExtendedResponseFormatException(
+          'invalid capability group version');
+    }
+    groups[parts.first] = version;
+  }
+  return groups;
+}
+
+/// Reads the LS 1.0 `cap:list` count header and its individual category
+/// notifications under one lease, so no concurrent command can consume one.
+Future<Set<String>> _readCapabilityList(
+  BluetoothDevice? scooter,
+  CharacteristicRepository repo, {
+  bool Function()? isCurrent,
+  Duration responseTimeout = extendedResponseTimeout,
+}) =>
+    withExtendedChannel(() async {
+      checkCommandCurrent(isCurrent);
+      if (scooter == null || scooter.isDisconnected) {
+        throw StateError('Scooter not connected');
+      }
+      final command = repo.extendedCommandCharacteristic;
+      final response = repo.extendedResponseCharacteristic;
+      if (command == null || response == null) {
+        throw StateError('Extended command characteristics not available');
+      }
+      await ensureExtendedNotify(repo, response, isCurrent: isCurrent);
+      checkCommandCurrent(isCurrent);
+      final listener = ExtendedResponseListener(response.onValueReceived);
+      var first = true;
+      try {
+        await sendCommand(scooter, repo, 'cap:list',
+            characteristic: command, isCurrent: isCurrent);
+        final messages = listener.responses.map((message) {
+          repo.noteExtendedResponse();
+          if (first) {
+            first = false;
+            if (!RegExp(r'^cap:count:[0-9]+$').hasMatch(message)) {
+              throw const ExtendedResponseFormatException(
+                  'invalid cap:list count');
+            }
+          }
+          return message;
+        }).timeout(responseTimeout);
+        final categories = await readExtendedList<String>(messages, (message) {
+          if (!RegExp(r'^cap:[a-z][a-z0-9-]*$').hasMatch(message)) {
+            throw const ExtendedResponseFormatException(
+                'invalid cap:list category');
+          }
+          return message.substring('cap:'.length);
+        });
+        if (categories.toSet().length != categories.length) {
+          throw const ExtendedResponseFormatException(
+              'duplicate cap:list category');
+        }
+        return categories.toSet();
+      } finally {
+        await listener.cancel();
+      }
+    });
+
+/// Discovers all extension groups with one `cap:ext` response. On old
+/// firmware `cap:list` is a counted multi-response exchange.
+Future<LsCapabilityGroups> discoverLsCapabilityGroupsCommand(
+  BluetoothDevice? scooter,
+  CharacteristicRepository repo, {
+  bool Function()? isCurrent,
+  Duration responseTimeout = extendedResponseTimeout,
+}) async {
+  // A channel that was never discovered is a definite answer.
+  if (repo.extendedChannelMissing) {
+    return const LsCapabilityGroups({}, usedFallback: true);
+  }
+  var answered = false;
+  try {
+    final response = await sendLsExtendedCommand(scooter, repo, 'cap:ext',
+        isCurrent: isCurrent, responseTimeout: responseTimeout);
+    if (response != null) {
+      return LsCapabilityGroups(_parseCapabilityGroups(response, 'cap:ext'),
+          usedFallback: false);
+    }
+  } on ExtendedResponseFormatException {
+    // Firmware predating cap:ext responds with an error message.
+    answered = true;
+  } catch (e) {
+    _log.fine('cap:ext unavailable: $e');
+  }
+  try {
+    final categories = await _readCapabilityList(scooter, repo,
+        isCurrent: isCurrent, responseTimeout: responseTimeout);
+    return LsCapabilityGroups(
+        {for (final category in categories) category: null},
+        usedFallback: true);
+  } on TimeoutException {
+    repo.noteSilentExtendedCommand();
+  } on ExtendedResponseFormatException catch (e) {
+    answered = true;
+    _log.fine('cap:list unavailable: $e');
+  } catch (e) {
+    _log.fine('cap:list unavailable: $e');
+  }
+  return LsCapabilityGroups(const {}, usedFallback: true, answered: answered);
+}
+
 /// Queries the installed OS version of [component] ("mdb" or "dbc") via the
 /// extended channel (`status:version:<component>`). Returns the raw version
 /// string — "unknown" when the scooter has no record (e.g. the dashboard
@@ -36,9 +172,10 @@ Future<String?> getInstalledVersionCommand(
 /// "hibernate-cancel").
 Future<Set<String>> getPmCapabilitiesCommand(
   BluetoothDevice? scooter,
-  CharacteristicRepository repo,
-) =>
-    getLsCapabilitiesCommand(scooter, repo, "pm");
+  CharacteristicRepository repo, {
+  bool Function()? isCurrent,
+}) =>
+    getLsCapabilitiesCommand(scooter, repo, "pm", isCurrent: isCurrent);
 
 /// Queries which commands the scooter supports in [category] ("pm", "config",
 /// …). Returns an empty set on firmware that doesn't support the capability
@@ -46,9 +183,11 @@ Future<Set<String>> getPmCapabilitiesCommand(
 Future<Set<String>> getLsCapabilitiesCommand(
   BluetoothDevice? scooter,
   CharacteristicRepository repo,
-  String category,
-) =>
+  String category, {
+  bool Function()? isCurrent,
+}) =>
     withExtendedChannel(() async {
+      checkCommandCurrent(isCurrent);
       if (scooter == null || scooter.isDisconnected) {
         throw "Scooter not connected!";
       }
@@ -58,15 +197,21 @@ Future<Set<String>> getLsCapabilitiesCommand(
         throw "Extended command characteristics not available";
       }
 
-      await ensureExtendedNotify(resp);
+      await ensureExtendedNotify(repo, resp, isCurrent: isCurrent);
+      checkCommandCurrent(isCurrent);
       final listener = ExtendedResponseListener(resp.onValueReceived);
       try {
-        await sendCommand(scooter, repo, "cap:$category", characteristic: cmd);
-        final stream = listener.responses.timeout(const Duration(seconds: 10));
+        await sendCommand(scooter, repo, "cap:$category",
+            characteristic: cmd, isCurrent: isCurrent);
+        final stream = listener.responses.map((response) {
+          repo.noteExtendedResponse();
+          return response;
+        }).timeout(extendedResponseTimeout);
         final entries = await readExtendedList(
             stream, (msg) => parseCapabilityEntry(category, msg));
         return entries.toSet();
       } on TimeoutException {
+        repo.noteSilentExtendedCommand();
         _log.info(
             "getLsCapabilitiesCommand: timeout, assuming no $category capabilities");
         return <String>{};

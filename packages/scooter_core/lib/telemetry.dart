@@ -10,18 +10,25 @@ enum UsbMode {
   massStorage,
 }
 
-/// Splits `<source>,<RFC3339 timestamp>` into its two halves. The timestamp is
-/// null if it doesn't parse, since the source alone is still worth showing.
+const Set<String> alarmTriggerSources = {
+  'motion',
+  'seatbox',
+  'handlebar_position',
+  'handlebar_lock',
+  'brake_left',
+  'brake_right',
+  'horn_button',
+  'seatbox_button',
+};
+
+/// Parses `<known source>,<RFC3339 timestamp>`.
 ({String source, DateTime? timestamp})? parseAlarmLastTrigger(String value) {
   final int comma = value.indexOf(',');
-  if (comma < 0) {
-    return value.isEmpty ? null : (source: value, timestamp: null);
-  }
-  final String source = value.substring(0, comma);
-  if (source.isEmpty) return null;
+  final String source = comma < 0 ? value : value.substring(0, comma);
+  if (!alarmTriggerSources.contains(source)) return null;
   return (
     source: source,
-    timestamp: DateTime.tryParse(value.substring(comma + 1))
+    timestamp: comma < 0 ? null : DateTime.tryParse(value.substring(comma + 1))
   );
 }
 
@@ -83,7 +90,9 @@ class FirmwareSnapshot {
       this.supportsApnConfig,
       this.supportsBondForget,
       this.supportsBatteryKeepActive,
-      this.supportsAlarmControl});
+      this.supportsAlarmControl,
+      this.supportsTripCounter,
+      this.supportsTripExpunge});
   final String? nrfVersion;
   final bool? isLibrescoot;
   final int? odometerMeters;
@@ -93,6 +102,8 @@ class FirmwareSnapshot {
   final bool? supportsBondForget;
   final bool? supportsBatteryKeepActive;
   final bool? supportsAlarmControl;
+  final bool? supportsTripCounter;
+  final bool? supportsTripExpunge;
 }
 
 class CachedTelemetry {
@@ -104,7 +115,12 @@ class CachedTelemetry {
       this.handlebarsLocked,
       this.isLibrescoot,
       this.supportsHibernateFor,
-      this.supportsApnConfig});
+      this.supportsApnConfig,
+      this.supportsAlarmControl,
+      this.supportsTripCounter,
+      this.supportsTripExpunge,
+      this.supportsScheduledHibernation,
+      this.supportsBatteryKeepActive});
   final int? primarySOC;
   final int? secondarySOC;
   final int? cbbSOC;
@@ -113,6 +129,14 @@ class CachedTelemetry {
   final bool? isLibrescoot;
   final bool? supportsHibernateFor;
   final bool? supportsApnConfig;
+
+  /// Cached the same way, so a session does not start blind: an unknown
+  /// capability hides settings sections and controls until the probe lands.
+  final bool? supportsAlarmControl;
+  final bool? supportsTripCounter;
+  final bool? supportsTripExpunge;
+  final bool? supportsScheduledHibernation;
+  final bool? supportsBatteryKeepActive;
 }
 
 /// A partial cache update: null means leave the saved field unchanged. Wire
@@ -126,7 +150,12 @@ class TelemetryCachePatch {
       this.handlebarsLocked,
       this.isLibrescoot,
       this.supportsHibernateFor,
-      this.supportsApnConfig});
+      this.supportsApnConfig,
+      this.supportsAlarmControl,
+      this.supportsTripCounter,
+      this.supportsTripExpunge,
+      this.supportsScheduledHibernation,
+      this.supportsBatteryKeepActive});
   final int? primarySOC;
   final int? secondarySOC;
   final int? cbbSOC;
@@ -135,6 +164,14 @@ class TelemetryCachePatch {
   final bool? isLibrescoot;
   final bool? supportsHibernateFor;
   final bool? supportsApnConfig;
+
+  /// Cached the same way, so a session does not start blind: an unknown
+  /// capability hides settings sections and controls until the probe lands.
+  final bool? supportsAlarmControl;
+  final bool? supportsTripCounter;
+  final bool? supportsTripExpunge;
+  final bool? supportsScheduledHibernation;
+  final bool? supportsBatteryKeepActive;
 }
 
 /// A copied view; no mutable BLE state or application metadata escapes here.

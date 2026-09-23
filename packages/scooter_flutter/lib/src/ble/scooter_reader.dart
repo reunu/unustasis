@@ -125,6 +125,26 @@ Future<void> readOdometer(
   }
 }
 
+/// Reads the software version the system behind the link reports. The nRF only
+/// fills this characteristic from the iMX over usock, so it is the dashboard's
+/// own version rather than the nRF build: a librescoot nRF left in place after
+/// a stock image was flashed still answers with the nRF version, while this
+/// stays empty or reports the stock version.
+Future<void> readAnonImxVersion(
+  BluetoothCharacteristic characteristic,
+  void Function(String version) onRead,
+) async {
+  try {
+    final String version =
+        decodeCharacteristicString(await characteristic.read()).trim();
+    _log.info("iMX version received: $version");
+    if (version.isEmpty) return;
+    onRead(version);
+  } catch (e, stack) {
+    _log.warning("Failed to read iMX version", e, stack);
+  }
+}
+
 /// Reads the nRF firmware version once from the characteristic.
 /// Calls [onRead] with the version string and whether it's a librescoot build.
 Future<void> readNrfVersion(
@@ -133,8 +153,9 @@ Future<void> readNrfVersion(
 ) async {
   try {
     List<int> value = await characteristic.read();
-    String version = decodeCharacteristicString(value);
+    String version = decodeCharacteristicString(value).trim();
     _log.info("nRF version received: $version");
+    if (version.isEmpty) return;
     onRead(version, version.contains("-ls"));
   } catch (e, stack) {
     _log.warning("Failed to read nRF version", e, stack);

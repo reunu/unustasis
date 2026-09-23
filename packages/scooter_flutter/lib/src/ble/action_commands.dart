@@ -12,19 +12,22 @@ final log = Logger('BleCommands');
 Future<void> unlockScooter(
     BluetoothDevice? scooter, CharacteristicRepository repo,
     {bool Function()? isCurrent, void Function()? onWriteIssued}) async {
-  await sendCommand(scooter, repo, unlockCommand, isCurrent: isCurrent, onWriteIssued: onWriteIssued);
+  await sendCommand(scooter, repo, unlockCommand,
+      isCurrent: isCurrent, onWriteIssued: onWriteIssued);
 }
 
 Future<void> lockScooter(
     BluetoothDevice? scooter, CharacteristicRepository repo,
     {bool Function()? isCurrent, void Function()? onWriteIssued}) async {
-  await sendCommand(scooter, repo, lockCommand, isCurrent: isCurrent, onWriteIssued: onWriteIssued);
+  await sendCommand(scooter, repo, lockCommand,
+      isCurrent: isCurrent, onWriteIssued: onWriteIssued);
 }
 
 Future<void> openSeatCommand(
     BluetoothDevice? scooter, CharacteristicRepository repo,
     {bool Function()? isCurrent, void Function()? onWriteIssued}) async {
-  await sendCommand(scooter, repo, seatCommand, isCurrent: isCurrent, onWriteIssued: onWriteIssued);
+  await sendCommand(scooter, repo, seatCommand,
+      isCurrent: isCurrent, onWriteIssued: onWriteIssued);
 }
 
 Future<void> blinkCommand(
@@ -91,7 +94,40 @@ Future<void> enterNormalUsbModeCommand(
     log.severe("Failed to enter normal USB mode, response: $response");
     throw "Failed to enter normal USB mode, response: $response";
   }
-  return;
+}
+
+Future<void> setServiceModeCommand(
+    BluetoothDevice? scooter, CharacteristicRepository repo, bool enabled,
+    {bool Function()? isCurrent}) async {
+  final response = await sendLsExtendedCommand(
+    scooter,
+    repo,
+    enabled ? serviceModeEnableCommand : serviceModeDisableCommand,
+    isCurrent: isCurrent,
+  );
+  if (response != serviceModeAcknowledgement) {
+    log.severe("Failed to set service mode, response: $response");
+    throw "Failed to set service mode, response: $response";
+  }
+}
+
+/// Runtime command that silences a sounding alarm and leaves the alarm service
+/// idle. `alarm:stop` is deliberately not used: it only ends the current siren,
+/// while the triggered state keeps re-arming the siren on its own check cycle.
+/// Disarming leaves `alarm.enabled` alone, so the alarm re-arms as usual.
+const String alarmDisarmCommand = "alarm:disarm";
+const String alarmAcknowledgement = "alarm:ok";
+
+Future<void> disarmAlarmCommand(
+    BluetoothDevice? scooter, CharacteristicRepository repo,
+    {bool Function()? isCurrent}) async {
+  final response = await sendLsExtendedCommand(
+      scooter, repo, alarmDisarmCommand,
+      isCurrent: isCurrent);
+  if (response != alarmAcknowledgement) {
+    log.severe("Failed to silence the alarm, response: $response");
+    throw "Failed to silence the alarm, response: $response";
+  }
 }
 
 /// Counts the number of keycards registered on the scooter by sending a command and listening for the count response.
@@ -124,13 +160,13 @@ Future<List<String>> listKeycardsCommand(
       }
 
       checkCommandCurrent(isCurrent);
-      await ensureExtendedNotify(resp);
+      await ensureExtendedNotify(repo, resp);
       checkCommandCurrent(isCurrent);
       final listener = ExtendedResponseListener(resp.onValueReceived);
       try {
         await sendCommand(scooter, repo, keycardListCommand,
             characteristic: cmd, isCurrent: isCurrent);
-        final stream = listener.responses.timeout(const Duration(seconds: 10));
+        final stream = listener.responses.timeout(extendedResponseTimeout);
         return await readExtendedList(stream, (msg) {
           // format: keycard:card:<uid>
           final parts = msg.split(":");

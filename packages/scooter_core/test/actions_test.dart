@@ -25,6 +25,7 @@ void main() {
     expect(settings.warnOfUnlockedHandlebars, true);
     expect(settings.autoUnlockThreshold, -65);
     expect(settings.optionalAuth, false);
+    expect(settings.autoUnlockPaused, false);
   });
   test('basic command strings and blink combinations are pinned', () {
     expect([
@@ -32,13 +33,19 @@ void main() {
       lockCommand,
       seatCommand,
       wakeCommand,
-      hibernatePowerCommand
+      hibernatePowerCommand,
+      serviceModeEnableCommand,
+      serviceModeDisableCommand,
+      serviceModeAcknowledgement,
     ], [
       'scooter:state unlock',
       'scooter:state lock',
       'scooter:seatbox open',
       'wakeup',
-      'hibernate'
+      'hibernate',
+      'service-mode:on',
+      'service-mode:off',
+      'service-mode:ok',
     ]);
     expect([
       blinkerCommand(true, false),

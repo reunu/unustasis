@@ -8,6 +8,8 @@ export 'src/ble/characteristic_subscription.dart';
 export 'src/ble/characteristic_repository.dart';
 export 'command_transport.dart';
 export 'firmware_queries.dart';
+export 'trip_commands.dart';
+export 'trip_expunge_policy.dart';
 export 'src/ble/scooter_reader.dart';
 export 'src/runtime/state_waiter.dart';
 export 'src/storage/user_settings.dart';

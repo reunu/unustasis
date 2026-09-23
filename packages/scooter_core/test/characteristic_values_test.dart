@@ -38,6 +38,26 @@ void main() {
     });
   });
 
+  group('decodeCharacteristicStringStrict', () {
+    test('decodes valid padded UTF-8 and trims it', () {
+      expect(
+        decodeCharacteristicStringStrict([...utf8.encode(' motion '), 0, 0]),
+        'motion',
+      );
+    });
+
+    test('rejects malformed UTF-8 and embedded NULs', () {
+      expect(
+        () => decodeCharacteristicStringStrict([0xff, 65, 0xc3]),
+        throwsFormatException,
+      );
+      expect(
+        () => decodeCharacteristicStringStrict(utf8.encode('mo\u0000tion')),
+        throwsFormatException,
+      );
+    });
+  });
+
   group('decodeUint32', () {
     test('decodes exactly four little-endian bytes', () {
       expect(decodeUint32([0, 0, 0, 0]), 0);

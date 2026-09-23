@@ -158,6 +158,19 @@ class Effects implements ScooterActionEffects {
   void failed(Object error, StackTrace stack) {
     errors.add(error);
   }
+
+  @override
+  void autoUnlockRefused() {
+    trace.add('refused');
+  }
+
+  final pendingStates = <bool>[];
+  void Function()? onPending;
+  @override
+  void autoUnlockPendingChanged(bool pending) {
+    pendingStates.add(pending);
+    onPending?.call();
+  }
 }
 
 class SessionEffects implements ScooterSessionEffects {
@@ -251,10 +264,65 @@ Future<void> settleTransport() async {
 }
 
 void main() {
-  test('confirmed open seat writes two ordinary locks sequentially with one set of effects', () {
+  test(
+      'version snapshot uses only sequential read queries and no action effects',
+      () async {
+    final h = Harness(FakeAsync());
+    await settleTransport();
+    h.trace.clear();
+    h.telemetry.identity.nrfVersion = 'v2.11.0-ls';
+    h.wire.onWrite = (command) async => h.wire.reply('$command:v1');
+    final result = await h.actions.readInstalledVersions();
+    expect(result, {'mdb': 'v1', 'dbc': 'v1', 'nrf': 'v2.11.0-ls'});
+    expect(h.trace, ['A:status:version:mdb', 'A:status:version:dbc']);
+    expect(h.effects.events, isEmpty);
+    h.dispose();
+    await settleTransport();
+  });
+  test('nRF remains available without extended-command firmware', () async {
+    final h = Harness(FakeAsync());
+    await settleTransport();
+    h.trace.clear();
+    h.telemetry.identity.nrfVersion = 'v2.11.0-ls';
+    h.repos['A']!.extendedCommandCharacteristic = null;
+    expect(await h.actions.readInstalledVersions(),
+        {'mdb': null, 'dbc': null, 'nrf': 'v2.11.0-ls'});
+    expect(h.trace, isEmpty);
+    expect(h.effects.events, isEmpty);
+    h.dispose();
+    await settleTransport();
+  });
+  for (final change in ['B', 'same-id', 'disconnect']) {
+    test('version snapshot discards results without retargeting after $change',
+        () async {
+      final h = Harness(FakeAsync());
+      await settleTransport();
+      h.trace.clear();
+      final wire = h.wire;
+      wire.onWrite = (command) async {
+        wire.reply('$command:v1');
+        if (change == 'disconnect') {
+          h.device.drop();
+        } else {
+          if (change == 'same-id') h.session.connected = false;
+          h.connect(change == 'B' ? 'B' : 'A');
+        }
+      };
+      await expectLater(h.actions.readInstalledVersions(), throwsStateError);
+      expect(h.trace.where((line) => line.contains('status:version')),
+          ['A:status:version:mdb']);
+      expect(h.effects.events, isEmpty);
+      h.dispose();
+      await settleTransport();
+    });
+  }
+  test(
+      'confirmed open seat writes two ordinary locks sequentially with one set of effects',
+      () {
     fakeAsync((time) {
       final h = Harness(time);
-      h.settings = const ActionSettings(hazardLocking: true, warnOfUnlockedHandlebars: true);
+      h.settings = const ActionSettings(
+          hazardLocking: true, warnOfUnlockedHandlebars: true);
       h.telemetry.vehicle.handlebarsLocked = false;
       final first = Completer<void>();
       h.wire.onWrite = (_) => first.future;
@@ -263,8 +331,10 @@ void main() {
       time.flushMicrotasks();
       expect(h.trace, ['A:$lockCommand']);
       expect(h.effects.events, isEmpty);
-      first.complete(); time.flushMicrotasks();
-      expect(h.trace.take(3), ['A:$lockCommand', 'A:$lockCommand', 'ack:lock:app']);
+      first.complete();
+      time.flushMicrotasks();
+      expect(h.trace.take(3),
+          ['A:$lockCommand', 'A:$lockCommand', 'ack:lock:app']);
       time.elapse(const Duration(seconds: 5));
       expect(done, true);
       expect(h.effects.events, hasLength(1));
@@ -274,44 +344,66 @@ void main() {
       h.dispose();
     });
   });
-  for (final change in ['first-fails', 'second-fails', 'B', 'same-id', 'disconnect', 'dispose', 'repository']) {
-    test('confirmed open seat partial issuance never replays after $change', () {
+  for (final change in [
+    'first-fails',
+    'second-fails',
+    'B',
+    'same-id',
+    'disconnect',
+    'dispose',
+    'repository'
+  ]) {
+    test('confirmed open seat partial issuance never replays after $change',
+        () {
       fakeAsync((time) {
         final h = Harness(time);
         final wire = h.wire;
         var writes = 0;
         wire.onWrite = (_) async {
           writes++;
-          if (change == 'first-fails' || (change == 'second-fails' && writes == 2)) throw StateError('write failed');
+          if (change == 'first-fails' ||
+              (change == 'second-fails' && writes == 2)) {
+            throw StateError('write failed');
+          }
           if (writes != 1 || change == 'second-fails') return;
           if (change == 'dispose') {
             h.actions.dispose();
           } else if (change == 'disconnect') {
             h.device.drop();
           } else if (change == 'repository') {
-            h.actions.bind(h.session.currentConnection!, Repository(h.device, h.trace));
+            h.actions.bind(
+                h.session.currentConnection!, Repository(h.device, h.trace));
           } else {
             if (change == 'same-id') h.session.connected = false;
             h.connect(change == 'B' ? 'B' : 'A');
           }
         };
         Object? error;
-        h.actions.lock(confirmOpenSeat: true).catchError((Object e) { error = e; });
+        h.actions.lock(confirmOpenSeat: true).catchError((Object e) {
+          error = e;
+        });
         time.elapse(const Duration(seconds: 20));
         expect(error, isStateError);
         expect(writes, change == 'second-fails' ? 2 : 1);
-        expect(h.trace.where((s) => s.endsWith(lockCommand)), hasLength(writes));
+        expect(
+            h.trace.where((s) => s.endsWith(lockCommand)), hasLength(writes));
         expect(h.effects.events, isEmpty);
         expect(h.effects.warnings, isEmpty);
-        expect(h.trace.where((s) => s.contains('blinker') || s == 'cooldown'), isEmpty);
-        h.connect('C'); time.elapse(const Duration(seconds: 20));
-        expect(h.trace.where((s) => s.startsWith('C:') && s.contains(lockCommand)), isEmpty);
+        expect(h.trace.where((s) => s.contains('blinker') || s == 'cooldown'),
+            isEmpty);
+        h.connect('C');
+        time.elapse(const Duration(seconds: 20));
+        expect(
+            h.trace.where((s) => s.startsWith('C:') && s.contains(lockCommand)),
+            isEmpty);
         h.dispose();
       });
     });
   }
   for (final kind in [EventType.lock, EventType.unlock, EventType.openSeat]) {
-    test('explicit $kind rejects partial discovery and stale capture without native issuance', () {
+    test(
+        'explicit $kind rejects partial discovery and stale capture without native issuance',
+        () {
       fakeAsync((time) {
         final h = Harness(time);
         final connection = h.session.currentConnection!;
@@ -319,30 +411,49 @@ void main() {
         repository.commandCharacteristic = null;
         expect(h.actions.canDispatchExplicitAction(connection), isFalse);
         bool? issued;
-        h.actions.dispatchExplicitAction(connection, kind).then((value) => issued = value);
-        time.flushMicrotasks(); expect(issued, isFalse); expect(h.trace, isEmpty);
+        h.actions
+            .dispatchExplicitAction(connection, kind)
+            .then((value) => issued = value);
+        time.flushMicrotasks();
+        expect(issued, isFalse);
+        expect(h.trace, isEmpty);
         repository.commandCharacteristic = repository.wire;
         expect(h.actions.canDispatchExplicitAction(connection), isTrue);
-        h.connect('B'); h.trace.clear();
+        h.connect('B');
+        h.trace.clear();
         expect(h.actions.canDispatchExplicitAction(connection), isFalse);
-        h.actions.dispatchExplicitAction(connection, kind).then((value) => issued = value);
-        time.flushMicrotasks(); expect(issued, isFalse); expect(h.trace, isEmpty);
+        h.actions
+            .dispatchExplicitAction(connection, kind)
+            .then((value) => issued = value);
+        time.flushMicrotasks();
+        expect(issued, isFalse);
+        expect(h.trace, isEmpty);
         h.dispose();
       });
     });
-    test('explicit $kind preserves native ACK effects and propagates post-write effect errors', () {
+    test(
+        'explicit $kind preserves native ACK effects and propagates post-write effect errors',
+        () {
       fakeAsync((time) {
         final h = Harness(time);
         h.effects.onAck = () => throw StateError('effect after native ACK');
         Object? error;
-        h.actions.dispatchExplicitAction(h.session.currentConnection!, kind).catchError((Object e) {
-          error = e; return false;
+        h.actions
+            .dispatchExplicitAction(h.session.currentConnection!, kind)
+            .catchError((Object e) {
+          error = e;
+          return false;
         });
         time.flushMicrotasks();
         expect(error, isA<StateError>());
         expect(h.effects.events.single.kind, kind);
-        expect(h.effects.events.single.source, kind == EventType.openSeat ? EventSource.app : EventSource.background);
-        expect(h.trace.where((event) => event.startsWith('A:scooter:')), hasLength(1));
+        expect(
+            h.effects.events.single.source,
+            kind == EventType.openSeat
+                ? EventSource.app
+                : EventSource.background);
+        expect(h.trace.where((event) => event.startsWith('A:scooter:')),
+            hasLength(1));
         h.dispose();
       });
     });
@@ -427,7 +538,9 @@ void main() {
     });
   });
   for (final lock in [true, false]) {
-    test('unknown protection permits ${lock ? 'lock' : 'unlock'} without inventing a warning', () {
+    test(
+        'unknown protection permits ${lock ? 'lock' : 'unlock'} without inventing a warning',
+        () {
       fakeAsync((time) {
         final h = Harness(time);
         h.settings = const ActionSettings(warnOfUnlockedHandlebars: true);
@@ -666,6 +779,8 @@ void main() {
       time.elapse(const Duration(seconds: 3));
       h.device.rssi.last.complete(-64);
       time.flushMicrotasks();
+      time.elapse(keylessApproachCountdown);
+      time.flushMicrotasks();
       expect(h.effects.events.single.source, EventSource.auto);
       expect(h.actions.coolingDown, true);
       time.elapse(const Duration(seconds: 59));
@@ -675,6 +790,125 @@ void main() {
       h.dispose();
     });
   });
+  test('an ambiguous keyless situation refuses to unlock and reports once', () {
+    fakeAsync((time) {
+      final h = Harness(time);
+      h.settings = const ActionSettings(
+          autoUnlock: true, optionalAuth: true, autoUnlockAmbiguous: true);
+      h.standby();
+      h.actions.startPolling();
+      time.elapse(const Duration(seconds: 3));
+      h.device.rssi.last.complete(-20);
+      time.flushMicrotasks();
+      expect(h.effects.events, isEmpty);
+      expect(h.effects.trace.where((t) => t == 'refused').length, 1);
+
+      time.elapse(const Duration(seconds: 3));
+      h.device.rssi.last.complete(-20);
+      time.flushMicrotasks();
+      expect(h.effects.trace.where((t) => t == 'refused').length, 1,
+          reason: 'reported once per episode, not once per poll');
+
+      // One scooter in range again: proximity works as before.
+      h.settings = const ActionSettings(autoUnlock: true, optionalAuth: true);
+      time.elapse(const Duration(seconds: 3));
+      h.device.rssi.last.complete(-20);
+      time.flushMicrotasks();
+      time.elapse(keylessApproachCountdown);
+      time.flushMicrotasks();
+      expect(h.effects.events.single.source, EventSource.auto);
+      h.dispose();
+    });
+  });
+
+  test('silencing the alarm disarms it rather than stopping the siren',
+      () async {
+    final time = FakeAsync();
+    final h = Harness(time);
+    await settleTransport();
+    h.trace.clear();
+    h.wire.onWrite = (c) async => h.wire.reply('alarm:ok');
+
+    await h.actions.disarmAlarm();
+    expect(h.trace.where((s) => s.startsWith('A:')), ['A:alarm:disarm'],
+        reason: 'stop only ends the current siren, so it must be a disarm; the '
+            'alarm setting itself is left alone');
+
+    h.trace.clear();
+    h.wire.onWrite = (c) async => h.wire.reply('alarm:error:unknown command');
+    await expectLater(h.actions.disarmAlarm(),
+        throwsA(contains('Failed to silence the alarm')));
+    h.dispose();
+  });
+
+  test('proximity unlocks only after the countdown, and stopping it cancels',
+      () {
+    fakeAsync((time) {
+      final h = Harness(time);
+      h.settings = const ActionSettings(autoUnlock: true, optionalAuth: true);
+      h.standby();
+      h.actions.startPolling();
+      time.elapse(const Duration(seconds: 3));
+      h.device.rssi.last.complete(-20);
+      time.flushMicrotasks();
+      expect(h.effects.events, isEmpty, reason: 'the window is still open');
+      expect(h.effects.pendingStates, [true]);
+
+      h.actions.cancelAutoUnlock();
+      expect(h.effects.pendingStates, [true, false]);
+      time.elapse(const Duration(seconds: 30));
+      expect(h.effects.events, isEmpty,
+          reason: 'a stopped countdown never unlocks');
+      h.dispose();
+    });
+  });
+
+  test('leaving standby during the countdown cancels the unlock', () {
+    fakeAsync((time) {
+      final h = Harness(time);
+      h.settings = const ActionSettings(autoUnlock: true, optionalAuth: true);
+      h.standby();
+      h.actions.startPolling();
+      time.elapse(const Duration(seconds: 3));
+      h.device.rssi.last.complete(-20);
+      time.flushMicrotasks();
+      expect(h.effects.pendingStates, [true]);
+
+      h.telemetry.state = ScooterState.off;
+      h.actions.aggregateTransition(ScooterState.standby, ScooterState.off);
+      time.elapse(const Duration(seconds: 30));
+      expect(h.effects.events, isEmpty);
+      expect(h.effects.pendingStates, [true, false]);
+      h.dispose();
+    });
+  });
+
+  test('paused keyless keeps polling RSSI but holds the unlock back', () {
+    fakeAsync((time) {
+      final h = Harness(time);
+      h.settings = const ActionSettings(
+          autoUnlock: true, optionalAuth: true, autoUnlockPaused: true);
+      h.standby();
+      h.actions.startPolling();
+      time.elapse(const Duration(seconds: 3));
+      h.device.rssi.last.complete(-20);
+      time.flushMicrotasks();
+      expect(h.trace.where((e) => e.startsWith('rssi:')), ['rssi:-20'],
+          reason: 'the distance reading stays live while held back');
+      expect(h.effects.events, isEmpty);
+
+      // A resume applies on the next poll.
+      h.settings = const ActionSettings(autoUnlock: true, optionalAuth: true);
+      time.elapse(const Duration(seconds: 3));
+      h.device.rssi.last.complete(-20);
+      time.flushMicrotasks();
+      time.elapse(keylessApproachCountdown);
+      time.flushMicrotasks();
+      expect(h.effects.events.single.source, EventSource.auto);
+      h.dispose();
+    });
+  });
+
   test(
       'pause/resume is idempotent retains remainder and rejects in-flight RSSI',
       () {

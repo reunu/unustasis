@@ -239,8 +239,7 @@ void main() {
       expect(received, hasLength(4));
     });
 
-    test('malformed UTF-8 and empty payload still invoke the callback',
-        () async {
+    test('malformed UTF-8 is reported, but an empty payload is not', () async {
       final received = <(String, bool)>[];
       for (final bytes in <List<int>>[
         [0xff, 45, 108, 115],
@@ -251,7 +250,7 @@ void main() {
         await readNrfVersion(
             characteristic, (value, ls) => received.add((value, ls)));
       }
-      expect(received, [('\uFFFD-ls', true), ('', false), ('', false)]);
+      expect(received, [('\uFFFD-ls', true)]);
     });
 
     test('read errors complete normally without calling back', () async {

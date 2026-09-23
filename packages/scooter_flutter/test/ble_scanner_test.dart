@@ -33,7 +33,8 @@ class FakeBluePlus extends Fake implements FlutterBluePlusMockable {
   bool get isScanningNow => active;
 
   @override
-  Future<List<BluetoothDevice>> Function(List<Guid>) get systemDevices => (services) async {
+  Future<List<BluetoothDevice>> Function(List<Guid>) get systemDevices =>
+      (services) async {
         systemQueries.add(List.of(services));
         return system;
       };
@@ -132,7 +133,8 @@ void main() {
     await blue.dispose();
   });
 
-  testWidgets('no saved IDs closes autoconnect without scanning', (tester) async {
+  testWidgets('no saved IDs closes autoconnect without scanning',
+      (tester) async {
     savedIds = [];
     List<BluetoothDevice>? found;
     scanner.getNearbyScooters(getIds: getIds).toList().then((v) => found = v);
@@ -144,7 +146,8 @@ void main() {
     expectClean(blue);
   });
 
-  testWidgets('find with no saved IDs returns null without scanning', (tester) async {
+  testWidgets('find with no saved IDs returns null without scanning',
+      (tester) async {
     savedIds = [];
     blue.system = [BluetoothDevice.fromId(otherId)];
     bool done = false;
@@ -161,7 +164,55 @@ void main() {
     expectClean(blue);
   });
 
-  testWidgets('returns first saved system device in system order without scan', (tester) async {
+  testWidgets('collects every scooter in range instead of the first',
+      (tester) async {
+    savedIds = [savedId, otherId];
+    List<BluetoothDevice>? found;
+    scanner.findEligibleScooters(getIds: getIds).then((v) => found = v);
+    await tester.pump();
+    blue.emit(savedId);
+    blue.emit(otherId);
+    await tester.pump(const Duration(seconds: 4));
+    expect(found, isNotNull);
+    expect(
+        found!.map((d) => d.remoteId.toString()).toSet(), {savedId, otherId});
+    await tester.runAsync(() async {});
+    await tester.pump();
+    expect(blue.stops, greaterThan(0));
+    expectClean(blue);
+  });
+
+  testWidgets('a scan batch yields all of its devices, not only the last',
+      (tester) async {
+    savedIds = [savedId, otherId];
+    List<BluetoothDevice>? found;
+    scanner.findEligibleScooters(getIds: getIds).then((v) => found = v);
+    await tester.pump();
+    blue.results.add([FakeScanResult(savedId), FakeScanResult(otherId)]);
+    await tester.pump(const Duration(seconds: 4));
+    expect(
+        found!.map((d) => d.remoteId.toString()).toSet(), {savedId, otherId});
+    await tester.runAsync(() async {});
+    await tester.pump();
+    expectClean(blue);
+  });
+
+  testWidgets('idsInRange reports only the requested ids it heard',
+      (tester) async {
+    Set<String>? found;
+    scanner.idsInRange([savedId, otherId]).then((v) => found = v);
+    await tester.pump();
+    blue.emit(savedId);
+    blue.emit(thirdId);
+    await tester.pump(const Duration(seconds: 4));
+    expect(found, {savedId});
+    await tester.runAsync(() async {});
+    await tester.pump();
+    expectClean(blue);
+  });
+
+  testWidgets('returns first saved system device in system order without scan',
+      (tester) async {
     savedIds = [thirdId, savedId];
     blue.system = [
       BluetoothDevice.fromId(otherId),
@@ -181,9 +232,13 @@ void main() {
     expectClean(blue);
   });
 
-  testWidgets('skips excluded system device in favor of next saved device', (tester) async {
+  testWidgets('skips excluded system device in favor of next saved device',
+      (tester) async {
     savedIds = [savedId, otherId];
-    blue.system = [BluetoothDevice.fromId(savedId), BluetoothDevice.fromId(otherId)];
+    blue.system = [
+      BluetoothDevice.fromId(savedId),
+      BluetoothDevice.fromId(otherId)
+    ];
     BluetoothDevice? found;
     scanner.findEligibleScooter(
       getIds: getIds,
@@ -195,7 +250,9 @@ void main() {
     expectClean(blue);
   });
 
-  testWidgets('excluded system device falls back to name scan and skips excluded results', (tester) async {
+  testWidgets(
+      'excluded system device falls back to name scan and skips excluded results',
+      (tester) async {
     blue.system = [BluetoothDevice.fromId(savedId)];
     bool done = false;
     BluetoothDevice? found;
@@ -215,6 +272,9 @@ void main() {
     expect(done, isFalse);
     blue.emit(otherId);
     await tester.pump();
+    expect(done, isFalse,
+        reason: 'the scan keeps collecting until its window closes');
+    await tester.pump(const Duration(seconds: 4));
     await tester.runAsync(() async {});
     await tester.pump();
     expect(done, isTrue);
@@ -223,9 +283,12 @@ void main() {
     expectClean(blue);
   });
 
-  testWidgets('listeners capture immediate results and true-to-false scan events', (tester) async {
+  testWidgets(
+      'listeners capture immediate results and true-to-false scan events',
+      (tester) async {
     blue.onStart = () async {
-      blue.setScanning(false); // An initial idle value must not close the stream.
+      blue.setScanning(
+          false); // An initial idle value must not close the stream.
       blue.setScanning(true);
       blue.emit(savedId);
       blue.setScanning(false);
@@ -245,10 +308,39 @@ void main() {
     expectClean(blue);
   });
 
-  testWidgets('manual discovery with no saved IDs uses name filter and closes on stop', (tester) async {
+  testWidgets('manual discovery ignores shutdown of an existing scan',
+      (tester) async {
+    blue.active = true;
+    blue.onStart = () async {
+      blue.setScanning(true);
+      blue.setScanning(false);
+      blue.setScanning(true);
+    };
+    bool done = false;
+    scanner
+        .discoverScooters(getIds: getIds)
+        .drain<void>()
+        .then((_) => done = true);
+    await tester.pump();
+    await tester.pump();
+    expect(done, isFalse);
+    expect(blue.active, isTrue);
+    expect(blue.starts, 1);
+    blue.setScanning(false);
+    await flushStreams(tester);
+    expect(done, isTrue);
+    expectClean(blue);
+  });
+
+  testWidgets(
+      'manual discovery with no saved IDs uses name filter and closes on stop',
+      (tester) async {
     savedIds = [];
     List<BluetoothDevice>? found;
-    scanner.getNearbyScooters(getIds: getIds, preferSavedScooters: false).toList().then((v) => found = v);
+    scanner
+        .getNearbyScooters(getIds: getIds, preferSavedScooters: false)
+        .toList()
+        .then((v) => found = v);
     await tester.pump();
     expect(found, isNull);
     expect(blue.names, ['unu Scooter']);
@@ -266,7 +358,8 @@ void main() {
     expectClean(blue);
   });
 
-  testWidgets('asynchronous start rejection closes stream and cleans listeners', (tester) async {
+  testWidgets('asynchronous start rejection closes stream and cleans listeners',
+      (tester) async {
     final start = Completer<void>();
     blue.onStart = () => start.future;
     List<BluetoothDevice>? found;
@@ -281,15 +374,19 @@ void main() {
     await tester.pump();
     await flushStreams(tester);
     expectClean(blue);
-    expect(found, isNotNull, reason: 'startScan rejection must complete the output stream');
+    expect(found, isNotNull,
+        reason: 'startScan rejection must complete the output stream');
     expect(found, isEmpty);
     expect(blue.stops, 0);
     expectClean(blue);
   });
 
-  testWidgets('consumer cancellation after result stops active scan and removes listeners', (tester) async {
+  testWidgets(
+      'consumer cancellation after result stops active scan and removes listeners',
+      (tester) async {
     final found = <BluetoothDevice>[];
-    final subscription = scanner.getNearbyScooters(getIds: getIds).listen(found.add);
+    final subscription =
+        scanner.getNearbyScooters(getIds: getIds).listen(found.add);
     await tester.pump();
     blue.emit(savedId);
     await tester.pump();
@@ -301,7 +398,9 @@ void main() {
     await tester.runAsync(() async {});
     await tester.pump();
     await flushStreams(tester);
-    expect(cancelled, isTrue, reason: 'Cancellation after delivery must not wait for another BLE event');
+    expect(cancelled, isTrue,
+        reason:
+            'Cancellation after delivery must not wait for another BLE event');
     expect(blue.stops, 1);
     expectClean(blue);
     blue.emit(otherId);
@@ -310,7 +409,9 @@ void main() {
     expect(blue.stops, 1);
   });
 
-  testWidgets('cancelling inside result callback cleans listeners and stops scan', (tester) async {
+  testWidgets(
+      'cancelling inside result callback cleans listeners and stops scan',
+      (tester) async {
     bool cancelled = false;
     final found = <BluetoothDevice>[];
     late StreamSubscription<BluetoothDevice> subscription;
@@ -329,11 +430,14 @@ void main() {
     expect(blue.stops, 1);
   });
 
-  testWidgets('cancellation before ID lookup completes never starts scan', (tester) async {
+  testWidgets('cancellation before ID lookup completes never starts scan',
+      (tester) async {
     final ids = Completer<List<String>>();
-    final subscription = scanner.getNearbyScooters(
-      getIds: ({required bool onlyAutoConnect}) => ids.future,
-    ).listen((_) {});
+    final subscription = scanner
+        .getNearbyScooters(
+          getIds: ({required bool onlyAutoConnect}) => ids.future,
+        )
+        .listen((_) {});
     await tester.pump();
     bool cancelled = false;
     subscription.cancel().then((_) => cancelled = true);
@@ -345,13 +449,15 @@ void main() {
     expectClean(blue);
   });
 
-  testWidgets('startup completing after cancellation stops its late scan', (tester) async {
+  testWidgets('startup completing after cancellation stops its late scan',
+      (tester) async {
     final start = Completer<void>();
     blue.onStart = () async {
       await start.future;
       blue.setScanning(true);
     };
-    final subscription = scanner.getNearbyScooters(getIds: getIds).listen((_) {});
+    final subscription =
+        scanner.getNearbyScooters(getIds: getIds).listen((_) {});
     await tester.pump();
     bool cancelled = false;
     subscription.cancel().then((_) => cancelled = true);
@@ -366,7 +472,8 @@ void main() {
     expect(blue.stops, 1);
   });
 
-  testWidgets('watchdog closes at 35 seconds when stopped event is omitted', (tester) async {
+  testWidgets('watchdog closes at 35 seconds when stopped event is omitted',
+      (tester) async {
     List<BluetoothDevice>? found;
     scanner.getNearbyScooters(getIds: getIds).toList().then((v) => found = v);
     await tester.pump();

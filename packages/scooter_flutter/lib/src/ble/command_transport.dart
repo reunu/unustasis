@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:logging/logging.dart';
@@ -30,16 +31,59 @@ Future<T> withExtendedChannel<T>(
   return result;
 }
 
-/// Turns notifications on for the extended response characteristic unless
-/// they're already on.
-///
-/// `isNotifying` is derived from the cached CCCD value, which flutter_blue_plus
-/// clears on disconnect, so the subscription lives for exactly one connection.
-/// Toggling it per command cost two extra CCCD writes each time and dropped
-/// any response that arrived while notify was off.
-Future<void> ensureExtendedNotify(BluetoothCharacteristic resp) async {
-  if (resp.isNotifying) return;
-  await resp.setNotifyValue(true);
+/// Enables the extended response subscription once per connection, without
+/// trusting the cached CCCD value.
+Future<void> ensureExtendedNotify(
+  CharacteristicRepository repo,
+  BluetoothCharacteristic resp, {
+  bool Function()? isCurrent,
+}) async {
+  checkCommandCurrent(isCurrent);
+  if (repo.extendedNotifyVerified) return;
+  try {
+    await resp.setNotifyValue(true);
+  } catch (e) {
+    repo.noteGattRejection(e, 'Extended response notify-enable');
+    rethrow;
+  }
+  // Only after it worked, so a refused enable is retried by the next command.
+  repo.extendedNotifyVerified = true;
+  if (Platform.isAndroid) await verifyExtendedNotify(repo, resp);
+}
+
+/// A subscription that did not take means the phone's table is stale.
+Future<void> verifyExtendedNotify(
+    CharacteristicRepository repo, BluetoothCharacteristic resp) async {
+  final cccd = _cccdOf(resp);
+  if (cccd == null) return;
+  try {
+    final value = await cccd.read();
+    final enabled = value.length == 2 &&
+        value[1] == 0 &&
+        (value[0] & ~0x03) == 0 &&
+        ((value[0] & 0x01) == 0 || resp.properties.notify) &&
+        ((value[0] & 0x02) == 0 || resp.properties.indicate) &&
+        (value[0] & 0x03) != 0;
+    if (!enabled) {
+      repo.noteStaleGattTable(
+          'the extended response subscription did not enable cleanly');
+    }
+  } catch (e) {
+    _log.fine('Could not read the extended response CCCD back: $e');
+  }
+}
+
+/// How long an extended command waits for its answer.
+const Duration extendedResponseTimeout = Duration(seconds: 5);
+
+final Guid _cccdUuid = Guid("00002902-0000-1000-8000-00805f9b34fb");
+
+BluetoothDescriptor? _cccdOf(BluetoothCharacteristic resp) {
+  try {
+    return resp.descriptors.firstWhere((d) => d.descriptorUuid == _cccdUuid);
+  } catch (_) {
+    return null;
+  }
 }
 
 /// Writes an ASCII command to the scooter's BLE command characteristic.
@@ -71,7 +115,12 @@ Future<void> sendCommand(
   // From this point even a synchronous native write error is ambiguous. This
   // optional observation lets explicit requests retain only definite non-writes.
   onWriteIssued?.call();
-  await target.write(bytes, allowLongWrite: allowLongWrite);
+  try {
+    await target.write(bytes, allowLongWrite: allowLongWrite);
+  } catch (e) {
+    characteristicRepository.noteGattRejection(e, 'Command write');
+    rethrow;
+  }
 }
 
 /// Sends a command to the extended characteristic (only available on librescoot
@@ -82,7 +131,7 @@ Future<String?> sendLsExtendedCommand(
   CharacteristicRepository repo,
   String command, {
   bool Function()? isCurrent,
-  Duration responseTimeout = const Duration(seconds: 10),
+  Duration responseTimeout = extendedResponseTimeout,
 }) =>
     withExtendedChannel(() => _sendLsExtendedCommandUnguarded(
           scooter,
@@ -108,22 +157,44 @@ Future<String?> _sendLsExtendedCommandUnguarded(
   if (cmd == null || resp == null) {
     throw "Extended command characteristics not available";
   }
+  // Writing anyway spends the whole response timeout to learn nothing.
+  if (repo.gattTableMismatch) {
+    throw "Bluetooth services on this phone are out of date, forget the scooter and pair again";
+  }
+  // Nothing is answering on this channel, so report the verdict a timeout would
+  // have produced without the wait. Every screen that reads settings otherwise
+  // waits out five seconds per field, one after another.
+  if (repo.extendedChannelUnresponsive) {
+    _log.info('Extended command skipped, channel has not answered');
+    return null;
+  }
 
   _log.info(
       'Extended command acquired channel; notifications=${resp.isNotifying}');
-  await ensureExtendedNotify(resp);
+  try {
+    await ensureExtendedNotify(repo, resp, isCurrent: isCurrent);
+  } catch (e) {
+    rethrow;
+  }
   checkCommandCurrent(isCurrent);
   final listener = ExtendedResponseListener(resp.onValueReceived);
   try {
     await sendCommand(scooter, repo, command,
         characteristic: cmd, allowLongWrite: true, isCurrent: isCurrent);
     _log.info('Extended command written; waiting for response');
-    final response = await listener.responses.first.timeout(responseTimeout);
+    final response = await listener.responses
+        .map((response) {
+          repo.noteExtendedResponse();
+          return response;
+        })
+        .first
+        .timeout(responseTimeout);
     _log.info(
         'Extended command received ${utf8.encode(response).length} bytes');
     return response;
   } on TimeoutException {
     _log.warning('Extended command timed out');
+    repo.noteSilentExtendedCommand();
     return null;
   } finally {
     await listener.cancel();

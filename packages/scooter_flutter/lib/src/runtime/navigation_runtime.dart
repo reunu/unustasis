@@ -26,6 +26,7 @@ class NavigationRuntime {
   SessionConnection? _connection;
   CharacteristicRepository? _repository;
   NavigationDestination? _pending, _active;
+  NavigationRoutePlan? _plan;
   Object _request = Object();
   Object? _dispatchRequest, _dispatchRun;
   SessionConnection? _dispatchConnection;
@@ -34,6 +35,9 @@ class NavigationRuntime {
 
   NavigationDestination? get pending => _pending?.copy();
   NavigationDestination? get active => _active?.copy();
+
+  /// Last plan read from the scooter; null until the first read.
+  NavigationRoutePlan? get plan => _plan?.copy();
 
   void bind(SessionConnection connection, CharacteristicRepository repository) {
     invalidate();
@@ -45,6 +49,7 @@ class NavigationRuntime {
   void invalidate() {
     _connection = null;
     _repository = null;
+    _plan = null;
   }
 
   Future<void> restorePending() async {
@@ -244,6 +249,79 @@ class NavigationRuntime {
         isCurrent: () => _current(target));
     _check(target);
     return result;
+  }
+
+  void _publishPlan(NavigationRoutePlan plan) {
+    _plan = plan.copy();
+    changed();
+  }
+
+  /// Re-reads the plan on the captured session and publishes it.
+  Future<NavigationRoutePlan> _readPlan(_NavigationTarget target) async {
+    final plan = await commands.listRoutePlanCommand(
+        target.connection.device, target.repository,
+        isCurrent: () => _current(target));
+    _check(target);
+    _publishPlan(plan);
+    return plan;
+  }
+
+  /// Reads and caches the current multi-hop plan.
+  Future<NavigationRoutePlan> refreshPlan() => _readPlan(_capture());
+
+  Future<void> addStop(NavigationDestination stop) async {
+    final target = _capture();
+    await commands.addRouteStopCommand(
+        target.connection.device, target.repository, stop.copy(),
+        isCurrent: () => _current(target));
+    _check(target);
+    await _readPlan(target);
+  }
+
+  /// Removes the stop at a 1-based index.
+  Future<void> removeStopAt(int index) async {
+    final target = _capture();
+    await commands.removeRouteStopCommand(
+        target.connection.device, target.repository, index,
+        isCurrent: () => _current(target));
+    _check(target);
+    await _readPlan(target);
+  }
+
+  Future<void> skipStop() async {
+    final target = _capture();
+    await commands.skipRouteStopCommand(
+        target.connection.device, target.repository,
+        isCurrent: () => _current(target));
+    _check(target);
+    await _readPlan(target);
+  }
+
+  Future<void> clearPlan() async {
+    final target = _capture();
+    await commands.clearRoutePlanCommand(
+        target.connection.device, target.repository,
+        isCurrent: () => _current(target));
+    _check(target);
+    _publishPlan(const NavigationRoutePlan(stops: [], currentStep: 0));
+  }
+
+  /// Clears and re-adds in the given order, since the protocol only appends.
+  /// Guidance restarts at the first stop.
+  Future<void> reorderPlan(List<NavigationDestination> ordered) async {
+    final target = _capture();
+    bool current() => _current(target);
+    await commands.clearRoutePlanCommand(
+        target.connection.device, target.repository,
+        isCurrent: current);
+    _check(target);
+    for (final stop in ordered) {
+      await commands.addRouteStopCommand(
+          target.connection.device, target.repository, stop.copy(),
+          isCurrent: current);
+      _check(target);
+    }
+    await _readPlan(target);
   }
 
   void dispose() {

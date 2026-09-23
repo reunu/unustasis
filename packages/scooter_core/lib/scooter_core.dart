@@ -13,3 +13,5 @@ export 'src/models/scooter_power_state.dart';
 export 'src/models/scooter_state.dart';
 export 'src/models/scooter_vehicle_state.dart';
 export 'navigation.dart';
+export 'trip_counter.dart';
+export 'trip_expunge.dart';

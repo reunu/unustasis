@@ -144,9 +144,9 @@ void main() {
         'present:true',
         'changed',
         'navigation',
-        'autoUnlock',
         'autoUnlockThreshold',
         'biometrics',
+        'autoUnlock',
         'openSeatOnUnlock',
         'hazardLocking',
         'unlockedHandlebarsWarning'

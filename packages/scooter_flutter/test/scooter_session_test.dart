@@ -53,14 +53,53 @@ class _Link {
   int disconnects = 0;
 }
 
+class _CancelGatedStream extends StreamView<void> {
+  _CancelGatedStream(super.stream, this.gate);
+  final Future<void> gate;
+  @override
+  StreamSubscription<void> listen(void Function(void)? onData,
+          {Function? onError, void Function()? onDone, bool? cancelOnError}) =>
+      _CancelGatedSubscription(super.listen(onData,
+          onError: onError, onDone: onDone, cancelOnError: cancelOnError), gate);
+}
+
+class _CancelGatedSubscription implements StreamSubscription<void> {
+  _CancelGatedSubscription(this.delegate, this.gate);
+  final StreamSubscription<void> delegate;
+  final Future<void> gate;
+  @override
+  Future<void> cancel() async {
+    await delegate.cancel();
+    await gate;
+  }
+  @override
+  void onData(void Function(void)? handleData) => delegate.onData(handleData);
+  @override
+  void onError(Function? handleError) => delegate.onError(handleError);
+  @override
+  void onDone(void Function()? handleDone) => delegate.onDone(handleDone);
+  @override
+  void pause([Future<void>? resumeSignal]) => delegate.pause(resumeSignal);
+  @override
+  void resume() => delegate.resume();
+  @override
+  bool get isPaused => delegate.isPaused;
+  @override
+  Future<E> asFuture<E>([E? futureValue]) => delegate.asFuture(futureValue);
+}
+
 class _Device extends Fake implements BluetoothDevice {
   _Device(String id, this.trace, [_Link? link])
       : remoteId = DeviceIdentifier(id),
-        link = link ?? _Link();
+        link = link ?? _Link() {
+    servicesResets = StreamController<void>.broadcast(sync: true);
+  }
   final List<String> trace;
   final _Link link;
   final connections = <Completer<void>>[];
   final states = StreamController<BluetoothConnectionState>.broadcast();
+  late final StreamController<void> servicesResets;
+  Completer<void>? servicesResetCancelGate;
   Completer<BluetoothBondState>? bondStateGate;
   Completer<void>? bondGate;
   Completer<void>? priorityGate;
@@ -80,6 +119,15 @@ class _Device extends Fake implements BluetoothDevice {
   Stream<BluetoothConnectionState> get connectionState {
     trace.add('$remoteId.listen');
     return states.stream;
+  }
+
+  @override
+  Stream<void> get onServicesReset {
+    trace.add('$remoteId.servicesReset');
+    final gate = servicesResetCancelGate;
+    return gate == null
+        ? servicesResets.stream
+        : _CancelGatedStream(servicesResets.stream, gate.future);
   }
 
   @override
@@ -138,7 +186,13 @@ class _Repository extends CharacteristicRepository {
   final List<String> trace;
   Completer<void>? gate;
   bool missing = false;
+  String? invalidTable;
+  Completer<void>? validationGate;
+  void Function()? afterValidationHandoff;
   int discoveries = 0;
+  int pairingChecks = 0;
+  Completer<void>? pairingGate;
+  Object? pairingError;
   @override
   Future<void> findAll({bool additionalLibrescootFeatures = false}) async {
     expect(additionalLibrescootFeatures, isTrue);
@@ -148,9 +202,33 @@ class _Repository extends CharacteristicRepository {
   }
 
   @override
+  Future<void> confirmPairing(
+      {bool Function()? isCurrent,
+      Duration timeout = const Duration(seconds: 60)}) async {
+    pairingChecks++;
+    trace.add('${scooter.remoteId}.pair');
+    await pairingGate?.future;
+    if (pairingError != null) throw pairingError!;
+  }
+
+  @override
   bool anyAreNull() {
     trace.add('${scooter.remoteId}.complete');
     return missing;
+  }
+
+  @override
+  Future<String?> validateGattTable({required bool isAndroid}) async {
+    trace.add('${scooter.remoteId}.validate');
+    await validationGate?.future;
+    final result =
+        missing ? 'mandatory characteristics are missing' : invalidTable;
+    final afterHandoff = afterValidationHandoff;
+    if (afterHandoff != null) {
+      afterValidationHandoff = null;
+      scheduleMicrotask(() => scheduleMicrotask(afterHandoff));
+    }
+    return result;
   }
 }
 
@@ -177,6 +255,7 @@ class _Effects implements ScooterSessionEffects {
     phase('${connection.id}.linking');
     onLinking?.call(connection);
   }
+
   @override
   void transportConnected(SessionConnection connection) {
     connections.add(connection);
@@ -220,8 +299,32 @@ class _Harness {
         onChanged?.call();
       },
       deviceFromId: (id) => devices[id]!,
-      repositoryFactory: (device) =>
-          repositories.putIfAbsent(device, () => _Repository(device, trace)),
+      repositoryFactory: (device) {
+        final calls = repositoryFactoryCalls.update(device, (value) => value + 1,
+            ifAbsent: () => 1);
+        final queued = queuedRepositories[device];
+        if (queued != null && queued.isNotEmpty) {
+          final repository = queued.removeAt(0);
+          repositories[device] = repository;
+          repositoryHistory.add(repository);
+          return repository;
+        }
+        final prepared = repositories[device];
+        if (calls == 1 && prepared != null) {
+          repositoryHistory.add(prepared);
+          return prepared;
+        }
+        final repository = _Repository(device, trace)
+          ..invalidTable = defaultRepositoryInvalid;
+        repositories[device] = repository;
+        repositoryHistory.add(repository);
+        return repository;
+      },
+      clearGattCache: (device) async {
+        trace.add('${device.remoteId}.refresh');
+        if (refreshError case final error?) throw error;
+        return refreshResult;
+      },
       findEligibleScooter: () {
         session.stopAutoRestart();
         trace.add('scan');
@@ -237,7 +340,13 @@ class _Harness {
   final trace = <String>[];
   final allDevices = <_Device>[];
   final repositories = <BluetoothDevice, _Repository>{};
+  final repositoryFactoryCalls = <BluetoothDevice, int>{};
+  final queuedRepositories = <BluetoothDevice, List<_Repository>>{};
+  final repositoryHistory = <_Repository>[];
   final attempts = <Future<Object?>>[];
+  bool? refreshResult;
+  Object? refreshError;
+  String? defaultRepositoryInvalid;
   late final Map<String, _Device> devices;
   late final _Bluetooth bluetooth;
   late final _Effects effects;
@@ -279,6 +388,7 @@ class _Harness {
         gate.complete(BluetoothBondState.bonded);
       }
       for (final gate in [
+        device.servicesResetCancelGate,
         device.bondGate,
         device.priorityGate,
         device.disconnectGate
@@ -286,8 +396,14 @@ class _Harness {
         if (gate != null && !gate.isCompleted) gate.complete();
       }
     }
-    for (final repository in repositories.values) {
+    for (final repository in repositoryHistory) {
       if (repository.gate case final gate? when !gate.isCompleted) {
+        gate.complete();
+      }
+      if (repository.validationGate case final gate? when !gate.isCompleted) {
+        gate.complete();
+      }
+      if (repository.pairingGate case final gate? when !gate.isCompleted) {
         gate.complete();
       }
     }
@@ -298,7 +414,9 @@ class _Harness {
     await Future.wait(attempts);
     for (final device in allDevices) {
       expect(device.states.hasListener, isFalse);
+      expect(device.servicesResets.hasListener, isFalse);
       await device.states.close();
+      await device.servicesResets.close();
     }
     expect(bluetooth.scans.hasListener, isFalse);
     await bluetooth.scans.close();
@@ -365,6 +483,7 @@ void main() {
         'invalidate',
         'connected:false:A',
         'A.linking',
+        'A.servicesReset',
         'stopScan',
         'A.connect',
         'A.bondState',
@@ -372,8 +491,8 @@ void main() {
         'A.priority',
         'A.published',
         'A.discover',
+        'A.validate',
         'A.wire',
-        'A.complete',
         'A.metadata',
         'connected:true:null',
         'A.ready',
@@ -382,8 +501,53 @@ void main() {
     });
   }
 
+  sessionTest('iOS confirms pairing before the session is published as ready',
+      (tester) async {
+    final h = create(ios: true);
+    final a = h.devices['A']!;
+    final repository = _Repository(a, h.trace)
+      ..pairingGate = Completer<void>();
+    h.repositories[a] = repository;
+    final result = h.connect('A');
+    await tester.pump();
+    a.connections.single.complete();
+    await tester.pump();
+
+    expect(repository.pairingChecks, 1);
+    expect(h.session.connected, isFalse);
+    final pairIndex = h.trace.indexOf('A.pair');
+    expect(pairIndex, greaterThan(h.trace.indexOf('A.validate')));
+    expect(h.trace.indexOf('A.wire'), -1);
+
+    repository.pairingGate!.complete();
+    await tester.pump();
+
+    expect(await result, isNull);
+    expect(h.session.connected, isTrue);
+    expect(h.trace.indexOf('A.wire'), greaterThan(pairIndex));
+    expect(h.trace,
+        containsAllInOrder(['A.pair', 'A.wire', 'A.metadata', 'A.ready']));
+  });
+
   sessionTest(
-      'priority failure is non-fatal and missing characteristics still publish ready',
+      'iOS pairing failure fails the connect instead of reporting ready',
+      (tester) async {
+    final h = create(ios: true);
+    final a = h.devices['A']!;
+    h.repositories[a] = _Repository(a, h.trace)
+      ..pairingError = StateError('pairing was dismissed');
+    final result = h.connect('A');
+    await tester.pump();
+    a.connections.single.complete();
+    await tester.pump();
+
+    expect(await result, isA<StateError>());
+    expect(h.session.connected, isFalse);
+    expect(h.trace, isNot(contains('A.wire')));
+  });
+
+  sessionTest(
+      'priority failure is non-fatal and missing characteristics recover before ready',
       (tester) async {
     final h = create(android: true);
     final a = h.devices['A']!;
@@ -429,6 +593,340 @@ void main() {
       expect(h.devices['B']!.link.disconnects, 0);
     });
   }
+
+  sessionTest('Service Changed during connect is observed before discovery',
+      (tester) async {
+    final h = create(android: true);
+    final result = h.connect('A');
+    await tester.pump();
+    expect(h.trace, containsAllInOrder(['A.servicesReset', 'A.connect']));
+    h.devices['A']!.servicesResets.add(null);
+    await tester.pump();
+    expect(h.trace.last, 'invalidate');
+    await h.finish(tester, 'A');
+    expect(await result, isNull);
+    expect(h.trace,
+        containsAllInOrder(['invalidate', 'A.discover', 'A.validate', 'A.wire']));
+  });
+
+  sessionTest(
+      'Android validates before wiring and rebuilds after a false refresh result',
+      (tester) async {
+    final h = create(android: true)..refreshResult = false;
+    final first = _Repository(h.devices['A']!, h.trace)
+      ..invalidTable = 'collided 48-byte CCCD';
+    h.repositories[h.devices['A']!] = first;
+    final result = h.connect('A');
+    await tester.pump();
+    h.devices['A']!.connections.single.complete();
+    await tester.pump();
+    expect(await result, isNull);
+    expect(h.repositoryHistory, hasLength(2));
+    expect(h.effects.repositories, hasLength(1));
+    expect(h.effects.repositories.single, isNot(same(first)));
+    expect(h.trace, containsAllInOrder([
+      'A.servicesReset',
+      'A.discover',
+      'A.validate',
+      'A.refresh',
+      'A.discover',
+      'A.validate',
+      'A.wire',
+    ]));
+  });
+
+  sessionTest('iOS retries one transient incomplete table without cache refresh',
+      (tester) async {
+    final h = create(ios: true);
+    final first = _Repository(h.devices['A']!, h.trace)
+      ..invalidTable = 'mandatory characteristics are missing';
+    h.repositories[h.devices['A']!] = first;
+    final result = h.connect('A');
+    await tester.pump();
+    await h.finish(tester, 'A');
+    expect(await result, isNull);
+    expect(h.repositoryHistory, hasLength(2));
+    expect(h.trace.where((event) => event == 'A.validate'), hasLength(2));
+    expect(h.trace, isNot(contains('A.refresh')));
+    expect(h.effects.repositories.single, isNot(same(first)));
+  });
+
+  sessionTest('iOS transient-table rediscovery remains bounded', (tester) async {
+    final h = create(ios: true)
+      ..defaultRepositoryInvalid = 'mandatory characteristics are missing';
+    final result = h.connect('A');
+    await tester.pump();
+    h.devices['A']!.connections.single.complete();
+    await tester.pump();
+    expect(await result, isA<Exception>());
+    expect(h.repositoryHistory, hasLength(2));
+    expect(h.trace.where((event) => event == 'A.validate'), hasLength(2));
+    expect(h.trace, isNot(contains('A.refresh')));
+    expect(h.trace, isNot(contains('A.wire')));
+  });
+
+  sessionTest('a successful refresh invocation still requires validation',
+      (tester) async {
+    final h = create(android: true)
+      ..refreshResult = true
+      ..defaultRepositoryInvalid = 'still collided';
+    final result = h.connect('A');
+    await tester.pump();
+    h.devices['A']!.connections.single.complete();
+    await tester.pump();
+    expect(await result, isA<Exception>());
+    expect(h.trace.where((event) => event == 'A.refresh'), hasLength(1));
+    expect(h.trace, isNot(contains('A.wire')));
+  });
+
+  sessionTest('Android refresh failure exhausts recovery and fails closed',
+      (tester) async {
+    final h = create(android: true)
+      ..refreshError = StateError('refresh unavailable')
+      ..defaultRepositoryInvalid = 'collided table';
+    final result = h.connect('A');
+    await tester.pump();
+    h.devices['A']!.connections.single.complete();
+    await tester.pump();
+    expect(await result, isA<Exception>());
+    expect(h.trace.where((event) => event == 'A.refresh'), hasLength(1));
+    expect(h.trace, isNot(contains('A.wire')));
+    expect(h.trace, isNot(contains('A.ready')));
+    expect(h.devices['A']!.link.disconnects, 1);
+    expect(h.session.connected, isFalse);
+  });
+
+  sessionTest(
+      'supersession while failed setup cancels observation protects newer link',
+      (tester) async {
+    final h = create(android: true)..defaultRepositoryInvalid = 'unsafe';
+    final oldDevice = h.devices['A']!;
+    oldDevice.servicesResetCancelGate = Completer<void>();
+    final old = h.connect('A');
+    await tester.pump();
+    oldDevice.connections.single.complete();
+    await tester.pump();
+    expect(h.trace.where((event) => event == 'A.validate'), hasLength(2));
+
+    h.defaultRepositoryInvalid = null;
+    h.devices['A'] = h.makeDevice('A', oldDevice.link);
+    final newer = h.connect('A');
+    await tester.pump();
+    await h.finish(tester, 'A');
+    oldDevice.servicesResetCancelGate!.complete();
+    await tester.pump();
+    expect(await old, isA<Exception>());
+    expect(await newer, isNull);
+    expect(h.session.connected, isTrue);
+    expect(oldDevice.link.disconnects, 0, reason: h.trace.toString());
+  });
+
+  sessionTest(
+      'Service Changed during initial validation handoff discards the candidate',
+      (tester) async {
+    final h = create(android: true);
+    final first = _Repository(h.devices['A']!, h.trace)
+      ..afterValidationHandoff = () => h.devices['A']!.servicesResets.add(null);
+    h.repositories[h.devices['A']!] = first;
+    final result = h.connect('A');
+    await tester.pump();
+    await h.finish(tester, 'A');
+    expect(await result, isNull);
+    expect(h.repositoryHistory, hasLength(2));
+    expect(h.trace.where((event) => event == 'A.validate'), hasLength(2));
+    expect(h.effects.repositories, hasLength(1), reason: h.trace.toString());
+    expect(h.effects.repositories.single, isNot(same(first)),
+        reason: 'the handoff candidate must never start telemetry work');
+  });
+
+  sessionTest('Service Changed during discovery discards the obsolete table',
+      (tester) async {
+    final h = create(android: true);
+    final first = _Repository(h.devices['A']!, h.trace)
+      ..gate = Completer<void>();
+    h.repositories[h.devices['A']!] = first;
+    final result = h.connect('A');
+    await tester.pump();
+    h.devices['A']!.connections.single.complete();
+    await tester.pump();
+    expect(h.trace.last, 'A.discover');
+    h.devices['A']!.servicesResets.add(null);
+    await tester.pump();
+    expect(h.trace.last, 'invalidate');
+    first.gate!.complete();
+    await tester.pump();
+    expect(await result, isNull);
+    expect(h.repositoryHistory, hasLength(2));
+    expect(h.effects.repositories, hasLength(1));
+    expect(h.effects.repositories.single, isNot(same(first)));
+  });
+
+  sessionTest(
+      'Service Changed during active recovery handoff discards the candidate',
+      (tester) async {
+    final h = create(android: true);
+    final connected = h.connect('A');
+    await tester.pump();
+    await h.finish(tester, 'A');
+    expect(await connected, isNull);
+
+    final stale = _Repository(h.devices['A']!, h.trace)
+      ..afterValidationHandoff = () => h.devices['A']!.servicesResets.add(null);
+    final latest = _Repository(h.devices['A']!, h.trace);
+    h.queuedRepositories[h.devices['A']!] = [stale, latest];
+    h.devices['A']!.servicesResets.add(null);
+    await tester.pump();
+
+    expect(h.repositoryHistory, hasLength(3));
+    expect(h.trace.where((event) => event == 'A.validate'), hasLength(3));
+    expect(h.effects.repositories, hasLength(2), reason: h.trace.toString());
+    expect(h.effects.repositories, isNot(contains(same(stale))),
+        reason: 'the handoff candidate must never start telemetry work');
+    expect(h.effects.repositories.last, same(latest));
+  });
+
+  sessionTest('three invalid active handoffs fail closed without a fourth',
+      (tester) async {
+    final h = create(android: true);
+    final connected = h.connect('A');
+    await tester.pump();
+    await h.finish(tester, 'A');
+    expect(await connected, isNull);
+
+    final stale = List.generate(3, (_) {
+      return _Repository(h.devices['A']!, h.trace)
+        ..afterValidationHandoff = () => h.devices['A']!.servicesResets.add(null);
+    });
+    h.queuedRepositories[h.devices['A']!] = stale.toList();
+    h.devices['A']!.servicesResets.add(null);
+    await tester.pump();
+    await tester.pump();
+
+    expect(h.repositoryHistory, hasLength(4),
+        reason: 'the initial table plus exactly three recovery candidates');
+    expect(h.trace.where((event) => event == 'A.discover'), hasLength(4));
+    expect(h.trace.where((event) => event == 'A.validate'), hasLength(4));
+    expect(h.effects.repositories, hasLength(1));
+    for (final repository in stale) {
+      expect(h.effects.repositories, isNot(contains(same(repository))),
+          reason: 'invalidated candidates must not start notify/write work');
+    }
+    expect(h.devices['A']!.link.disconnects, 1);
+    expect(h.devices['A']!.link.connected, isFalse);
+    expect(h.session.connected, isFalse);
+    expect(h.session.device, isNull);
+  });
+
+  for (final platform in ['Android', 'iOS']) {
+    sessionTest('$platform Service Changed while active quiesces then rewires',
+        (tester) async {
+      final h = create(android: platform == 'Android', ios: platform == 'iOS');
+      final result = h.connect('A');
+      await tester.pump();
+      await h.finish(tester, 'A');
+      expect(await result, isNull);
+      h.trace.clear();
+      h.devices['A']!.servicesResets.add(null);
+      await tester.pump();
+      expect(h.trace.first, 'invalidate');
+      expect(h.trace, containsAllInOrder(
+          ['invalidate', 'A.discover', 'A.validate', 'A.wire']));
+      expect(h.effects.repositories, hasLength(2));
+      expect(h.effects.repositories.last,
+          isNot(same(h.effects.repositories.first)));
+    });
+  }
+
+  sessionTest(
+      'supersession while active recovery cancels observation protects newer link',
+      (tester) async {
+    final h = create(android: true);
+    final connected = h.connect('A');
+    await tester.pump();
+    await h.finish(tester, 'A');
+    expect(await connected, isNull);
+    final a = h.devices['A']!;
+    a.servicesResetCancelGate = Completer<void>();
+    h.defaultRepositoryInvalid = 'unsafe';
+    a.servicesResets.add(null);
+    await tester.pump();
+    expect(h.trace.where((event) => event == 'A.validate').length,
+        greaterThanOrEqualTo(3));
+
+    h.defaultRepositoryInvalid = null;
+    final newer = h.connect('B');
+    await tester.pump();
+    await h.finish(tester, 'B');
+    a.servicesResetCancelGate!.complete();
+    await tester.pump();
+    expect(await newer, isNull);
+    expect(h.session.connected, isTrue);
+    expect(h.session.device, same(h.devices['B']));
+    expect(h.devices['B']!.link.disconnects, 0);
+  });
+
+  sessionTest('repeated Service Changed events coalesce serialized discovery',
+      (tester) async {
+    final h = create(android: true);
+    final result = h.connect('A');
+    await tester.pump();
+    await h.finish(tester, 'A');
+    expect(await result, isNull);
+
+    final recovery = _Repository(h.devices['A']!, h.trace)
+      ..gate = Completer<void>();
+    h.queuedRepositories[h.devices['A']!] = [recovery];
+    h.devices['A']!.servicesResets.add(null);
+    await tester.pump();
+    expect(h.repositoryHistory, hasLength(2));
+    h.devices['A']!.servicesResets.add(null);
+    await tester.pump();
+    expect(h.repositoryHistory, hasLength(2),
+        reason: 'a second discovery must not overlap the first');
+    recovery.gate!.complete();
+    await tester.pump();
+    expect(h.repositoryHistory, hasLength(3));
+    expect(h.effects.repositories, hasLength(2));
+  });
+
+  sessionTest('disconnect during validation cannot wire the repository',
+      (tester) async {
+    final h = create(android: true);
+    final first = _Repository(h.devices['A']!, h.trace)
+      ..validationGate = Completer<void>();
+    h.repositories[h.devices['A']!] = first;
+    final result = h.connect('A');
+    await tester.pump();
+    h.devices['A']!.connections.single.complete();
+    await tester.pump();
+    expect(h.trace.last, 'A.validate');
+    h.devices['A']!.drop();
+    first.validationGate!.complete();
+    await tester.pump();
+    expect(await result, isA<StateError>());
+    expect(h.trace, isNot(contains('A.wire')));
+  });
+
+  sessionTest('supersession during validation cannot wire the old repository',
+      (tester) async {
+    final h = create(android: true);
+    final first = _Repository(h.devices['A']!, h.trace)
+      ..validationGate = Completer<void>();
+    h.repositories[h.devices['A']!] = first;
+    final old = h.connect('A');
+    await tester.pump();
+    h.devices['A']!.connections.single.complete();
+    await tester.pump();
+    expect(h.trace.last, 'A.validate');
+    final newer = h.connect('B');
+    await tester.pump();
+    await h.finish(tester, 'B');
+    first.validationGate!.complete();
+    await tester.pump();
+    expect(await old, isNull);
+    expect(await newer, isNull);
+    expect(h.trace, isNot(contains('A.wire')));
+  });
 
   sessionTest('iOS group and widget precede discovery with captured ID',
       (tester) async {

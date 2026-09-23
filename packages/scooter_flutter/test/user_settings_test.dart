@@ -44,12 +44,12 @@ void main() {
     final prefs = MemoryPreferences();
     final updates = <Map<String, dynamic>>[];
     final settings = UserSettings(preferences: prefs, onUpdate: updates.add);
-    expect(settings.autoUnlock, isFalse);
     expect(settings.autoUnlockThreshold, -65);
     expect(settings.optionalAuth, isFalse);
-    expect(settings.openSeatOnUnlock, isFalse);
-    expect(settings.hazardLocking, isFalse);
     expect(settings.warnOfUnlockedHandlebars, isTrue);
+    expect(settings.legacyAutoUnlock, isFalse);
+    expect(settings.legacyOpenSeatOnUnlock, isFalse);
+    expect(settings.legacyHazardLocking, isFalse);
     expect(prefs.reads, isEmpty);
     expect(prefs.writes, isEmpty);
     expect(updates, isEmpty);
@@ -60,22 +60,17 @@ void main() {
     final prefs = MemoryPreferences();
     final updates = <Map<String, dynamic>>[];
     final settings = UserSettings(preferences: prefs, onUpdate: updates.add)
-      ..autoUnlock = true
       ..autoUnlockThreshold = -99
-      ..openSeatOnUnlock = true
-      ..hazardLocking = true
       ..warnOfUnlockedHandlebars = false;
     await settings.restore();
-    expect(settings.autoUnlock, isFalse);
     expect(settings.autoUnlockThreshold, -65);
     expect(settings.optionalAuth, isTrue);
-    expect(settings.openSeatOnUnlock, isFalse);
-    expect(settings.hazardLocking, isFalse);
     expect(settings.warnOfUnlockedHandlebars, isTrue);
+    expect(settings.legacyAutoUnlock, isFalse);
     expect(prefs.reads, [
-      'autoUnlock',
       'autoUnlockThreshold',
       'biometrics',
+      'autoUnlock',
       'openSeatOnUnlock',
       'hazardLocking',
       'unlockedHandlebarsWarning',
@@ -84,7 +79,7 @@ void main() {
     expect(updates, isEmpty);
   });
 
-  test('restore restores every persisted field without threshold validation',
+  test('restore restores the global fields and the legacy keyless flags',
       () async {
     final prefs = MemoryPreferences()
       ..values.addAll({
@@ -97,28 +92,30 @@ void main() {
       });
     final settings = UserSettings(preferences: prefs);
     await settings.restore();
-    expect(settings.autoUnlock, isTrue);
     expect(settings.autoUnlockThreshold, -99);
     expect(settings.optionalAuth, isFalse);
-    expect(settings.openSeatOnUnlock, isTrue);
-    expect(settings.hazardLocking, isTrue);
     expect(settings.warnOfUnlockedHandlebars, isFalse);
+    expect(settings.legacyAutoUnlock, isTrue);
+    expect(settings.legacyOpenSeatOnUnlock, isTrue);
+    expect(settings.legacyHazardLocking, isTrue);
     prefs.values['biometrics'] = false;
     await settings.restore();
     expect(settings.optionalAuth, isTrue);
   });
 
+  test('the legacy keyless keys are only ever read', () async {
+    final prefs = MemoryPreferences()..values.addAll({'autoUnlock': true});
+    final settings = UserSettings(preferences: prefs);
+    await settings.restore();
+    await settings.setAutoUnlockThreshold(-99);
+    expect(prefs.writes, ['autoUnlockThreshold']);
+  });
+
   final setters = <String, Future<void> Function(UserSettings)>{
-    'autoUnlock': (settings) => settings.setAutoUnlock(true),
     'autoUnlockThreshold': (settings) => settings.setAutoUnlockThreshold(-99),
-    'openSeatOnUnlock': (settings) => settings.setOpenSeatOnUnlock(true),
-    'hazardLocking': (settings) => settings.setHazardLocking(true),
   };
   Object field(UserSettings settings, String key) => switch (key) {
-        'autoUnlock' => settings.autoUnlock,
         'autoUnlockThreshold' => settings.autoUnlockThreshold,
-        'openSeatOnUnlock' => settings.openSeatOnUnlock,
-        'hazardLocking' => settings.hazardLocking,
         _ => throw StateError(key),
       };
 

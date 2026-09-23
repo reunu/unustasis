@@ -60,6 +60,101 @@ Future<String> saveNavDestinationCommand(BluetoothDevice? scooter,
   return id;
 }
 
+/// Appends a stop to the scooter's multi-hop plan.
+Future<void> addRouteStopCommand(
+    BluetoothDevice? scooter, CharacteristicRepository repo,
+    NavigationDestination stop,
+    {bool Function()? isCurrent}) async {
+  final response = await sendLsExtendedCommand(
+    scooter,
+    repo,
+    addNavStopCommand(stop),
+    isCurrent: isCurrent,
+  );
+  if (response != "nav:ok" &&
+      !(response?.startsWith("nav:route:count:") ?? false)) {
+    _log.severe("Failed to add route stop, response: $response");
+    throw "Failed to add route stop, response: $response";
+  }
+}
+
+/// Removes the stop at a 1-based index from the scooter's multi-hop plan.
+Future<void> removeRouteStopCommand(
+    BluetoothDevice? scooter, CharacteristicRepository repo, int index,
+    {bool Function()? isCurrent}) async {
+  final response = await sendLsExtendedCommand(
+    scooter,
+    repo,
+    removeNavStopCommand(index),
+    isCurrent: isCurrent,
+  );
+  if (response != "nav:ok" &&
+      !(response?.startsWith("nav:route:count:") ?? false)) {
+    _log.severe("Failed to remove route stop, response: $response");
+    throw "Failed to remove route stop, response: $response";
+  }
+}
+
+/// Advances the scooter's multi-hop plan to the next stop.
+Future<void> skipRouteStopCommand(
+    BluetoothDevice? scooter, CharacteristicRepository repo,
+    {bool Function()? isCurrent}) async {
+  final response = await sendLsExtendedCommand(
+    scooter,
+    repo,
+    skipNavStopCommand,
+    isCurrent: isCurrent,
+  );
+  if (response != "nav:ok" &&
+      !(response?.startsWith("nav:route:count:") ?? false)) {
+    _log.severe("Failed to skip route stop, response: $response");
+    throw "Failed to skip route stop, response: $response";
+  }
+}
+
+/// Clears the scooter's multi-hop plan.
+Future<void> clearRoutePlanCommand(
+    BluetoothDevice? scooter, CharacteristicRepository repo,
+    {bool Function()? isCurrent}) async {
+  final response = await sendLsExtendedCommand(
+    scooter,
+    repo,
+    clearNavPlanCommand,
+    isCurrent: isCurrent,
+  );
+  if (response != "nav:ok") {
+    _log.severe("Failed to clear route plan, response: $response");
+    throw "Failed to clear route plan, response: $response";
+  }
+}
+
+Future<NavigationRoutePlan> listRoutePlanCommand(
+        BluetoothDevice? scooter, CharacteristicRepository repo,
+        {bool Function()? isCurrent}) =>
+    withExtendedChannel(() async {
+      checkCommandCurrent(isCurrent);
+      if (scooter == null || scooter.isDisconnected) {
+        throw "Scooter not connected!";
+      }
+      final cmd = repo.extendedCommandCharacteristic;
+      final resp = repo.extendedResponseCharacteristic;
+      if (cmd == null || resp == null) {
+        throw "Extended command characteristics not available";
+      }
+
+      await ensureExtendedNotify(repo, resp);
+      checkCommandCurrent(isCurrent);
+      final listener = ExtendedResponseListener(resp.onValueReceived);
+      try {
+        await sendCommand(scooter, repo, listNavPlanCommand,
+            characteristic: cmd, isCurrent: isCurrent);
+        final stream = listener.responses.timeout(extendedResponseTimeout);
+        return await readNavigationRoutePlan(stream);
+      } finally {
+        await listener.cancel();
+      }
+    });
+
 Future<List<NavigationDestination>> listFavDestinationsCommand(
         BluetoothDevice? scooter, CharacteristicRepository repo,
         {bool Function()? isCurrent}) =>
@@ -74,13 +169,13 @@ Future<List<NavigationDestination>> listFavDestinationsCommand(
         throw "Extended command characteristics not available";
       }
 
-      await ensureExtendedNotify(resp);
+      await ensureExtendedNotify(repo, resp);
       checkCommandCurrent(isCurrent);
       final listener = ExtendedResponseListener(resp.onValueReceived);
       try {
         await sendCommand(scooter, repo, "nav:fav:list",
             characteristic: cmd, isCurrent: isCurrent);
-        final stream = listener.responses.timeout(const Duration(seconds: 10));
+        final stream = listener.responses.timeout(extendedResponseTimeout);
         return await readExtendedList(stream, parseFavoriteDestination);
       } finally {
         await listener.cancel();

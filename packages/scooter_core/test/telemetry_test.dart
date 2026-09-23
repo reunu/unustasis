@@ -13,9 +13,18 @@ void main() {
     expect(parseAlarmLastTrigger('motion,2026-01-02T03:04:05Z'),
         (source: 'motion', timestamp: DateTime.utc(2026, 1, 2, 3, 4, 5)));
   });
-  test('empty source is unknown; only first comma splits timestamp', () {
+  test('rejects empty, corrupt, and unsupported trigger sources', () {
     expect(parseAlarmLastTrigger(''), isNull);
     expect(parseAlarmLastTrigger(',2026-01-02T03:04:05Z'), isNull);
+    expect(parseAlarmLastTrigger('\uFFFDtion,2026-01-02T03:04:05Z'), isNull);
+    expect(parseAlarmLastTrigger('future_source,2026-01-02T03:04:05Z'), isNull);
+  });
+  test('accepts every documented trigger source', () {
+    for (final source in alarmTriggerSources) {
+      expect(parseAlarmLastTrigger(source)?.source, source);
+    }
+  });
+  test('only the first comma splits the timestamp', () {
     expect(parseAlarmLastTrigger('motion,2026-01-02T03:04:05Z,extra'),
         (source: 'motion', timestamp: null));
   });
