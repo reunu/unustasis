@@ -447,6 +447,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
       identity.supportsHibernateFor = savedScooters[attemptedScooter.remoteId.toString()]?.supportsHibernateFor;
       identity.supportsApnConfig = savedScooters[attemptedScooter.remoteId.toString()]?.supportsApnConfig;
       _lsProbeGeneration++;
+      _lsProbeStarted = false;
       addSavedScooter(myScooter!.remoteId.toString());
 
       // Save scooter ID directly for iOS widget native Bluetooth access
@@ -748,7 +749,7 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
           _dispatchPendingNavigation();
         }
         if (identity.isLibrescoot == true) {
-          _probeLsCapabilities();
+          _maybeProbeLsCapabilities();
         } else {
           identity.supportsHibernateFor = false;
           identity.supportsScheduledHibernation = false;
@@ -766,26 +767,62 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   // connection can't apply its results to the current one
   int _lsProbeGeneration = 0;
 
+  // The probe runs once per connection. It is deferred while the scooter is
+  // asleep, so this stays false until it actually starts.
+  bool _lsProbeStarted = false;
+
+  /// Whether the scooter's iMX6 is not running, so extended-channel commands
+  /// get no answer until it boots again.
+  static bool _stateIsAsleep(ScooterState? state) {
+    switch (state) {
+      case ScooterState.hibernating:
+      case ScooterState.hibernatingImminent:
+      case ScooterState.booting:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  /// Runs the capability probe once per connection, but not while the scooter
+  /// is asleep: it cannot answer the extended channel then, so the probe would
+  /// only hold the serialized queue through a minute of timeouts. It runs when
+  /// the vehicle state says the scooter has woken.
+  void _maybeProbeLsCapabilities() {
+    if (_lsProbeStarted || _stateIsAsleep(_state)) return;
+    _lsProbeStarted = true;
+    _probeLsCapabilities();
+  }
+
   /// Probes which of the newer librescoot features this scooter supports.
   /// Fire-and-forget; flags stay null until the probe resolves.
   Future<void> _probeLsCapabilities() async {
     final generation = _lsProbeGeneration;
+    final probedScooterId = myScooter?.remoteId.toString();
+
+    // Each probe assigns its flag only when the scooter actually answered.
+    // ExtendedCommandTimeoutException means it did not, and is deliberately
+    // kept apart from an empty answer: the flag and the saved record stay
+    // untouched, so an unanswered probe can never be recorded as "supports
+    // nothing".
     bool? supportsHibernateFor;
     try {
       final caps = await commands.getPmCapabilitiesCommand(myScooter, characteristicRepository);
       supportsHibernateFor = caps.contains("hibernate-for");
+    } on commands.ExtendedCommandTimeoutException catch (e) {
+      log.warning("pm capability probe timed out", e);
     } catch (e, stack) {
       log.warning("pm capability probe failed", e, stack);
-      supportsHibernateFor = false;
     }
     if (generation != _lsProbeGeneration) return;
-    identity.supportsHibernateFor = supportsHibernateFor;
-    // cache the capability so the next session doesn't wait for the probe
-    final probedScooterId = myScooter?.remoteId.toString();
-    if (probedScooterId != null && savedScooters.containsKey(probedScooterId)) {
-      savedScooters[probedScooterId]!.supportsHibernateFor = supportsHibernateFor;
+    if (supportsHibernateFor != null) {
+      identity.supportsHibernateFor = supportsHibernateFor;
+      // cache the capability so the next session doesn't wait for the probe
+      if (probedScooterId != null && savedScooters.containsKey(probedScooterId)) {
+        savedScooters[probedScooterId]!.supportsHibernateFor = supportsHibernateFor;
+      }
+      notifyListeners();
     }
-    notifyListeners();
 
     bool? supportsScheduledHibernation;
     try {
@@ -795,46 +832,55 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
         commands.lsKeyScheduledHibernateEnabled,
       );
       supportsScheduledHibernation = value != null;
+    } on commands.ExtendedCommandTimeoutException catch (e) {
+      log.warning("scheduled hibernation probe timed out", e);
     } catch (e, stack) {
       log.warning("scheduled hibernation probe failed", e, stack);
-      supportsScheduledHibernation = false;
     }
     if (generation != _lsProbeGeneration) return;
-    identity.supportsScheduledHibernation = supportsScheduledHibernation;
-    notifyListeners();
+    if (supportsScheduledHibernation != null) {
+      identity.supportsScheduledHibernation = supportsScheduledHibernation;
+      notifyListeners();
+    }
 
     bool? supportsApnConfig;
     try {
       final caps = await commands.getLsCapabilitiesCommand(myScooter, characteristicRepository, "config");
       supportsApnConfig = caps.contains("apn");
+    } on commands.ExtendedCommandTimeoutException catch (e) {
+      log.warning("config capability probe timed out", e);
     } catch (e, stack) {
       log.warning("config capability probe failed", e, stack);
-      supportsApnConfig = false;
     }
     if (generation != _lsProbeGeneration) return;
-    identity.supportsApnConfig = supportsApnConfig;
-    // cached like the pm capability, so the APN tile does not vanish and
-    // reappear every time the probe re-runs on a reconnect
-    if (probedScooterId != null && savedScooters.containsKey(probedScooterId)) {
-      savedScooters[probedScooterId]!.supportsApnConfig = supportsApnConfig;
+    if (supportsApnConfig != null) {
+      identity.supportsApnConfig = supportsApnConfig;
+      // cached like the pm capability, so the APN tile does not vanish and
+      // reappear every time the probe re-runs on a reconnect
+      if (probedScooterId != null && savedScooters.containsKey(probedScooterId)) {
+        savedScooters[probedScooterId]!.supportsApnConfig = supportsApnConfig;
+      }
+      notifyListeners();
     }
-    notifyListeners();
 
     bool? supportsBondForget;
     try {
       final caps = await commands.getLsCapabilitiesCommand(myScooter, characteristicRepository, "ble");
       supportsBondForget = caps.contains("forget");
+    } on commands.ExtendedCommandTimeoutException catch (e) {
+      log.warning("ble capability probe timed out", e);
     } catch (e, stack) {
       log.warning("ble capability probe failed", e, stack);
-      supportsBondForget = false;
     }
     if (generation != _lsProbeGeneration) return;
-    // Not cached on the SavedScooter, unlike the two above. Nothing renders it,
-    // so there is no flicker to avoid, and the answer depends on the nRF
-    // firmware rather than the app: a cache would go stale the moment the
-    // scooter takes a firmware update.
-    identity.supportsBondForget = supportsBondForget;
-    notifyListeners();
+    if (supportsBondForget != null) {
+      // Not cached on the SavedScooter, unlike the two above. Nothing renders
+      // it, so there is no flicker to avoid, and the answer depends on the nRF
+      // firmware rather than the app: a cache would go stale the moment the
+      // scooter takes a firmware update.
+      identity.supportsBondForget = supportsBondForget;
+      notifyListeners();
+    }
 
     bool? supportsBatteryKeepActive;
     try {
@@ -844,25 +890,31 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
         commands.lsKeyBatteryKeepActiveOnSeatboxOpen,
       );
       supportsBatteryKeepActive = value != null;
+    } on commands.ExtendedCommandTimeoutException catch (e) {
+      log.warning("battery keep-active probe timed out", e);
     } catch (e, stack) {
       log.warning("battery keep-active probe failed", e, stack);
-      supportsBatteryKeepActive = false;
     }
     if (generation != _lsProbeGeneration) return;
-    identity.supportsBatteryKeepActive = supportsBatteryKeepActive;
-    notifyListeners();
+    if (supportsBatteryKeepActive != null) {
+      identity.supportsBatteryKeepActive = supportsBatteryKeepActive;
+      notifyListeners();
+    }
 
     bool? supportsAlarmControl;
     try {
       final caps = await commands.getLsCapabilitiesCommand(myScooter, characteristicRepository, "alarm");
       supportsAlarmControl = caps.contains("enable");
+    } on commands.ExtendedCommandTimeoutException catch (e) {
+      log.warning("alarm capability probe timed out", e);
     } catch (e, stack) {
       log.warning("alarm capability probe failed", e, stack);
-      supportsAlarmControl = false;
     }
     if (generation != _lsProbeGeneration) return;
-    identity.supportsAlarmControl = supportsAlarmControl;
-    notifyListeners();
+    if (supportsAlarmControl != null) {
+      identity.supportsAlarmControl = supportsAlarmControl;
+      notifyListeners();
+    }
   }
 
   void _updateAggregateState() {
@@ -870,6 +922,12 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     ScooterState? newState = vehicle.computeAggregateState();
     state = newState;
     ping();
+
+    // The capability probe is deferred while the scooter sleeps, so run it as
+    // soon as the vehicle state says it has woken.
+    if (_stateIsAsleep(oldState) && !_stateIsAsleep(newState) && identity.isLibrescoot == true) {
+      _maybeProbeLsCapabilities();
+    }
 
     // if someone just locked the scooter with their keycard, stop keyless from unlocking again
     // this might (will) cause the cooldown to run even on app locks, but that's okay
@@ -1018,7 +1076,8 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
 
   /// Reads the APN the scooter's modem is configured with. Returns "" when no
   /// APN is set (the modem then uses the SIM operator's defaults), and null
-  /// when the firmware doesn't expose the setting.
+  /// when the firmware doesn't expose the setting. Throws [TimeoutException]
+  /// when the scooter doesn't answer.
   Future<String?> getCellularApn() async {
     return commands.getLsSettingCommand(myScooter, characteristicRepository, commands.lsKeyCellularApn);
   }
@@ -1030,7 +1089,8 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
 
   /// Reads whether the scooter keeps its running battery active (waking it if
   /// needed) while the seatbox is open. Returns null when the firmware doesn't
-  /// expose the setting; an unset value counts as off.
+  /// expose the setting; an unset value counts as off. Throws [TimeoutException]
+  /// when the scooter doesn't answer.
   Future<bool?> getBatteryKeepActive() async {
     final value = await commands.getLsSettingCommand(
       myScooter,
@@ -1051,7 +1111,8 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     );
   }
 
-  /// Returns null when the firmware doesn't expose the setting.
+  /// Returns null when the firmware doesn't expose the setting. Throws
+  /// [TimeoutException] when the scooter doesn't answer.
   Future<bool?> getAlarmEnabled() async {
     final value = await commands.getLsSettingCommand(
       myScooter,
@@ -1071,7 +1132,8 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
     );
   }
 
-  /// Returns null when the firmware doesn't expose the setting.
+  /// Returns null when the firmware doesn't expose the setting. Throws
+  /// [TimeoutException] when the scooter doesn't answer.
   Future<bool?> getAlarmHonk() async {
     final value = await commands.getLsSettingCommand(
       myScooter,
