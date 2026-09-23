@@ -84,6 +84,8 @@ class ScooterTelemetry {
   bool _disposed = false;
   ScooterState? state = ScooterState.disconnected;
 
+  CharacteristicRepository? get currentRepository =>
+      _connection?.isCurrent == true ? _repository : null;
   bool get alarmAvailable => _repository?.alarmAvailable ?? false;
   bool get otaAvailable => _repository?.otaAvailable ?? false;
 

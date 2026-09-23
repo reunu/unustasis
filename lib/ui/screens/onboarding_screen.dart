@@ -12,15 +12,16 @@ import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:appcheck/appcheck.dart';
 
-import '../../domain/scooter_candidate.dart';
-import '../../domain/scooter_colors.dart';
-import '../theme/theme_helper.dart';
-import '../widgets/scooter_picker.dart';
-import 'home_screen.dart';
-import '../../scooter_service.dart';
-import '../../domain/scooter_state.dart';
-import '../widgets/scooter_visual.dart';
-import 'stats/support_screen.dart';
+import 'package:unustasis/domain/scooter_candidate.dart';
+import 'package:unustasis/domain/scooter_colors.dart';
+import 'package:unustasis/ui/theme/theme_helper.dart';
+import 'package:unustasis/ui/widgets/scooter_picker.dart';
+import 'package:unustasis/ui/screens/home_screen.dart';
+import 'package:unustasis/scooter_service.dart';
+import 'package:unustasis/domain/scooter_state.dart';
+import 'package:unustasis/ui/widgets/wide_layout.dart';
+import 'package:unustasis/ui/widgets/scooter_visual.dart';
+import 'package:unustasis/ui/screens/stats/support_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({
@@ -226,41 +227,44 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
         ),
         child: Padding(
           padding: const EdgeInsets.all(32.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.max,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: Builder(
-                  builder: (context) {
-                    int tapCount = 0;
-                    return GestureDetector(
-                      onTap: () {
-                        tapCount++;
-                        log.info('...visual tapped $tapCount times...');
-                        if (tapCount >= 27) {
-                          // Handle the 27 taps in short succession
-                          log.info('27 taps detected! Skipping onboarding...');
-                          tapCount = 0;
-                          setState(() {
-                            _step = 5;
-                          });
-                        }
-                      },
-                      child: _onboardingVisual(step: _step),
-                    );
-                  },
+          child: WideContent(
+            maxWidth: 600,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.max,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Builder(
+                    builder: (context) {
+                      int tapCount = 0;
+                      return GestureDetector(
+                        onTap: () {
+                          tapCount++;
+                          log.info('...visual tapped $tapCount times...');
+                          if (tapCount >= 27) {
+                            // Handle the 27 taps in short succession
+                            log.info('27 taps detected! Skipping onboarding...');
+                            tapCount = 0;
+                            setState(() {
+                              _step = 5;
+                            });
+                          }
+                        },
+                        child: _onboardingVisual(step: _step),
+                      );
+                    },
+                  ),
                 ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  ...getWidgets(_step),
-                  const SizedBox(height: 16),
-                ],
-              ),
-            ],
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ...getWidgets(_step),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -358,16 +362,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
           androidCheckLocationServices: needsLocation,
         )
         .listen(
-          (List<ScooterCandidate> candidates) {
-            if (mounted) setState(() => _candidates = candidates);
-          },
-          onError: (Object e, StackTrace stack) {
-            log.severe("Error finding scooters!", e, stack);
-            _stopSearching();
-          },
-          onDone: _stopSearching,
-          cancelOnError: true,
-        );
+      (List<ScooterCandidate> candidates) {
+        if (mounted) setState(() => _candidates = candidates);
+      },
+      onError: (Object e, StackTrace stack) {
+        log.severe("Error finding scooters!", e, stack);
+        _stopSearching();
+      },
+      onDone: _stopSearching,
+      cancelOnError: true,
+    );
   }
 
   void _stopSearching() {

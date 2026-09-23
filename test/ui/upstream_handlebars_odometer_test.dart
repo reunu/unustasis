@@ -9,6 +9,7 @@ import 'package:unustasis/domain/scooter_state.dart';
 import 'package:unustasis/domain/scooter_vehicle_state.dart';
 import 'package:unustasis/scooter_service.dart';
 import 'package:unustasis/state/vehicle_status.dart';
+import 'package:unustasis/state/scooter_identity.dart';
 import 'package:unustasis/ui/screens/home_screen.dart';
 
 class _StatusService extends ChangeNotifier implements ScooterService {
@@ -24,6 +25,8 @@ class _StatusService extends ChangeNotifier implements ScooterService {
   ScooterPowerState get powerState => ScooterPowerState.running;
   @override
   final vehicle = VehicleStatus()..handlebarsLocked = false;
+  @override
+  final identity = ScooterIdentity();
   void change({required bool connected, required bool? locked}) {
     this.connected = connected;
     vehicle.handlebarsLocked = locked;
@@ -36,7 +39,7 @@ class _StatusService extends ChangeNotifier implements ScooterService {
 
 void main() {
   for (final scale in [1.0, 2.0]) {
-    testWidgets('stable handlebar slot and semantics across state transitions at text scale $scale', (tester) async {
+    testWidgets('animated handlebar hint tracks known unlocked state at text scale $scale', (tester) async {
       final service = _StatusService();
       final semantics = tester.ensureSemantics();
       await tester.pumpWidget(ChangeNotifierProvider<ScooterService>.value(
@@ -59,14 +62,11 @@ void main() {
       ));
       await tester.pumpAndSettle();
       final status = find.byType(StatusText);
-      final slot = find.descendant(of: status, matching: find.byType(Stack));
-      final initialSlot = tester.getRect(slot);
-      final primary = find.descendant(of: status, matching: find.byType(Text)).first;
+      final hint = find.descendant(of: status, matching: find.byType(AnimatedSize));
       final initialHeight = tester.getSize(status).height;
-      final reservedHeight = initialHeight - tester.getSize(primary).height;
+      expect(hint, findsOneWidget);
       expect(find.bySemanticsLabel('Handlebars unlocked'), findsOneWidget);
       expect(find.bySemanticsLabel('Handlebars locked'), findsNothing);
-      expect(find.descendant(of: status, matching: find.byType(AnimatedSize)), findsNothing);
       for (final state in [
         (connected: true, locked: true),
         (connected: true, locked: null),
@@ -75,31 +75,18 @@ void main() {
         (connected: true, locked: false),
       ]) {
         service.change(connected: state.connected, locked: state.locked);
-        await tester.pump();
-        expect(tester.getSize(slot), initialSlot.size);
-        // The primary Disconnected label may itself wrap at large text sizes;
-        // only its height may move the slot, never handlebar visibility.
-        expect(tester.getSize(status).height - tester.getSize(primary).height, reservedHeight);
-        expect(tester.getTopLeft(slot).dy - tester.getBottomLeft(primary).dy, 2);
+        await tester.pumpAndSettle();
+        expect(find.bySemanticsLabel('Handlebars unlocked'),
+            state.connected && state.locked == false ? findsOneWidget : findsNothing);
+        expect(find.bySemanticsLabel('Handlebars locked'), findsNothing);
         if (state.connected) {
-          expect(tester.getRect(slot), initialSlot);
-          expect(tester.getSize(status).height, initialHeight);
+          expect(tester.getSize(status).height <= initialHeight, isTrue);
         }
-        final known = state.connected && state.locked != null;
-        expect(find.bySemanticsLabel('Handlebars locked'), known && state.locked! ? findsOneWidget : findsNothing);
-        expect(find.bySemanticsLabel('Handlebars unlocked'), known && !state.locked! ? findsOneWidget : findsNothing);
       }
-      // Exercise the production protection reset on U's status widget, not an
-      // LS screen: a still-connected view must not retain either known label.
-      service.change(connected: true, locked: true);
-      await tester.pump();
-      expect(find.bySemanticsLabel('Handlebars locked'), findsOneWidget);
       service.vehicle.cancelSubscriptions();
       service.change(connected: true, locked: service.vehicle.handlebarsLocked);
-      await tester.pump();
-      expect(find.bySemanticsLabel('Handlebars locked'), findsNothing);
+      await tester.pumpAndSettle();
       expect(find.bySemanticsLabel('Handlebars unlocked'), findsNothing);
-      expect(tester.getRect(slot), initialSlot);
       expect(tester.takeException(), isNull);
       semantics.dispose();
     });

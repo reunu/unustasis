@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:unustasis/infrastructure/characteristic_repository.dart';
 import 'package:unustasis/service/ble_commands.dart';
+import 'package:scooter_flutter/command_transport.dart' show extendedResponseTimeout;
 
 import '../support/command_transport_fakes.dart';
 
@@ -39,7 +40,7 @@ void main() {
         await closed;
         repo.extendedResponseCharacteristic = replacement;
       }
-      await tester.pump(const Duration(milliseconds: 9999));
+      await tester.pump(extendedResponseTimeout - const Duration(milliseconds: 1));
       await flush();
       expect(completed, isFalse);
       expect(command.writes, hasLength(1));

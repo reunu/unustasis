@@ -4,14 +4,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_nfc_kit/flutter_nfc_kit.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../dialogs/keycard_add_dialog.dart';
-import '../../scooter_service.dart';
+import 'package:unustasis/ui/dialogs/keycard_add_dialog.dart';
+import 'package:unustasis/scooter_service.dart';
 
 class LsKeycardScreen extends StatefulWidget {
   const LsKeycardScreen({super.key});
@@ -211,8 +210,7 @@ class _LsKeycardScreenState extends State<LsKeycardScreen> {
 
     // add it to the scooter
     try {
-      await context.read<ScooterService>().actions.addKeycard(uid,
-      );
+      await context.read<ScooterService>().actions.addKeycard(uid);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(FlutterI18n.translate(context, "ls_keycard_add_success"))),
@@ -256,8 +254,7 @@ class _LsKeycardScreenState extends State<LsKeycardScreen> {
     });
 
     try {
-      await context.read<ScooterService>().actions.deleteKeycard(uid,
-      );
+      await context.read<ScooterService>().actions.deleteKeycard(uid);
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -388,7 +385,8 @@ class _KeycardCardState extends State<KeycardCard> with SingleTickerProviderStat
                     (i) =>
                         widget.uid.substring(i * 4, (i + 1) * 4 > widget.uid.length ? widget.uid.length : (i + 1) * 4))
                 .join(' '),
-            style: GoogleFonts.kodeMono(
+            style: const TextStyle(
+              fontFamily: 'KodeMono',
               color: Colors.white,
               fontSize: 28,
             ),

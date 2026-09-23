@@ -23,6 +23,16 @@ final class MemoryPreferences extends SharedPreferencesAsyncPlatform {
   }
 
   @override
+  Future<bool?> getBool(String key, SharedPreferencesOptions options) async {
+    reads++;
+    return switch (values[key]) {
+      'true' => true,
+      'false' => false,
+      _ => null,
+    };
+  }
+
+  @override
   Future<void> setString(
     String key,
     String value,

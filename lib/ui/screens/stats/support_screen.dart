@@ -4,14 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
-import '../../../service/secure_http.dart';
+import 'package:unustasis/service/secure_http.dart';
 import 'package:logging/logging.dart';
 import 'package:maps_launcher/maps_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../domain/log_helper.dart';
-import '../../widgets/header.dart';
+import 'package:unustasis/domain/log_helper.dart';
+import 'package:unustasis/ui/widgets/header.dart';
+import 'package:unustasis/ui/widgets/wide_layout.dart';
 
 class SupportScreen extends StatefulWidget {
   const SupportScreen({super.key});
@@ -198,11 +199,16 @@ class _SupportScreenState extends State<SupportScreen> {
         title: Text(FlutterI18n.translate(context, "stats_title_support")),
         backgroundColor: Theme.of(context).colorScheme.surface,
       ),
-      body: ListView.builder(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewPadding.bottom),
-        shrinkWrap: true,
-        itemCount: supportItems().length,
-        itemBuilder: (context, index) => supportItems()[index],
+      body: SafeArea(
+        child: ListView.builder(
+          padding: wideContentPadding(
+            context,
+            base: EdgeInsets.only(bottom: MediaQuery.of(context).viewPadding.bottom),
+          ),
+          shrinkWrap: true,
+          itemCount: supportItems().length,
+          itemBuilder: (context, index) => supportItems()[index],
+        ),
       ),
     );
   }

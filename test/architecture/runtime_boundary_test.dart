@@ -40,7 +40,7 @@ void main() {
     }
     final facade = File('lib/scooter_service.dart').readAsStringSync();
     expect(facade, isNot(contains('late CharacteristicRepository characteristicRepository')));
-    expect(facade, contains('@visibleForTesting\n  BluetoothDevice? get myScooter'));
+    expect(facade, contains('BluetoothDevice? get myScooter => _session.device;'));
   });
   test('Provider metadata effects cannot own asynchronous store workflows', () {
     final facade = File('lib/scooter_service.dart').readAsStringSync();
@@ -60,7 +60,7 @@ void main() {
     // ping's concrete model effect and demo persistence; none select/publish
     // a saved-metadata workflow after an await.
     expect(RegExp(r'\bstore\s*\.\s*(\w+)').allMatches(source).map((match) => match[1]).toSet(),
-        {'scooters', 'updatePing', 'save', 'getIds'});
+        {'scooters', 'updatePing', 'getIds'});
   });
   test('Provider composes shared runtime rather than wire polling or cache loops', () {
     final source = File('lib/scooter_service.dart').readAsStringSync();

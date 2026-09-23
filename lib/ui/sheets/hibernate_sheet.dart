@@ -211,9 +211,7 @@ class _HibernateSheetState extends State<HibernateSheet> {
                 context,
                 label: _customSelected || _customDuration != null
                     ? FlutterI18n.translate(context, "controls_hibernate_custom_value",
-                        translationParams: {
-                          "duration": _formatCompactDuration(_customDuration ?? _wakeAfter!)
-                        })
+                        translationParams: {"duration": _formatCompactDuration(_customDuration ?? _wakeAfter!)})
                     : FlutterI18n.translate(context, "controls_hibernate_custom"),
                 selected: _customSelected,
                 onSelected: _sending ? null : (_) => _pickCustomDuration(),

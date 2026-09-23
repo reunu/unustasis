@@ -37,6 +37,7 @@ class _Storage extends Fake implements ScooterStorage {
     selections++;
     return recent;
   }
+
   @override
   Future<void> load() async {}
 }
@@ -56,8 +57,8 @@ class _Device extends Fake implements BluetoothDevice {
   @override
   bool get isDisconnected => true;
   @override
-  Future<void> connect({Duration timeout = const Duration(seconds: 35),
-      int? mtu = 512, bool autoConnect = false}) => Completer<void>().future;
+  Future<void> connect({Duration timeout = const Duration(seconds: 35), int? mtu = 512, bool autoConnect = false}) =>
+      Completer<void>().future;
   @override
   Future<void> disconnect({int timeout = 35, bool queue = true, int androidDelay = 2000}) async {}
 }
@@ -85,9 +86,12 @@ void main() {
       messages.updates.clear();
       unawaited(service.connectToScooterId('A'));
       time.flushMicrotasks();
-      final updates = messages.updates.where((m) => (m['args'] as Map?)?.containsKey('manualConnectionTarget') == true).toList();
+      final updates =
+          messages.updates.where((m) => (m['args'] as Map?)?.containsKey('manualConnectionTarget') == true).toList();
       expect(updates.first['args'], {
-        'manualConnectionTarget': 'A', 'scooterName': 'Unu', 'scooterColor': 2,
+        'manualConnectionTarget': 'A',
+        'scooterName': 'Unu',
+        'scooterColor': 2,
       });
       messages.updates.clear();
       time.elapse(const Duration(seconds: 59));
@@ -105,57 +109,33 @@ void main() {
   });
 
   test('background consumer suppresses selection, touches on legacy metadata, expires at five minutes', () async {
-    // Frozen shared runtime uses DateTime.now, which fakeAsync cannot virtualize.
-    // Wall-time deadlines match that policy; monotonic time bounds backward steps.
-    final elapsed = Stopwatch()..start();
+    var elapsed = Duration.zero;
     final storage = _Storage();
-    final service = ScooterService(_Bluetooth(), storage: storage,
-        isInBackgroundService: true, initializeRuntime: false);
+    final service = ScooterService(_Bluetooth(),
+        storage: storage, isInBackgroundService: true, initializeRuntime: false, manualTargetElapsed: () => elapsed);
     addTearDown(service.dispose);
-    final armedBefore = DateTime.now();
     handleForegroundConnectionUpdate(service, {'manualConnectionTarget': 'A'});
-    final armedAfter = DateTime.now();
     expect(await service.attemptLatestAutoConnection(), isFalse);
     expect(storage.selections, 0);
-    await Future<void>.delayed(const Duration(minutes: 4));
-    final touchedBefore = DateTime.now();
+    elapsed = const Duration(minutes: 4);
     handleForegroundConnectionUpdate(service, {'scooterName': 'Unu', 'scooterColor': 2});
-    final touchedAfter = DateTime.now();
-    final touchedElapsed = elapsed.elapsed;
-    // ignore: avoid_print
-    print('Arm wall: $armedBefore .. $armedAfter; touch wall: $touchedBefore .. $touchedAfter; monotonic: $touchedElapsed');
-    await Future<void>.delayed(const Duration(minutes: 4, seconds: 59));
-    final insideWindow = DateTime.now();
-    // ignore: avoid_print
-    print('Pre-expiry wall: $insideWindow; since touch: ${insideWindow.difference(touchedAfter)}; monotonic: ${elapsed.elapsed - touchedElapsed}');
-    // The initial arm would have expired, but the legacy metadata touch has not.
-    expect(insideWindow.isAfter(armedAfter.add(const Duration(minutes: 5))), isTrue);
-    expect(insideWindow.isBefore(touchedBefore.add(const Duration(minutes: 5))), isTrue);
-    await service.attemptLatestAutoConnection();
+    elapsed += const Duration(minutes: 4, seconds: 59);
+    expect(await service.attemptLatestAutoConnection(), isFalse);
     expect(storage.selections, 0);
-    // DateTime and Stopwatch can advance differently. Do not check the wall-clock
-    // gate until after the latest possible captured touch time plus its policy.
-    final deadline = touchedAfter.add(const Duration(minutes: 5, milliseconds: 100));
-    while (DateTime.now().isBefore(deadline)) {
-      expect(elapsed.elapsed, lessThan(const Duration(minutes: 11)),
-          reason: 'Wall time did not reach expiry within the monotonic bound');
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-    }
-    final expiredAt = DateTime.now();
-    // ignore: avoid_print
-    print('Expiry wall: $expiredAt; since touch: ${expiredAt.difference(touchedAfter)}; monotonic: ${elapsed.elapsed - touchedElapsed}');
-    expect(expiredAt.isBefore(deadline), isFalse);
+    elapsed += const Duration(seconds: 1);
     await service.attemptLatestAutoConnection();
     expect(storage.selections, 1);
     expect(messages.updates, isEmpty, reason: 'Background must not relay UI messages');
-  }, timeout: const Timeout(Duration(minutes: 12)));
+  });
 
   test('manual target arriving during candidate selection prevents connection', () async {
     final storage = _Storage()..recent = SavedScooter(id: 'B');
     final devices = <String>[];
-    final service = ScooterService(_Bluetooth(), storage: storage,
-        initializeRuntime: false, isInBackgroundService: true,
-        deviceFromId: (id) { devices.add(id); return _Device(); });
+    final service = ScooterService(_Bluetooth(),
+        storage: storage, initializeRuntime: false, isInBackgroundService: true, deviceFromId: (id) {
+      devices.add(id);
+      return _Device();
+    });
     addTearDown(service.dispose);
     final attempt = service.attemptLatestAutoConnection();
     handleForegroundConnectionUpdate(service, {'manualConnectionTarget': 'A'});
@@ -169,8 +149,8 @@ void main() {
 
   test('empty and null targets release; legacy-only metadata does not arm suppression', () async {
     final storage = _Storage();
-    final service = ScooterService(_Bluetooth(), storage: storage,
-        isInBackgroundService: true, initializeRuntime: false);
+    final service =
+        ScooterService(_Bluetooth(), storage: storage, isInBackgroundService: true, initializeRuntime: false);
     addTearDown(service.dispose);
     for (final clear in ['', null]) {
       handleForegroundConnectionUpdate(service, {'manualConnectionTarget': 'A'});

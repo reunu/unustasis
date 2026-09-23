@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
-import '../../domain/go_duration.dart';
-import '../../domain/hibernation_schedule.dart';
-import '../../scooter_service.dart';
-import 'package:scooter_core/actions.dart';
+import 'package:unustasis/domain/go_duration.dart';
+import 'package:unustasis/domain/hibernation_schedule.dart';
+import 'package:unustasis/scooter_service.dart';
+import 'package:scooter_core/actions.dart' show lsKeyScheduledHibernateCron, lsKeyScheduledHibernateDuration;
 import 'package:scooter_core/telemetry.dart' show lsKeyScheduledHibernateEnabled;
 
 /// Configuration screen for librescoot's scheduled hibernation: a cron-based
@@ -118,8 +117,8 @@ class _LsScheduledHibernationScreenState extends State<LsScheduledHibernationScr
   Future<void> _writeEnabled(bool value) => _runWrite(() async {
         final service = context.read<ScooterService>();
         await service.actions.setScheduledHibernationEnabled(value,
-            cron: _cronUnset ? _schedule.toCron() : null,
-            wakeAfter: _durationUnset ? _wakeAfter : null);
+            cron: value && _cronUnset ? _schedule.toCron() : null,
+            wakeAfter: value && _durationUnset ? _wakeAfter : null);
         setState(() {
           if (value && _cronUnset) _cronUnset = false;
           if (value && _durationUnset) _durationUnset = false;
@@ -177,8 +176,7 @@ class _LsScheduledHibernationScreenState extends State<LsScheduledHibernationScr
     }
   }
 
-  String _weekdayLabel(BuildContext context, int day) =>
-      FlutterI18n.translate(context, "weekday_short_$day");
+  String _weekdayLabel(BuildContext context, int day) => FlutterI18n.translate(context, "weekday_short_$day");
 
   String _formatTimeOfDay(BuildContext context, TimeOfDay time) {
     return MaterialLocalizations.of(context).formatTimeOfDay(
@@ -217,8 +215,7 @@ class _LsScheduledHibernationScreenState extends State<LsScheduledHibernationScr
           final minutes = daysLater * 24 * 60 + (wake.hour * 60 + wake.minute) - scheduleMinutes;
           final valid = minutes > 0 && minutes <= 7 * 24 * 60;
           return AlertDialog(
-            title: Text(
-                FlutterI18n.translate(context, "ls_scheduled_hibernation_wake_custom_title")),
+            title: Text(FlutterI18n.translate(context, "ls_scheduled_hibernation_wake_custom_title")),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -229,8 +226,7 @@ class _LsScheduledHibernationScreenState extends State<LsScheduledHibernationScr
                     Text(FlutterI18n.translate(context, "ls_scheduled_hibernation_wake_at_label")),
                     TextButton(
                       onPressed: () async {
-                        final pickedTime =
-                            await showTimePicker(context: context, initialTime: wake);
+                        final pickedTime = await showTimePicker(context: context, initialTime: wake);
                         if (pickedTime != null) {
                           setDialogState(() => wake = pickedTime);
                         }
@@ -263,8 +259,7 @@ class _LsScheduledHibernationScreenState extends State<LsScheduledHibernationScr
                   backgroundColor: Theme.of(context).colorScheme.onSurface,
                   foregroundColor: Theme.of(context).colorScheme.surface,
                 ),
-                onPressed:
-                    valid ? () => Navigator.of(context).pop(Duration(minutes: minutes)) : null,
+                onPressed: valid ? () => Navigator.of(context).pop(Duration(minutes: minutes)) : null,
                 child: Text(FlutterI18n.translate(context, "controls_hibernate_custom_set")),
               ),
             ],
@@ -337,20 +332,16 @@ class _LsScheduledHibernationScreenState extends State<LsScheduledHibernationScr
         });
       case HibernationFrequency.weekly:
         return FlutterI18n.translate(context, "ls_scheduled_hibernation_summary", translationParams: {
-          "days": _dayOrder
-              .where(_schedule.weekdays.contains)
-              .map((day) => _weekdayLabel(context, day))
-              .join(", "),
+          "days": _dayOrder.where(_schedule.weekdays.contains).map((day) => _weekdayLabel(context, day)).join(", "),
           "time": time,
           "wake": wake,
         });
       case HibernationFrequency.monthly:
-        return FlutterI18n.translate(context, "ls_scheduled_hibernation_summary_monthly",
-            translationParams: {
-              "day": _schedule.dayOfMonth.toString(),
-              "time": time,
-              "wake": wake,
-            });
+        return FlutterI18n.translate(context, "ls_scheduled_hibernation_summary_monthly", translationParams: {
+          "day": _schedule.dayOfMonth.toString(),
+          "time": time,
+          "wake": wake,
+        });
     }
   }
 
@@ -536,10 +527,9 @@ class _LsScheduledHibernationScreenState extends State<LsScheduledHibernationScr
                       style: Theme.of(context).textTheme.titleSmall,
                     ),
                     const SizedBox(height: 8),
-                    Text(_rawCron!, style: GoogleFonts.kodeMono()),
+                    Text(_rawCron!, style: const TextStyle(fontFamily: 'KodeMono')),
                     const SizedBox(height: 8),
-                    Text(FlutterI18n.translate(
-                        context, "ls_scheduled_hibernation_custom_cron_body")),
+                    Text(FlutterI18n.translate(context, "ls_scheduled_hibernation_custom_cron_body")),
                   ],
                 ),
               ),

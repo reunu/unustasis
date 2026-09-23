@@ -192,13 +192,13 @@ void main() {
           ('NUL and whitespace only', [0, 32, 0], '', false),
         ];
         for (final entry in cases) {
-          test('${entry.$1} publishes the permissively decoded version', () async {
+          test('${entry.$1} preserves identity unless a version is present', () async {
             start(isCurrent: () => true);
             characteristic.reads.single.complete(entry.$2);
             await pumpEventQueue(times: 2);
-            final expected = (entry.$3, entry.$4, 900);
+            final expected = entry.$3.isEmpty ? initial : (entry.$3, entry.$4, 900);
             expect(_snapshot(identity), expected);
-            expect(updates, [expected]);
+            expect(updates, entry.$3.isEmpty ? isEmpty : [expected]);
           });
         }
       } else {

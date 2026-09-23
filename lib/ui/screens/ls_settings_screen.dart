@@ -6,7 +6,6 @@ import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:provider/provider.dart';
 
 import '../../domain/alarm_status.dart';
-import '../presentation/alarm_state.dart';
 import 'ls_keycard_screen.dart';
 import 'ls_ota_screen.dart';
 import 'ls_scheduled_hibernation_screen.dart';
@@ -104,19 +103,22 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
     final generation = _requestGeneration;
     final service = _service!;
     final id = service.currentScooterId;
-    return () => mounted && generation == _requestGeneration &&
-        service.connected && service.currentScooterId == id;
+    return () => mounted && generation == _requestGeneration && service.connected && service.currentScooterId == id;
   }
 
   List<Widget> _connectionRequiredItems(List<Widget> items) {
     if (_connected) return items;
-    return items.map((item) => item is ListTile ? ListTile(
-      enabled: false,
-      leading: item.leading,
-      title: item.title,
-      subtitle: Text(FlutterI18n.translate(context, 'settings_scooter_disconnected')),
-      trailing: const Icon(Icons.bluetooth_disabled),
-    ) : item).toList();
+    return items
+        .map((item) => item is ListTile
+            ? ListTile(
+                enabled: false,
+                leading: item.leading,
+                title: item.title,
+                subtitle: Text(FlutterI18n.translate(context, 'settings_scooter_disconnected')),
+                trailing: const Icon(Icons.bluetooth_disabled),
+              )
+            : item)
+        .toList();
   }
 
   // Owned here rather than per-dialog. showDialog's future completes on pop,
@@ -194,11 +196,8 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(FlutterI18n.translate(
-              context,
-              enabled
-                  ? "ls_settings_battery_keep_active_on_success"
-                  : "ls_settings_battery_keep_active_off_success")),
+          content: Text(FlutterI18n.translate(context,
+              enabled ? "ls_settings_battery_keep_active_on_success" : "ls_settings_battery_keep_active_off_success")),
         ),
       );
     } catch (e) {
@@ -265,8 +264,8 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
       if (!mounted || !isCurrent()) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(FlutterI18n.translate(context, "ls_settings_alarm_error",
-              translationParams: {"error": e.toString()})),
+          content: Text(
+              FlutterI18n.translate(context, "ls_settings_alarm_error", translationParams: {"error": e.toString()})),
         ),
       );
       unawaited(_getAlarmSettings());
@@ -451,9 +450,8 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
                   backgroundColor: Theme.of(dialogContext).colorScheme.onSurface,
                   foregroundColor: Theme.of(dialogContext).colorScheme.surface,
                 ),
-                onPressed: problem == null
-                    ? () => Navigator.of(dialogContext).pop((clear: false, value: trimmed))
-                    : null,
+                onPressed:
+                    problem == null ? () => Navigator.of(dialogContext).pop((clear: false, value: trimmed)) : null,
                 child: Text(FlutterI18n.translate(dialogContext, "ls_settings_apn_save")),
               ),
             ],
@@ -485,8 +483,8 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
       if (!mounted || !isCurrent()) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(FlutterI18n.translate(context, "ls_settings_apn_error",
-              translationParams: {"error": e.toString()})),
+          content:
+              Text(FlutterI18n.translate(context, "ls_settings_apn_error", translationParams: {"error": e.toString()})),
         ),
       );
     } finally {
@@ -508,8 +506,8 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
         subtitle: Text(_alarmSettingsLoaded && _alarmEnabled == null
             ? FlutterI18n.translate(context, "ls_settings_extended_unavailable")
             : live && status != null
-            ? status.name(context)
-            : FlutterI18n.translate(context, "ls_settings_alarm_subtitle")),
+                ? status.name(context)
+                : FlutterI18n.translate(context, "ls_settings_alarm_subtitle")),
         trailing: !_alarmSettingsLoaded
             ? const SizedBox(
                 width: 16,
@@ -524,8 +522,11 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
       ListTile(
         leading: Icon(Icons.campaign_outlined),
         title: Text(FlutterI18n.translate(context, "ls_settings_alarm_honk_title")),
-        subtitle: Text(FlutterI18n.translate(context, _alarmSettingsLoaded && _alarmHonk == null
-            ? "ls_settings_extended_unavailable" : "ls_settings_alarm_honk_subtitle")),
+        subtitle: Text(FlutterI18n.translate(
+            context,
+            _alarmSettingsLoaded && _alarmHonk == null
+                ? "ls_settings_extended_unavailable"
+                : "ls_settings_alarm_honk_subtitle")),
         trailing: !_alarmSettingsLoaded
             ? const SizedBox(
                 width: 16,
@@ -563,7 +564,10 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
                       final isCurrent = _captureRequest();
                       setState(() => _isSendingTime = true);
                       try {
-                        String? result = await context.read<ScooterService>().actions.setClock(DateTime.now()); // time:set expects seconds
+                        String? result = await context
+                            .read<ScooterService>()
+                            .actions
+                            .setClock(DateTime.now()); // time:set expects seconds
                         if (!mounted || !isCurrent()) return;
                         if (result == "time:ok") {
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -628,8 +632,9 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
                         setState(() {
                           _isSendingAutoLock = true;
                         });
-                        await context.read<ScooterService>().actions.setAutoStandbyTime(Duration(seconds: value),
-                        );
+                        await context.read<ScooterService>().actions.setAutoStandbyTime(
+                              Duration(seconds: value),
+                            );
                         if (!mounted || !isCurrent()) return;
                         setState(() {
                           _isSendingAutoLock = false;
@@ -698,8 +703,9 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
                         setState(() {
                           _isSendingAutoHibernate = true;
                         });
-                        await context.read<ScooterService>().actions.setAutoHibernateTime(Duration(seconds: value),
-                        );
+                        await context.read<ScooterService>().actions.setAutoHibernateTime(
+                              Duration(seconds: value),
+                            );
                         if (!mounted || !isCurrent()) return;
                         setState(() {
                           _isSendingAutoHibernate = false;
@@ -738,8 +744,7 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
             subtitle: Text(FlutterI18n.translate(context, "ls_settings_scheduled_hibernation_subtitle")),
             trailing: Icon(Icons.chevron_right),
             onTap: () {
-              Navigator.push(
-                  context, MaterialPageRoute(builder: (context) => LsScheduledHibernationScreen()));
+              Navigator.push(context, MaterialPageRoute(builder: (context) => LsScheduledHibernationScreen()));
             },
           ),
         if (!_connected || context.watch<ScooterService>().identity.supportsApnConfig == true)
@@ -811,8 +816,11 @@ class _LsSettingsScreenState extends State<LsSettingsScreen> {
           ListTile(
             leading: Icon(Icons.battery_charging_full_outlined),
             title: Text(FlutterI18n.translate(context, "ls_settings_battery_keep_active_title")),
-            subtitle: Text(FlutterI18n.translate(context, _batteryKeepActiveLoaded && _batteryKeepActive == null
-                ? "ls_settings_extended_unavailable" : "ls_settings_battery_keep_active_subtitle")),
+            subtitle: Text(FlutterI18n.translate(
+                context,
+                _batteryKeepActiveLoaded && _batteryKeepActive == null
+                    ? "ls_settings_extended_unavailable"
+                    : "ls_settings_battery_keep_active_subtitle")),
             trailing: !_batteryKeepActiveLoaded
                 ? const SizedBox(
                     width: 16,

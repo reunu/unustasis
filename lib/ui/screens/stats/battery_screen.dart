@@ -10,8 +10,9 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 
-import '../../../domain/scooter_battery.dart';
-import '../../../scooter_service.dart';
+import 'package:unustasis/domain/scooter_battery.dart';
+import 'package:unustasis/ui/widgets/wide_layout.dart';
+import 'package:unustasis/scooter_service.dart';
 
 typedef _BatteryScreenViewData = ({
   int? primarySOC,
@@ -66,7 +67,10 @@ class _BatteryScreenState extends State<BatteryScreen> {
               backgroundColor: Theme.of(context).colorScheme.surface,
             ),
             body: ListView(
-              padding: EdgeInsets.fromLTRB(16, 0, 16, MediaQuery.of(context).viewPadding.bottom),
+              padding: wideContentPadding(
+                context,
+                base: EdgeInsets.fromLTRB(16, 0, 16, MediaQuery.of(context).viewPadding.bottom),
+              ),
               shrinkWrap: true,
               children: [
                 Column(

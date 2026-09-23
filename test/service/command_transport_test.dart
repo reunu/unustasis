@@ -206,12 +206,13 @@ void main() {
     }
   });
 
-  test('already enabled notifications are not toggled', () async {
+  test('cached notify state is verified once per connection', () async {
     response.isNotifying = true;
     extended.onWrite = (_) async => response.reply('ok');
     await expectLater(sendLsExtendedCommand(device, repo, 'test'), completion('ok'));
-    expect(response.notifyCalls, isEmpty);
-    expect(response.cancellations, 1);
+    await expectLater(sendLsExtendedCommand(device, repo, 'again'), completion('ok'));
+    expect(response.notifyCalls, [true]);
+    expect(response.cancellations, 2);
   });
 
   test('single-response commands are FIFO through write and response completion', () async {

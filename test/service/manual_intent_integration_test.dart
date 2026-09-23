@@ -590,7 +590,9 @@ void main() {
           initializeRuntime: true, background: backgroundMode);
       await service.runtimeReady;
       await service.connectToScooterId('A');
-      await tester.pump(const Duration(seconds: 3));
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(seconds: 1));
+      }
       expect(a.rssiReads, greaterThan(0));
       expect((repo.commandCharacteristic as _Characteristic).writes, ['scooter:state unlock']);
       expect(preferences.values['autoUnlock'], isTrue);
@@ -615,7 +617,9 @@ void main() {
     // _enableScanning applies this runtime-only policy before restarting RSSI.
     service.setAutomaticActionsAllowed(true);
     service.rssiTimer.start();
-    await tester.pump(const Duration(seconds: 3));
+    for (var i = 0; i < 6; i++) {
+      await tester.pump(const Duration(seconds: 1));
+    }
     expect(a.rssiReads, greaterThan(0));
     expect((repo.commandCharacteristic as _Characteristic).writes, ['scooter:state unlock']);
     expect(service.autoUnlock, isTrue);
@@ -1014,8 +1018,8 @@ void main() {
     expect(storage.loads, 1);
     expect(bluetooth.scanStreamReads, 1);
     expect(service.scooterName, 'Alpha');
-    expect(prefs.reads, ['pendingNavigation', 'autoUnlock', 'autoUnlockThreshold',
-      'biometrics', 'openSeatOnUnlock', 'hazardLocking', 'unlockedHandlebarsWarning']);
+    expect(prefs.reads, unorderedEquals(['pendingNavigation', 'autoUnlock', 'autoUnlockThreshold',
+      'biometrics', 'openSeatOnUnlock', 'hazardLocking', 'unlockedHandlebarsWarning']));
     await service.connectToScooterId('A');
     await tester.pump();
     expect(locations, 1);

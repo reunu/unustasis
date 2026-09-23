@@ -287,6 +287,7 @@ void main() {
     final before = DateTime.now();
     storage.updatePing('a');
     final after = DateTime.now();
+    await SavedScooter.flushPendingWrites();
     await drainPreferenceWrites();
     expect(a.lastPing.microsecondsSinceEpoch,
         inInclusiveRange(before.microsecondsSinceEpoch, after.microsecondsSinceEpoch));

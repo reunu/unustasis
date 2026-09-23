@@ -11,7 +11,7 @@ void main() {
     final gradle = File('android/app/build.gradle').readAsStringSync();
     expect(gradle, contains('de.freal.unustasis'));
     expect(gradle, contains('applicationIdSuffix ".debug"'));
-    for (final path in ['lib/scooter_service.dart', 'lib/background/bg_service.dart', 'lib/background/widget_handler.dart']) {
+    for (final path in ['lib/bootstrap.dart', 'lib/background/bg_service.dart', 'lib/background/widget_handler.dart']) {
       final text = File(path).readAsStringSync();
       expect(text, contains('group.de.freal.unustasis'), reason: path);
       expect(text, isNot(contains('group.com.librescoot.app')), reason: path);

@@ -50,10 +50,13 @@ class ScooterRuntime<T extends SavedScooterRecord> {
       required this.saveLocation,
       required this.publishDisconnected,
       bool Function()? automaticConnectionAllowed,
+      Duration Function()? manualTargetElapsed,
       required BluetoothDevice Function(String) deviceFromId})
       : _session = session,
         _isScanning = isScanning,
-        _automaticConnectionAllowed = automaticConnectionAllowed ?? _automaticConnectionsAllowed,
+        _automaticConnectionAllowed =
+            automaticConnectionAllowed ?? _automaticConnectionsAllowed,
+        _manualTargetElapsedOverride = manualTargetElapsed,
         _deviceFromId = deviceFromId;
   final ScooterSession _session;
   final ScooterTelemetry telemetry;
@@ -80,7 +83,11 @@ class ScooterRuntime<T extends SavedScooterRecord> {
   bool get scanning => _isScanning();
   ScooterState? get _state => telemetry.state;
   String? _externalManualTargetId;
-  DateTime? _externalManualTargetSince;
+  Duration? _externalManualTargetSince;
+  final Stopwatch _manualTargetClock = Stopwatch()..start();
+  final Duration Function()? _manualTargetElapsedOverride;
+  Duration get _manualTargetElapsed =>
+      _manualTargetElapsedOverride?.call() ?? _manualTargetClock.elapsed;
   AppLifecycleState? _lastLifecycleState;
   bool _wasBackgrounded = false;
   Timer? _locationTimer, _heartbeatTimer;
@@ -300,7 +307,7 @@ class ScooterRuntime<T extends SavedScooterRecord> {
   void setManualConnectionTarget(String? id) {
     _externalManualTargetId = (id == null || id.isEmpty) ? null : id;
     _externalManualTargetSince =
-        _externalManualTargetId == null ? null : DateTime.now();
+        _externalManualTargetId == null ? null : _manualTargetElapsed;
     log.info(
         "Background manual connection target: ${_externalManualTargetId ?? "(cleared)"}");
   }
@@ -310,7 +317,7 @@ class ScooterRuntime<T extends SavedScooterRecord> {
   /// while a killed foreground's stale flag still lapses.
   void touchManualConnectionTarget() {
     if (_externalManualTargetId != null) {
-      _externalManualTargetSince = DateTime.now();
+      _externalManualTargetSince = _manualTargetElapsed;
     }
   }
 
@@ -364,14 +371,14 @@ class ScooterRuntime<T extends SavedScooterRecord> {
         connection!.id == target &&
         actions.canDispatchExplicitAction(connection);
     if (!usable()) return null;
-    return ExplicitActionDispatch._(usable,
-        () => actions.dispatchExplicitAction(connection!, eventType));
+    return ExplicitActionDispatch._(
+        usable, () => actions.dispatchExplicitAction(connection!, eventType));
   }
 
   void _expireManualConnectionTarget() {
     if (_externalManualTargetId != null &&
-        DateTime.now()
-                .difference(_externalManualTargetSince ?? DateTime.now()) >=
+        _externalManualTargetSince != null &&
+        _manualTargetElapsed - _externalManualTargetSince! >=
             const Duration(minutes: 5)) {
       _externalManualTargetId = null;
       _externalManualTargetSince = null;
@@ -379,7 +386,11 @@ class ScooterRuntime<T extends SavedScooterRecord> {
   }
 
   Future<bool> attemptLatestAutoConnection() async {
-    if (_inactive || !_automaticConnectionAllowed() || _session.hasPendingConnectionAttempt) return false;
+    if (_inactive ||
+        !_automaticConnectionAllowed() ||
+        _session.hasPendingConnectionAttempt) {
+      return false;
+    }
     // While the foreground is manually connecting a scooter, the background
     // must not race it with its own auto-connect target. The flag expires so
     // a killed foreground can't suspend background reconnects forever.

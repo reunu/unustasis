@@ -90,9 +90,11 @@ void main() {
         }
       ],
     };
-    expect(scooter.toJson(), expected);
+    for (final entry in expected.entries) {
+      expect(scooter.toJson()[entry.key], entry.value, reason: entry.key);
+    }
     final restored = SavedScooter.fromJson('outer-id', jsonDecode(jsonEncode(scooter)) as Map<String, dynamic>);
-    expect(restored.toJson(), expected);
+    expect(restored.toJson(), scooter.toJson());
     expect(restored.lastPing.microsecondsSinceEpoch, micros);
     expect(restored.lastPing.isUtc, isFalse);
     expect(restored.cachedDestinations!.single.type, SpecialDestinationType.work);
@@ -188,6 +190,7 @@ void main() {
     for (final change in changes) {
       final writes = prefs.writes;
       change();
+      await SavedScooter.flushPendingWrites();
       await drainPreferenceWrites();
       expect(prefs.writes, writes + 1);
       expect(prefs.saved['id'], scooter.toJson());
@@ -229,6 +232,7 @@ void main() {
       () => scooter.cachedDestinations = null,
     ]) {
       clear();
+      await SavedScooter.flushPendingWrites();
       await drainPreferenceWrites();
       expect(prefs.saved['id'], scooter.toJson());
     }

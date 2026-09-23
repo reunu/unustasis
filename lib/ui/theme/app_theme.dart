@@ -1,48 +1,53 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
+import '../widgets/wide_layout.dart';
 
 ThemeData unustasisLightTheme() => ThemeData(
-  appBarTheme: const AppBarTheme(
-    centerTitle: true,
-  ),
-  textTheme: GoogleFonts.nunitoTextTheme(ThemeData(brightness: Brightness.light).textTheme),
-  brightness: Brightness.light,
-  useMaterial3: true,
-  colorScheme: ColorScheme.light(
-    primary: createMaterialColor(const Color(0xFF099768)),
-    onPrimary: Colors.black,
-    secondary: Colors.green,
-    onSecondary: Colors.black,
-    surface: Colors.white,
-    onTertiary: Colors.white,
-    onSurface: Colors.black,
-    surfaceContainer: Colors.grey.shade200,
-    error: Colors.red,
-    onError: Colors.black,
-  ),
-  /* dark theme settings */
-);
+      appBarTheme: const AppBarTheme(
+        centerTitle: true,
+      ),
+      dialogTheme: const DialogThemeData(constraints: wideDialogConstraints),
+      bottomSheetTheme: const BottomSheetThemeData(constraints: wideDialogConstraints),
+      textTheme: ThemeData(brightness: Brightness.light).textTheme.apply(fontFamily: 'Nunito'),
+      brightness: Brightness.light,
+      useMaterial3: true,
+      colorScheme: ColorScheme.light(
+        primary: createMaterialColor(const Color(0xFF099768)),
+        onPrimary: Colors.black,
+        secondary: Colors.green,
+        onSecondary: Colors.black,
+        surface: Colors.white,
+        onTertiary: Colors.white,
+        onSurface: Colors.black,
+        surfaceContainer: Colors.grey.shade200,
+        error: Colors.red,
+        onError: Colors.black,
+      ),
+      /* dark theme settings */
+    );
 
 ThemeData unustasisDarkTheme() => ThemeData(
-  appBarTheme: const AppBarTheme(
-    centerTitle: true,
-  ),
-  textTheme: GoogleFonts.nunitoTextTheme(ThemeData(brightness: Brightness.dark).textTheme),
-  brightness: Brightness.dark,
-  useMaterial3: true,
-  colorScheme: ColorScheme.dark(
-    primary: createMaterialColor(const Color(0xFF3DCC9D)),
-    onPrimary: Colors.white,
-    secondary: Colors.green,
-    onSecondary: Colors.white,
-    surface: const Color.fromARGB(255, 20, 20, 20),
-    onTertiary: Colors.black,
-    onSurface: Colors.white,
-    surfaceContainer: Colors.grey.shade900,
-    error: Colors.red,
-    onError: Colors.white,
-  ),
-);
+      appBarTheme: const AppBarTheme(
+        centerTitle: true,
+      ),
+      dialogTheme: const DialogThemeData(constraints: wideDialogConstraints),
+      bottomSheetTheme: const BottomSheetThemeData(constraints: wideDialogConstraints),
+      textTheme: ThemeData(brightness: Brightness.dark).textTheme.apply(fontFamily: 'Nunito'),
+      brightness: Brightness.dark,
+      useMaterial3: true,
+      colorScheme: ColorScheme.dark(
+        primary: createMaterialColor(const Color(0xFF3DCC9D)),
+        onPrimary: Colors.white,
+        secondary: Colors.green,
+        onSecondary: Colors.white,
+        surface: const Color.fromARGB(255, 20, 20, 20),
+        onTertiary: Colors.black,
+        onSurface: Colors.white,
+        surfaceContainer: Colors.grey.shade900,
+        error: Colors.red,
+        onError: Colors.white,
+      ),
+    );
 
 MaterialColor createMaterialColor(Color color) {
   List strengths = <double>[.05];
