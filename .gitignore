@@ -52,3 +52,7 @@ scripts/
 
 # FVM Version Cache
 .fvm/
+# Regenerated from icon/icon.png by the adaptive-icon build step. Only the
+# release variants under src/main/res belong in the repository.
+/android/app/src/debug/res/drawable-*/
+/android/app/src/profile/res/drawable-*/

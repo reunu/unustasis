@@ -23,7 +23,7 @@ version: 2.0.5+46
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
-  flutter: 3.38.6
+  flutter: 3.41.9
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -35,9 +35,13 @@ dependencies:
   flutter:
     sdk: flutter
 
+  scooter_core:
+    path: packages/scooter_core
+  scooter_flutter:
+    path: packages/scooter_flutter
+
   flutter_blue_plus: ^1.34.5
   shared_preferences: ^2.2.2
-  google_fonts: ^6.2.1
   rxdart: ^0.28.0
   fluttertoast: ^8.0.8
   flutter_i18n:
@@ -75,8 +79,11 @@ dependencies:
       ref: main
   flutter_photon: ^2.0.1
   flutter_sharing_intent: ^2.0.4
+  flutter_svg: ^2.0.17
 
 dev_dependencies:
+  flutter_background_service_platform_interface: ^5.1.2
+  shared_preferences_platform_interface: ^2.4.1
   flutter_test:
     sdk: flutter
   mockito: ^5.4.4
@@ -121,11 +128,21 @@ flutter:
     - assets/i18n/
     - assets/
     - assets/anim/
+    # Font licenses; the families themselves are declared under `fonts:`.
+    - assets/fonts/Nunito-OFL.txt
+    - assets/fonts/KodeMono-OFL.txt
+    - assets/icons/
 
   fonts:
     - family: icomoon
       fonts:
        - asset: assets/fonts/icomoon.ttf
+    - family: Nunito
+      fonts:
+        - asset: assets/fonts/Nunito-Regular.ttf
+    - family: KodeMono
+      fonts:
+        - asset: assets/fonts/KodeMono-Regular.ttf
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware
