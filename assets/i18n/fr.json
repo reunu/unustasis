@@ -43,6 +43,7 @@
     "home_seat_button_closed": "Ouvrir le coffre",
     "home_seat_button_open": "Coffre ouvert",
     "home_unlock_button": "Maintenir pour démarrer",
+    "home_unlock_failed": "Impossible de réveiller et déverrouiller le scooter. Réessayez.",
     "home_lock_button": "Maintenir pour veille",
     "home_lock_request_sent": "Demandes de verrouillage envoyées. Vérifiez l’état du scooter.",
     "home_lock_request_incomplete": "Envoi des demandes incomplet. La première demande peut déjà avoir déclenché l’attente ou l’arrêt. Vérifiez le scooter ; aucune demande n’a été renvoyée.",

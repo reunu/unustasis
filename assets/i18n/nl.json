@@ -43,6 +43,7 @@
     "home_seat_button_closed": "Buddy openen",
     "home_seat_button_open": "Buddy is open",
     "home_unlock_button": "Vasthouden om te starten",
+    "home_unlock_failed": "De scooter kon niet worden gewekt en ontgrendeld. Probeer opnieuw.",
     "home_lock_button": "Vasthouden voor standby",
     "home_lock_request_sent": "Vergrendelverzoeken verstuurd. Controleer de status van de scooter.",
     "home_lock_request_incomplete": "Vergrendelverzoeken niet volledig verstuurd. Het eerste verzoek kan het wachten of uitschakelen al gestart hebben. Controleer de scooter; er is niets opnieuw verstuurd.",

@@ -43,6 +43,7 @@
     "home_seat_button_closed": "Open seat",
     "home_seat_button_open": "Seat is open!",
     "home_unlock_button": "Hold to start",
+    "home_unlock_failed": "Couldn't wake and unlock the scooter. Try again.",
     "home_lock_button": "Hold for standby",
     "home_lock_request_sent": "Lock requests sent. Check the scooter’s status.",
     "home_lock_request_incomplete": "Lock request sequence incomplete. The first request may already have started waiting or shutdown. Check the scooter’s status; no request was replayed.",

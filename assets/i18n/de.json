@@ -43,6 +43,7 @@
     "home_seat_button_closed": "Sitz öffnen",
     "home_seat_button_open": "Sitz ist offen",
     "home_unlock_button": "Halten zum Starten",
+    "home_unlock_failed": "Der Roller konnte nicht aufgeweckt und entriegelt werden. Bitte versuche es erneut.",
     "home_lock_button": "Halten für Standby",
     "home_lock_request_sent": "Sperranfragen gesendet. Prüfe den Status des Rollers.",
     "home_lock_request_incomplete": "Sperranfragen nicht vollständig gesendet. Die erste Anfrage kann bereits das Warten oder Herunterfahren gestartet haben. Prüfe den Roller; keine Anfrage wurde wiederholt.",

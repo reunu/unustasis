@@ -123,6 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _hazards = true;
     });
     await Future.delayed(Duration(milliseconds: 600 * times));
+    if (!mounted) return;
     setState(() {
       _hazards = false;
     });
@@ -434,11 +435,30 @@ class _HomeScreenState extends State<HomeScreen> {
                                                               _flashHazards(2);
                                                             }
                                                           } catch (e, stack) {
-                                                            log.severe('Problem unlocking the scooter', e, stack);
-                                                            Fluttertoast.showToast(msg: e.toString());
+                                                            log.warning('Could not unlock scooter', e, stack);
+                                                            if (context.mounted) {
+                                                              Fluttertoast.showToast(
+                                                                msg: FlutterI18n.translate(context, 'home_unlock_failed'),
+                                                              );
+                                                            }
                                                           }
                                                         }
-                                                      : context.read<ScooterService>().wakeUpAndUnlock))
+                                                      : () async {
+                                                          try {
+                                                            await context.read<ScooterService>().wakeUpAndUnlock();
+                                                            if (context.mounted &&
+                                                                context.read<ScooterService>().hazardLocking) {
+                                                              _flashHazards(2);
+                                                            }
+                                                          } catch (e, stack) {
+                                                            log.warning('Could not wake and unlock scooter', e, stack);
+                                                            if (context.mounted) {
+                                                              Fluttertoast.showToast(
+                                                                msg: FlutterI18n.translate(context, 'home_unlock_failed'),
+                                                              );
+                                                            }
+                                                          }
+                                                        }))
                                               : null,
                                           icon: state != null && state.isOn ? Icons.lock_open : Icons.lock_outline,
                                           label: state != null && state.isOn
