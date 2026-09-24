@@ -57,9 +57,9 @@ Future<void> showWidgetOnboarding(BuildContext context) async {
 /// Shows the server-pushed dialogs described in `docs/notifications.json`
 /// (published as https://reunu.github.io/unustasis/notifications.json).
 ///
-/// An entry is shown when it targets this app (`branch`, `platform`,
-/// `build-number`), is inside its `timestamp` + `duration-days` window and is still
-/// eligible: not ended by the user, inside `max-shows` and not snoozed.
+/// An entry is shown when it targets this app (`app-id`, or the older `branch`,
+/// plus `platform` and `build-number`), is inside its `timestamp` + `duration-days`
+/// window and is still eligible: not ended by the user, inside `max-shows` and not snoozed.
 ///
 /// The dialog offers up to three answers: the primary action, "Later" (or, without
 /// `snooze-days`, a plain dismissal that consumes a show) and "Don't show again".
@@ -127,8 +127,12 @@ Future<void> showServerNotifications(BuildContext context) async {
     }
     // wrap the rest of the handling so one malformed notification can't break the loop or the app
     try {
-      // check if this is meant for this branch of the app
-      if (entry['branch'] != null && entry['branch'] != appName) {
+      final appIdScope = matchAppId(value: entry['app-id'], applicationId: packageInfo.packageName);
+      if (appIdScope != ScopeMatch.match) {
+        log.info('Notification $id does not match this app id: $appIdScope. Skipping.');
+        continue;
+      }
+      if (entry['app-id'] == null && entry['branch'] != null && entry['branch'] != appName) {
         log.info("Notification $id is only meant for this branch: ${entry['branch']}. Skipping.");
         continue;
       }

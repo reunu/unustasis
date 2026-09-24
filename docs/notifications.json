@@ -70,7 +70,8 @@
             "en": "Don't show again",
             "de": "Nicht mehr anzeigen",
             "fr": "Ne plus afficher"
-        }
+        },
+        "app-id": "de.freal.unustasis*"
     },
     {
         "id": "sample-android-unu",
@@ -100,6 +101,10 @@
             "en": "OK",
             "de": "OK",
             "fr": "OK"
-        }
+        },
+        "app-id": [
+            "de.freal.unustasis",
+            "de.freal.unustasis.debug"
+        ]
     }
 ]

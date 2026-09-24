@@ -109,6 +109,56 @@ void main() {
     });
   });
 
+  group('matchAppId', () {
+    test('an entry without the field matches every build', () {
+      expect(matchAppId(value: null, applicationId: 'de.freal.unustasis'), ScopeMatch.match);
+      expect(matchAppId(value: null, applicationId: null), ScopeMatch.match);
+    });
+
+    test('accepts one application id or a list, exactly', () {
+      expect(matchAppId(value: 'de.freal.unustasis', applicationId: 'de.freal.unustasis'), ScopeMatch.match);
+      expect(
+        matchAppId(
+          value: ['de.freal.unustasis', 'de.freal.unustasis.debug'],
+          applicationId: 'de.freal.unustasis.debug',
+        ),
+        ScopeMatch.match,
+      );
+      expect(
+        matchAppId(value: 'de.freal.unustasis', applicationId: 'de.freal.unustasis.debug'),
+        ScopeMatch.mismatch,
+        reason: 'the debug build needs its own entry or a wildcard',
+      );
+    });
+
+    test('a trailing star matches every build type of one application', () {
+      for (final id in ['de.freal.unustasis', 'de.freal.unustasis.debug']) {
+        expect(matchAppId(value: 'de.freal.unustasis*', applicationId: id), ScopeMatch.match);
+      }
+      expect(matchAppId(value: 'de.freal.unustasis*', applicationId: 'org.librescoot.mobile.unu'), ScopeMatch.mismatch);
+      expect(matchAppId(value: 'de.freal.unustasis.*', applicationId: 'de.freal.unustasis'), ScopeMatch.mismatch,
+          reason: 'a prefix pattern does not match a shorter id');
+    });
+
+    test('matching is case sensitive, like the identifiers', () {
+      expect(matchAppId(value: 'DE.freal.unustasis', applicationId: 'de.freal.unustasis'), ScopeMatch.mismatch);
+    });
+
+    test('an unusable scope never matches', () {
+      expect(matchAppId(value: 'de.freal.unustasis', applicationId: null), ScopeMatch.malformed);
+      expect(matchAppId(value: 'de.freal.unustasis', applicationId: ''), ScopeMatch.malformed);
+      expect(matchAppId(value: 42, applicationId: 'de.freal.unustasis'), ScopeMatch.malformed);
+      expect(matchAppId(value: ['de.freal.unustasis', 7], applicationId: 'de.freal.unustasis'), ScopeMatch.malformed);
+      expect(matchAppId(value: <String>[], applicationId: 'de.freal.unustasis'), ScopeMatch.malformed);
+      expect(matchAppId(value: '', applicationId: 'de.freal.unustasis'), ScopeMatch.malformed);
+      expect(matchAppId(value: '*', applicationId: 'de.freal.unustasis'), ScopeMatch.malformed,
+          reason: 'a bare star would broadcast to every app');
+      expect(matchAppId(value: ['de.freal.unustasis', '*'], applicationId: 'de.freal.unustasis'),
+          ScopeMatch.malformed);
+      expect(matchAppId(value: 'de.*.unustasis', applicationId: 'de.freal.unustasis'), ScopeMatch.malformed);
+    });
+  });
+
   group('matchInstallerStore', () {
     test('an entry without the field matches every install', () {
       expect(matchInstallerStore(value: null, installerStore: "com.apple.testflight"), ScopeMatch.match);
@@ -173,8 +223,7 @@ void main() {
       expect(match(maxUpdateTime: "2026-09-18T22:00:00Z"), ScopeMatch.match);
       expect(match(minUpdateTime: "2026-09-19T00:00:00Z"), ScopeMatch.mismatch);
       expect(match(maxUpdateTime: "2026-09-18T21:59:59Z"), ScopeMatch.mismatch);
-      expect(match(minInstallTime: "2026-08-01T00:00:00Z", maxInstallTime: "2026-09-15T00:00:00Z"),
-          ScopeMatch.match);
+      expect(match(minInstallTime: "2026-08-01T00:00:00Z", maxInstallTime: "2026-09-15T00:00:00Z"), ScopeMatch.match);
       expect(match(minInstallTime: "2026-09-15T00:00:00Z"), ScopeMatch.mismatch);
     });
 
@@ -290,16 +339,15 @@ void main() {
     });
 
     test('later snoozes without consuming a show', () {
-      final next = applyOutcome(const ServerNotificationState(count: 1), NotificationOutcome.later,
-          snoozeDays: 3, now: now);
+      final next =
+          applyOutcome(const ServerNotificationState(count: 1), NotificationOutcome.later, snoozeDays: 3, now: now);
       expect(next.count, 1);
       expect(next.done, isFalse);
       expect(next.snoozedUntil, now.add(const Duration(days: 3)));
     });
 
     test('later supports a same-day snooze', () {
-      final next = applyOutcome(ServerNotificationState.initial, NotificationOutcome.later,
-          snoozeDays: 0, now: now);
+      final next = applyOutcome(ServerNotificationState.initial, NotificationOutcome.later, snoozeDays: 0, now: now);
       expect(next.snoozedUntil, now);
     });
 

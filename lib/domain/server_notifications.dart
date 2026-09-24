@@ -8,8 +8,16 @@
 /// Supported fields, all optional except `id`, `timestamp`, `duration-days`,
 /// `title` and `body`:
 ///
-/// * `branch`   - exact match against `PackageInfo.appName` (iOS: "stasis for unu"
-///                for Release, "stasis dev" for Debug, "stasis profile" for Profile).
+/// * `app-id`   - exact match against `PackageInfo.packageName`, the application id or
+///                bundle id (`de.freal.unustasis`, plus `.debug` on Android). A pattern
+///                ending in `*` matches every application id with that prefix, so one
+///                entry covers the release and debug builds. Takes precedence over
+///                `branch`, which only exists for feeds published before app ids.
+/// * `branch`   - exact match against `PackageInfo.appName`, the localized display name
+///                (iOS: "stasis for unu" for Release, "stasis dev" for Debug, "stasis
+///                profile" for Profile). Prefer `app-id`: a rename or a localized app
+///                name silently stops matching, and one display name cannot describe the
+///                release, debug and profile builds at once.
 /// * `platform` - exact match against `Platform.operatingSystem`.
 /// * `build-number` / `min-build-number` / `max-build-number` - scope to specific
 ///                app build numbers from `PackageInfo.buildNumber`.
@@ -99,8 +107,7 @@ class ServerNotificationState {
   int get hashCode => Object.hash(count, done, snoozedUntil);
 
   @override
-  String toString() =>
-      'ServerNotificationState(count: $count, done: $done, snoozedUntil: $snoozedUntil)';
+  String toString() => 'ServerNotificationState(count: $count, done: $done, snoozedUntil: $snoozedUntil)';
 
   Map<String, Object?> toJson() => {
         'count': count,
@@ -225,6 +232,36 @@ ScopeMatch matchBuildNumber({
   return ScopeMatch.match;
 }
 
+/// Compares the optional `app-id` field against [applicationId], the app's application
+/// id or bundle id from `PackageInfo.packageName`. A pattern ending in `*` matches every
+/// application id with that prefix, which is how one entry covers the release, debug and
+/// profile builds on Android; iOS uses a single bundle id for all of them.
+///
+/// Exact matching is case sensitive, like the identifiers themselves. An unusable scope
+/// (no application id known, a non-string entry, an empty list, or a bare `*`) does not
+/// match: the same fail-closed rule as the other scopes.
+ScopeMatch matchAppId({required Object? value, required String? applicationId}) {
+  if (value == null) return ScopeMatch.match;
+  final wanted = _strings(value);
+  if (wanted == null || wanted.isEmpty) return ScopeMatch.malformed;
+  final current = applicationId;
+  if (current == null || current.isEmpty) return ScopeMatch.malformed;
+  for (final pattern in wanted) {
+    if (pattern.length < 2 ||
+        (pattern.contains('*') && (pattern.indexOf('*') != pattern.length - 1))) {
+      return ScopeMatch.malformed;
+    }
+  }
+  for (final pattern in wanted) {
+    if (pattern.endsWith('*')) {
+      if (current.startsWith(pattern.substring(0, pattern.length - 1))) return ScopeMatch.match;
+    } else if (pattern == current) {
+      return ScopeMatch.match;
+    }
+  }
+  return ScopeMatch.mismatch;
+}
+
 /// Compares the optional `installer-store` field against [installerStore], the package
 /// that installed the app: `com.apple.testflight` for TestFlight, `com.apple` for the
 /// App Store, `com.android.vending` for Play. A development build installed from Xcode
@@ -254,10 +291,7 @@ ScopeMatch matchInstallTimes({
   required DateTime? installTime,
   required DateTime? updateTime,
 }) {
-  if (minInstallTime == null &&
-      maxInstallTime == null &&
-      minUpdateTime == null &&
-      maxUpdateTime == null) {
+  if (minInstallTime == null && maxInstallTime == null && minUpdateTime == null && maxUpdateTime == null) {
     return ScopeMatch.match;
   }
   final minInstall = _timeBound(minInstallTime);
