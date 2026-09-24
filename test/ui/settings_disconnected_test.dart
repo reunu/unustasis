@@ -131,7 +131,7 @@ void main() {
   });
 
   test('extended reads are skipped while the scooter sleeps', () {
-    final source = File('lib/stats/settings_screen.dart').readAsStringSync();
+    final source = File('lib/ui/screens/stats/settings_screen.dart').readAsStringSync();
     expect(source, contains('!_isCurrent(_session) || _scooterAsleep) return;'));
   });
 }

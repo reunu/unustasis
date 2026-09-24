@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:scooter_core/actions.dart' as core show HandlebarWarning;
 // ignore: depend_on_referenced_packages
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:unustasis/domain/nav_destination.dart';
@@ -25,6 +26,8 @@ class _NavigationService extends ChangeNotifier implements ScooterService {
   final vehicle = VehicleStatus();
   @override
   final battery = BatteryState();
+  @override
+  Stream<core.HandlebarWarning> get actionWarnings => const Stream.empty();
   @override
   bool get connected => false;
   @override

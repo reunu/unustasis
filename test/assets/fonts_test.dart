@@ -46,10 +46,10 @@ double _textWidth(TextStyle style) {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('main configures bundled fonts before asynchronous startup or UI', () {
-    final source = File('lib/main.dart').readAsStringSync();
+  test('bootstrap configures bundled fonts before asynchronous startup or UI', () {
+    final source = File('lib/bootstrap.dart').readAsStringSync();
     final configure = source.indexOf('  configureBundledFonts();');
-    expect(configure, greaterThan(source.indexOf('void main()')));
+    expect(configure, greaterThan(source.indexOf('Future<void> bootstrap()')));
     expect(configure, lessThan(source.indexOf('  await ')));
     expect(configure, lessThan(source.indexOf('  runApp(')));
   });
@@ -74,9 +74,9 @@ void main() {
       final textTheme = ThemeData(brightness: brightness).textTheme.apply(fontFamily: 'Nunito');
       expect(_styles(textTheme).map((s) => s.fontFamily).toSet(), {'Nunito'});
     }
-    final keycard = File('lib/ls_keycard_screen.dart').readAsStringSync();
+    final keycard = File('lib/ui/screens/ls_keycard_screen.dart').readAsStringSync();
     expect(keycard, contains(RegExp(r"fontFamily: 'KodeMono'")));
-    expect(File('lib/ls_scheduled_hibernation_screen.dart').readAsStringSync(),
+    expect(File('lib/ui/screens/ls_scheduled_hibernation_screen.dart').readAsStringSync(),
         contains(RegExp(r"TextStyle\(fontFamily: 'KodeMono'\)")));
   });
 

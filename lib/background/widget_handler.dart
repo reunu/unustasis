@@ -1,3 +1,5 @@
+import '../fonts.dart';
+
 // ignore_for_file: avoid_print
 
 import 'dart:async';
@@ -250,6 +252,7 @@ Future<void> setWidgetScanning(bool scanning) async {
 
 @pragma("vm:entry-point")
 FutureOr<void> backgroundCallback(Uri? data) async {
+  configureBundledFonts();
   WidgetsFlutterBinding.ensureInitialized();
   DartPluginRegistrant.ensureInitialized();
   await BackgroundI18n.instance.init();
@@ -259,11 +262,11 @@ FutureOr<void> backgroundCallback(Uri? data) async {
   String? action;
   // Read from SharedPreferences since this callback runs in a separate isolate
   // where the module-level backgroundScanEnabled variable is not shared.
-  final bgScanEnabled = (await SharedPreferences.getInstance()).getBool("backgroundScan") ?? false;
+  final bgScanEnabled = await SharedPreferencesAsync().getBool("backgroundScan") ?? false;
 
   switch (data?.host) {
     case "scan":
-      action = bgScanEnabled ? null : "unlock";
+      action = bgScanEnabled ? null : "connect";
     case "lock":
       action = "lock";
     case "unlock":
@@ -287,8 +290,9 @@ FutureOr<void> backgroundCallback(Uri? data) async {
     // is not lost.
     if (action != null) {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool("pendingWidgetAction", true);
+      // Publish the payload before arming the cross-isolate request.
       await prefs.setString("pendingWidgetActionName", action);
+      await prefs.setBool("pendingWidgetAction", true);
     }
 
     final running = await FlutterBackgroundService().isRunning();
@@ -314,6 +318,7 @@ FutureOr<void> backgroundCallback(Uri? data) async {
 
 @pragma('vm:entry-point')
 void workmanagerCallback() {
+  configureBundledFonts();
   Workmanager().executeTask((task, inputData) async {
     print("Workmanager task executing: $task");
     WidgetsFlutterBinding.ensureInitialized();

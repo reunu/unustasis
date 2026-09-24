@@ -61,7 +61,7 @@ void main() {
   });
 
   test('dialogs and bottom sheets are capped in both themes', () {
-    final source = File('lib/main.dart').readAsStringSync();
+    final source = File('lib/ui/theme/app_theme.dart').readAsStringSync();
     expect(
       'dialogTheme: const DialogThemeData(constraints: wideDialogConstraints),'.allMatches(source),
       hasLength(2),
