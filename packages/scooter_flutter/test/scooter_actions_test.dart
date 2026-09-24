@@ -459,6 +459,24 @@ void main() {
     });
   }
 
+  for (final kind in [EventType.lock, EventType.unlock, EventType.openSeat]) {
+    test('explicit $kind records Tasker as the source', () {
+      fakeAsync((time) {
+        final h = Harness(time);
+        bool? issued;
+        h.actions
+            .dispatchExplicitAction(h.session.currentConnection!, kind,
+                source: EventSource.tasker)
+            .then((value) => issued = value);
+        time.flushMicrotasks();
+        expect(issued, isTrue);
+        expect(h.effects.events.single.kind, kind);
+        expect(h.effects.events.single.source, EventSource.tasker);
+        h.dispose();
+      });
+    });
+  }
+
   test(
       'unlock trace preserves captured SOC/source/settings and unawaited seat ACK',
       () {

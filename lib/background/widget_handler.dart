@@ -15,6 +15,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 
 import '../background/background_i18n.dart';
+import '../background/tasker_bridge.dart';
 import '../background/translate_static.dart';
 import '../domain/scooter_state.dart';
 
@@ -275,6 +276,31 @@ FutureOr<void> backgroundCallback(Uri? data) async {
       action = "openseat";
     default:
       print("Unknown command: ${data?.host}");
+  }
+
+  final requestId = data?.queryParameters['requestId'];
+  if (requestId != null) {
+    if (!RegExp(r'^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$').hasMatch(requestId)) {
+      return;
+    }
+    if (action != 'lock' && action != 'unlock' && action != 'openseat') {
+      await publishActionResult(requestId, taskerResultUnsupportedAction);
+      return;
+    }
+    final queued = PendingAction(action!, requestId: requestId);
+    try {
+      await queuePendingAction(queued);
+      final service = FlutterBackgroundService();
+      if (await service.isRunning()) {
+        service.invoke('tasker');
+      } else if (!await service.startService()) {
+        throw StateError('Background service could not start');
+      }
+    } catch (e) {
+      await dropPendingAction(queued);
+      await publishActionResult(requestId, '$taskerResultFailedPrefix$e');
+    }
+    return;
   }
 
   // Show scanning feedback immediately so the user sees a spinner

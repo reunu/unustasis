@@ -47,7 +47,7 @@ ApnProblem? checkApn(String apn) {
 
 enum EventType { lock, unlock, openSeat, hibernate, wakeUp, unknown }
 
-enum EventSource { app, background, auto, unknown }
+enum EventSource { app, background, auto, unknown, tasker }
 
 class ActionLocation {
   const ActionLocation(this.latitude, this.longitude);

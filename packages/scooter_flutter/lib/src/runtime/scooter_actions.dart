@@ -120,7 +120,7 @@ class ScooterActions {
   /// False means no native command write was invoked. Once write is invoked,
   /// any later error propagates: retrying that uncertain actuation is unsafe.
   Future<bool> dispatchExplicitAction(
-      SessionConnection connection, EventType kind) async {
+      SessionConnection connection, EventType kind, {EventSource source = EventSource.background}) async {
     var issued = false;
     try {
       if (!canDispatchExplicitAction(connection)) return false;
@@ -128,11 +128,11 @@ class ScooterActions {
       target.onWriteIssued = () => issued = true;
       switch (kind) {
         case EventType.lock:
-          await _lock(target, false, EventSource.background);
+          await _lock(target, false, source);
         case EventType.unlock:
-          await _unlock(target, false, EventSource.background);
+          await _unlock(target, false, source);
         case EventType.openSeat:
-          await _seat(target, EventSource.app); // Existing native seat source.
+          await _seat(target, source == EventSource.background ? EventSource.app : source);
         default:
           return false;
       }

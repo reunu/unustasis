@@ -1,4 +1,6 @@
 ### Changes:
+- Tasker actions to lock, unlock, and open the seatbox
+- Battery optimisation shortcut for background automation on Android
 - Renamed to "stasis for unu"
 - Bluetooth updating of librescoot scooters
 - Disabling "hibernate for" feature for unsupported scooters

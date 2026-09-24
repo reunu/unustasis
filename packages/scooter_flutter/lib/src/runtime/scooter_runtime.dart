@@ -325,7 +325,7 @@ class ScooterRuntime<T extends SavedScooterRecord> {
   /// session. Unlike passive auto-connect it may connect under the foreground
   /// gate, but only to its captured pin. No scan, retry loop or intent release.
   Future<ExplicitActionDispatch?> prepareExplicitAction(
-      EventType eventType) async {
+      EventType eventType, {EventSource source = EventSource.background}) async {
     if (!const [EventType.lock, EventType.unlock, EventType.openSeat]
             .contains(eventType) ||
         _inactive ||
@@ -372,7 +372,7 @@ class ScooterRuntime<T extends SavedScooterRecord> {
         actions.canDispatchExplicitAction(connection);
     if (!usable()) return null;
     return ExplicitActionDispatch._(
-        usable, () => actions.dispatchExplicitAction(connection!, eventType));
+        usable, () => actions.dispatchExplicitAction(connection!, eventType, source: source));
   }
 
   void _expireManualConnectionTarget() {

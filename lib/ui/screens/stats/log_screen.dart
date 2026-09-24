@@ -39,6 +39,7 @@ class LogScreen extends StatelessWidget {
       EventSource.app => FlutterI18n.translate(context, "activity_log_source_app"),
       EventSource.background => FlutterI18n.translate(context, "activity_log_source_background"),
       EventSource.auto => FlutterI18n.translate(context, "activity_log_source_auto"),
+      EventSource.tasker => 'Tasker',
       EventSource.unknown => null,
     };
   }

@@ -18,7 +18,7 @@ void main() {
     expect(setup, contains('autoStart: backgroundScanEnabled'));
     expect(setup, isNot(contains('service.startService()')));
     final start = source.substring(source.indexOf('void onStart('));
-    final idle = start.indexOf('if (!backgroundScanEnabled && !pendingWidgetAction)');
+    final idle = start.indexOf('if (!backgroundScanEnabled && !pendingWidgetAction && !pendingTaskerAction)');
     expect(idle, greaterThan(0));
     expect(start.indexOf('service.stopSelf();', idle),
         lessThan(start.indexOf('_initializeScooterService(allowAutomaticActions: backgroundScanEnabled)')));

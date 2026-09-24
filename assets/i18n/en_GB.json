@@ -9,5 +9,6 @@
     "settings_scope_unknown": "No scooter selected",
     "settings_scope_scooter_only": "Applies to {name} only",
     "settings_scooter_auto_connect": "Auto-connect to this scooter",
+    "settings_battery_optimization": "Ignore battery optimisation",
     "stats_settings_section_scooter": "Scooter"
 }

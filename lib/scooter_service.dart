@@ -766,6 +766,12 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
         'openseat' => runtime.prepareExplicitAction(EventType.openSeat),
         _ => Future.value(null),
       };
+  Future<WidgetActionDispatch?> prepareTaskerAction(String actionName) => switch (actionName) {
+        'lock' => runtime.prepareExplicitAction(EventType.lock, source: EventSource.tasker),
+        'unlock' => runtime.prepareExplicitAction(EventType.unlock, source: EventSource.tasker),
+        'openseat' => runtime.prepareExplicitAction(EventType.openSeat, source: EventSource.tasker),
+        _ => Future.value(null),
+      };
   Future<bool> attemptLatestAutoConnection() => runtime.attemptLatestAutoConnection();
 
   Future<void> refetchSavedScooters() => runtime.refetchSavedScooters();

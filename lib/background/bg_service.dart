@@ -12,7 +12,9 @@ import 'package:pausable_timer/pausable_timer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../background/background_i18n.dart';
+import '../background/tasker_bridge.dart';
 import '../background/widget_handler.dart';
+import '../domain/scooter_state.dart';
 import '../flutter/blue_plus_mockable.dart';
 import '../scooter_service.dart';
 import '../background/notification_handler.dart';
@@ -21,6 +23,7 @@ bool backgroundScanEnabled = true;
 PausableTimer? _rescanTimer;
 AndroidServiceInstance? _androidServiceInstance;
 bool _widgetActionInProgress = false;
+bool _taskerDrainInProgress = false;
 Timer? _foregroundDemoteTimer;
 const Duration _foregroundTimeout = Duration(minutes: 15);
 
@@ -151,8 +154,99 @@ Future<void> _checkPendingWidgetAction() async {
       Logger("bgservice").info("Found lost pending widget action: $actionName");
       await executeWidgetAction(actionName);
     }
+    await _drainTaskerActions();
   } catch (e) {
     Logger("bgservice").warning("Error checking pending widget action", e);
+  }
+}
+
+Future<void> _drainTaskerActions() async {
+  if (_taskerDrainInProgress) return;
+  _taskerDrainInProgress = true;
+  try {
+    final entries = await takePendingActions();
+    for (final entry in entries) {
+      if (_widgetActionInProgress) {
+        await reportActionResult(entry.requestId, taskerResultBusy);
+      } else {
+        await _executeTaskerAction(entry);
+      }
+    }
+  } finally {
+    _taskerDrainInProgress = false;
+    if (await hasPendingActions()) unawaited(_drainTaskerActions());
+  }
+}
+
+Future<String> _confirmTaskerAction(Object? connection, bool Function() satisfied) async {
+  final result = Completer<String>();
+  void check() {
+    if (result.isCompleted) return;
+    if (connection == null || !identical(scooterService.connectionToken, connection) || !scooterService.connected) {
+      result.complete(taskerResultNotConnected);
+    } else if (satisfied()) {
+      result.complete(taskerResultOk);
+    }
+  }
+
+  scooterService.addListener(check);
+  final timeout = Timer(const Duration(seconds: 15), () {
+    if (!result.isCompleted) result.complete(taskerResultNotConfirmed);
+  });
+  try {
+    check();
+    return await result.future;
+  } finally {
+    timeout.cancel();
+    scooterService.removeListener(check);
+  }
+}
+
+Future<void> _executeTaskerAction(PendingAction entry) async {
+  final requestId = entry.requestId;
+  if (_widgetActionInProgress) {
+    await reportActionResult(requestId, taskerResultBusy);
+    return;
+  }
+  _widgetActionInProgress = true;
+  var outcome = taskerResultNotConnected;
+  try {
+    promoteToForeground();
+    await scooterService.runtimeReady;
+    if ((await scooterService.getSavedScooterIds()).isEmpty) {
+      outcome = taskerResultNoScooterSaved;
+      return;
+    }
+    if (!scooterService.connected) await setWidgetScanning(true);
+    final dispatch = await scooterService.prepareTaskerAction(entry.action);
+    if (dispatch == null || !dispatch.isReady()) return;
+    await setWidgetScanning(false);
+    if (entry.action == 'lock' || entry.action == 'unlock') await setWidgetUnlocking(true);
+    if (entry.isStale) {
+      outcome = taskerResultTimeout;
+      return;
+    }
+    if (entry.action == 'lock') scooterService.warnIfLockingWithOpenSeatbox();
+    if (!dispatch.isReady()) return;
+    final connection = scooterService.connectionToken;
+    if (!await dispatch()) return;
+    outcome = await _confirmTaskerAction(connection, () => switch (entry.action) {
+          'lock' => scooterService.state?.isOn == false,
+          'unlock' => scooterService.state?.isOn == true,
+          'openseat' => scooterService.vehicle.seatClosed == false,
+          _ => false,
+        });
+  } catch (e, stack) {
+    Logger('bgservice').warning('Tasker action failed', e, stack);
+    outcome = taskerResultForError(e);
+  } finally {
+    try {
+      await reportActionResult(requestId, outcome);
+    } finally {
+      await setWidgetScanning(false);
+      await setWidgetUnlocking(false);
+      _widgetActionInProgress = false;
+    }
   }
 }
 
@@ -369,6 +463,7 @@ void onStart(ServiceInstance service) async {
   await prefs.reload();
   final pendingWidgetAction = prefs.getBool("pendingWidgetAction") ?? false;
   final pendingActionName = prefs.getString("pendingWidgetActionName");
+  final pendingTaskerAction = await hasPendingActions();
 
   if (service is AndroidServiceInstance) {
     _androidServiceInstance = service;
@@ -376,7 +471,7 @@ void onStart(ServiceInstance service) async {
     // configured service auto-started with the app. Attaching a second Flutter
     // engine to FlutterBluePlus disconnects the foreground engine's GATT
     // client. A disabled, actionless service has no Bluetooth work to own.
-    if (!backgroundScanEnabled && !pendingWidgetAction) {
+    if (!backgroundScanEnabled && !pendingWidgetAction && !pendingTaskerAction) {
       Logger("bgservice").info("No background work requested, stopping service before Bluetooth initialization");
       await HomeWidget.setAppGroupId("group.de.freal.unustasis");
       await setWidgetScanning(false);
@@ -393,7 +488,7 @@ void onStart(ServiceInstance service) async {
   Logger("bgservice").info("Seeding widget with initial data");
   await HomeWidget.setAppGroupId("group.de.freal.unustasis");
   await seedCachesFromWidget();
-  if (!pendingWidgetAction) {
+  if (!pendingWidgetAction && !pendingTaskerAction) {
     await setWidgetScanning(false);
   }
   Logger("bgservice").info("Widget seeded with initial data. ScooterName: ${scooterService.scooterName}");
@@ -402,8 +497,8 @@ void onStart(ServiceInstance service) async {
     if (backgroundScanEnabled) {
       Logger("bgservice").info("Running first connection cycle");
       _enableScanning();
-    } else if (pendingWidgetAction) {
-      // _executeAction will promote to foreground itself
+    } else if (pendingWidgetAction || pendingTaskerAction) {
+      // Explicit actions promote the service when they run.
     } else {
       Logger("bgservice").info("Background scanning disabled, stopping service");
       _disableScanning();
@@ -500,6 +595,7 @@ void onStart(ServiceInstance service) async {
   service.on("lock").listen((data) async => executeWidgetAction("lock"));
   service.on("unlock").listen((data) async => executeWidgetAction("unlock"));
   service.on("openseat").listen((data) async => executeWidgetAction("openseat"));
+  service.on('tasker').listen((data) async => _drainTaskerActions());
 
   service.on("test").listen((data) async {
     Logger("bgservice").info("Test command received by background service! Data: $data");
@@ -533,9 +629,12 @@ void onStart(ServiceInstance service) async {
   // If the service was started by a widget action, execute it now that
   // everything is initialized and all listeners are registered.
   // Wait for scooterService to load cached data (saved scooter IDs, etc.)
-  if (pendingWidgetAction && pendingActionName != null) {
-    await Future.delayed(const Duration(seconds: 3));
-    executeWidgetAction(pendingActionName);
+  if (pendingWidgetAction || pendingTaskerAction) {
+    await scooterService.runtimeReady;
+    if (pendingWidgetAction && pendingActionName != null) {
+      executeWidgetAction(pendingActionName);
+    }
+    if (pendingTaskerAction) _drainTaskerActions();
   }
 
   _rescanTimer = PausableTimer.periodic(const Duration(seconds: 35), () async {

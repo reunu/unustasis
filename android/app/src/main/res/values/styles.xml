@@ -19,4 +19,6 @@
     <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
         <item name="android:windowBackground">?android:colorBackground</item>
     </style>
+    <!-- Plugin config screen shown inside Tasker, not part of the Flutter UI. -->
+    <style name="TaskerConfigTheme" parent="@android:style/Theme.DeviceDefault.Light.Dialog" />
 </resources>

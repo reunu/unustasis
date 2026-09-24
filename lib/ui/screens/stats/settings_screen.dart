@@ -21,6 +21,7 @@ import 'package:unustasis/domain/saved_scooter.dart';
 import 'package:unustasis/domain/scooter_keyless_distance.dart';
 import 'package:unustasis/domain/scooter_state.dart';
 import 'package:unustasis/scooter_service.dart';
+import 'package:unustasis/service/battery_optimization.dart';
 import 'package:unustasis/ui/widgets/header.dart';
 import 'package:unustasis/ui/screens/ls_keycard_screen.dart';
 import 'package:unustasis/ui/screens/ls_ota_screen.dart';
@@ -38,9 +39,10 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObserver {
   final log = Logger('SettingsScreen');
   bool backgroundScan = false;
+  bool batteryOptimizationOff = false;
   bool biometrics = false;
   bool autoUnlock = false;
   bool seasonal = true;
@@ -109,7 +111,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     getInitialSettings();
+    _refreshBatteryOptimization();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _refreshBatteryOptimization();
+  }
+
+  Future<void> _refreshBatteryOptimization() async {
+    if (!BatteryOptimization.isSupported) return;
+    final ignored = await BatteryOptimization.isIgnored();
+    if (mounted) setState(() => batteryOptimizationOff = ignored);
   }
 
   @override
@@ -218,6 +233,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _service?.removeListener(_onServiceChanged);
     _apnController.dispose();
     super.dispose();
@@ -880,6 +896,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ];
 
   List<Widget> _backgroundConnectionItems() => [
+        if (Platform.isAndroid)
+          SwitchListTile(
+            secondary: const Icon(Icons.battery_saver_outlined),
+            title: Text(FlutterI18n.translate(context, 'settings_battery_optimization')),
+            subtitle: Text(FlutterI18n.translate(context, 'settings_battery_optimization_description')),
+            value: batteryOptimizationOff,
+            onChanged: (value) async {
+              if (value) {
+                await BatteryOptimization.request();
+              } else {
+                await BatteryOptimization.openSettings();
+              }
+              await _refreshBatteryOptimization();
+            },
+          ),
         if (Platform.isAndroid)
           SwitchListTile(
             secondary: const Icon(Icons.find_replace_outlined),

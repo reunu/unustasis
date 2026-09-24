@@ -19,4 +19,5 @@
     <style name="NormalTheme" parent="@android:style/Theme.Black.NoTitleBar">
         <item name="android:windowBackground">?android:colorBackground</item>
     </style>
+    <style name="TaskerConfigTheme" parent="@android:style/Theme.DeviceDefault.Dialog" />
 </resources>

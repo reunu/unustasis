@@ -15,7 +15,8 @@ void main() {
       'EventSource.app',
       'EventSource.background',
       'EventSource.auto',
-      'EventSource.unknown'
+      'EventSource.unknown',
+      'EventSource.tasker'
     ]);
   });
   test('immutable action defaults match service settings before restore', () {

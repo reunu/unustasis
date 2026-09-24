@@ -33,7 +33,7 @@ void main() {
       'EventType.hibernate', 'EventType.wakeUp', 'EventType.unknown',
     ]);
     expect(EventSource.values.map((e) => e.toString()), [
-      'EventSource.app', 'EventSource.background', 'EventSource.auto', 'EventSource.unknown',
+      'EventSource.app', 'EventSource.background', 'EventSource.auto', 'EventSource.unknown', 'EventSource.tasker',
     ]);
     final time = DateTime.utc(2026, 1, 2, 3, 4, 5, 6, 7);
     final entry = LogEntry(timestamp: time, eventType: EventType.lock,
