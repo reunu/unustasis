@@ -2,12 +2,13 @@ import 'dart:convert';
 
 import 'package:flutter_photon/flutter_photon.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:http/http.dart';
+import 'package:http/http.dart' show Response;
 import 'package:logging/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../service/photon_service.dart';
 import '../domain/saved_scooter.dart';
+import 'service/secure_http.dart';
 
 class GeoHelper {
   static String sanitizeName(String name) {
@@ -119,15 +120,15 @@ class GeoHelper {
       return null;
     }
 
-    // see if user hasn't disabled Nominatim
+    // Only send coordinates after the user opts in to online place names.
     SharedPreferencesAsync prefs = SharedPreferencesAsync();
-    if (await prefs.getBool("osmConsent") == false) {
-      log.info("User has disabled Nominatim");
+    if (await prefs.getBool("osmConsent") != true) {
+      log.info("User has not enabled online place names");
       return null;
     }
 
     log.info("Fetching address from Nominatim for position: $position");
-    Response response = await get(
+    Response response = await httpsGet(
         Uri.parse(
             'https://nominatim.openstreetmap.org/reverse?lat=${position.latitude}&lon=${position.longitude}&format=json'),
         headers: {
@@ -212,7 +213,7 @@ class GeoHelper {
       return cachedName;
     }
 
-    if (await prefs.getBool("osmConsent") == false) {
+    if (await prefs.getBool("osmConsent") != true) {
       return "${location.latitude}, ${location.longitude}";
     }
 

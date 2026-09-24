@@ -34,6 +34,7 @@
     {
         "id": "sample-ios-unustasis",
         "timestamp": "1970-01-01T00:00:00Z",
+        "branch": "stasis for unu",
         "platform": "ios",
         "duration-days": 100,
         "min-build-number": 40,
@@ -75,6 +76,7 @@
     {
         "id": "sample-android-unu",
         "timestamp": "1970-01-01T00:00:00Z",
+        "branch": "stasis for unu",
         "platform": "android",
         "duration-days": 100,
         "build-number": [

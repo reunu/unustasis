@@ -247,7 +247,12 @@ ScopeMatch matchAppId({required Object? value, required String? applicationId}) 
   final current = applicationId;
   if (current == null || current.isEmpty) return ScopeMatch.malformed;
   for (final pattern in wanted) {
-    if (pattern.length < 2) return ScopeMatch.malformed;
+    if (pattern.length < 2 ||
+        (pattern.contains('*') && (pattern.indexOf('*') != pattern.length - 1))) {
+      return ScopeMatch.malformed;
+    }
+  }
+  for (final pattern in wanted) {
     if (pattern.endsWith('*')) {
       if (current.startsWith(pattern.substring(0, pattern.length - 1))) return ScopeMatch.match;
     } else if (pattern == current) {

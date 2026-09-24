@@ -1,3 +1,7 @@
+import '../fonts.dart';
+
+import 'package:logging/logging.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
@@ -132,16 +136,20 @@ List<AndroidNotificationAction> getAndroidNotificationActions(ScooterState? stat
 }
 
 @pragma('vm:entry-point')
-void notificationTapBackground(NotificationResponse notificationResponse) {
-  switch (notificationResponse.actionId) {
-    case "unlock":
-      FlutterBackgroundService().invoke("unlock");
-      break;
-    case "lock":
-      FlutterBackgroundService().invoke("lock");
-      break;
-    case "openseat":
-      FlutterBackgroundService().invoke("openseat");
-      break;
+Future<void> notificationTapBackground(NotificationResponse notificationResponse) async {
+  configureBundledFonts();
+  final action = notificationResponse.actionId;
+  if (!const ["unlock", "lock", "openseat"].contains(action)) return;
+  try {
+    // Same single pending slot as widget taps: persist before the fast-path
+    // invoke so a delayed duplicate cannot replay an already consumed action.
+    final prefs = await SharedPreferences.getInstance();
+    if (!await prefs.setString("pendingWidgetActionName", action!) ||
+        !await prefs.setBool("pendingWidgetAction", true)) {
+      throw StateError("Pending notification action was not persisted");
+    }
+    FlutterBackgroundService().invoke(action);
+  } catch (e, stack) {
+    Logger('notificationTapBackground').warning('Could not persist notification action', e, stack);
   }
 }

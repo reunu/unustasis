@@ -153,6 +153,9 @@ void main() {
       expect(matchAppId(value: '', applicationId: 'de.freal.unustasis'), ScopeMatch.malformed);
       expect(matchAppId(value: '*', applicationId: 'de.freal.unustasis'), ScopeMatch.malformed,
           reason: 'a bare star would broadcast to every app');
+      expect(matchAppId(value: ['de.freal.unustasis', '*'], applicationId: 'de.freal.unustasis'),
+          ScopeMatch.malformed);
+      expect(matchAppId(value: 'de.*.unustasis', applicationId: 'de.freal.unustasis'), ScopeMatch.malformed);
     });
   });
 
