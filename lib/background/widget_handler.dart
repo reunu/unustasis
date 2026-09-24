@@ -1,3 +1,5 @@
+import '../fonts.dart';
+
 // ignore_for_file: avoid_print
 
 import 'dart:async';
@@ -251,6 +253,7 @@ Future<void> setWidgetScanning(bool scanning) async {
 
 @pragma("vm:entry-point")
 FutureOr<void> backgroundCallback(Uri? data) async {
+  configureBundledFonts();
   WidgetsFlutterBinding.ensureInitialized();
   DartPluginRegistrant.ensureInitialized();
   await BackgroundI18n.instance.init();
@@ -258,16 +261,13 @@ FutureOr<void> backgroundCallback(Uri? data) async {
 
   // Determine the action to perform
   String? action;
-  // Set only for Tasker, which is blocking on the result. Widget taps leave it
-  // null and nothing is reported back.
-  final String? requestId = data?.queryParameters["requestId"];
   // Read from SharedPreferences since this callback runs in a separate isolate
   // where the module-level backgroundScanEnabled variable is not shared.
-  final bgScanEnabled = (await SharedPreferences.getInstance()).getBool("backgroundScan") ?? false;
+  final bgScanEnabled = await SharedPreferencesAsync().getBool("backgroundScan") ?? false;
 
   switch (data?.host) {
     case "scan":
-      action = bgScanEnabled ? null : "unlock";
+      action = bgScanEnabled ? null : "connect";
     case "lock":
       action = "lock";
     case "unlock":
@@ -278,9 +278,28 @@ FutureOr<void> backgroundCallback(Uri? data) async {
       print("Unknown command: ${data?.host}");
   }
 
-  if (action == null && requestId != null) {
-    // Nothing will run, so answer now rather than leave Tasker to time out.
-    await publishActionResult(requestId, taskerResultUnsupportedAction);
+  final requestId = data?.queryParameters['requestId'];
+  if (requestId != null) {
+    if (!RegExp(r'^[0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$').hasMatch(requestId)) {
+      return;
+    }
+    if (action != 'lock' && action != 'unlock' && action != 'openseat') {
+      await publishActionResult(requestId, taskerResultUnsupportedAction);
+      return;
+    }
+    final queued = PendingAction(action!, requestId: requestId);
+    try {
+      await queuePendingAction(queued);
+      final service = FlutterBackgroundService();
+      if (await service.isRunning()) {
+        service.invoke('tasker');
+      } else if (!await service.startService()) {
+        throw StateError('Background service could not start');
+      }
+    } catch (e) {
+      await dropPendingAction(queued);
+      await publishActionResult(requestId, '$taskerResultFailedPrefix$e');
+    }
     return;
   }
 
@@ -290,46 +309,32 @@ FutureOr<void> backgroundCallback(Uri? data) async {
     setWidgetScanning(true);
   }
 
-  // Queued before the service is touched so it can be picked up as a
-  // fallback. When Android suspends the service's Dart isolate, invoke() may
-  // silently fail; the queue makes sure the action isn't lost. The request id
-  // rides along in the same entry, so the service reads the two together
-  // rather than pairing an action with whatever id happens to be around.
-  final queued = action == null ? null : PendingAction(action, requestId: requestId);
-  if (queued != null) await queuePendingAction(queued);
-
   try {
+    // Always persist the action so the service can pick it up as a
+    // fallback.  When Android suspends the service's Dart isolate,
+    // invoke() may silently fail; SharedPreferences ensures the action
+    // is not lost.
+    if (action != null) {
+      final prefs = await SharedPreferences.getInstance();
+      // Publish the payload before arming the cross-isolate request.
+      await prefs.setString("pendingWidgetActionName", action);
+      await prefs.setBool("pendingWidgetAction", true);
+    }
+
     final running = await FlutterBackgroundService().isRunning();
     if (!running) {
       final service = FlutterBackgroundService();
       await service.startService();
       // The action will be picked up and executed by onStart() itself.
     } else {
-      // Fast path: invoke directly. The service drains the queue, so the entry
-      // is consumed there rather than running twice.
+      // Fast path: invoke directly.  _executeAction() will clear the
+      // persisted pending action so it won't run twice.
       if (action != null) {
         FlutterBackgroundService().invoke(action);
       }
     }
   } catch (e) {
     print("Error starting background service: $e");
-    // Android only allows a background start with an exemption, which a widget
-    // tap has and another app's broadcast doesn't.
-    final blocked = e.toString().contains("startForegroundService() not allowed");
-    // Nothing is going to run this now. Leaving it queued would let the next
-    // service start — possibly hours later, with the phone nowhere near the
-    // scooter — replay it, long after Tasker stopped waiting. A widget tap is
-    // only dropped when Android refused outright, since anything else there
-    // may still be picked up by a service that is on its way up.
-    if (queued != null && (blocked || requestId != null)) {
-      await dropPendingAction(queued);
-    }
-    if (requestId != null) {
-      await publishActionResult(
-        requestId,
-        blocked ? taskerResultServiceBlocked : "$taskerResultFailedPrefix$e",
-      );
-    }
   }
   await HomeWidget.updateWidget(
     qualifiedAndroidName: 'de.freal.unustasis.HomeWidgetReceiver',
@@ -339,6 +344,7 @@ FutureOr<void> backgroundCallback(Uri? data) async {
 
 @pragma('vm:entry-point')
 void workmanagerCallback() {
+  configureBundledFonts();
   Workmanager().executeTask((task, inputData) async {
     print("Workmanager task executing: $task");
     WidgetsFlutterBinding.ensureInitialized();

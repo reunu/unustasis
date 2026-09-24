@@ -56,26 +56,21 @@ void main() {
       expect(await takePendingActions(), isEmpty);
     });
 
-    test('carries no id for a widget tap', () async {
-      await queuePendingAction(PendingAction("unlock"));
-
-      final taken = await takePendingActions();
-      expect(taken.single.requestId, isNull);
-    });
-
-    test('a widget tap does not inherit an abandoned request id', () async {
-      await queuePendingAction(PendingAction("lock", requestId: "abc-123"));
-      await takePendingActions();
-
-      await queuePendingAction(PendingAction("unlock"));
-      expect((await takePendingActions()).single.requestId, isNull);
+    test('concurrent triggers use independent preference keys', () async {
+      await Future.wait([
+        queuePendingAction(PendingAction('lock', requestId: 'abc-123')),
+        queuePendingAction(PendingAction('unlock', requestId: 'def-456')),
+      ]);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getKeys().where((key) => key.startsWith(pendingTaskerActionPrefix)), hasLength(2));
+      expect((await takePendingActions()).map((entry) => entry.requestId), containsAll(['abc-123', 'def-456']));
     });
 
     test('drops entries nobody picked up in time', () async {
       await queuePendingAction(PendingAction(
         "unlock",
         requestId: "stale",
-        queuedAt: DateTime.now().subtract(const Duration(hours: 1)),
+        queuedAt: DateTime.now().subtract(const Duration(minutes: 2)),
       ));
       await queuePendingAction(PendingAction(
         "lock",

@@ -1,0 +1,14 @@
+name: scooter_core
+description: Pure Dart scooter protocol and domain logic shared by app clients.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: '>=3.5.0 <4.0.0'
+
+dependencies:
+  latlong2: 0.9.1
+  logging: ^1.2.0
+
+dev_dependencies:
+  test: ^1.25.8

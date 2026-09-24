@@ -1,3 +1,5 @@
+import '../fonts.dart';
+
 import 'dart:io';
 import 'dart:ui';
 
@@ -13,7 +15,6 @@ import '../background/background_i18n.dart';
 import '../background/tasker_bridge.dart';
 import '../background/widget_handler.dart';
 import '../domain/scooter_state.dart';
-import '../domain/statistics_helper.dart';
 import '../flutter/blue_plus_mockable.dart';
 import '../scooter_service.dart';
 import '../background/notification_handler.dart';
@@ -22,11 +23,21 @@ bool backgroundScanEnabled = true;
 PausableTimer? _rescanTimer;
 AndroidServiceInstance? _androidServiceInstance;
 bool _widgetActionInProgress = false;
+bool _taskerDrainInProgress = false;
 Timer? _foregroundDemoteTimer;
 const Duration _foregroundTimeout = Duration(minutes: 15);
 
-FlutterBluePlusMockable fbp = FlutterBluePlusMockable();
-ScooterService scooterService = ScooterService(fbp, isInBackgroundService: true);
+late FlutterBluePlusMockable fbp;
+late ScooterService scooterService;
+
+void _initializeScooterService({bool allowAutomaticActions = true}) {
+  fbp = FlutterBluePlusMockable();
+  scooterService = ScooterService(
+    fbp,
+    isInBackgroundService: true,
+    allowAutomaticActions: allowAutomaticActions,
+  );
+}
 
 Future<void> setupBackgroundService() async {
   final log = Logger("setupBackgroundService");
@@ -34,7 +45,7 @@ Future<void> setupBackgroundService() async {
 
   HomeWidget.registerInteractivityCallback(backgroundCallback);
 
-  backgroundScanEnabled = (await SharedPreferences.getInstance()).getBool("backgroundScan") ?? false;
+  backgroundScanEnabled = await SharedPreferencesAsync().getBool("backgroundScan") ?? false;
   log.info("Background scan: $backgroundScanEnabled");
 
   if (Platform.isAndroid) {
@@ -48,7 +59,11 @@ Future<void> setupBackgroundService() async {
       onBackground: onIosBackground,
     ),
     androidConfiguration: AndroidConfiguration(
-      autoStart: true,
+      // Starting a disabled service creates a second Flutter engine. Its
+      // FlutterBluePlus plugin detaches moments later and can tear down the
+      // foreground engine's GATT connection. Widget callbacks and the setting
+      // that enables background scanning start the configured service explicitly.
+      autoStart: backgroundScanEnabled,
       onStart: onStart,
       isForegroundMode: true, // Must start as foreground so Android allows restarts from widget callbacks
       autoStartOnBoot: true,
@@ -59,12 +74,11 @@ Future<void> setupBackgroundService() async {
       foregroundServiceNotificationId: notificationId,
     ),
   );
-
-  service.startService();
 }
 
 @pragma('vm:entry-point')
 Future<bool> onIosBackground(ServiceInstance service) async {
+  configureBundledFonts();
   // this will be updated occasionally by the system
   Logger("bgservice").info("Background service started on iOS!");
   // Ensure that the Flutter engine is initialized.
@@ -72,7 +86,7 @@ Future<bool> onIosBackground(ServiceInstance service) async {
   DartPluginRegistrant.ensureInitialized();
   await BackgroundI18n.instance.init();
   // Set up a scooter service instance.
-  scooterService = ScooterService(fbp, isInBackgroundService: true);
+  _initializeScooterService();
   // Make sure scooterService has time to initialize all values
   await Future.delayed(const Duration(seconds: 5));
   // update the widget
@@ -86,12 +100,13 @@ Future<bool> onIosBackground(ServiceInstance service) async {
     scooterColor: scooterService.identity.color,
     lastLocation: scooterService.identity.lastLocation,
     seatClosed: scooterService.vehicle.seatClosed,
-    scooterId: scooterService.myScooter?.remoteId.toString(),
+    scooterId: scooterService.currentScooterId,
   );
   return true;
 }
 
 Future<void> attemptConnectionCycle() async {
+  if (_widgetActionInProgress) return;
   await scooterService.attemptLatestAutoConnection();
   setWidgetScanning(false);
   return;
@@ -99,6 +114,7 @@ Future<void> attemptConnectionCycle() async {
 
 void _enableScanning() {
   backgroundScanEnabled = true;
+  scooterService.setAutomaticActionsAllowed(true);
   _foregroundDemoteTimer?.cancel();
   _androidServiceInstance?.setAsForegroundService();
   _rescanTimer?.start();
@@ -107,13 +123,21 @@ void _enableScanning() {
   attemptConnectionCycle();
 }
 
-void _disableScanning() {
+void _disableScanning({bool stopService = false}) {
   backgroundScanEnabled = false;
+  scooterService.setAutomaticActionsAllowed(false);
   _rescanTimer
     ?..pause()
     ..reset();
   scooterService.rssiTimer.pause();
-  demoteToBackground();
+  if (stopService) {
+    scooterService.disconnectAndClearDevice();
+    _foregroundDemoteTimer?.cancel();
+    dismissNotification();
+    _androidServiceInstance?.stopSelf();
+  } else {
+    demoteToBackground();
+  }
 }
 
 /// Checks SharedPreferences for a pending widget action that was persisted
@@ -122,149 +146,250 @@ void _disableScanning() {
 Future<void> _checkPendingWidgetAction() async {
   if (_widgetActionInProgress) return;
   try {
-    await _drainPendingActions();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.reload(); // re-read from disk (action was written in another isolate)
+    final pending = prefs.getBool("pendingWidgetAction") ?? false;
+    final actionName = prefs.getString("pendingWidgetActionName");
+    if (pending && actionName != null) {
+      Logger("bgservice").info("Found lost pending widget action: $actionName");
+      await executeWidgetAction(actionName);
+    }
+    await _drainTaskerActions();
   } catch (e) {
     Logger("bgservice").warning("Error checking pending widget action", e);
   }
 }
 
-/// Takes everything queued and runs it.
-///
-/// The queue is emptied in one read, so a trigger and the fallback sweep can't
-/// come away with the same entry. Only one action can be in flight, so the
-/// first is executed and the rest are answered with `busy` rather than left
-/// behind for a later sweep to replay.
-Future<void> _drainPendingActions() async {
-  final entries = await takePendingActions();
-  if (entries.isEmpty) return;
-
-  final log = Logger("bgservice");
-  for (final dropped in entries.skip(1)) {
-    log.info("Dropping $dropped, another action is already going out");
-    await reportActionResult(dropped.requestId, taskerResultBusy);
-  }
-
-  final entry = entries.first;
-  log.info("Found pending action: $entry");
-  await _executeAction(entry.action, requestId: entry.requestId);
-}
-
-const Duration _actionConfirmationTimeout = Duration(seconds: 15);
-
-/// Waits for the scooter to report the state an action asked for, so callers
-/// blocking on the result only hear back once it has actually happened. State
-/// arrives over BLE notifications, so there's nothing to await directly.
-///
-/// Test against something the scooter reports live. `handlebarsLocked` is
-/// seeded from the saved scooter on startup, so it reads as already-correct in
-/// one direction and never arrives in the other.
-Future<String> _confirmed(bool Function() satisfied) async {
-  if (satisfied()) return taskerResultOk;
-
-  final completer = Completer<bool>();
-  final poll = Timer.periodic(const Duration(milliseconds: 250), (_) {
-    if (satisfied() && !completer.isCompleted) completer.complete(true);
-  });
-  final deadline = Timer(_actionConfirmationTimeout, () {
-    if (!completer.isCompleted) completer.complete(false);
-  });
-
+Future<void> _drainTaskerActions() async {
+  if (_taskerDrainInProgress) return;
+  _taskerDrainInProgress = true;
   try {
-    return await completer.future ? taskerResultOk : taskerResultNotConfirmed;
+    final entries = await takePendingActions();
+    for (final entry in entries) {
+      if (_widgetActionInProgress) {
+        await reportActionResult(entry.requestId, taskerResultBusy);
+      } else {
+        await _executeTaskerAction(entry);
+      }
+    }
   } finally {
-    poll.cancel();
-    deadline.cancel();
+    _taskerDrainInProgress = false;
+    if (await hasPendingActions()) unawaited(_drainTaskerActions());
   }
 }
 
-/// Connects to the scooter if needed, then performs the given action.
-/// Handles foreground promotion, scanning UI, and post-action cleanup.
-///
-/// A Tasker request carries an id, and its outcome is published for the native
-/// receiver blocking on it.
-Future<void> _executeAction(String actionName, {String? requestId}) async {
-  // Claimed before anything is awaited: an invoke and the pending-action
-  // fallback can arrive for the same action at once, and an await in between
-  // would let both through. The caller has already taken this entry off the
-  // queue, so reporting busy here drops it for good rather than leaving it to
-  // be replayed later without its id.
+Future<String> _confirmTaskerAction(Object? connection, bool Function() satisfied) async {
+  final result = Completer<String>();
+  void check() {
+    if (result.isCompleted) return;
+    if (connection == null || !identical(scooterService.connectionToken, connection) || !scooterService.connected) {
+      result.complete(taskerResultNotConnected);
+    } else if (satisfied()) {
+      result.complete(taskerResultOk);
+    }
+  }
+
+  scooterService.addListener(check);
+  final timeout = Timer(const Duration(seconds: 15), () {
+    if (!result.isCompleted) result.complete(taskerResultNotConfirmed);
+  });
+  try {
+    check();
+    return await result.future;
+  } finally {
+    timeout.cancel();
+    scooterService.removeListener(check);
+  }
+}
+
+Future<void> _executeTaskerAction(PendingAction entry) async {
+  final requestId = entry.requestId;
   if (_widgetActionInProgress) {
     await reportActionResult(requestId, taskerResultBusy);
     return;
   }
   _widgetActionInProgress = true;
+  var outcome = taskerResultNotConnected;
+  try {
+    promoteToForeground();
+    await scooterService.runtimeReady;
+    if ((await scooterService.getSavedScooterIds()).isEmpty) {
+      outcome = taskerResultNoScooterSaved;
+      return;
+    }
+    if (!scooterService.connected) await setWidgetScanning(true);
+    final dispatch = await scooterService.prepareTaskerAction(entry.action);
+    if (dispatch == null || !dispatch.isReady()) return;
+    await setWidgetScanning(false);
+    if (entry.action == 'lock' || entry.action == 'unlock') await setWidgetUnlocking(true);
+    if (entry.isStale) {
+      outcome = taskerResultTimeout;
+      return;
+    }
+    if (entry.action == 'lock') scooterService.warnIfLockingWithOpenSeatbox();
+    if (!dispatch.isReady()) return;
+    final connection = scooterService.connectionToken;
+    if (!await dispatch()) return;
+    outcome = await _confirmTaskerAction(connection, () => switch (entry.action) {
+          'lock' => scooterService.state?.isOn == false,
+          'unlock' => scooterService.state?.isOn == true,
+          'openseat' => scooterService.vehicle.seatClosed == false,
+          _ => false,
+        });
+  } catch (e, stack) {
+    Logger('bgservice').warning('Tasker action failed', e, stack);
+    outcome = taskerResultForError(e);
+  } finally {
+    try {
+      await reportActionResult(requestId, outcome);
+    } finally {
+      await setWidgetScanning(false);
+      await setWidgetUnlocking(false);
+      _widgetActionInProgress = false;
+    }
+  }
+}
+
+/// Connects to the scooter if needed, then performs the given action.
+/// Handles foreground promotion, scanning UI, and post-action cleanup.
+Future<void> executeWidgetAction(String actionName) async {
+  if (_widgetActionInProgress) return;
+  _widgetActionInProgress = true;
 
   final log = Logger("bgservice");
-
   log.info("Executing action: $actionName");
-  String result = taskerResultOk;
 
   try {
     promoteToForeground();
 
-    if (!scooterService.connected) {
-      await setWidgetScanning(true);
-      await attemptConnectionCycle();
-      await setWidgetScanning(false);
-    } else {
-      // Already connected — clear the "Connecting…" state that
-      // backgroundCallback wrote from its isolate.
-      await setWidgetScanning(false);
-    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.reload();
+    bool matchesRequest() =>
+        prefs.getBool("pendingWidgetAction") == true && prefs.getString("pendingWidgetActionName") == actionName;
+    // All producers persist first. A delayed invoke after a successful action
+    // must not replay an already consumed slot (or an unrelated action name).
+    if (!matchesRequest()) return;
 
-    // Only a scooter that was never set up is worth refusing outright. Don't
-    // gate on `connected`, which can still be catching up with a link that
-    // came up moments ago: send the command and let it report its own failure.
-    if ((await scooterService.getSavedScooterIds()).isEmpty) {
-      log.warning("Action '$actionName' aborted: no scooter set up to connect to");
-      result = taskerResultNoScooterSaved;
+    if (!scooterService.connected) await setWidgetScanning(true);
+
+    // The disconnected widget's Scan button is a reconnect request, not an
+    // implicit unlock command. Connect and consume it without issuing any
+    // vehicle-control write.
+    if (actionName == "connect") {
+      // Storage restoration owns saved-target readiness, not the startup delay.
+      // A newer request may have replaced this one while restoration waited.
+      await scooterService.runtimeReady;
+      await prefs.reload();
+      if (!matchesRequest()) return;
+      if (!scooterService.connected) {
+        final targetId = scooterService.mostRecentSavedScooterId;
+        if (targetId != null) {
+          await scooterService.connectToScooterId(targetId);
+        }
+      }
+      if (_androidServiceInstance != null) updateNotification();
+      await prefs.reload();
+      if (matchesRequest()) {
+        await prefs.setBool("pendingWidgetAction", false);
+        await prefs.remove("pendingWidgetActionName");
+      }
       return;
     }
 
-    final source = requestId != null ? EventSource.tasker : EventSource.background;
-    switch (actionName) {
-      case "lock":
-        await setWidgetUnlocking(true);
-        await scooterService.lock(checkHandlebars: false, source: source);
-        Future.delayed(const Duration(seconds: 3), () => setWidgetUnlocking(false));
-        result = await _confirmed(() => scooterService.state?.isOn == false);
-      case "unlock":
-        await setWidgetUnlocking(true);
-        await scooterService.unlock(checkHandlebars: false, source: source);
-        Future.delayed(const Duration(seconds: 3), () => setWidgetUnlocking(false));
-        result = await _confirmed(() => scooterService.state?.isOn == true);
-      case "openseat":
-        await scooterService.openSeat(source: source);
-        result = await _confirmed(() => scooterService.vehicle.seatClosed == false);
-      default:
-        log.warning("Unknown action: $actionName");
-        result = taskerResultUnsupportedAction;
+    final dispatch = await scooterService.prepareWidgetAction(actionName);
+    if (dispatch == null) return; // Pending connection/pin change: retain request.
+    await setWidgetScanning(false);
+    if (actionName == "lock" || actionName == "unlock") {
+      await setWidgetUnlocking(true);
+    }
+
+    await prefs.reload();
+    if (!matchesRequest()) return; // A newer different request won during connect.
+    if (!dispatch.isReady()) return;
+    // Claim only once the captured target is usable, immediately before issuing.
+    // Preference APIs update their local cache even on failure: recovery must
+    // reload disk, not infer durability from that optimistic cache.
+    var mayHaveIssued = false;
+    try {
+      if (!await prefs.setBool("pendingWidgetAction", false)) {
+        throw StateError("Pending action claim was not persisted");
+      }
+      if (!dispatch.isReady()) return;
+      await prefs.reload();
+      if (!dispatch.isReady() ||
+          prefs.getBool("pendingWidgetAction") == true ||
+          prefs.getString("pendingWidgetActionName") != actionName) {
+        return;
+      }
+      if (!await prefs.remove("pendingWidgetActionName")) {
+        throw StateError("Pending action name removal was not persisted");
+      }
+      await prefs.reload();
+      if (prefs.getBool("pendingWidgetAction") == true || prefs.getString("pendingWidgetActionName") != null) {
+        return; // A newer request arrived during the issued removal.
+      }
+      if (!dispatch.isReady()) return;
+      if (actionName == "lock") scooterService.warnIfLockingWithOpenSeatbox();
+      // App log listeners can reenter and invalidate the captured target.
+      if (!dispatch.isReady()) return;
+      // An unclassified dispatch exception is conservatively ambiguous. The
+      // shared action boundary returns false only before any native write call.
+      mayHaveIssued = true;
+      if (!await dispatch()) mayHaveIssued = false;
+    } finally {
+      if (!mayHaveIssued) await _restoreUnissuedWidgetAction(prefs, actionName);
     }
   } catch (e, stack) {
     log.severe("Action '$actionName' failed", e, stack);
-    result = taskerResultForError(e);
   } finally {
-    _widgetActionInProgress = false;
-    await reportActionResult(requestId, result);
-    await setWidgetScanning(false);
-    await setWidgetUnlocking(false);
-    // Flush the real scooterService state to the widget. While scanning
-    // was active, passToWidget calls from the scooterService listener
-    // were blocked by _widgetIsScanning. Now that scanning is off, push
-    // the current state so the widget doesn't stay stuck on "Connecting…".
-    passToWidget(
-      connected: scooterService.connected,
-      lastPing: scooterService.lastPing,
-      scooterState: scooterService.state,
-      primarySOC: scooterService.primarySOC,
-      secondarySOC: scooterService.secondarySOC,
-      scooterName: scooterService.scooterName,
-      scooterColor: scooterService.scooterColor,
-      lastLocation: scooterService.lastLocation,
-      seatClosed: scooterService.seatClosed,
-      scooterLocked: scooterService.handlebarsLocked,
-      scooterId: scooterService.myScooter?.remoteId.toString(),
-    );
+    try {
+      await setWidgetScanning(false);
+      await setWidgetUnlocking(false);
+      // Flush the real scooterService state to the widget. While scanning
+      // was active, passToWidget calls from the scooterService listener
+      // were blocked by _widgetIsScanning. Now that scanning is off, push
+      // the current state so the widget doesn't stay stuck on "Connecting…".
+      passToWidget(
+        connected: scooterService.connected,
+        lastPing: scooterService.lastPing,
+        scooterState: scooterService.state,
+        primarySOC: scooterService.primarySOC,
+        secondarySOC: scooterService.secondarySOC,
+        scooterName: scooterService.scooterName,
+        scooterColor: scooterService.scooterColor,
+        lastLocation: scooterService.lastLocation,
+        seatClosed: scooterService.seatClosed,
+        scooterLocked: scooterService.handlebarsLocked,
+        scooterId: scooterService.currentScooterId,
+      );
+    } finally {
+      _widgetActionInProgress = false;
+    }
+  }
+}
+
+/// One best-effort recovery pass, never an automatic actuation retry. These two
+/// keys are not a transaction: a concurrent same-name request is indistinguishable
+/// and already-issued preference operations cannot be rolled back.
+Future<void> _restoreUnissuedWidgetAction(SharedPreferences prefs, String actionName) async {
+  try {
+    await prefs.reload();
+    if (prefs.getBool("pendingWidgetAction") == true) return;
+    final name = prefs.getString("pendingWidgetActionName");
+    if (name != null && name != actionName) return;
+    if (!await prefs.setString("pendingWidgetActionName", actionName)) {
+      throw StateError("Unissued action name was not restored");
+    }
+    await prefs.reload();
+    if (prefs.getBool("pendingWidgetAction") == true || prefs.getString("pendingWidgetActionName") != actionName) {
+      return;
+    }
+    if (!await prefs.setBool("pendingWidgetAction", true)) {
+      throw StateError("Unissued action flag was not restored");
+    }
+  } catch (e, stack) {
+    Logger("bgservice")
+        .warning("Could not restore unissued action '$actionName'; pending persistence is uncertain", e, stack);
   }
 }
 
@@ -312,6 +437,7 @@ void demoteToBackground() {
 
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {
+  configureBundledFonts();
   Logger("bgservice").onRecord.listen((record) {
     // ignore: avoid_print
     print("[${record.level.name}] ${record.time}: ${record.message} ${record.error ?? ""} ${record.stackTrace ?? ""}");
@@ -330,30 +456,49 @@ void onStart(ServiceInstance service) async {
     );
   }
 
-  backgroundScanEnabled = (await SharedPreferences.getInstance()).getBool("backgroundScan") ?? false;
+  backgroundScanEnabled = await SharedPreferencesAsync().getBool("backgroundScan") ?? false;
 
-  // Check if we were started by a widget action. Only peeked at here; the
-  // queue is drained once everything below is initialised, so the entry and
-  // the request id waiting on it are taken together.
-  final pendingWidgetAction = await hasPendingActions();
+  // Check if we were started by a widget action.
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.reload();
+  final pendingWidgetAction = prefs.getBool("pendingWidgetAction") ?? false;
+  final pendingActionName = prefs.getString("pendingWidgetActionName");
+  final pendingTaskerAction = await hasPendingActions();
+
+  if (service is AndroidServiceInstance) {
+    _androidServiceInstance = service;
+    // Do not construct FlutterBluePlus or ScooterService merely because the
+    // configured service auto-started with the app. Attaching a second Flutter
+    // engine to FlutterBluePlus disconnects the foreground engine's GATT
+    // client. A disabled, actionless service has no Bluetooth work to own.
+    if (!backgroundScanEnabled && !pendingWidgetAction && !pendingTaskerAction) {
+      Logger("bgservice").info("No background work requested, stopping service before Bluetooth initialization");
+      await HomeWidget.setAppGroupId("group.de.freal.unustasis");
+      await setWidgetScanning(false);
+      dismissNotification();
+      service.stopSelf();
+      return;
+    }
+  }
+
+  _initializeScooterService(allowAutomaticActions: backgroundScanEnabled);
 
   // Seed widget caches and clear stale spinner BEFORE any code path
   // that might stop the service (e.g. _disableScanning → stopSelf).
   Logger("bgservice").info("Seeding widget with initial data");
   await HomeWidget.setAppGroupId("group.de.freal.unustasis");
   await seedCachesFromWidget();
-  if (!pendingWidgetAction) {
+  if (!pendingWidgetAction && !pendingTaskerAction) {
     await setWidgetScanning(false);
   }
   Logger("bgservice").info("Widget seeded with initial data. ScooterName: ${scooterService.scooterName}");
 
   if (service is AndroidServiceInstance) {
-    _androidServiceInstance = service;
     if (backgroundScanEnabled) {
       Logger("bgservice").info("Running first connection cycle");
       _enableScanning();
-    } else if (pendingWidgetAction) {
-      // _executeAction will promote to foreground itself
+    } else if (pendingWidgetAction || pendingTaskerAction) {
+      // Explicit actions promote the service when they run.
     } else {
       Logger("bgservice").info("Background scanning disabled, stopping service");
       _disableScanning();
@@ -375,7 +520,7 @@ void onStart(ServiceInstance service) async {
           scooterColor: scooterService.scooterColor,
           lastLocation: scooterService.lastLocation,
           seatClosed: scooterService.seatClosed,
-          scooterId: scooterService.myScooter?.remoteId.toString());
+          scooterId: scooterService.currentScooterId);
     });
   }
   Logger("bgservice").info("Widget seeded with initial data. ScooterName: ${scooterService.identity.name}");
@@ -411,9 +556,10 @@ void onStart(ServiceInstance service) async {
         scooterService.lastPing = DateTime.fromMillisecondsSinceEpoch(data!["lastPingInt"]);
       }
       if (data?["backgroundScan"] != null) {
-        if (data!["backgroundScan"] == false && backgroundScanEnabled) {
-          // was true, now is false. Shut it down!
-          _disableScanning();
+        if (data!["backgroundScan"] == false) {
+          // An explicit off request always tears down a temporary widget-action
+          // service too, even if persistent background scanning was never on.
+          _disableScanning(stopService: true);
         } else if (data["backgroundScan"] == true && !backgroundScanEnabled) {
           // was false, now is true. Start it up!
           Logger("bgservice").info("Enabling BG scanning");
@@ -423,6 +569,8 @@ void onStart(ServiceInstance service) async {
       if (data?["updateSavedScooters"] == true) {
         await scooterService.refetchSavedScooters();
       }
+
+      handleForegroundConnectionUpdate(scooterService, data);
 
       Future.delayed(const Duration(seconds: 3), () {
         passToWidget(
@@ -435,7 +583,7 @@ void onStart(ServiceInstance service) async {
           scooterColor: scooterService.identity.color,
           lastLocation: scooterService.identity.lastLocation,
           seatClosed: scooterService.vehicle.seatClosed,
-          scooterId: scooterService.myScooter?.remoteId.toString(),
+          scooterId: scooterService.currentScooterId,
         );
       });
     } catch (e, stack) {
@@ -443,11 +591,11 @@ void onStart(ServiceInstance service) async {
     }
   });
 
-  // The action name is only a wake-up call; what actually runs comes off the
-  // queue, together with the request id that belongs to it.
-  service.on("lock").listen((data) async => _drainPendingActions());
-  service.on("unlock").listen((data) async => _drainPendingActions());
-  service.on("openseat").listen((data) async => _drainPendingActions());
+  service.on("connect").listen((data) async => executeWidgetAction("connect"));
+  service.on("lock").listen((data) async => executeWidgetAction("lock"));
+  service.on("unlock").listen((data) async => executeWidgetAction("unlock"));
+  service.on("openseat").listen((data) async => executeWidgetAction("openseat"));
+  service.on('tasker').listen((data) async => _drainTaskerActions());
 
   service.on("test").listen((data) async {
     Logger("bgservice").info("Test command received by background service! Data: $data");
@@ -466,7 +614,7 @@ void onStart(ServiceInstance service) async {
       lastLocation: scooterService.identity.lastLocation,
       seatClosed: scooterService.vehicle.seatClosed,
       scooterLocked: scooterService.vehicle.handlebarsLocked,
-      scooterId: scooterService.myScooter?.remoteId.toString(),
+      scooterId: scooterService.currentScooterId,
     );
     if (backgroundScanEnabled) {
       updateNotification();
@@ -481,9 +629,12 @@ void onStart(ServiceInstance service) async {
   // If the service was started by a widget action, execute it now that
   // everything is initialized and all listeners are registered.
   // Wait for scooterService to load cached data (saved scooter IDs, etc.)
-  if (pendingWidgetAction) {
-    await Future.delayed(const Duration(seconds: 3));
-    _drainPendingActions();
+  if (pendingWidgetAction || pendingTaskerAction) {
+    await scooterService.runtimeReady;
+    if (pendingWidgetAction && pendingActionName != null) {
+      executeWidgetAction(pendingActionName);
+    }
+    if (pendingTaskerAction) _drainTaskerActions();
   }
 
   _rescanTimer = PausableTimer.periodic(const Duration(seconds: 35), () async {
@@ -511,4 +662,14 @@ void onStart(ServiceInstance service) async {
   });
 
   _rescanTimer!.start();
+}
+
+/// Foreground proof-of-life refreshes only an already active manual-target gate.
+/// An explicit empty target releases it; ordinary legacy metadata never arms it.
+void handleForegroundConnectionUpdate(ScooterService scooterService, Map<String, dynamic>? data) {
+  if (data?.containsKey("manualConnectionTarget") == true) {
+    scooterService.setManualConnectionTarget(data!["manualConnectionTarget"] as String?);
+  } else {
+    scooterService.touchManualConnectionTarget();
+  }
 }

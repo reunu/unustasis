@@ -30,16 +30,17 @@ class TaskerActionReceiver : BroadcastReceiver() {
 
         val appContext = context.applicationContext
         val completionIntent = completionIntentOf(intent)
-        if (completionIntent == null) Log.w(TAG, "No completion intent; ${action.key} can't be waited on")
+        if (completionIntent == null) {
+            Log.w(TAG, "No completion intent; ${action.key} can't be waited on")
+            reportFailureInline()
+            return
+        }
 
         val pendingResult = goAsync()
         // Started while we're still inside onReceive, where Android still lets
         // a receiver start a service; the action itself outlives this call.
         val started = TaskerActionService.start(appContext, action, completionIntent)
-        pendingResult.setResultCodeSafely(
-            if (completionIntent != null) TaskerPluginProtocol.RESULT_CODE_PENDING
-            else TaskerPluginProtocol.RESULT_CODE_OK
-        )
+        pendingResult.setResultCodeSafely(TaskerPluginProtocol.RESULT_CODE_PENDING)
         pendingResult.finish()
         if (!started) {
             TaskerActionService.reply(appContext, completionIntent, TaskerActionRunner.RESULT_SERVICE_BLOCKED)

@@ -25,7 +25,12 @@ class LocationUrlParser {
 
   /// Attempts to extract a location from shared text (URL or plain text).
   /// Returns null if no coordinates could be parsed.
-  static Future<ParsedLocation?> parse(String text) async {
+  static Future<ParsedLocation?> parse(
+    String text, {
+    bool allowOnlineGeocoding = false,
+    http.Client Function()? clientFactory,
+  }) async {
+    final createClient = clientFactory ?? http.Client.new;
     text = text.trim();
     _log.fine('Parsing shared text: $text');
 
@@ -57,13 +62,21 @@ class LocationUrlParser {
       if (result != null) return _enrichWithContext(result, text);
 
       // Try following short URL redirects (e.g. maps.app.goo.gl)
-      result = await _tryResolveShortUrl(candidate);
+      result = await _tryResolveShortUrl(
+        candidate,
+        allowOnlineGeocoding: allowOnlineGeocoding,
+        clientFactory: createClient,
+      );
       if (result != null) return _enrichWithContext(result, text);
 
       // If it's a Google Maps URL with no coords, fetch the page and scrape
       final candidateUri = Uri.tryParse(candidate);
       if (candidateUri != null && candidateUri.host.contains('google.') && candidateUri.path.contains('/maps/')) {
-        result = await _fetchAndScrapeGooglePage(candidate);
+        result = await _fetchAndScrapeGooglePage(
+          candidate,
+          allowOnlineGeocoding: allowOnlineGeocoding,
+          clientFactory: createClient,
+        );
         if (result != null) return _enrichWithContext(result, text);
       }
     }
@@ -75,7 +88,7 @@ class LocationUrlParser {
     // Final fallback: if the text contains a non-URL line (place name/address
     // that maps apps prepend), try geocoding it via Photon.
     final nameQuery = _extractNonUrlText(text);
-    if (nameQuery != null) {
+    if (allowOnlineGeocoding && nameQuery != null) {
       _log.info('All URL parsing failed, trying to geocode text: "$nameQuery"');
       final geocoded = await _geocodeText(nameQuery);
       if (geocoded != null) return geocoded;
@@ -312,9 +325,13 @@ class LocationUrlParser {
   }
 
   /// Resolve short URLs (maps.app.goo.gl, goo.gl) by following redirects.
-  static Future<ParsedLocation?> _tryResolveShortUrl(String text) async {
+  static Future<ParsedLocation?> _tryResolveShortUrl(
+    String text, {
+    required bool allowOnlineGeocoding,
+    required http.Client Function() clientFactory,
+  }) async {
     final uri = Uri.tryParse(text);
-    if (uri == null || !uri.hasScheme) return null;
+    if (uri == null || uri.scheme.toLowerCase() != 'https') return null;
 
     final host = uri.host.toLowerCase();
     final isShortUrl = host.contains('goo.gl') ||
@@ -336,7 +353,7 @@ class LocationUrlParser {
           ..headers['User-Agent'] = _mobileUA
           ..headers['Accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
           ..headers['Accept-Language'] = 'en-US,en;q=0.9';
-        final client = http.Client();
+        final client = clientFactory();
         try {
           final response = await client.send(request).timeout(const Duration(seconds: 10));
           final location = response.headers['location'];
@@ -395,14 +412,20 @@ class LocationUrlParser {
           final locUri = Uri.tryParse(location);
           if (locUri != null && locUri.host.contains('google.') && locUri.path.contains('/maps/')) {
             _log.info('Google Maps URL has no coords in URL, fetching page body');
-            final pageResult = await _fetchAndScrapeGooglePage(location);
+            final pageResult = await _fetchAndScrapeGooglePage(
+              location,
+              allowOnlineGeocoding: allowOnlineGeocoding,
+              clientFactory: clientFactory,
+            );
             if (pageResult != null) return pageResult;
           }
 
           // Continue following redirects
           final nextUri = Uri.tryParse(location);
           if (nextUri == null) break;
-          currentUri = nextUri.hasScheme ? nextUri : currentUri.resolve(location);
+          final resolvedNextUri = nextUri.hasScheme ? nextUri : currentUri.resolve(location);
+          if (resolvedNextUri.scheme.toLowerCase() != 'https') break;
+          currentUri = resolvedNextUri;
         } catch (e) {
           client.close();
           rethrow;
@@ -420,11 +443,16 @@ class LocationUrlParser {
       ];
       for (final tryUri in urlsToTry) {
         _log.info('Auto-redirect fallback trying: $tryUri');
-        final fallbackResponse = await http.get(tryUri, headers: {
-          'User-Agent': _desktopUA,
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          'Accept-Language': 'en-US,en;q=0.9',
-        }).timeout(const Duration(seconds: 10));
+        final fallbackResponse = await _getFollowingHttpsRedirects(
+          tryUri,
+          clientFactory: clientFactory,
+          headers: {
+            'User-Agent': _desktopUA,
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+          },
+        );
+        if (fallbackResponse == null) continue;
 
         if (fallbackResponse.statusCode == 200) {
           _log.info('Auto-redirect fallback got 200, body ${fallbackResponse.body.length} chars');
@@ -453,21 +481,65 @@ class LocationUrlParser {
     return null;
   }
 
+  static Future<http.Response?> _getFollowingHttpsRedirects(
+    Uri initialUri, {
+    required Map<String, String> headers,
+    required http.Client Function() clientFactory,
+  }) async {
+    if (initialUri.scheme.toLowerCase() != 'https') return null;
+
+    final client = clientFactory();
+    var currentUri = initialUri;
+    try {
+      for (var redirectCount = 0; redirectCount <= 5; redirectCount++) {
+        final request = http.Request('GET', currentUri)
+          ..followRedirects = false
+          ..headers.addAll(headers);
+        final streamed = await client.send(request).timeout(const Duration(seconds: 10));
+        final location = streamed.headers['location'];
+        if (_isRedirectStatus(streamed.statusCode) && location != null) {
+          await streamed.stream.drain<void>();
+          final nextUri = currentUri.resolve(location);
+          if (nextUri.scheme.toLowerCase() != 'https') return null;
+          currentUri = nextUri;
+          continue;
+        }
+        return await http.Response.fromStream(streamed);
+      }
+      return null;
+    } finally {
+      client.close();
+    }
+  }
+
+  static bool _isRedirectStatus(int statusCode) =>
+      statusCode == 301 || statusCode == 302 || statusCode == 303 || statusCode == 307 || statusCode == 308;
+
   /// Fetch a Google Maps page directly and scrape coordinates from the body.
   /// A direct http.get auto-handles consent redirects and returns a smaller
   /// page that reliably contains og:image/staticmap meta tags with coords.
   /// Falls back to geocoding the place name from the URL if scraping fails
   /// (Google Maps pages with only a place ID don't include destination coords
   /// in the server-rendered HTML).
-  static Future<ParsedLocation?> _fetchAndScrapeGooglePage(String url) async {
+  static Future<ParsedLocation?> _fetchAndScrapeGooglePage(
+    String url, {
+    required bool allowOnlineGeocoding,
+    required http.Client Function() clientFactory,
+  }) async {
     try {
-      final response = await http.get(Uri.parse(url), headers: {
-        'User-Agent': _desktopUA,
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9',
-      }).timeout(const Duration(seconds: 10));
+      final uri = Uri.tryParse(url);
+      if (uri == null || uri.scheme.toLowerCase() != 'https') return null;
+      final response = await _getFollowingHttpsRedirects(
+        uri,
+        clientFactory: clientFactory,
+        headers: {
+          'User-Agent': _desktopUA,
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9',
+        },
+      );
 
-      if (response.statusCode != 200) return null;
+      if (response == null || response.statusCode != 200) return null;
 
       final coords = _scrapeCoordinatesFromHtml(response.body);
       if (coords != null) {
@@ -483,7 +555,7 @@ class LocationUrlParser {
       // don't include destination coordinates in the HTML (only the viewer's
       // viewport center). Fall back to geocoding the place name from the URL.
       final placeMatch = RegExp(r'/maps/place/([^/@?]+)').firstMatch(url);
-      if (placeMatch != null) {
+      if (allowOnlineGeocoding && placeMatch != null) {
         final rawSegment = Uri.decodeComponent(placeMatch.group(1)!).replaceAll('+', ' ');
         final shortName = _extractGooglePlaceName(placeMatch.group(1)!);
         _log.info('Scraping found no coords, geocoding place name from URL: "$rawSegment"');
