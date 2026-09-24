@@ -1,5 +1,5 @@
 ### Changes:
-- Tasker actions to lock, unlock, and open the seatbox
+- Tasker actions to lock, unlock, and open the seatbox (open and save existing Tasker actions once to authorize them)
 - Battery optimisation shortcut for background automation on Android
 - Renamed to "stasis for unu"
 - Bluetooth updating of librescoot scooters

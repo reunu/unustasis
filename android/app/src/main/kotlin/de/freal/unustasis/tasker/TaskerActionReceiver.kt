@@ -22,8 +22,8 @@ class TaskerActionReceiver : BroadcastReceiver() {
 
         val settings = intent.getBundleExtra(TaskerPluginProtocol.EXTRA_BUNDLE)
         val action = TaskerAction.fromKey(settings?.getString(TaskerPluginProtocol.BUNDLE_KEY_ACTION))
-        if (action == null) {
-            Log.w(TAG, "Fired without a known action, ignoring")
+        if (action == null || !TaskerActionAuthorization.accepts(context, action, settings)) {
+            Log.w(TAG, "Fired without an authorized action")
             reportFailureInline()
             return
         }

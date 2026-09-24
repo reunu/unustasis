@@ -23,6 +23,11 @@ class TaskerActionEditActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (!TaskerActionAuthorization.isTrustedEditorCaller(callingPackage)) {
+            setResult(RESULT_CANCELED)
+            finish()
+            return
+        }
         setTitle(R.string.tasker_config_title)
 
         val actions = TaskerAction.entries
@@ -74,10 +79,10 @@ class TaskerActionEditActivity : Activity() {
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
-    /** Reads the app's own setting out of the file shared_preferences writes. */
+    /** Flutter mirrors its DataStore scan setting into the native preferences file. */
     private fun backgroundScanEnabled(): Boolean =
         getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-            .getBoolean("flutter.backgroundScan", false)
+            .getBoolean("flutter.taskerBackgroundScan", false)
 
     private fun previousAction(): TaskerAction? = TaskerAction.fromKey(
         intent.getBundleExtra(TaskerPluginProtocol.EXTRA_BUNDLE)
@@ -89,8 +94,15 @@ class TaskerActionEditActivity : Activity() {
      * the stored config bundle, since hosts differ on which they read.
      */
     private fun save(action: TaskerAction) {
+        val signature = runCatching { TaskerActionAuthorization.sign(this, action) }
+            .getOrElse {
+                setResult(RESULT_CANCELED)
+                finish()
+                return
+            }
         val settings = Bundle().apply {
             putString(TaskerPluginProtocol.BUNDLE_KEY_ACTION, action.key)
+            putString(TaskerActionAuthorization.BUNDLE_KEY_SIGNATURE, signature)
             putInt(
                 TaskerPluginProtocol.EXTRA_REQUESTED_TIMEOUT,
                 TaskerActionRunner.DEFAULT_TIMEOUT_MS.toInt(),

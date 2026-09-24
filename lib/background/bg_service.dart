@@ -17,6 +17,7 @@ import '../background/widget_handler.dart';
 import '../domain/scooter_state.dart';
 import '../flutter/blue_plus_mockable.dart';
 import '../scooter_service.dart';
+import '../service/tasker_settings_mirror.dart';
 import '../background/notification_handler.dart';
 
 bool backgroundScanEnabled = true;
@@ -49,6 +50,7 @@ Future<void> setupBackgroundService() async {
   log.info("Background scan: $backgroundScanEnabled");
 
   if (Platform.isAndroid) {
+    await mirrorTaskerBackgroundScan(backgroundScanEnabled);
     await setupNotifications();
   }
 

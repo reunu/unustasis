@@ -22,6 +22,7 @@ import 'package:unustasis/domain/scooter_keyless_distance.dart';
 import 'package:unustasis/domain/scooter_state.dart';
 import 'package:unustasis/scooter_service.dart';
 import 'package:unustasis/service/battery_optimization.dart';
+import 'package:unustasis/service/tasker_settings_mirror.dart';
 import 'package:unustasis/ui/widgets/header.dart';
 import 'package:unustasis/ui/screens/ls_keycard_screen.dart';
 import 'package:unustasis/ui/screens/ls_ota_screen.dart';
@@ -949,6 +950,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
               }
               if (confirmed == true) {
                 await prefs.setBool("backgroundScan", value);
+                await mirrorTaskerBackgroundScan(value);
                 final backgroundService = FlutterBackgroundService();
                 // The service may have stopped while scanning was disabled.
                 if (value) await backgroundService.startService();
