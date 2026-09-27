@@ -16,6 +16,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'package:unustasis/ui/presentation/privacy_policy.dart';
 import 'package:unustasis/ui/theme/theme_helper.dart';
 import 'package:unustasis/domain/alarm_status.dart';
 import 'package:unustasis/domain/saved_scooter.dart';
@@ -1157,12 +1158,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
       ];
 
   Future<void> _openPrivacyPolicy() {
-    final language = FlutterI18n.currentLocale(context)?.languageCode ?? "en";
-    final path = language == "de" ? "/privacy/mobile-app/" : "/en/privacy/mobile-app/";
-    return launchUrl(
-      Uri.parse("https://librescoot.org$path"),
-      mode: LaunchMode.externalApplication,
-    );
+    return launchUrl(privacyPolicyUriFor(context), mode: LaunchMode.externalApplication);
   }
 
   List<Widget> _seasonalItems() => [

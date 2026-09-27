@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Datenschutzerklärung der Unustasis-App</title>
+<style>
+:root { color-scheme: light dark; }
+body {
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 4rem;
+  font: 16px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+h1 { font-size: 1.7rem; line-height: 1.25; }
+h2 { font-size: 1.2rem; margin-top: 2rem; }
+ul { padding-left: 1.25rem; }
+li { margin: 0.25rem 0; }
+.meta { color: #767676; }
+</style>
+</head>
+<body>
+
+<h1>Datenschutzerklärung der Unustasis-App</h1>
+
+<p class="meta">
+  <em>stasis for unu</em> &middot; <a href="/unustasis/privacy/mobile-app/" hreflang="en">English</a><br>
+  <strong>Gültig ab:</strong> 27. September 2026
+</p>
+
+<p>Diese Erklärung beschreibt, wie Unustasis, die als <em>stasis for unu</em> veröffentlichte App,
+mit Informationen umgeht.</p>
+
+<h2>Wer die App betreibt</h2>
+
+<p>Unustasis ist eine quelloffene App für den unu Scooter Pro und wird vom Unustasis-Projekt
+bereitgestellt. Fragen zu Datenschutz und Support können an
+<a href="mailto:oss4unu@freal.de">oss4unu@freal.de</a> gesendet werden. Der Quellcode ist auf
+<a href="https://github.com/reunu/unustasis">GitHub</a> verfügbar.</p>
+
+<h2>Kurzfassung</h2>
+
+<ul>
+  <li>Die App hat kein Benutzerkonto, keine Werbung und kein Analyse-SDK.</li>
+  <li>Rollerdaten und Aktivitätsverlauf werden normalerweise nur auf deinem Gerät gespeichert.</li>
+  <li>Online-Standortdienste sind standardmäßig ausgeschaltet. Wenn du sie einschaltest, werden Standorte und Suchbegriffe an die unten genannten Anbieter gesendet.</li>
+  <li>Es werden keine Telemetriedaten automatisch an das Unustasis-Projekt gesendet. Wir erhalten Diagnosedaten nur, wenn du selbst eine Support-E-Mail sendest.</li>
+</ul>
+
+<h2>Auf deinem Gerät gespeicherte Informationen</h2>
+
+<p>Die App kann folgende Informationen in ihrem privaten App-Speicher ablegen:</p>
+
+<ul>
+  <li>Rollernamen und Bluetooth-Kennungen;</li>
+  <li>Verbindungsstatus, Akkustände, Firmwareversionen und unterstützte Funktionen;</li>
+  <li>gespeicherte Ziele, letzte Rollerstandorte und aufgelöste Ortsnamen;</li>
+  <li>einen lokalen Verlauf von Ver-, Entriegelungs- und Sitzbankaktionen, gegebenenfalls mit dem Standort des Handys, wenn die Standortberechtigung erteilt wurde;</li>
+  <li>Einstellungen wie Sprache, Design, Hintergrundverbindung, automatische Entriegelung und biometrische Bestätigung; sowie</li>
+  <li>aktuelle Diagnoseprotokolle, einschließlich einer gespeicherten Protokolldatei, wenn du eine Support-E-Mail vorbereitest.</li>
+</ul>
+
+<p>Diese Informationen werden verwendet, um den Roller zu verbinden und zu steuern, Status und
+Widgets anzuzeigen, Navigation bereitzustellen und deine Einstellungen zu speichern. Geheimnisse
+der Bluetooth-Kopplung verwaltet das Betriebssystem; sie werden nicht zu einem
+Unustasis-Dienst hochgeladen.</p>
+
+<h2>Standort</h2>
+
+<p>Mit deiner Betriebssystemberechtigung kann die App den genauen Standort des Handys lesen, um
+den letzten Verbindungs- oder Bedienort des Rollers zu merken, lokale Aktivitäten mit einem
+Standort zu versehen, Werkstätten in der Nähe zu finden und die Zielsuche zu verbessern. Ältere
+Android-Versionen benötigen die Standortberechtigung außerdem für die Bluetooth-Suche.</p>
+
+<p>Du kannst die Standortberechtigung in den Systemeinstellungen verweigern oder widerrufen.
+Standortabhängige Funktionen stehen dann nicht oder nur eingeschränkt zur Verfügung. Grundlegende
+Bluetooth-Funktionen bleiben verfügbar, soweit das Betriebssystem dies zulässt.</p>
+
+<h2>Online-Standort- und Zieldienste</h2>
+
+<p>Die Option <em>Online-Standortdienste</em> ist standardmäßig ausgeschaltet. Wenn du sie
+aktivierst, kann die App Roller- oder Handykoordinaten und Zielsuchen an folgende Dienste
+senden:</p>
+
+<ul>
+  <li><a href="https://nominatim.org/">OpenStreetMap Nominatim</a>, um Koordinaten in Adressen umzuwandeln; und</li>
+  <li><a href="https://photon.komoot.io/">Komoot Photon</a>, um Ziele zu suchen, Ergebnisse nach deinem Standort zu gewichten oder Koordinaten in Ortsnamen umzuwandeln.</li>
+</ul>
+
+<p>Diese Anbieter erhalten die Anfrage, deine IP-Adresse und übliche Netzwerkinformationen. Für
+deren Verarbeitung gelten die
+<a href="https://osmfoundation.org/wiki/Privacy_Policy">Datenschutzerklärung der OpenStreetMap
+Foundation</a> und die <a href="https://www.komoot.de/privacy">Datenschutzerklärung von Komoot</a>.
+Du kannst die Online-Standortdienste jederzeit in den App-Einstellungen deaktivieren.</p>
+
+<p>Wenn du einen Kartenlink mit der App teilst, kann sie den Kurzlinkdienst und den verlinkten
+Kartenanbieter kontaktieren, um ihn aufzulösen – auch wenn die Online-Standortdienste
+ausgeschaltet sind. Diese Dienste erhalten die angefragte URL, deine IP-Adresse und übliche
+Netzwerkinformationen. Die Suche nach einem geteilten Ortsnamen oder einer Adresse mit Photon
+setzt aktivierte Online-Standortdienste voraus.</p>
+
+<h2>Weitere Netzwerkanfragen</h2>
+
+<p>Die App verwendet, soweit unterstützt, verschlüsselte HTTPS-Verbindungen, um
+Firmwareinformationen und -Updates von <code>downloads.librescoot.org</code> sowie Werkstattdaten
+und App-Hinweise von GitHub Pages abzurufen. Diese Anfragen übermitteln deine IP-Adresse und
+übliche Netzwerkinformationen und unterliegen der
+<a href="https://docs.github.com/de/site-policy/privacy-policies/github-general-privacy-statement">allgemeinen
+Datenschutzerklärung von GitHub</a>.</p>
+
+<p>Links zum Quellcode, Ticketsystem, Communitychat oder Shop werden im Browser oder einer
+anderen installierten App geöffnet. Diese Dienste erhalten übliche Anfrageinformationen wie deine
+IP-Adresse und unterliegen ihren eigenen Datenschutzerklärungen.</p>
+
+<p>Anbieter können Anfrageinformationen für den Betrieb, die Sicherheit und die Verbesserung ihrer
+Dienste aufbewahren. GitHub beschreibt außerdem die Ableitung einer ungefähren regionalen Position
+aus IP-Adressen. Diese Verarbeitung ist von einer durch die App-Entwickler betriebenen Telemetrie
+zu unterscheiden.</p>
+
+<h2>Support- und Diagnose-E-Mails</h2>
+
+<p>Wenn du <em>Problem melden</em> auswählst, bereitet die App eine E-Mail an das Unustasis-Projekt
+vor. Sie enthält Gerätemodell, Betriebssystemversion, ausgewählte Einstellungen und ein
+angehängtes aktuelles Diagnoseprotokoll. Protokolle können Rollerkennungen, Statusmeldungen oder
+Standortkontext enthalten. Die E-Mail wird in deiner E-Mail-App angezeigt, sodass du sie vor dem
+Senden prüfen, bearbeiten oder abbrechen kannst. Dein E-Mail-Anbieter verarbeitet die Nachricht
+ebenfalls nach seinen eigenen Datenschutz- und Sicherheitsbedingungen. Wir erhalten deine
+Absenderadresse und alle Informationen, die du mitsendest.</p>
+
+<p>Support-E-Mails werden nur zur Beantwortung der Anfrage und zur Diagnose des gemeldeten
+Problems verwendet. Sie werden nur so lange aufbewahrt, wie es für Support und Projektpflege
+angemessen erforderlich ist. Du kannst die Löschung per E-Mail an
+<a href="mailto:oss4unu@freal.de">oss4unu@freal.de</a> verlangen.</p>
+
+<h2>Biometrie</h2>
+
+<p>Wenn die biometrische Bestätigung aktiviert ist, führt Android oder iOS die Authentifizierung
+durch. Die App erhält nur die Information, ob sie erfolgreich war. Sie erhält und speichert weder
+Fingerabdruck, Gesichtsbild noch biometrische Vorlage.</p>
+
+<h2>Weitergabe, Verkauf und Werbung</h2>
+
+<p>Unustasis verkauft keine personenbezogenen Daten und verwendet sie nicht für Werbung oder
+appübergreifendes Tracking. Informationen werden nur für eine von dir gewählte Funktion wie oben
+beschrieben oder aufgrund gesetzlicher Verpflichtung weitergegeben.</p>
+
+<h2>Aufbewahrung und Löschung</h2>
+
+<p>App-Daten bleiben auf deinem Gerät, bis sie ersetzt oder gelöscht werden. Das Entfernen eines
+Rollers löscht seinen gespeicherten Rollereintrag, aber nicht den Aktivitätsverlauf oder alle
+separat gespeicherten Zwischenspeicher. Den Aktivitätsverlauf kannst du in der Aktivitätsansicht
+löschen. Eine gespeicherte Diagnoseprotokolldatei bleibt erhalten, bis sie überschrieben oder die
+lokalen App-Daten gelöscht werden. Alle App-Daten kannst du über die Funktion zum Löschen des
+Speichers im Betriebssystem oder durch Deinstallation der App entfernen. Da die App kein
+Onlinekonto hat, gibt es kein zusätzliches Cloudkonto zu löschen.</p>
+
+<h2>Sicherheit</h2>
+
+<p>Lokale Daten werden durch die App-Sandbox des Betriebssystems geschützt. Netzwerkanfragen
+verwenden HTTPS, soweit der Anbieter dies unterstützt. Keine Speicher- oder Übertragungsmethode
+ist vollständig sicher. Sende daher keine Diagnoseberichte mit Informationen, die du nicht teilen
+möchtest.</p>
+
+<h2>Kinder</h2>
+
+<p>Die App ist ein Werkzeug zur Fahrzeugsteuerung für Erwachsene und richtet sich nicht an Kinder
+unter 18 Jahren.</p>
+
+<h2>Änderungen und Kontakt</h2>
+
+<p>Wesentliche Änderungen werden mit einem neuen Gültigkeitsdatum auf dieser Seite veröffentlicht.
+Fragen sowie Auskunfts- und Löschanfragen kannst du an
+<a href="mailto:oss4unu@freal.de">oss4unu@freal.de</a> senden.</p>
+
+</body>
+</html>

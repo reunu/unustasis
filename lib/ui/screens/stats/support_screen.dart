@@ -11,6 +11,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:unustasis/domain/log_helper.dart';
+import 'package:unustasis/ui/presentation/privacy_policy.dart';
 import 'package:unustasis/ui/widgets/header.dart';
 import 'package:unustasis/ui/widgets/wide_layout.dart';
 
@@ -136,11 +137,7 @@ class _SupportScreenState extends State<SupportScreen> {
         ListTile(
           leading: const Icon(Icons.privacy_tip_outlined),
           title: Text(FlutterI18n.translate(context, "settings_privacy_policy")),
-          onTap: () {
-            launchUrl(
-              Uri.parse("https://unumotors.com/de-de/privacy-policy-of-unu-app/"),
-            );
-          },
+          onTap: () => launchUrl(privacyPolicyUriFor(context), mode: LaunchMode.externalApplication),
           trailing: const Icon(Icons.chevron_right),
         ),
         Divider(
