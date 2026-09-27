@@ -22,15 +22,16 @@ void main() {
 
   test('hosted policy pages name the online providers and contact', () {
     const pages = {
-      'docs/privacy/mobile-app/index.html': '27 September 2026',
-      'docs/de/privacy/mobile-app/index.html': '27. September 2026',
+      'docs/privacy/mobile-app/index.html': ('27 September 2026', 'on by default'),
+      'docs/de/privacy/mobile-app/index.html': ('27. September 2026', 'standardmäßig eingeschaltet'),
     };
     for (final page in pages.entries) {
       final html = File(page.key).readAsStringSync();
       expect(html, contains('nominatim'), reason: page.key);
       expect(html, contains('photon.komoot.io'), reason: page.key);
       expect(html, contains('oss4unu@freal.de'), reason: page.key);
-      expect(html, contains(page.value), reason: page.key);
+      expect(html, contains(page.value.$1), reason: page.key);
+      expect(html, contains(page.value.$2), reason: page.key);
     }
   });
 }

@@ -120,10 +120,10 @@ class GeoHelper {
       return null;
     }
 
-    // Only send coordinates after the user opts in to online place names.
+    // Skip the online lookup only when the user has explicitly turned it off.
     SharedPreferencesAsync prefs = SharedPreferencesAsync();
-    if (await prefs.getBool("osmConsent") != true) {
-      log.info("User has not enabled online place names");
+    if (await prefs.getBool("osmConsent") == false) {
+      log.info("User has disabled online place names");
       return null;
     }
 
@@ -213,7 +213,7 @@ class GeoHelper {
       return cachedName;
     }
 
-    if (await prefs.getBool("osmConsent") != true) {
+    if (await prefs.getBool("osmConsent") == false) {
       return "${location.latitude}, ${location.longitude}";
     }
 

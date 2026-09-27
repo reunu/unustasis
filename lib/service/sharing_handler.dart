@@ -116,7 +116,7 @@ class SharingHandler with WidgetsBindingObserver {
       }
 
       final prefs = SharedPreferencesAsync();
-      final allowOnlineGeocoding = await prefs.getBool("osmConsent") == true;
+      final allowOnlineGeocoding = await prefs.getBool("osmConsent") != false;
       final parsed = await LocationUrlParser.parse(
         sharedText,
         allowOnlineGeocoding: allowOnlineGeocoding,

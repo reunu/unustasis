@@ -133,7 +133,7 @@ Settings:
       autoUnlockDistance = ${ScooterKeylessDistance.fromThreshold(service.autoUnlockThreshold)}
       openSeatOnUnlock = ${service.openSeatOnUnlock}
       hazardLocking = ${service.hazardLocking}
-      osmConsent = ${await prefs.getBool("osmConsent") ?? false}
+      osmConsent = ${await prefs.getBool("osmConsent") ?? true}
       seasonal = ${await prefs.getBool("seasonal") ?? true}
 Saved scooter count: ${service.savedScooters.length}
 ''',

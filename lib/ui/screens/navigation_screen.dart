@@ -30,7 +30,7 @@ class NavigationScreen extends StatefulWidget {
 class _NavigationScreenState extends State<NavigationScreen> {
   List<NavDestination> _destinations = [];
   bool _loading = false;
-  bool _osmConsent = false;
+  bool _osmConsent = true;
   bool _initialLoad = true;
   bool _showingCached = false;
   double _dismissPullDistance = 0;
@@ -64,7 +64,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
     final prefs = SharedPreferencesAsync();
     final consent = await prefs.getBool("osmConsent");
     if (mounted) {
-      setState(() => _osmConsent = consent ?? false);
+      setState(() => _osmConsent = consent ?? true);
     }
   }
 

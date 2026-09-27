@@ -62,12 +62,17 @@ void main() {
     expect(prefs.reads, ['address_1.000000_2.000000', 'osmConsent']);
   });
 
-  test('Unustasis absent consent keeps reverse geocoding local', () async {
-    expect(await GeoHelper.nameFromCoordinates(const LatLng(1, 2)), '1.0, 2.0');
-    expect(prefs.reads, ['address_1.000000_2.000000', 'osmConsent']);
+  test('Unustasis absent consent is treated as enabled', () {
+    expect(File('lib/geo_helper.dart').readAsStringSync(), contains('getBool("osmConsent") == false'));
+    expect(
+      File('lib/geo_helper.dart').readAsStringSync(),
+      isNot(contains('getBool("osmConsent") != true')),
+    );
+    expect(File('lib/domain/log_helper.dart').readAsStringSync(), contains('getBool("osmConsent") ?? true'));
   });
 
-  test('absent consent does not send saved scooter coordinates to Nominatim', () async {
+  test('Unustasis denied consent does not send saved scooter coordinates to Nominatim', () async {
+    prefs.consent = false;
     final scooter = SavedScooter(id: 'A', lastLocation: const LatLng(1, 2));
     expect(await GeoHelper.getScooterAddress(scooter), isNull);
     expect(prefs.reads, ['osmConsent']);
@@ -75,14 +80,14 @@ void main() {
 
   test('Unustasis privacy wiring retains app endpoints and removes saved-record export', () {
     final settings = File('lib/ui/screens/stats/settings_screen.dart').readAsStringSync();
-    expect(settings, contains('bool osmConsent = false'));
-    expect(settings, contains('prefs.getBool("osmConsent") ?? false'));
+    expect(settings, contains('bool osmConsent = true'));
+    expect(settings, contains('prefs.getBool("osmConsent") ?? true'));
     final report = File('lib/domain/log_helper.dart').readAsStringSync();
     expect(report, contains('Saved scooter count:'));
     expect(report, isNot(contains('prefs.getString("savedScooters")')));
     expect(report, contains('oss4unu@freal.de'));
     expect(File('lib/service/sharing_handler.dart').readAsStringSync(),
-        contains('prefs.getBool("osmConsent") == true'));
+        contains('prefs.getBool("osmConsent") != false'));
     expect(File('lib/ui/screens/stats/support_screen.dart').readAsStringSync(),
         contains("httpsGet(Uri.parse('https://reunu.github.io/unustasis-data/garages.json'))"));
     expect(File('lib/ui/dialogs/onboarding_popups.dart').readAsStringSync(),
@@ -118,7 +123,7 @@ void main() {
     expect(wire.listeners, 0);
   });
 
-  test('Unustasis navigation uses telemetry plus upstream active destination and opt-in consent', () {
+  test('Unustasis navigation uses telemetry plus upstream active destination and default-on consent', () {
     final source = File('lib/ui/screens/navigation_screen.dart').readAsStringSync();
     expect(source, contains('isNavigating: s.vehicle.navigationActive == true'));
     expect(source, contains('context.watch<ScooterService>().vehicle.navigationActive != true'));
@@ -126,7 +131,7 @@ void main() {
     expect(source, contains('activeName: s.activeNavigation?.name'));
     expect(source, contains('service.setPendingNavigation(null)'));
     expect(source, contains('final consent = await prefs.getBool("osmConsent")'));
-    expect(source, contains('_osmConsent = consent ?? false'));
+    expect(source, contains('_osmConsent = consent ?? true'));
     expect(source, contains('if (km <= 100) return true'));
     expect(source, contains('Geolocator.getLastKnownPosition()'));
     expect(source, contains('savedScooter?.cachedDestinations = named'));

@@ -52,7 +52,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
   ScooterKeylessDistance autoUnlockDistance = ScooterKeylessDistance.regular;
   bool openSeatOnUnlock = false;
   bool hazardLocking = false;
-  bool osmConsent = false;
+  bool osmConsent = true;
   ScooterService? _service;
   Object? _sessionToken;
   bool _sessionConnected = false;
@@ -95,7 +95,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
         ScooterKeylessDistance.fromThreshold(service.autoUnlockThreshold);
     bool initialOpenSeatOnUnlock = service.openSeatOnUnlock;
     bool initialHazardLocking = service.hazardLocking;
-    bool initialOsmConsent = await prefs.getBool("osmConsent") ?? false;
+    bool initialOsmConsent = await prefs.getBool("osmConsent") ?? true;
     bool initialSeasonal = await prefs.getBool("seasonal") ?? true;
 
     if (!mounted) return;
