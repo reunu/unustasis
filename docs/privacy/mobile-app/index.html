@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unustasis privacy policy</title>
+<style>
+:root { color-scheme: light dark; }
+body {
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 4rem;
+  font: 16px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+h1 { font-size: 1.7rem; line-height: 1.25; }
+h2 { font-size: 1.2rem; margin-top: 2rem; }
+ul { padding-left: 1.25rem; }
+li { margin: 0.25rem 0; }
+.meta { color: #767676; }
+</style>
+</head>
+<body>
+
+<h1>Unustasis privacy policy</h1>
+
+<p class="meta">
+  <em>stasis for unu</em> &middot; <a href="/unustasis/de/privacy/mobile-app/" hreflang="de">Deutsch</a><br>
+  <strong>Effective date:</strong> 27 September 2026
+</p>
+
+<p>This policy explains how Unustasis, the app published as <em>stasis for unu</em>, handles information.</p>
+
+<h2>Who operates the app</h2>
+
+<p>Unustasis is an open-source app for the unu Scooter Pro, provided by the Unustasis project.
+Privacy and support enquiries can be sent to
+<a href="mailto:oss4unu@freal.de">oss4unu@freal.de</a>. The source code is available on
+<a href="https://github.com/reunu/unustasis">GitHub</a>.</p>
+
+<h2>Summary</h2>
+
+<ul>
+  <li>The app has no user account, advertising or analytics SDK.</li>
+  <li>Scooter information and activity history are normally stored only on your device.</li>
+  <li>Online location services are on by default. While they are enabled, locations and search terms are sent to the providers named below; you can turn them off in the app settings.</li>
+  <li>Nothing is sent to the Unustasis project automatically as telemetry. We receive diagnostic information only if you choose to send a support email.</li>
+</ul>
+
+<h2>Information stored on your device</h2>
+
+<p>The app may store the following information in its private application storage:</p>
+
+<ul>
+  <li>scooter names and Bluetooth identifiers;</li>
+  <li>connection state, battery levels, firmware versions and supported features;</li>
+  <li>saved destinations, recent scooter locations and resolved place names;</li>
+  <li>local lock, unlock and seat-opening activity history, which may include the phone's location when location permission is granted;</li>
+  <li>preferences such as language, theme, background connection, automatic unlock and biometric confirmation settings; and</li>
+  <li>recent diagnostic logs, including a saved log file when you prepare a support email.</li>
+</ul>
+
+<p>This information is used to connect to and control your scooter, display status and widgets,
+provide navigation and remember your choices. Bluetooth pairing secrets are managed by the
+operating system rather than uploaded to a Unustasis service.</p>
+
+<h2>Location</h2>
+
+<p>With your operating-system permission, the app may read your phone's precise location to
+remember where the scooter was last connected or controlled, attach a location to local activity
+history, find nearby service locations, and improve destination search. Older Android versions
+also require location permission for Bluetooth discovery.</p>
+
+<p>You can deny or revoke location permission in system settings. Features that require a
+location will then be unavailable or less useful, while basic Bluetooth functionality remains
+available where the operating system permits it.</p>
+
+<h2>Online location and destination services</h2>
+
+<p>The <em>Online location services</em> option is on by default. While it is enabled, the app may
+send scooter or phone coordinates and destination searches to:</p>
+
+<ul>
+  <li><a href="https://nominatim.org/">OpenStreetMap Nominatim</a>, to turn coordinates into addresses; and</li>
+  <li><a href="https://photon.komoot.io/">Komoot Photon</a>, to search for destinations, bias results toward your location, or turn coordinates into place names.</li>
+</ul>
+
+<p>These providers receive the request, your IP address and standard network information. Their
+handling is governed by the
+<a href="https://osmfoundation.org/wiki/Privacy_Policy">OpenStreetMap Foundation privacy policy</a>
+and the <a href="https://www.komoot.com/privacy">Komoot privacy policy</a>. You can disable
+online location services at any time in the app settings.</p>
+
+<p>If you share a map link with the app, it may contact the link-shortening service and linked map
+provider to resolve it, even when Online location services is off. Those services receive the
+requested URL, your IP address and standard network information. Looking up a shared place name
+or address with Photon requires Online location services to be enabled.</p>
+
+<h2>Other network requests</h2>
+
+<p>The app uses encrypted HTTPS connections where supported to download firmware information and
+updates from <code>downloads.librescoot.org</code>, and service-location data and app notices from
+GitHub Pages. These requests disclose your IP address and ordinary network information, and are
+governed by the
+<a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub
+General Privacy Statement</a>.</p>
+
+<p>Opening links such as the source repository, issue tracker, community chat or shop uses your
+browser or another installed app. Those services receive ordinary request information such as
+your IP address and are governed by their own privacy policies.</p>
+
+<p>Providers may retain request information for operation, security and service improvement.
+GitHub also describes using IP addresses to infer regional location. This processing is distinct
+from developer-operated app telemetry.</p>
+
+<h2>Support and diagnostic emails</h2>
+
+<p>If you choose <em>Report a problem</em>, the app prepares an email to the Unustasis project
+containing the device model, operating-system version, selected settings and an attached recent
+diagnostic log. Logs can contain scooter identifiers, status messages or location context. The
+email is shown in your email app so that you can review, edit or cancel it before sending. Your
+email provider also handles the message under its own privacy and security terms. We receive your
+sender email address and any information you include.</p>
+
+<p>Support emails are used only to answer the request and diagnose the reported problem. They are
+retained only as long as reasonably needed for support and project maintenance. You may request
+deletion by emailing <a href="mailto:oss4unu@freal.de">oss4unu@freal.de</a>.</p>
+
+<h2>Biometrics</h2>
+
+<p>If biometric confirmation is enabled, authentication is performed by Android or iOS. The app
+receives only whether authentication succeeded; it does not receive or store your fingerprint,
+face image or biometric template.</p>
+
+<h2>Sharing, sale and advertising</h2>
+
+<p>Unustasis does not sell personal information and does not use it for advertising or cross-app
+tracking. Information is shared only when needed for a feature you choose, as described above, or
+when required by law.</p>
+
+<h2>Retention and deletion</h2>
+
+<p>App data remains on your device until it is replaced or deleted. Forgetting a scooter removes
+its saved scooter record, but does not erase activity history or all separate caches. You can
+clear activity history from the activity screen. A saved diagnostic log remains until it is
+overwritten or local app data is erased. You can erase all app data using the operating system's
+clear-storage function or by uninstalling the app. Because the app has no online account, there is
+no separate cloud account to delete.</p>
+
+<h2>Security</h2>
+
+<p>Local data is protected by the operating system's application sandbox. Network requests use
+HTTPS where the provider supports it. No method of storage or transmission is completely secure,
+so avoid sending diagnostic reports that contain information you do not want to share.</p>
+
+<h2>Children</h2>
+
+<p>The app is a vehicle-control utility intended for adults and is not directed to children under
+18.</p>
+
+<h2>Changes and contact</h2>
+
+<p>Material changes will be posted on this page with a revised effective date. Questions, access
+requests and deletion requests can be sent to
+<a href="mailto:oss4unu@freal.de">oss4unu@freal.de</a>.</p>
+
+</body>
+</html>

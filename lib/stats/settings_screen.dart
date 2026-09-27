@@ -12,11 +12,13 @@ import 'package:local_auth/local_auth.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../domain/theme_helper.dart';
 import '../domain/scooter_keyless_distance.dart';
 import '../scooter_service.dart';
 import '../helper_widgets/header.dart';
+import '../ui/presentation/privacy_policy.dart';
 import 'log_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -425,6 +427,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
               osmConsent = value;
             });
           },
+        ),
+        ListTile(
+          leading: const Icon(Icons.privacy_tip_outlined),
+          title: Text(FlutterI18n.translate(context, "settings_privacy_policy")),
+          trailing: const Icon(Icons.open_in_new),
+          onTap: () => launchUrl(privacyPolicyUriFor(context), mode: LaunchMode.externalApplication),
         ),
         if (DateTime.now().month == 12 ||
             DateTime.now().month == 4 ||

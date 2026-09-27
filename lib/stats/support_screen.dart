@@ -12,6 +12,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../domain/log_helper.dart';
 import '../helper_widgets/header.dart';
+import '../ui/presentation/privacy_policy.dart';
 
 class SupportScreen extends StatefulWidget {
   const SupportScreen({super.key});
@@ -135,11 +136,7 @@ class _SupportScreenState extends State<SupportScreen> {
         ListTile(
           leading: const Icon(Icons.privacy_tip_outlined),
           title: Text(FlutterI18n.translate(context, "settings_privacy_policy")),
-          onTap: () {
-            launchUrl(
-              Uri.parse("https://unumotors.com/de-de/privacy-policy-of-unu-app/"),
-            );
-          },
+          onTap: () => launchUrl(privacyPolicyUriFor(context), mode: LaunchMode.externalApplication),
           trailing: const Icon(Icons.chevron_right),
         ),
         Divider(
