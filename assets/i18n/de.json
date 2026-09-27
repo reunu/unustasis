@@ -248,7 +248,7 @@
     "settings_app_version": "App Version",
     "settings_privacy_policy": "Datenschutzerklärung",
     "settings_osm_consent": "Online-Standortdienste",
-    "settings_osm_consent_description": "Sendet Roller- oder Handystandorte und Zielsuchen an Nominatim von OpenStreetMap und Photon von Komoot, um Adressen und Orte zu finden.",
+    "settings_osm_consent_description": "Erlaubt das Teilen von Roller- oder Handystandorten und Suchbegriffen mit den Diensten Nominatim von OpenStreetMap und Photon von Komoot, um Ziele zu suchen und Adressen aufzulösen.",
     "settings_seasonal": "Saisonale Effekte",
     "stats_last_ping_title": "Zuletzt gesehen",
     "stats_last_ping": "vor {time}",

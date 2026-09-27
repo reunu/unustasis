@@ -14,6 +14,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:unustasis/ui/theme/theme_helper.dart';
 import 'package:unustasis/domain/alarm_status.dart';
@@ -1147,7 +1148,22 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
             });
           },
         ),
+        ListTile(
+          leading: const Icon(Icons.privacy_tip_outlined),
+          title: Text(FlutterI18n.translate(context, "settings_privacy_policy")),
+          trailing: const Icon(Icons.open_in_new),
+          onTap: _openPrivacyPolicy,
+        ),
       ];
+
+  Future<void> _openPrivacyPolicy() {
+    final language = FlutterI18n.currentLocale(context)?.languageCode ?? "en";
+    final path = language == "de" ? "/privacy/mobile-app/" : "/en/privacy/mobile-app/";
+    return launchUrl(
+      Uri.parse("https://librescoot.org$path"),
+      mode: LaunchMode.externalApplication,
+    );
+  }
 
   List<Widget> _seasonalItems() => [
         if (DateTime.now().month == 12 ||

@@ -228,7 +228,7 @@
     "settings_app_version": "App version",
     "settings_privacy_policy": "Privacy policy",
     "settings_osm_consent": "Online location services",
-    "settings_osm_consent_description": "Send scooter or phone locations and destination searches to OpenStreetMap's Nominatim and Komoot's Photon services to look up addresses and places.",
+    "settings_osm_consent_description": "Allow sharin' scooter or phone bearin's and search terms with OpenStreetMap's Nominatim and Komoot's Photon services to hunt for destinations and look up addresses, arr!",
     "settings_seasonal": "Seasonal effects",
     "stats_last_ping_title": "Last seen",
     "stats_last_ping": "{time} ago",
