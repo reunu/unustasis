@@ -19,7 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # fyi: Apple Testflight strips build tags and leading zeroes
 # so 1.0.0-beta5 becomes 1.0.05 and 1.0.05 is considered higher than, say, 1.0.4
 # this project uses Pride Versioning: https://pridever.org/
-version: 2.0.5+46
+version: 2.0.6+47
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
