@@ -761,6 +761,92 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
     ];
   }
 
+  // Keyless distance slider with the live-RSSI line and link status. The line
+  // keeps the last value when the link drops but is dimmed, and the status row
+  // says which scooter is connected and whether signal strength is live.
+  Widget _keylessDistanceSetting() {
+    final service = context.read<ScooterService>();
+    final bool connected = service.connected;
+    final int? rssi = service.identity.rssi;
+    final String? name = service.identity.name?.trim();
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    return ListTile(
+      title: Text(
+        "${FlutterI18n.translate(context, "settings_auto_unlock_threshold")}: ${autoUnlockDistance.name(context)}",
+      ),
+      subtitle: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              secondaryActiveTrackColor: connected ? null : colors.onSurfaceVariant.withValues(alpha: 0.38),
+            ),
+            child: Slider(
+              value: autoUnlockDistance.threshold.toDouble(),
+              min: ScooterKeylessDistance.getMinThresholdDistance().threshold.toDouble(),
+              max: ScooterKeylessDistance.getMaxThresholdDistance().threshold.toDouble(),
+              secondaryTrackValue: rssi?.toDouble(),
+              divisions: ScooterKeylessDistance.values.length - 1,
+              label: autoUnlockDistance.getFormattedThreshold(),
+              onChanged: (value) async {
+                var distance = ScooterKeylessDistance.fromThreshold(
+                  value.toInt(),
+                );
+                context.read<ScooterService>().setAutoUnlockThreshold(
+                      value.toInt(),
+                    );
+                setState(() {
+                  autoUnlockDistance = distance;
+                });
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Row(
+              children: [
+                Icon(
+                  connected ? Icons.bluetooth_connected : Icons.bluetooth_disabled,
+                  size: 16,
+                  color: colors.onSurfaceVariant,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    _keylessSignalLabel(connected: connected, rssi: rssi, name: name),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _keylessSignalLabel({required bool connected, required int? rssi, required String? name}) {
+    final bool named = name != null && name.isNotEmpty;
+    if (!connected) {
+      return named
+          ? FlutterI18n.translate(context, "settings_auto_unlock_signal_disconnected",
+              translationParams: {"name": name})
+          : FlutterI18n.translate(context, "settings_auto_unlock_signal_disconnected_unnamed");
+    }
+    if (rssi == null) {
+      return named
+          ? FlutterI18n.translate(context, "settings_auto_unlock_signal_connected_waiting",
+              translationParams: {"name": name})
+          : FlutterI18n.translate(context, "settings_auto_unlock_signal_connected_waiting_unnamed");
+    }
+    return named
+        ? FlutterI18n.translate(context, "settings_auto_unlock_signal_connected",
+            translationParams: {"name": name, "rssi": "$rssi"})
+        : FlutterI18n.translate(context, "settings_auto_unlock_signal_connected_unnamed",
+            translationParams: {"rssi": "$rssi"});
+  }
+
   // Shared by all scooters, so it lives under App.
   List<Widget> _automationItems() => [
         SwitchListTile(
@@ -811,47 +897,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
             });
           },
         ),
-        if (autoUnlock)
-          ListTile(
-            title: Text(
-              "${FlutterI18n.translate(context, "settings_auto_unlock_threshold")}: ${autoUnlockDistance.name(context)}",
-            ),
-            subtitle: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Slider(
-                  value: autoUnlockDistance.threshold.toDouble(),
-                  min: ScooterKeylessDistance.getMinThresholdDistance().threshold.toDouble(),
-                  max: ScooterKeylessDistance.getMaxThresholdDistance().threshold.toDouble(),
-                  secondaryTrackValue: context.read<ScooterService>().identity.rssi?.toDouble(),
-                  divisions: ScooterKeylessDistance.values.length - 1,
-                  label: autoUnlockDistance.getFormattedThreshold(),
-                  onChanged: (value) async {
-                    var distance = ScooterKeylessDistance.fromThreshold(
-                      value.toInt(),
-                    );
-                    context.read<ScooterService>().setAutoUnlockThreshold(
-                          value.toInt(),
-                        );
-                    setState(() {
-                      autoUnlockDistance = distance;
-                    });
-                  },
-                ),
-                if (context.read<ScooterService>().identity.rssi != null)
-                  Text(
-                    FlutterI18n.translate(
-                      context,
-                      "settings_auto_unlock_threshold_explainer",
-                      translationParams: {
-                        "rssi": context.read<ScooterService>().identity.rssi.toString(),
-                      },
-                    ),
-                  ),
-              ],
-            ),
-          ),
+        if (autoUnlock) _keylessDistanceSetting(),
         SwitchListTile(
           secondary: SvgPicture.asset(
             "assets/icons/librescoot-seatbox-open.svg",
