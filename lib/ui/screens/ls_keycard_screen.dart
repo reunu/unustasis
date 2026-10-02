@@ -393,7 +393,7 @@ class _KeycardCardState extends State<KeycardCard> with SingleTickerProviderStat
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.left,
-            textDirection: TextDirection.rtl,
+            textDirection: TextDirection.ltr,
           ),
           SizedBox(height: 16),
           Text(
