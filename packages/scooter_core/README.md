@@ -17,6 +17,16 @@ rendering remain outside this package. Planner warning localization keys and
 parameters are temporarily retained for compatibility; presentation resolves them.
 Do not add Flutter, plugin, or application-layer dependencies here.
 
+`bluetooth_firmware_updates.dart` exposes
+`supportsBluetoothFirmwareUpdates(String? mdbVersion)` for the MDB OS version
+(`version:mdb`, exposed as `FirmwareIdentity.imxVersion` over GATT), not DBC or
+nRF firmware. Bluetooth OS OTA requires SemVer >=1.2.0 (optional `v` and build
+metadata; prereleases of exactly 1.2.0 do not qualify) or a `nightly-`/`testing-`
+build dated >=20260803. Dated builds accept `YYYYMMDD` or `YYYYMMDDTHHMMSS` with
+valid calendar/time values. Unknown or malformed versions fail closed. Callers
+must additionally require a live, non-demo connection and OTA characteristics;
+this does not gate USB updates.
+
 Run independently from this directory:
 
 ```sh

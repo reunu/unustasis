@@ -86,7 +86,9 @@ class ScooterService with ChangeNotifier, WidgetsBindingObserver {
   CharacteristicRepository get characteristicRepository =>
       _telemetry.currentRepository ?? (throw StateError('Scooter characteristics are unavailable'));
   bool get alarmAvailable => _telemetry.alarmAvailable;
-  bool get otaAvailable => _telemetry.otaAvailable;
+  // OTA characteristics alone are not enough: the MDB OS must support BLE updates.
+  bool get otaAvailable =>
+      connected && !demoMode && _telemetry.otaAvailable && supportsBluetoothFirmwareUpdates(identity.imxVersion);
   String? get connectingScooterId => _session.connectingScooterId;
   late final UpdateController updateController;
   String? updateTargetName;

@@ -72,7 +72,7 @@ void main() {
       'ls_settings_auto_hibernate_title', 'ls_scheduled_hibernation_title',
       'ls_settings_battery_keep_active_title', 'ls_settings_alarm_title',
       'ls_settings_alarm_honk_title', 'ls_settings_alarm_watch_title',
-      'ls_settings_apn_title', 'ls_settings_ota_title',
+      'ls_settings_apn_title',
       'ls_settings_update_mode_title']) {
       final title = find.text(FlutterI18n.translate(context, key));
       await tester.scrollUntilVisible(title, 180, scrollable: find.byType(Scrollable).first);
@@ -82,6 +82,7 @@ void main() {
       expect(row.onTap, isNull, reason: key);
       expect(find.byType(CircularProgressIndicator), findsNothing);
     }
+    expect(find.text(FlutterI18n.translate(context, 'ls_settings_ota_title')), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -107,7 +108,7 @@ void main() {
     for (final key in ['ls_keycard_title', 'ls_settings_auto_lock_title',
       'ls_settings_auto_hibernate_title', 'ls_settings_battery_keep_active_title',
       'ls_settings_alarm_title', 'ls_settings_alarm_honk_title',
-      'ls_settings_apn_title', 'ls_settings_ota_title']) {
+      'ls_settings_apn_title']) {
       final title = find.text(FlutterI18n.translate(context, key));
       await tester.scrollUntilVisible(title, 180, scrollable: find.byType(Scrollable).first);
       await tester.pumpAndSettle();
@@ -127,6 +128,7 @@ void main() {
     expect(tester.widget<SwitchListTile>(find.ancestor(
       of: autoConnect, matching: find.byType(SwitchListTile))).onChanged, isNotNull);
     expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.text(FlutterI18n.translate(context, 'ls_settings_ota_title')), findsNothing);
     expect(tester.takeException(), isNull);
   });
 

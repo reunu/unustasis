@@ -5,6 +5,7 @@ import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:scooter_flutter/scooter_flutter.dart';
+import 'package:scooter_core/bluetooth_firmware_updates.dart';
 import 'package:unustasis/scooter_service.dart';
 import 'package:unustasis/state/scooter_identity.dart';
 import 'package:unustasis/ui/screens/ls_settings_screen.dart';
@@ -34,8 +35,12 @@ class _Service extends ChangeNotifier implements ScooterService {
   final vehicle = VehicleStatus();
   @override
   final _Actions actions = _Actions();
+  bool otaCharacteristicsAvailable = true;
   @override
-  bool get otaAvailable => true;
+  bool demoMode = false;
+  @override
+  bool get otaAvailable => connected && !demoMode && otaCharacteristicsAvailable &&
+      supportsBluetoothFirmwareUpdates(identity.imxVersion);
   @override
   bool get alarmAvailable => false;
   final reads = <String>[];
@@ -113,6 +118,47 @@ Future<void> _show(WidgetTester tester, Finder finder) async {
 }
 
 void main() {
+  for (final version in <String?>[null, 'unknown', 'v1.1.99', 'v1.2.0-beta',
+    'nightly-20260802T235959', 'testing-20260802', 'v1.2.0',
+    'nightly-20260803T000000', 'testing-20260803']) {
+    testWidgets('Bluetooth OTA option uses known MDB version $version', (tester) async {
+      final service = _Service()..connected = true;
+      addTearDown(service.dispose);
+      service.identity..imxVersion = version..nrfVersion = 'v99.0.0';
+      await tester.pumpWidget(_screen(service));
+      await tester.pumpAndSettle();
+      final list = tester.state<ScrollableState>(find.byType(Scrollable).first);
+      list.position.jumpTo(list.position.maxScrollExtent);
+      await tester.pumpAndSettle();
+      final option = find.text('Firmware update');
+      final eligible = supportsBluetoothFirmwareUpdates(version);
+      expect(option, eligible ? findsOneWidget : findsNothing);
+      if (eligible) {
+        final tile = tester.widget<ListTile>(find.ancestor(of: option, matching: find.byType(ListTile)).first);
+        expect(tile.onTap, isNotNull);
+      }
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  for (final unavailable in ['offline', 'demo', 'missing characteristics']) {
+    testWidgets('Bluetooth OTA stays hidden for $unavailable even with qualifying MDB', (tester) async {
+      final service = _Service()
+        ..connected = unavailable != 'offline'
+        ..demoMode = unavailable == 'demo'
+        ..otaCharacteristicsAvailable = unavailable != 'missing characteristics';
+      addTearDown(service.dispose);
+      service.identity.imxVersion = 'v1.2.0';
+      await tester.pumpWidget(_screen(service));
+      await tester.pumpAndSettle();
+      final list = tester.state<ScrollableState>(find.byType(Scrollable).first);
+      list.position.jumpTo(list.position.maxScrollExtent);
+      await tester.pumpAndSettle();
+      expect(find.text('Firmware update'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   for (final failure in ['timeout', 'null']) {
     testWidgets('current $failure reads settle unavailable without loading or writable unknown switches', (tester) async {
       final service = _Service()..connected = true;
@@ -242,8 +288,7 @@ void main() {
       'ls_settings_update_mode_title',
       'ls_settings_battery_keep_active_title',
       'ls_settings_alarm_title',
-      'ls_keycard_title',
-      'ls_settings_ota_title'
+      'ls_keycard_title'
     ]) {
       final title = find.text(FlutterI18n.translate(tester.element(find.byType(LsSettingsScreen)), key));
       await _show(tester, title);
@@ -253,6 +298,7 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(find.byType(Switch), findsNothing);
     }
+    expect(find.text('Firmware update'), findsNothing);
     expect(service.actions.reads, 0);
     expect(service.reads, isEmpty);
     expect(tester.takeException(), isNull);

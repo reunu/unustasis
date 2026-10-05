@@ -2,6 +2,7 @@
 library;
 
 export 'alarm_wake_sources.dart';
+export 'bluetooth_firmware_updates.dart';
 export 'go_duration.dart';
 export 'hibernation_schedule.dart';
 export 'ota_protocol.dart';

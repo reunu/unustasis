@@ -1448,7 +1448,7 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
     required bool otaAvailable,
   }) =>
       [
-        if (!connected || otaAvailable)
+        if (connected && otaAvailable)
           ListTile(
             enabled: !_scooterAsleep,
             leading: const Icon(Icons.system_update_alt_outlined),

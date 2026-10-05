@@ -338,6 +338,31 @@ void main() {
     expect(service.identity.odometerMeters, 123);
   }
 
+  test('Bluetooth OTA requires current MDB version and all OTA characteristics', () async {
+    repository.otaDataCharacteristic = repository.characteristic([]);
+    repository.otaControlCharacteristic = repository.characteristic([]);
+    repository.otaStatusCharacteristic = repository.characteristic([]);
+    createService();
+    service.identity.imxVersion = 'v1.2.0';
+    expect(service.otaAvailable, isFalse, reason: 'Offline even with a retained qualifying version');
+    final attempt = connect('A');
+    await drain();
+    await finishConnection(attempt, devices['A']!);
+    service.identity.nrfVersion = 'v99.0.0';
+    for (final version in <String?>[null, 'unknown', 'v1.1.99', 'nightly-20260802T235959']) {
+      service.identity.imxVersion = version;
+      expect(service.otaAvailable, isFalse, reason: 'MDB $version, not the newer nRF version');
+    }
+    for (final version in ['v1.2.0', 'nightly-20260803T000000', 'testing-20260803']) {
+      service.identity.imxVersion = version;
+      expect(service.otaAvailable, isTrue, reason: version);
+    }
+    repository.otaStatusCharacteristic = null;
+    expect(service.otaAvailable, isFalse, reason: 'OTA transport still required');
+    service.connected = false;
+    expect(service.otaAvailable, isFalse);
+  });
+
   test('production adapter never restores cached protection and resets before B linking', () async {
     storage.scooters['A']!.handlebarsLocked = true;
     storage.scooters['B']!.handlebarsLocked = true;
