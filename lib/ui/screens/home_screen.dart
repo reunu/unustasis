@@ -47,6 +47,10 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final log = Logger('HomeScreen');
+  bool _authenticated = false;
+  bool _checkingAuthentication = true;
+  bool _authenticating = false;
+  bool _authenticationFailed = false;
   bool _hazards = false;
   double _navigationDragDistance = 0;
   StreamSubscription<core.HandlebarWarning>? _warningSubscription;
@@ -61,6 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _authenticated = widget.forceOpen == true;
     if (widget.forceOpen != true) {
       log.fine("Redirecting or starting");
       redirectOrStart();
@@ -131,6 +136,37 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_authenticated) {
+      return Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.lock_outline, size: 48),
+                  const SizedBox(height: 16),
+                  Text(FlutterI18n.translate(context, 'biometrics_message'), textAlign: TextAlign.center),
+                  if (_authenticationFailed) ...[
+                    const SizedBox(height: 16),
+                    Text(FlutterI18n.translate(context, 'biometrics_failed'), textAlign: TextAlign.center),
+                  ],
+                  const SizedBox(height: 24),
+                  if (_checkingAuthentication || _authenticating)
+                    const CircularProgressIndicator()
+                  else
+                    FilledButton(
+                      onPressed: _authenticate,
+                      child: Text(FlutterI18n.translate(context, 'biometrics_retry')),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
     return Scaffold(
       extendBodyBehindAppBar: true,
       body: AnnotatedRegion<SystemUiOverlayStyle>(
@@ -659,36 +695,41 @@ class _HomeScreenState extends State<HomeScreen> {
         context.read<ScooterService>().start();
       }
     }
-    if ((await SharedPreferencesAsync().getBool("biometrics") ?? false) && mounted) {
-      context.read<ScooterService>().optionalAuth = false;
-      final LocalAuthentication auth = LocalAuthentication();
-      try {
-        final bool didAuthenticate = await auth.authenticate(
-          localizedReason: FlutterI18n.translate(context, "biometrics_message"),
-        );
-        if (!mounted) return;
-        if (!didAuthenticate) {
-          Fluttertoast.showToast(
-            msg: FlutterI18n.translate(context, "biometrics_failed"),
-          );
-          Navigator.of(context).pop();
-          SystemNavigator.pop();
-        } else {
-          context.read<ScooterService>().optionalAuth = true;
-        }
-      } catch (e, stack) {
-        log.info("Biometrics failed", e, stack);
-
-        Fluttertoast.showToast(
-          msg: FlutterI18n.translate(context, "biometrics_failed"),
-        );
-        Navigator.of(context).pop();
-
-        SystemNavigator.pop();
-      }
+    final requiresAuthentication = await SharedPreferencesAsync().getBool("biometrics") ?? false;
+    if (!mounted) return;
+    setState(() => _checkingAuthentication = false);
+    if (requiresAuthentication) {
+      await _authenticate();
     } else {
-      if (mounted) context.read<ScooterService>().optionalAuth = true;
+      context.read<ScooterService>().optionalAuth = true;
+      setState(() => _authenticated = true);
     }
+  }
+
+  Future<void> _authenticate() async {
+    if (_authenticating) return;
+    final service = context.read<ScooterService>();
+    service.optionalAuth = false;
+    setState(() {
+      _authenticating = true;
+      _authenticationFailed = false;
+    });
+    var authenticated = false;
+    try {
+      authenticated = await LocalAuthentication().authenticate(
+        localizedReason: FlutterI18n.translate(context, "biometrics_message"),
+      );
+      log.info("Startup authentication ${authenticated ? 'succeeded' : 'cancelled or rejected'}");
+    } catch (e, stack) {
+      log.info("Biometrics failed", e, stack);
+    }
+    if (!mounted) return;
+    service.optionalAuth = authenticated;
+    setState(() {
+      _authenticated = authenticated;
+      _authenticating = false;
+      _authenticationFailed = !authenticated;
+    });
   }
 }
 

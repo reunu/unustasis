@@ -212,6 +212,7 @@
     "settings_biometrics_description": "Require fingerprint or face recognition to access the app.",
     "biometrics_message": "Authenticate to access app",
     "biometrics_failed": "Authentication failed",
+    "biometrics_retry": "Try again",
     "settings_auto_unlock": "Auto-unlock when nearby",
     "settings_auto_unlock_description": "Unlocks the scooter when you are nearby and the app is in the foreground.",
     "settings_auto_unlock_threshold": "Keyless start distance",

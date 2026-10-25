@@ -212,6 +212,7 @@
     "settings_biometrics_description": "Fingerabdruck oder Gesichtserkennung zum Entsperren der App verlangen.",
     "biometrics_message": "Authentifizieren, um fortzufahren",
     "biometrics_failed": "Authentifizierung fehlgeschlagen",
+    "biometrics_retry": "Erneut versuchen",
     "settings_auto_unlock": "Automatisch entsperren in der Nähe",
     "settings_auto_unlock_description": "Entsperrt den Roller, wenn du in der Nähe bist und die App im Vordergrund ist.",
     "settings_auto_unlock_threshold": "Keyless Start Distanz",

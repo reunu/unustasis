@@ -192,6 +192,7 @@
     "settings_biometrics_description": "Require yer fingerprint or face recognition to get on board",
     "biometrics_message": "Authenticate to access the app, ye scurvy dog.",
     "biometrics_failed": "Arrr! Authentication failed, walk the plank!",
+    "biometrics_retry": "Try again, matey",
     "settings_auto_unlock": "Auto-unlock when nearby",
     "settings_auto_unlock_description": "Unlocks yer ship when ye be nearby and the app be in the foreground.",
     "settings_auto_unlock_threshold": "Ghost ship distance",
