@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:scooter_core/battery_identity.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:scooter_core/actions.dart';
@@ -7,6 +8,7 @@ import 'package:scooter_core/telemetry.dart'
 import 'package:scooter_core/scooter_core.dart';
 import '../ble/action_commands.dart' as commands;
 import '../ble/firmware_queries.dart' as queries;
+import '../ble/hash_commands.dart' as hashes;
 import '../ble/command_transport.dart' as transport;
 import '../ble/characteristic_repository.dart';
 import '../telemetry/scooter_telemetry.dart';
@@ -397,6 +399,38 @@ class ScooterActions {
     // The existing session-owned Device Info subscription already reads nRF.
     versions['nrf'] = telemetry.identity.nrfVersion;
     return Map.unmodifiable(versions);
+  }
+
+  Future<void> _requireHashRead(_Target target) async {
+    final groups = await _command(target,
+        (d, r, c) => queries.discoverLsCapabilityGroupsCommand(d, r, isCurrent: c));
+    if (!groups.answered || groups.versions['hash'] != 1) {
+      throw UnsupportedError('Hash reads require compatible scooter firmware');
+    }
+  }
+
+  Future<List<String?>> _readHashFields(_Target target, String hash, List<String> fields) =>
+      _command(target, (d, r, c) => hashes.readHashFieldsCommand(d, r, hash, fields, isCurrent: c));
+
+  Future<List<String?>> readHashFields(String hash, List<String> fields) async {
+    final target = _capture();
+    final selection = List<String>.unmodifiable(fields);
+    await _requireHashRead(target);
+    return _readHashFields(target, hash, selection);
+  }
+
+  Future<List<BatteryIdentity>> readBatteryIdentities() async {
+    final target = _capture();
+    await _requireHashRead(target);
+    final identities = <BatteryIdentity>[];
+    for (final slot in [0, 1]) {
+      final fields = await _readHashFields(target, 'battery:$slot', const ['present', 'serial-number']);
+      _check(target);
+      final identity = parseBatteryIdentityFields(fields, slot, DateTime.now());
+      if (identity != null) identities.add(identity);
+    }
+    _check(target);
+    return List.unmodifiable(identities);
   }
 
   Future<bool?> getBoolSetting(String key) async {

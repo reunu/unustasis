@@ -1,0 +1,116 @@
+[
+  {
+    "name": "raw-values",
+    "hash": "battery:0",
+    "fields": [
+      "present",
+      "serial-number"
+    ],
+    "values": [
+      "false",
+      "001ab\u0000"
+    ],
+    "budget": 244,
+    "payload": "[\"false\",\"001ab\\u0000\"]",
+    "readRequest": "hash:read:1234abcd:244:battery:0/present,serial-number",
+    "readResponse": "r:s:1234abcd:n",
+    "chunks": [
+      {
+        "request": "hash:get:1234abcd:0:244",
+        "response": "r:p:1234abcd:0:WyJmYWxzZSIsIjAwMWFiXHUwMDAwIl0"
+      },
+      {
+        "request": "hash:get:1234abcd:n:244",
+        "response": "r:e:1234abcd:n"
+      }
+    ]
+  },
+  {
+    "name": "missing-empty",
+    "hash": "battery:0",
+    "fields": [
+      "present",
+      "serial-number"
+    ],
+    "values": [
+      null,
+      ""
+    ],
+    "budget": 20,
+    "payload": "[null,\"\"]",
+    "readRequest": "hash:read:1234abcd:20:battery:0/present,serial-number",
+    "readResponse": "r:s:1234abcd:9",
+    "chunks": [
+      {
+        "request": "hash:get:1234abcd:0:20",
+        "response": "r:p:1234abcd:0:W251"
+      },
+      {
+        "request": "hash:get:1234abcd:3:20",
+        "response": "r:p:1234abcd:3:bGws"
+      },
+      {
+        "request": "hash:get:1234abcd:6:20",
+        "response": "r:p:1234abcd:6:IiJd"
+      },
+      {
+        "request": "hash:get:1234abcd:9:20",
+        "response": "r:e:1234abcd:9"
+      }
+    ]
+  },
+  {
+    "name": "unicode-escaped",
+    "hash": "battery:0",
+    "fields": [
+      "present",
+      "serial-number"
+    ],
+    "values": [
+      "é😀",
+      "\u0000\"\\"
+    ],
+    "budget": 20,
+    "payload": "[\"é😀\",\"\\u0000\\\"\\\\\"]",
+    "readRequest": "hash:read:1234abcd:20:battery:0/present,serial-number",
+    "readResponse": "r:s:1234abcd:n",
+    "chunks": [
+      {
+        "request": "hash:get:1234abcd:0:20",
+        "response": "r:p:1234abcd:0:WyLD"
+      },
+      {
+        "request": "hash:get:1234abcd:3:20",
+        "response": "r:p:1234abcd:3:qfCf"
+      },
+      {
+        "request": "hash:get:1234abcd:6:20",
+        "response": "r:p:1234abcd:6:mIAi"
+      },
+      {
+        "request": "hash:get:1234abcd:9:20",
+        "response": "r:p:1234abcd:9:LCJc"
+      },
+      {
+        "request": "hash:get:1234abcd:c:20",
+        "response": "r:p:1234abcd:c:dTAw"
+      },
+      {
+        "request": "hash:get:1234abcd:f:20",
+        "response": "r:p:1234abcd:f:MDBc"
+      },
+      {
+        "request": "hash:get:1234abcd:i:20",
+        "response": "r:p:1234abcd:i:Ilxc"
+      },
+      {
+        "request": "hash:get:1234abcd:l:20",
+        "response": "r:p:1234abcd:l:Il0"
+      },
+      {
+        "request": "hash:get:1234abcd:n:20",
+        "response": "r:e:1234abcd:n"
+      }
+    ]
+  }
+]

@@ -17,6 +17,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:unustasis/ui/presentation/privacy_policy.dart';
+import 'package:unustasis/ui/screens/battery_tracker_screen.dart';
 import 'package:unustasis/ui/theme/theme_helper.dart';
 import 'package:unustasis/domain/alarm_status.dart';
 import 'package:unustasis/domain/saved_scooter.dart';
@@ -1576,6 +1577,13 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
         ..._section('settings_section_automation', _automationItems()),
         ..._section('settings_section_connection', _backgroundConnectionItems()),
         ..._section('settings_section_privacy_security', [
+          ListTile(
+            leading: const Icon(Icons.battery_charging_full_rounded),
+            title: Text(FlutterI18n.translate(context, 'battery_tracker_title')),
+            subtitle: Text(FlutterI18n.translate(context, 'battery_tracker_description')),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BatteryTrackerScreen())),
+          ),
           ..._biometricsItems(),
           ..._locationConsentItems(),
           ..._activityLogItems(),

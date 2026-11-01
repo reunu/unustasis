@@ -442,6 +442,7 @@ class ScooterTelemetry {
     identity.navigationCapabilityVersion = null;
     identity.supportsClockSync = false;
     identity.supportsUsbMode = false;
+    identity.supportsBatteryIdentity = false;
     effects.cachePatch(
         connection.id,
         const TelemetryCachePatch(
@@ -477,6 +478,7 @@ class ScooterTelemetry {
       _notify(connection);
       return;
     }
+    identity.supportsBatteryIdentity = groups.versions['hash'] == 1;
     // A listed group is its complete initial contract unless it supplies a
     // future version. Only status and BLE have historically varied details.
     final supportsHibernateFor = groups.contains('pm');

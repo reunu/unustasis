@@ -22,6 +22,7 @@ import 'package:unustasis/domain/scooter_state.dart';
 import 'package:unustasis/ui/widgets/wide_layout.dart';
 import 'package:unustasis/ui/widgets/scooter_visual.dart';
 import 'package:unustasis/ui/screens/stats/support_screen.dart';
+import 'package:unustasis/ui/screens/battery_tracker_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({
@@ -138,7 +139,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
   List<Widget> getWidgets(int step) {
     switch (step) {
       case 0:
-        return _onboardingStep(
+        return [
+          ..._onboardingStep(
             heading: FlutterI18n.translate(context, "onboarding_step0_heading"),
             text: FlutterI18n.translate(context, "onboarding_step0_body"),
             btnText: FlutterI18n.translate(context, "onboarding_step0_button"),
@@ -149,7 +151,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
               setState(() {
                 _step = 1;
               });
-            });
+            }),
+          const SizedBox(height: 12),
+          TextButton.icon(
+            icon: const Icon(Icons.shield_outlined),
+            label: Text(FlutterI18n.translate(context, 'battery_tracker_title')),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BatteryTrackerScreen())),
+          ),
+        ];
       case 1:
         return _onboardingStep(
             heading: FlutterI18n.translate(context, "onboarding_step1_heading"),

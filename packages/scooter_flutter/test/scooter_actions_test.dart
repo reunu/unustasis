@@ -22,6 +22,8 @@ class Device extends Fake implements BluetoothDevice {
   @override
   bool get isDisconnected => !live;
   @override
+  int get mtuNow => 23;
+  @override
   DisconnectReason? get disconnectReason => null;
   @override
   Stream<BluetoothConnectionState> get connectionState => states.stream;

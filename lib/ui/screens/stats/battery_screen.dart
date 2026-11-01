@@ -11,6 +11,7 @@ import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
 
 import 'package:unustasis/domain/scooter_battery.dart';
+import 'package:unustasis/ui/screens/battery_tracker_screen.dart';
 import 'package:unustasis/ui/widgets/wide_layout.dart';
 import 'package:unustasis/scooter_service.dart';
 
@@ -130,7 +131,20 @@ class _BatteryScreenState extends State<BatteryScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
+                Card(
+                  elevation: 0,
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.07),
+                  margin: const EdgeInsets.only(bottom: 24),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    leading: Icon(Icons.shield_outlined, color: Theme.of(context).colorScheme.primary),
+                    title: Text(FlutterI18n.translate(context, 'battery_tracker_title')),
+                    subtitle: Text(FlutterI18n.translate(context, 'battery_tracker_description')),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BatteryTrackerScreen())),
+                  ),
+                ),
                 if (hasPrimaryBattery)
                   _batteryCard(
                     type: ScooterBatteryType.primary,

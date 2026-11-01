@@ -13,6 +13,8 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:scooter_core/actions.dart' as core show HandlebarWarning;
 
+import 'package:unustasis/feature_flags.dart';
+import 'package:unustasis/ui/dialogs/battery_feature_announcement.dart';
 import 'package:unustasis/ui/dialogs/seat_warning.dart';
 import 'package:unustasis/ui/widgets/leaves.dart';
 import 'package:unustasis/ui/widgets/scooter_action_button.dart';
@@ -39,7 +41,8 @@ import 'package:unustasis/ui/screens/navigation_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final bool? forceOpen;
-  const HomeScreen({this.forceOpen, super.key});
+  final bool batteryTrackerEnabled;
+  const HomeScreen({this.forceOpen, this.batteryTrackerEnabled = sunshineBatteryRegistrationEnabled, super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -51,6 +54,10 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _checkingAuthentication = true;
   bool _authenticating = false;
   bool _authenticationFailed = false;
+  bool _startupNoticesFinished = false;
+  bool _batteryPromptScheduled = false;
+  bool _batteryPromptShowing = false;
+  bool _batteryPromptHandled = false;
   bool _hazards = false;
   double _navigationDragDistance = 0;
   StreamSubscription<core.HandlebarWarning>? _warningSubscription;
@@ -66,6 +73,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _authenticated = widget.forceOpen == true;
+    _startupNoticesFinished = widget.forceOpen == true;
     if (widget.forceOpen != true) {
       log.fine("Redirecting or starting");
       redirectOrStart();
@@ -78,7 +86,10 @@ class _HomeScreenState extends State<HomeScreen> {
     final service = context.read<ScooterService>();
     if (identical(service, _warningService)) return;
     _warningSubscription?.cancel();
+    _warningService?.removeListener(_scheduleBatteryPrompt);
     _warningService = service;
+    service.addListener(_scheduleBatteryPrompt);
+    _scheduleBatteryPrompt();
     _warningSubscription = service.actionWarnings.listen((warning) {
       if (mounted) showHandlebarWarning(didNotUnlock: warning.didNotUnlock);
     });
@@ -87,6 +98,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _warningSubscription?.cancel();
+    _warningService?.removeListener(_scheduleBatteryPrompt);
     super.dispose();
   }
 
@@ -121,6 +133,33 @@ class _HomeScreenState extends State<HomeScreen> {
     //   await prefs.setBool("widgetOnboarded", true);
     // }
     if (mounted) await showServerNotifications(context);
+    _startupNoticesFinished = true;
+    _scheduleBatteryPrompt();
+  }
+
+  bool get _canShowBatteryPrompt => mounted && _authenticated && _startupNoticesFinished &&
+      _warningService?.connected == true && ModalRoute.of(context)?.isCurrent == true &&
+      (WidgetsBinding.instance.lifecycleState == null ||
+       WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed);
+
+  void _scheduleBatteryPrompt() {
+    if (!mounted || !widget.batteryTrackerEnabled || _batteryPromptHandled ||
+        _batteryPromptShowing || _batteryPromptScheduled) {
+      return;
+    }
+    _batteryPromptScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      _batteryPromptScheduled = false;
+      if (!_canShowBatteryPrompt) return;
+      _batteryPromptShowing = true;
+      try {
+        _batteryPromptHandled = await showBatteryFeatureAnnouncement(context,
+          enabled: widget.batteryTrackerEnabled, canShow: () => _canShowBatteryPrompt);
+      } finally {
+        _batteryPromptShowing = false;
+      }
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
   }
 
   void _flashHazards(int times) async {
@@ -703,6 +742,7 @@ class _HomeScreenState extends State<HomeScreen> {
     } else {
       context.read<ScooterService>().optionalAuth = true;
       setState(() => _authenticated = true);
+      _scheduleBatteryPrompt();
     }
   }
 
@@ -730,6 +770,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _authenticating = false;
       _authenticationFailed = !authenticated;
     });
+    _scheduleBatteryPrompt();
   }
 }
 
