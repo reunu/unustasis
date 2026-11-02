@@ -14,6 +14,7 @@ import '../../service/battery_nfc_reader.dart';
 import '../../service/battery_handoff_client.dart';
 import '../../service/battery_read_failure.dart';
 import '../widgets/battery_tracking_intro.dart';
+import '../widgets/primary_button.dart';
 
 enum _TrackerStep { welcome, read, verify, share, browser }
 
@@ -192,23 +193,8 @@ class _BatteryTrackerScreenState extends State<BatteryTrackerScreen> {
     }
   }
 
-  Widget _primary(String label, VoidCallback? action, {Key? key, IconData icon = Icons.arrow_forward}) {
-    final colors = Theme.of(context).colorScheme;
-    return FilledButton.icon(
-      key: key,
-      style: FilledButton.styleFrom(
-        minimumSize: const Size(double.infinity, 58),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        foregroundColor: colors.primary.computeLuminance() > 0.179 ? Colors.black : Colors.white,
-      ),
-      onPressed: _busy ? null : action,
-      icon: _busy
-          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-          : Icon(icon, size: 20),
-      label: Text(_text(label), textAlign: TextAlign.center),
-    );
-  }
+  Widget _primary(String label, VoidCallback? action, {Key? key, IconData icon = Icons.arrow_forward}) =>
+      PrimaryButton(key: key, text: _text(label), onPressed: _busy ? null : action, icon: icon, busy: _busy);
 
   Widget _heading(String title, String body) => Padding(
         padding: const EdgeInsets.only(top: 28, bottom: 32),

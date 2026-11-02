@@ -9,6 +9,7 @@ import 'package:unustasis/ui/screens/battery_tracker_screen.dart';
 import 'package:unustasis/service/battery_handoff_client.dart';
 import 'package:unustasis/ui/theme/app_theme.dart';
 import 'package:unustasis/ui/widgets/battery_tracking_intro.dart';
+import 'package:unustasis/ui/widgets/primary_button.dart';
 
 import '../support/inline_asset_bundle.dart';
 import '../support/persistence_fakes.dart';
@@ -115,7 +116,7 @@ void main() {
               return true;
             }));
     expect(find.text('Your batteries.\nA little peace of mind.'), findsOneWidget);
-    expect(find.byType(FilledButton), findsOneWidget);
+    expect(find.byType(PrimaryButton), findsOneWidget);
     expect(find.text('Add a battery'), findsOneWidget);
     expect(find.text('Join the shared tracker'), findsNothing);
     expect(find.text('Confirm your email'), findsNothing);
@@ -193,7 +194,7 @@ void main() {
               return true;
             }));
     await read(tester, 'bluetooth');
-    expect(tester.widget<FilledButton>(find.byKey(const ValueKey('battery-label-verification'))).onPressed, isNull);
+    expect(tester.widget<PrimaryButton>(find.byKey(const ValueKey('battery-label-verification'))).onPressed, isNull);
     await tap(tester, find.byKey(ValueKey('battery-reading-${other.serialNumber}')));
     await tap(tester, find.byKey(const ValueKey('battery-label-verification')));
     expect(find.text(other.serialNumber), findsOneWidget);
@@ -264,7 +265,7 @@ void main() {
     expect(find.byKey(const ValueKey('manage-battery-tracker')), findsNothing);
     await read(tester, 'bluetooth');
     await tap(tester, find.byKey(const ValueKey('battery-label-verification')));
-    expect(tester.widget<FilledButton>(find.byKey(const ValueKey('battery-register-continue'))).onPressed, isNull);
+    expect(tester.widget<PrimaryButton>(find.byKey(const ValueKey('battery-register-continue'))).onPressed, isNull);
     expect(opened, isEmpty);
     expect(shared, isEmpty);
   });
@@ -351,7 +352,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('battery-register-continue')));
     await tester.pump();
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    expect(tester.widget<FilledButton>(find.byKey(const ValueKey('battery-register-continue'))).onPressed, isNull);
+    expect(tester.widget<PrimaryButton>(find.byKey(const ValueKey('battery-register-continue'))).onPressed, isNull);
     await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
     handoff.complete(await prepareHandoff(battery));

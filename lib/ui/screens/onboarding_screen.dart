@@ -16,6 +16,7 @@ import 'package:unustasis/domain/scooter_candidate.dart';
 import 'package:unustasis/domain/scooter_colors.dart';
 import 'package:unustasis/ui/theme/theme_helper.dart';
 import 'package:unustasis/ui/widgets/scooter_picker.dart';
+import 'package:unustasis/ui/widgets/primary_button.dart';
 import 'package:unustasis/ui/screens/home_screen.dart';
 import 'package:unustasis/scooter_service.dart';
 import 'package:unustasis/domain/scooter_state.dart';
@@ -605,11 +606,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
         onChanged: (_) => setState(() {}),
       ),
       const SizedBox(height: 40),
-      ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          minimumSize: const Size.fromHeight(60),
-          backgroundColor: Theme.of(context).colorScheme.onSurface,
-        ),
+      PrimaryButton(
+        text: FlutterI18n.translate(context, "onboarding_step6_button"),
         onPressed: () {
           final service = context.read<ScooterService>();
           final scooterId = _selectedScooter?.id ?? service.currentScooterId;
@@ -622,15 +620,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
             builder: (context) => const HomeScreen(),
           ));
         },
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Text(
-            FlutterI18n.translate(context, "onboarding_step6_button"),
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onTertiary,
-            ),
-          ),
-        ),
       ),
     ];
   }
@@ -658,26 +647,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
     ];
   }
 
-  Widget _primaryButton({required String text, required void Function() onPressed}) {
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-        minimumSize: const Size.fromHeight(
-          60,
-        ), // fromHeight use double.infinity as width and 40 is the height
-        backgroundColor: Theme.of(context).colorScheme.onSurface,
-      ),
-      onPressed: onPressed,
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onTertiary,
-          ),
-        ),
-      ),
-    );
-  }
+  Widget _primaryButton({required String text, required void Function() onPressed}) =>
+      PrimaryButton(text: text, onPressed: onPressed);
 
   @override
   void dispose() {

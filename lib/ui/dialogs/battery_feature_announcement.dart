@@ -5,6 +5,7 @@ import '../../feature_flags.dart';
 import '../../service/battery_onboarding_preferences.dart';
 import '../screens/battery_tracker_screen.dart';
 import '../widgets/battery_tracking_intro.dart';
+import '../widgets/primary_button.dart';
 
 Future<bool> showBatteryFeatureAnnouncement(
   BuildContext context, {
@@ -31,13 +32,9 @@ Future<bool> showBatteryFeatureAnnouncement(
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           BatteryTrackingIntro(registrationEnabled: enabled),
           const SizedBox(height: 32),
-          FilledButton(
-            style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(56),
-                foregroundColor:
-                    Theme.of(context).colorScheme.primary.computeLuminance() > 0.179 ? Colors.black : Colors.white),
+          PrimaryButton(
+            text: FlutterI18n.translate(context, 'battery_tracker_add'),
             onPressed: () => Navigator.pop(context, true),
-            child: Text(FlutterI18n.translate(context, 'battery_tracker_add'), textAlign: TextAlign.center),
           ),
           const SizedBox(height: 8),
           TextButton(
