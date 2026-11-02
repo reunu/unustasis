@@ -8,6 +8,7 @@ import 'package:scooter_core/battery_identity.dart';
 import 'package:unustasis/ui/screens/battery_tracker_screen.dart';
 import 'package:unustasis/service/battery_handoff_client.dart';
 import 'package:unustasis/ui/theme/app_theme.dart';
+import 'package:unustasis/ui/widgets/battery_tracking_intro.dart';
 
 import '../support/inline_asset_bundle.dart';
 import '../support/persistence_fakes.dart';
@@ -86,6 +87,21 @@ void main() {
     await tap(tester, find.byKey(const ValueKey('add-battery')));
     await tap(tester, find.byKey(ValueKey('battery-source-$source')));
   }
+
+  testWidgets('registration reuses the existing unu pack graphic throughout identification', (tester) async {
+    await pump(tester, BatteryTrackerScreen(readBluetooth: () async => [battery], registrationEnabled: true));
+    void expectPackAsset() {
+      final image =
+          tester.widget<Image>(find.descendant(of: find.byType(BatteryRegistrationArt), matching: find.byType(Image)));
+      expect((image.image as AssetImage).assetName, 'images/battery/batt_full.webp');
+    }
+
+    expectPackAsset();
+    await tap(tester, find.byKey(const ValueKey('add-battery')));
+    expectPackAsset();
+    await tap(tester, find.byKey(const ValueKey('battery-source-bluetooth')));
+    expectPackAsset();
+  });
 
   testWidgets('owner-first welcome has one primary action and no premature email signup', (tester) async {
     final opened = <Uri>[];

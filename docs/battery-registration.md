@@ -18,7 +18,7 @@ read a pack using phone NFC.
    separately consent to registration there. Opening the browser is not shown
    as successful registration.
 
-The screens use Stasis themes, original vector artwork, scrollable layouts and
+The screens use Stasis themes, the existing battery artwork, scrollable layouts and
 one primary action per step. Secondary explanations are expandable. Serial
 readings exist only in memory while the screen is open: there is no phone-side
 battery inventory, history, automatic upload or offline upload queue.
