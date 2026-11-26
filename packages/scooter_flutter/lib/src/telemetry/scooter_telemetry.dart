@@ -372,20 +372,11 @@ class ScooterTelemetry {
         isCurrent: current, onUpdate: () => _notify(connection));
     identity.wireNrfVersion(repository, isCurrent: current, onUpdate: () {
       if (!current()) return;
-      // Nothing that depends on the librescoot verdict may start until the
-      // system behind the nRF has had its say, or a stock system gets probed
-      // for services it does not have.
       unawaited(_identifySystem(connection, repository));
     });
   }
 
-  /// Settles what this scooter is, then probes accordingly.
-  ///
-  /// The nRF reports its own build, and flashing a stock image does not
-  /// downgrade the nRF: a librescoot nRF over a stock system still says
-  /// `-ls` while nothing behind it answers. The system's own version, which
-  /// the nRF only fills in from the iMX over usock, is one characteristic
-  /// read, so ask for it before believing the nRF build string.
+  /// Reads the system version and probes capabilities based on nRF identity.
   Future<void> _identifySystem(
       SessionConnection connection, CharacteristicRepository repository) async {
     bool current() =>
@@ -395,17 +386,8 @@ class ScooterTelemetry {
       if (!current()) return;
       final imxVersion = identity.imxVersion;
       if (imxVersion != null) {
-        // Only a librescoot system answers with a version over usock.
         _log.info('nRF ${identity.nrfVersion} runs a $imxVersion system');
-      } else if (repository.imxVersionCharacteristic != null &&
-          vehicle.systemCanAnswer) {
-        _log.info(
-            'nRF ${identity.nrfVersion} reported no system version, so this is not a librescoot scooter');
-        // Everything gated on librescoot follows the system, not the nRF.
-        identity.isLibrescoot = false;
       }
-      // A firmware without the characteristic, or one that is powered down, is
-      // expected to stay silent, so the nRF verdict stands.
     }
     effects.cachePatch(connection.id,
         TelemetryCachePatch(isLibrescoot: identity.isLibrescoot));

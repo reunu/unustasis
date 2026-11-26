@@ -789,7 +789,7 @@ void main() {
     stock.imxVersionCharacteristic =
         stock.chars['imxVersion'] = _Characteristic(answer: const []);
     stock['state'].text('parked');
-    _firmware(stock);
+    _firmware(stock, 'stock');
     await _flush();
 
     expect(h.telemetry.identity.imxVersion, isNull);
@@ -800,24 +800,37 @@ void main() {
     expect(verdictPatch.$2.isLibrescoot, false);
   });
 
-  test('a stock system behind a librescoot nRF clears the capabilities',
-      () async {
-    // The nRF is a librescoot build, and stays one after a stock image is
-    // flashed; stock firmware never answers the version query.
-    final h = _Harness(imxVersion: '');
+  test('an empty iMX version preserves a librescoot nRF identity', () async {
+    final h = _Harness(
+        imxVersion: '',
+        capabilityGroups: () async =>
+            const LsCapabilityGroups({}, usedFallback: true, answered: false));
     addTearDown(h.dispose);
     final r = await h.connect('A');
-    h.telemetry.identity
-      ..supportsAlarmControl = true
-      ..supportsApnConfig = true
-      ..supportsTripCounter = true;
+    h.telemetry.identity.supportsAlarmControl = true;
     _firmware(r);
     await _flush();
 
-    expect(_caps(h.telemetry.identity), List.filled(8, false));
-    expect(h.queries, isEmpty,
-        reason: 'a stock system is not probed for librescoot services');
-    expect(h.telemetry.identity.isLibrescoot, false);
+    expect(h.telemetry.identity.isLibrescoot, true);
+    expect(h.telemetry.identity.supportsAlarmControl, true);
+  });
+
+  test('a failed iMX read preserves a librescoot nRF identity', () async {
+    final h = _Harness(
+        capabilityGroups: () async =>
+            const LsCapabilityGroups({}, usedFallback: true, answered: false));
+    addTearDown(h.dispose);
+    final r = await h.connect('A');
+    final imx = _Characteristic();
+    r.imxVersionCharacteristic = imx;
+    h.telemetry.identity.supportsAlarmControl = true;
+    _firmware(r);
+    await _flush();
+    imx.reads.single.completeError(StateError('read failed'));
+    await _flush();
+
+    expect(h.telemetry.identity.isLibrescoot, true);
+    expect(h.telemetry.identity.supportsAlarmControl, true);
   });
 
   test('a librescoot system behind the nRF is probed as usual', () async {
@@ -832,17 +845,6 @@ void main() {
     expect(h.queries, _queryOrder);
     expect(h.telemetry.identity.supportsHibernateFor, true);
     expect(h.telemetry.identity.isLibrescoot, true);
-  });
-
-  test('a system that answers without a version is stock', () async {
-    final h = _Harness(imxVersion: '');
-    addTearDown(h.dispose);
-    final r = await h.connect('A');
-    _firmware(r);
-    await _flush();
-
-    expect(h.queries, isEmpty);
-    expect(h.telemetry.identity.isLibrescoot, false);
   });
 
   test('a hibernating system keeps the cached capabilities', () async {
